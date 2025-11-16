@@ -258,7 +258,7 @@ export default function Expenses() {
                                 setFilterFromDate(value);
                                 setPage(1);
                             }}
-                            placeholder="Select start date & time"
+                            placeholder="Please select start date & time"
                         />
                     </div>
                     <div>
@@ -269,7 +269,7 @@ export default function Expenses() {
                                 setFilterToDate(value);
                                 setPage(1);
                             }}
-                            placeholder="Select end date & time"
+                            placeholder="Please select end date & time"
                         />
                     </div>
                 </div>
