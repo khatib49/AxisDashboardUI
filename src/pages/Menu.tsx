@@ -6,6 +6,7 @@ export default function Menu() {
     const [items, setItems] = useState<ItemDto[]>([]);
     const [categories, setCategories] = useState<CategoryDto[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+    const [selectedItemType, setSelectedItemType] = useState<"Retail" | "Food">("Food");
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -67,9 +68,21 @@ export default function Menu() {
         }
     };
 
-    const filteredItems = selectedCategory
-        ? items.filter((item) => item.categoryId === selectedCategory)
-        : items;
+    // Filter categories by selected item type
+    const filteredCategories = categories.filter(
+        (cat) => cat.itemType === selectedItemType
+    );
+
+    // Filter items by selected item type and optionally by category
+    const filteredItems = items.filter((item) => {
+        // Find the category for this item
+        const itemCategory = categories.find((cat) => cat.id === item.categoryId);
+        // Check if the item's category matches the selected item type
+        const matchesItemType = itemCategory?.itemType === selectedItemType;
+        // Check if category filter is applied
+        const matchesCategory = selectedCategory === null || item.categoryId === selectedCategory;
+        return matchesItemType && matchesCategory;
+    });
 
     const renderItemCard = (item: ItemDto) => {
         const inStock = item.quantity > 0;
@@ -161,6 +174,34 @@ export default function Menu() {
             </div>
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                {/* Item Type Tabs (Food / Retail) */}
+                <div className="flex justify-center gap-4 mb-8">
+                    <button
+                        onClick={() => {
+                            setSelectedItemType("Food");
+                            setSelectedCategory(null);
+                        }}
+                        className={`px-8 sm:px-12 py-4 rounded-2xl font-bold text-base sm:text-lg transition-all duration-300 transform hover:scale-105 ${selectedItemType === "Food"
+                            ? "bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-2xl shadow-orange-500/50"
+                            : "bg-white/10 text-white backdrop-blur-sm hover:bg-white/20"
+                            }`}
+                    >
+                        🍔 Food
+                    </button>
+                    <button
+                        onClick={() => {
+                            setSelectedItemType("Retail");
+                            setSelectedCategory(null);
+                        }}
+                        className={`px-8 sm:px-12 py-4 rounded-2xl font-bold text-base sm:text-lg transition-all duration-300 transform hover:scale-105 ${selectedItemType === "Retail"
+                            ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-2xl shadow-blue-500/50"
+                            : "bg-white/10 text-white backdrop-blur-sm hover:bg-white/20"
+                            }`}
+                    >
+                        🛒 Retail
+                    </button>
+                </div>
+
                 {/* Category Tabs */}
                 <div className="flex justify-center gap-2 sm:gap-3 mb-12 flex-wrap">
                     <button
@@ -170,9 +211,9 @@ export default function Menu() {
                             : "bg-white/10 text-white backdrop-blur-sm hover:bg-white/20"
                             }`}
                     >
-                        All Items
+                        All {selectedItemType}
                     </button>
-                    {categories.map((cat) => (
+                    {filteredCategories.map((cat) => (
                         <button
                             key={cat.id}
                             onClick={() => setSelectedCategory(cat.id)}
@@ -199,17 +240,17 @@ export default function Menu() {
                     selectedCategory === null ? (
                         <div className="space-y-10">
                             {(() => {
-                                // Build category sections with items
+                                // Build category sections with items filtered by item type
                                 const categoryMap = new Map<number, ItemDto[]>();
-                                for (const cat of categories) {
+                                for (const cat of filteredCategories) {
                                     categoryMap.set(cat.id, []);
                                 }
-                                for (const it of items) {
+                                for (const it of filteredItems) {
                                     if (it.categoryId !== null && categoryMap.has(it.categoryId)) {
                                         categoryMap.get(it.categoryId)!.push(it);
                                     }
                                 }
-                                const sections = categories
+                                const sections = filteredCategories
                                     .map((cat) => ({
                                         id: cat.id,
                                         name: cat.name,
@@ -217,8 +258,8 @@ export default function Menu() {
                                     }))
                                     .filter((s) => s.items.length > 0);
 
-                                const uncategorized = items.filter(
-                                    (it) => it.categoryId === null || !categories.some((c) => c.id === it.categoryId)
+                                const uncategorized = filteredItems.filter(
+                                    (it) => it.categoryId === null || !filteredCategories.some((c) => c.id === it.categoryId)
                                 );
 
                                 return (

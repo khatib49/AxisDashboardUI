@@ -33,7 +33,7 @@ export default function CategoryManagement() {
 
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editing, setEditing] = useState<CategoryDto | null>(null);
-    const [form, setForm] = useState<{ name: string; type: string }>({ name: "", type: "item" });
+    const [form, setForm] = useState<{ name: string; type: string; itemType: string }>({ name: "", type: "item", itemType: "" });
     const [submitting, setSubmitting] = useState(false);
 
     const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -73,7 +73,7 @@ export default function CategoryManagement() {
 
     function openCreate() {
         setEditing(null);
-        setForm({ name: "", type: "item" });
+        setForm({ name: "", type: "item", itemType: "" });
         setIsFormOpen(true);
     }
 
@@ -82,7 +82,7 @@ export default function CategoryManagement() {
         try {
             const dto = await getCategoryById(id);
             setEditing(dto);
-            setForm({ name: dto.name, type: dto.type ?? "item" });
+            setForm({ name: dto.name, type: dto.type ?? "item", itemType: dto.itemType ?? "" });
             setIsFormOpen(true);
         } catch (err: unknown) {
             let message = "Failed to load category";
@@ -145,6 +145,7 @@ export default function CategoryManagement() {
                                 <TableRow>
                                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Name</TableCell>
                                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Type</TableCell>
+                                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Item Type</TableCell>
                                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Actions</TableCell>
                                 </TableRow>
                             </TableHeader>
@@ -156,6 +157,7 @@ export default function CategoryManagement() {
                                             <div className="font-medium text-gray-800 dark:text-white/90">{c.name}</div>
                                         </TableCell>
                                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{c.type}</TableCell>
+                                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{c.itemType || "-"}</TableCell>
                                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                                             <div className="flex items-center gap-2">
                                                 <button className="text-sm px-2 py-1 bg-gray-200 rounded" onClick={() => openEdit(c.id)}>Edit</button>
@@ -198,6 +200,12 @@ export default function CategoryManagement() {
                     <Input placeholder="Name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
                     <label className="text-sm text-gray-600">Type</label>
                     <Select options={CategoryTypes} defaultValue={form.type} onChange={(v: string | number) => setForm((f) => ({ ...f, type: String(v) }))} />
+                    <label className="text-sm text-gray-600">Item Type</label>
+                    <Select options={[
+                        { value: "", label: "-- None --" },
+                        { value: "Retail", label: "Retail" },
+                        { value: "Food", label: "Food" }
+                    ]} defaultValue={form.itemType} onChange={(v: string | number) => setForm((f) => ({ ...f, itemType: v === "" ? "" : String(v) }))} />
                 </div>
             </Modal>
 
