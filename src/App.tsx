@@ -39,6 +39,9 @@ import Menu from "./pages/Menu";
 import AdminFnBDashboard from './pages/AdminFnB/Dashboard';
 import AdminFnBItems from './pages/AdminFnB/Items';
 import AdminFnBOrders from './pages/AdminFnB/Orders';
+import Expenses from './pages/Admin/Expenses';
+import ExpenseCategories from './pages/Admin/ExpenseCategories';
+import QRCodeGenerator from './pages/Admin/QRCodeGenerator';
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { authenticated, loading } = useAuth();
@@ -145,6 +148,9 @@ export default function App() {
               <Route path="/admin/game-transactions" element={<AdminRoute><GameTransactions /></AdminRoute>} />
               <Route path="/admin/rooms" element={<AdminRoute><Rooms /></AdminRoute>} />
               <Route path="/admin/categories" element={<AdminRoute><CategoryManagement /></AdminRoute>} />
+              <Route path="/admin/qr-generator" element={<AdminRoute><QRCodeGenerator /></AdminRoute>} />
+              <Route path="/admin/expenses" element={<AdminRoute><Expenses /></AdminRoute>} />
+              <Route path="/admin/expense-categories" element={<AdminRoute><ExpenseCategories /></AdminRoute>} />
 
               {/* Admin F&B routes */}
               <Route path="/admin-fnb/dashboard" element={<AdminFnBRoute><AdminFnBDashboard /></AdminFnBRoute>} />

@@ -49,9 +49,19 @@ export async function getTransactions(query: TransactionQuery = {}) {
 
 export type OrderItemRequest = { itemId: string; quantity: number };
 
+export type ApiResponse<T = unknown> = {
+  success: boolean;
+  error: string | null;
+  message: string;
+  data: T;
+};
+
 export async function createCoffeeShopOrder(itemsRequest: OrderItemRequest[]) {
   // POST the array as JSON body
-  const res = await post("/transactions/CreateCoffeeShopOrder", itemsRequest);
+  const res = await post<ApiResponse>(
+    "/transactions/CreateCoffeeShopOrder",
+    itemsRequest
+  );
   return res;
 }
 

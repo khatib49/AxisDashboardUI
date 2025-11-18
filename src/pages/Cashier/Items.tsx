@@ -323,44 +323,51 @@ export default function CashierItems() {
             {!loading && !error && (
                 <div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {items.map(it => (
-                            <div key={it.id} className={`border rounded p-3 bg-white shadow-sm ${(selectedItems[it.id] || 0) > 0 ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-gray-200'}`}>
-                                <div className="flex items-center gap-3 mb-2">
-                                    <img
-                                        src={it.imagePath ? resolveImageUrl(it.imagePath) : '/images/image-placeholder.svg'}
-                                        alt={it.name}
-                                        className="w-16 h-12 object-cover rounded"
-                                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/images/image-placeholder.svg'; }}
-                                    />
-                                    <div className="font-medium text-gray-800">{it.name}</div>
+                        {items.map(it => {
+                            const isOutOfStock = it.quantity <= 0;
+                            return (
+                                <div key={it.id} className={`border rounded p-3 bg-white shadow-sm ${isOutOfStock ? 'opacity-60 border-gray-200' : (selectedItems[it.id] || 0) > 0 ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-gray-200'}`}>
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <img
+                                            src={it.imagePath ? resolveImageUrl(it.imagePath) : '/images/image-placeholder.svg'}
+                                            alt={it.name}
+                                            className="w-16 h-12 object-cover rounded"
+                                            onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/images/image-placeholder.svg'; }}
+                                        />
+                                        <div className="font-medium text-gray-800">{it.name}</div>
+                                    </div>
+                                    <div className="text-sm text-gray-500">Category: {categories.find(c => c.id === it.categoryId)?.name ?? '-'}</div>
+                                    <div className="text-sm text-gray-500">Price: ${it.price}</div>
+                                    <div className={`text-sm ${isOutOfStock ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
+                                        Stock: {it.quantity} {isOutOfStock && '(Out of Stock)'}
+                                    </div>
+                                    <div className="mt-3 flex items-center gap-2">
+                                        <button
+                                            className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                                            disabled={isOutOfStock}
+                                            onClick={() => setSelectedItems(s => {
+                                                const key = String(it.id);
+                                                const cur = s[key] || 0;
+                                                const next = Math.max(0, cur - 1);
+                                                const copy = { ...s };
+                                                if (next === 0) delete copy[key]; else copy[key] = next;
+                                                return copy;
+                                            })}
+                                        >-</button>
+                                        <div className="px-3 py-1 border rounded">{selectedItems[String(it.id)] || 0}</div>
+                                        <button
+                                            className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                                            disabled={isOutOfStock}
+                                            onClick={() => setSelectedItems(s => {
+                                                const key = String(it.id);
+                                                const cur = s[key] || 0;
+                                                return { ...s, [key]: cur + 1 };
+                                            })}
+                                        >+</button>
+                                    </div>
                                 </div>
-                                <div className="text-sm text-gray-500">Category: {categories.find(c => c.id === it.categoryId)?.name ?? '-'}</div>
-                                <div className="text-sm text-gray-500">Price: ${it.price}</div>
-                                <div className="text-sm text-gray-500">Stock: {it.quantity}</div>
-                                <div className="mt-3 flex items-center gap-2">
-                                    <button
-                                        className="px-2 py-1 bg-gray-200 rounded"
-                                        onClick={() => setSelectedItems(s => {
-                                            const key = String(it.id);
-                                            const cur = s[key] || 0;
-                                            const next = Math.max(0, cur - 1);
-                                            const copy = { ...s };
-                                            if (next === 0) delete copy[key]; else copy[key] = next;
-                                            return copy;
-                                        })}
-                                    >-</button>
-                                    <div className="px-3 py-1 border rounded">{selectedItems[String(it.id)] || 0}</div>
-                                    <button
-                                        className="px-2 py-1 bg-gray-200 rounded"
-                                        onClick={() => setSelectedItems(s => {
-                                            const key = String(it.id);
-                                            const cur = s[key] || 0;
-                                            return { ...s, [key]: cur + 1 };
-                                        })}
-                                    >+</button>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
 
                     <div className="mt-4 flex items-start justify-between">
@@ -431,7 +438,17 @@ export default function CashierItems() {
                                                     if (orderItems.length === 0) return;
                                                     setOrderSubmitting(true);
                                                     try {
-                                                        await createCoffeeShopOrder(orderItems as OrderItemRequest[]);
+                                                        const response = await createCoffeeShopOrder(orderItems as OrderItemRequest[]);
+
+                                                        // Check if the response indicates failure
+                                                        if (response && response.success === false) {
+                                                            setNotification({
+                                                                variant: 'error',
+                                                                title: 'Order failed',
+                                                                message: response.error || response.message || 'Failed to create order'
+                                                            });
+                                                            return;
+                                                        }
 
                                                         // Fetch the latest transaction for this user to show as invoice
                                                         if (auth?.claims?.name) {
@@ -450,7 +467,11 @@ export default function CashierItems() {
                                                         setIsDrawerOpen(false);
                                                         // refresh items list to reflect updated stock
                                                         setItemsReloadToken(t => t + 1);
-                                                        setNotification({ variant: 'success', title: 'Order Created', message: 'Order submitted successfully' });
+                                                        setNotification({
+                                                            variant: 'success',
+                                                            title: 'Order Created',
+                                                            message: response?.message || 'Order submitted successfully'
+                                                        });
 
                                                         // Refresh invoices list if it's visible
                                                         if (showInvoicesSection) {

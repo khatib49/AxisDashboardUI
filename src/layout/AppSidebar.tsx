@@ -6,6 +6,7 @@ import {
   BoxCubeIcon,
   CalenderIcon,
   ChevronDownIcon,
+  DollarLineIcon,
   GridIcon,
   HorizontaLDots,
   ListIcon,
@@ -102,6 +103,7 @@ const AppSidebar: React.FC = () => {
             { name: "Items", path: "/admin/items" },
             { name: "Categories", path: "/admin/categories" },
             { name: "Orders", path: "/admin/orders" },
+            { name: "QR Generator", path: "/admin/qr-generator" },
           ],
         },
         {
@@ -121,6 +123,14 @@ const AppSidebar: React.FC = () => {
           ],
         },
         { icon: <TableIcon />, name: "Rooms", path: "/admin/rooms" },
+        {
+          icon: <DollarLineIcon />,
+          name: "Expenses Management",
+          subItems: [
+            { name: "Expenses", path: "/admin/expenses" },
+            { name: "Categories", path: "/admin/expense-categories" },
+          ],
+        },
       ];
     }
 

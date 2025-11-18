@@ -133,17 +133,23 @@ const GameSession: React.FC = () => {
         return map;
     }, [settings]);
 
-    // Load user's invoices (last 24 hours only)
+    // Load user's invoices (yesterday and today full days)
     useEffect(() => {
         if (!showInvoicesSection || !claims?.name) return;
         let mounted = true;
         setLoadingInvoices(true);
 
-        // Get transactions from last 24 hours
+        // Get transactions from yesterday 00:00:00 to today 23:59:59
         const now = new Date();
-        const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        const fromDate = twentyFourHoursAgo.toISOString();
-        const toDate = now.toISOString();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        const fromDate = yesterday.toISOString(); // Yesterday at 00:00:00
+        const endOfToday = new Date(today);
+        endOfToday.setDate(endOfToday.getDate() + 1);
+        endOfToday.setMilliseconds(-1); // Today at 23:59:59.999
+        const toDate = endOfToday.toISOString();
 
         getGameTransactions({
             CreatedBy: [claims.name],
@@ -355,7 +361,7 @@ const GameSession: React.FC = () => {
 
                                 setStarting(true);
                                 try {
-                                    await createGameSession({
+                                    const response = await createGameSession({
                                         gameId: selectedSetting.gameId,
                                         gameSettingId: selectedSetting.id,
                                         hours: startHours,
@@ -363,6 +369,16 @@ const GameSession: React.FC = () => {
                                         setId: isOpenSetRoom ? undefined : selectedSetId!,
                                         isOpenHour: selectedSetting.isOpenHour,
                                     });
+
+                                    // Check if the response indicates success
+                                    if (response && response.success === false) {
+                                        setToast({
+                                            variant: 'error',
+                                            title: 'Failed',
+                                            message: response.error || response.message || 'Failed to start session'
+                                        });
+                                        return;
+                                    }
 
                                     // Fetch the latest transaction for this user to show as invoice
                                     if (claims?.name) {
@@ -377,7 +393,11 @@ const GameSession: React.FC = () => {
                                         }
                                     }
 
-                                    setToast({ variant: 'success', title: 'Session started', message: `Session created successfully` });
+                                    setToast({
+                                        variant: 'success',
+                                        title: 'Session started',
+                                        message: response?.message || 'Session created successfully'
+                                    });
                                     setStartModalOpen(false);
                                     setSelectedRoomId(null);
                                     setSelectedSetId(null);
@@ -442,7 +462,7 @@ const GameSession: React.FC = () => {
                             </svg>
                             <div className="flex-1">
                                 <p className="text-sm font-medium text-blue-900">Displaying Recent Invoices</p>
-                                <p className="text-sm text-blue-700 mt-1">Showing all invoices from the last 24 hours until now.</p>
+                                <p className="text-sm text-blue-700 mt-1">Showing all invoices from yesterday and today.</p>
                             </div>
                         </div>
 
@@ -452,7 +472,7 @@ const GameSession: React.FC = () => {
                                 <div>
                                     <p className="text-sm font-medium opacity-90">Total Fees</p>
                                     <p className="text-3xl font-bold mt-1">${totalInvoices.toFixed(2)}</p>
-                                    <p className="text-xs opacity-75 mt-1">Last 24 hours</p>
+                                    <p className="text-xs opacity-75 mt-1">Yesterday & Today</p>
                                 </div>
                                 <div className="bg-white/20 rounded-full p-4">
                                     <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
