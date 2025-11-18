@@ -19,7 +19,7 @@ export default function Home() {
       <div className="grid grid-cols-12 gap-4 md:gap-6">
         {/* Total Sales Widget for Admin - All Categories */}
         <div className="col-span-12 xl:col-span-5">
-          <TotalSalesWidget categoryType="all" title="Total Sales (All)" />
+          <TotalSalesWidget categoryType="all" title="Total Sales (All)" isAdmin={true} />
         </div>
 
         <div className="col-span-12 space-y-6 xl:col-span-7">

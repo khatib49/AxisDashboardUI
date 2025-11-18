@@ -7,11 +7,13 @@ import Input from '../form/input/InputField';
 type TotalSalesWidgetProps = {
     categoryType: 'game' | 'item' | 'all';
     title?: string;
+    isAdmin?: boolean;
 };
 
 const TotalSalesWidget: React.FC<TotalSalesWidgetProps> = ({
     categoryType,
-    title = 'Total Sales'
+    title = 'Total Sales',
+    isAdmin = false
 }) => {
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<PeriodTotalsDto | null>(null);
@@ -21,6 +23,10 @@ const TotalSalesWidget: React.FC<TotalSalesWidgetProps> = ({
     const [showFilters, setShowFilters] = useState(false);
     const [appliedFromDate, setAppliedFromDate] = useState<string>('');
     const [appliedToDate, setAppliedToDate] = useState<string>('');
+    const [selectedItemType, setSelectedItemType] = useState<'all' | 'Food' | 'Retail'>('all');
+    const [appliedItemType, setAppliedItemType] = useState<'all' | 'Food' | 'Retail'>('all');
+    const [selectedCategoryType, setSelectedCategoryType] = useState<'all' | 'game' | 'item'>('all');
+    const [appliedCategoryType, setAppliedCategoryType] = useState<'all' | 'game' | 'item'>('all');
 
     const fetchData = async () => {
         try {
@@ -36,14 +42,45 @@ const TotalSalesWidget: React.FC<TotalSalesWidgetProps> = ({
                     getCategoriesByType('game', 1, 100),
                     getCategoriesByType('item', 1, 100),
                 ]);
+
+                let filteredGameCategories = gameCategories.data;
+                let filteredItemCategories = itemCategories.data;
+
+                // Apply category type filter if admin and filter is set
+                if (isAdmin && appliedCategoryType !== 'all') {
+                    if (appliedCategoryType === 'game') {
+                        filteredItemCategories = [];
+                    } else if (appliedCategoryType === 'item') {
+                        filteredGameCategories = [];
+                    }
+                }
+
+                // Apply item type filter if admin and filter is set
+                if (isAdmin && appliedItemType !== 'all') {
+                    filteredItemCategories = filteredItemCategories.filter(c => c.itemType === appliedItemType);
+                }
+
                 const allCategoryIds = [
-                    ...gameCategories.data.map(c => c.id),
-                    ...itemCategories.data.map(c => c.id),
+                    ...filteredGameCategories.map(c => c.id),
+                    ...filteredItemCategories.map(c => c.id),
                 ];
                 categoryIds = allCategoryIds.join(',');
             } else if (categoryType === 'item') {
-                // For F&B admin, use specific category IDs: 1,9,11,12
-                categoryIds = '1,9,11,12';
+                const itemCategories = await getCategoriesByType('item', 1, 100);
+                let filteredCategories = itemCategories.data;
+
+                if (isAdmin) {
+                    // Admin: Apply item type filter if specified
+                    if (appliedItemType !== 'all') {
+                        filteredCategories = filteredCategories.filter(c => c.itemType === appliedItemType);
+                    }
+                    // If 'all', include all item categories (both Food and Retail)
+                } else {
+                    // F&B Admin: Always filter to Food only
+                    filteredCategories = filteredCategories.filter(c => c.itemType === 'Food');
+                }
+
+                categoryIds = filteredCategories.map(c => c.id).join(',');
             } else {
                 // Fetch specific type categories
                 const categories = await getCategoriesByType(categoryType, 1, 100);
@@ -72,6 +109,8 @@ const TotalSalesWidget: React.FC<TotalSalesWidgetProps> = ({
     const handleApplyFilters = () => {
         setAppliedFromDate(fromDate);
         setAppliedToDate(toDate);
+        setAppliedItemType(selectedItemType);
+        setAppliedCategoryType(selectedCategoryType);
     };
 
     const handleClearFilters = () => {
@@ -79,12 +118,16 @@ const TotalSalesWidget: React.FC<TotalSalesWidgetProps> = ({
         setToDate('');
         setAppliedFromDate('');
         setAppliedToDate('');
+        setSelectedItemType('all');
+        setAppliedItemType('all');
+        setSelectedCategoryType('all');
+        setAppliedCategoryType('all');
     };
 
     useEffect(() => {
         fetchData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [categoryType, appliedFromDate, appliedToDate]);
+    }, [categoryType, appliedFromDate, appliedToDate, appliedItemType, appliedCategoryType]);
 
     return (
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white relative">
@@ -118,6 +161,77 @@ const TotalSalesWidget: React.FC<TotalSalesWidgetProps> = ({
             {/* Date Filters */}
             {showFilters && (
                 <div className="mb-4 p-4 bg-white/10 rounded-lg">
+                    {/* Category Type Filter - Only show for admin */}
+                    {isAdmin && (
+                        <div className="mb-3">
+                            <label className="block text-xs font-medium mb-2 opacity-90">Category Type</label>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setSelectedCategoryType('all')}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition ${selectedCategoryType === 'all'
+                                            ? 'bg-white text-blue-600'
+                                            : 'bg-white/20 hover:bg-white/30'
+                                        }`}
+                                >
+                                    All
+                                </button>
+                                <button
+                                    onClick={() => setSelectedCategoryType('game')}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition ${selectedCategoryType === 'game'
+                                            ? 'bg-white text-blue-600'
+                                            : 'bg-white/20 hover:bg-white/30'
+                                        }`}
+                                >
+                                    🎮 Games
+                                </button>
+                                <button
+                                    onClick={() => setSelectedCategoryType('item')}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition ${selectedCategoryType === 'item'
+                                            ? 'bg-white text-blue-600'
+                                            : 'bg-white/20 hover:bg-white/30'
+                                        }`}
+                                >
+                                    📦 Items
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Item Type Filter - Only show for admin when items are included */}
+                    {isAdmin && selectedCategoryType !== 'game' && (
+                        <div className="mb-3">
+                            <label className="block text-xs font-medium mb-2 opacity-90">Item Type</label>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setSelectedItemType('all')}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition ${selectedItemType === 'all'
+                                            ? 'bg-white text-blue-600'
+                                            : 'bg-white/20 hover:bg-white/30'
+                                        }`}
+                                >
+                                    All
+                                </button>
+                                <button
+                                    onClick={() => setSelectedItemType('Food')}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition ${selectedItemType === 'Food'
+                                            ? 'bg-white text-blue-600'
+                                            : 'bg-white/20 hover:bg-white/30'
+                                        }`}
+                                >
+                                    🍔 Food
+                                </button>
+                                <button
+                                    onClick={() => setSelectedItemType('Retail')}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition ${selectedItemType === 'Retail'
+                                            ? 'bg-white text-blue-600'
+                                            : 'bg-white/20 hover:bg-white/30'
+                                        }`}
+                                >
+                                    🛒 Retail
+                                </button>
+                            </div>
+                        </div>
+                    )}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                         <div>
                             <label className="block text-xs font-medium mb-1 opacity-90">From Date & Time</label>
@@ -147,7 +261,7 @@ const TotalSalesWidget: React.FC<TotalSalesWidgetProps> = ({
                             {loading && <Loader size={14} />}
                             Apply Filters
                         </button>
-                        {(fromDate || toDate) && (
+                        {(fromDate || toDate || selectedItemType !== 'all' || selectedCategoryType !== 'all') && (
                             <button
                                 onClick={handleClearFilters}
                                 disabled={loading}

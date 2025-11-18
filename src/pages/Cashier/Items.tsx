@@ -11,7 +11,6 @@ import { createCoffeeShopOrder, OrderItemRequest, getItemTransactions, ItemTrans
 import { useAuth } from '../../context/AuthContext';
 import Modal from "../../components/ui/Modal";
 import Input from "../../components/form/input/InputField";
-import Label from "../../components/form/Label";
 import Loader from "../../components/ui/Loader";
 import Alert from "../../components/ui/alert/Alert";
 import { getCategoriesByType, CategoryDto } from "../../services/categoryService";
@@ -62,9 +61,7 @@ export default function CashierItems() {
     const [loadingInvoices, setLoadingInvoices] = useState(false);
     const [showInvoicesSection, setShowInvoicesSection] = useState(false);
     const [totalInvoices, setTotalInvoices] = useState<number>(0);
-    const [dateFilter, setDateFilter] = useState<'all' | 'today' | '3days' | 'week' | 'month' | 'custom'>('all');
-    const [customFromDate, setCustomFromDate] = useState<string>('');
-    const [customToDate, setCustomToDate] = useState<string>('');
+    const [dateFilter, setDateFilter] = useState<'today' | 'yesterday'>('today');
 
     const auth = useAuth();
 
@@ -143,48 +140,19 @@ export default function CashierItems() {
         const now = new Date();
 
         switch (dateFilter) {
-            case 'custom': {
-                if (customFromDate) {
-                    // datetime-local format is "YYYY-MM-DDTHH:mm", convert directly to ISO
-                    fromDate = new Date(customFromDate).toISOString();
-                }
-                if (customToDate) {
-                    // datetime-local format is "YYYY-MM-DDTHH:mm", convert directly to ISO
-                    toDate = new Date(customToDate).toISOString();
-                } else if (customFromDate) {
-                    // If only from date is set, use current time as to date
-                    toDate = new Date().toISOString();
-                }
-                break;
-            }
             case 'today': {
                 const today = new Date();
                 fromDate = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 0, 0, 0, 0)).toISOString();
                 toDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999)).toISOString();
                 break;
             }
-            case '3days': {
-                const threeDaysAgo = new Date(now);
-                threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-                fromDate = new Date(Date.UTC(threeDaysAgo.getUTCFullYear(), threeDaysAgo.getUTCMonth(), threeDaysAgo.getUTCDate(), 0, 0, 0, 0)).toISOString();
-                toDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999)).toISOString();
+            case 'yesterday': {
+                const yesterday = new Date(now);
+                yesterday.setDate(yesterday.getDate() - 1);
+                fromDate = new Date(Date.UTC(yesterday.getUTCFullYear(), yesterday.getUTCMonth(), yesterday.getUTCDate(), 0, 0, 0, 0)).toISOString();
+                toDate = new Date(Date.UTC(yesterday.getUTCFullYear(), yesterday.getUTCMonth(), yesterday.getUTCDate(), 23, 59, 59, 999)).toISOString();
                 break;
             }
-            case 'week': {
-                const weekAgo = new Date(now);
-                weekAgo.setDate(weekAgo.getDate() - 7);
-                fromDate = new Date(Date.UTC(weekAgo.getUTCFullYear(), weekAgo.getUTCMonth(), weekAgo.getUTCDate(), 0, 0, 0, 0)).toISOString();
-                toDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999)).toISOString();
-                break;
-            }
-            case 'month': {
-                const monthAgo = new Date(now);
-                monthAgo.setMonth(monthAgo.getMonth() - 1);
-                fromDate = new Date(Date.UTC(monthAgo.getUTCFullYear(), monthAgo.getUTCMonth(), monthAgo.getUTCDate(), 0, 0, 0, 0)).toISOString();
-                toDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999)).toISOString();
-                break;
-            }
-            case 'all':
             default:
                 fromDate = undefined;
                 toDate = undefined;
@@ -205,7 +173,7 @@ export default function CashierItems() {
             .catch(() => { /* ignore */ })
             .finally(() => { if (mounted) setLoadingInvoices(false); });
         return () => { mounted = false; };
-    }, [showInvoicesSection, auth?.claims?.name, dateFilter, customFromDate, customToDate]);
+    }, [showInvoicesSection, auth?.claims?.name, dateFilter]);
 
     // total selected items count (used to show View Order button)
     const totalSelected = Object.values(selectedItems).reduce((s, v) => s + (v || 0), 0);
@@ -518,12 +486,8 @@ export default function CashierItems() {
                                     <div className="flex items-center gap-2 flex-wrap mb-4">
                                         <span className="text-sm font-medium text-gray-700 mr-2">Filter by:</span>
                                         {[
-                                            { value: 'all', label: 'All Time' },
                                             { value: 'today', label: 'Today' },
-                                            { value: '3days', label: 'Last 3 Days' },
-                                            { value: 'week', label: 'Last Week' },
-                                            { value: 'month', label: 'Last Month' },
-                                            { value: 'custom', label: 'Custom Range' },
+                                            { value: 'yesterday', label: 'Yesterday' },
                                         ].map((filter) => (
                                             <button
                                                 key={filter.value}
@@ -538,36 +502,6 @@ export default function CashierItems() {
                                         ))}
                                     </div>
 
-                                    {/* Custom Date Range Inputs */}
-                                    {dateFilter === 'custom' && (
-                                        <div className="border-t pt-4 mt-4">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div>
-                                                    <Label>From Date & Time</Label>
-                                                    <Input
-                                                        type="datetime-local"
-                                                        value={customFromDate}
-                                                        onChange={(e) => setCustomFromDate(e.target.value)}
-                                                        className="w-full"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <Label>To Date & Time</Label>
-                                                    <Input
-                                                        type="datetime-local"
-                                                        value={customToDate}
-                                                        onChange={(e) => setCustomToDate(e.target.value)}
-                                                        className="w-full"
-                                                    />
-                                                </div>
-                                            </div>
-                                            {customFromDate && customToDate && new Date(customFromDate) > new Date(customToDate) && (
-                                                <div className="mt-2 text-sm text-red-600">
-                                                    From date & time must be before or equal to To date & time
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
                                 </div>
 
                                 {/* Total Fees Widget */}
@@ -577,16 +511,7 @@ export default function CashierItems() {
                                             <p className="text-sm font-medium opacity-90">Total Fees</p>
                                             <p className="text-3xl font-bold mt-1">${totalInvoices.toFixed(2)}</p>
                                             <p className="text-xs opacity-75 mt-1">
-                                                {dateFilter === 'all' ? 'All time' :
-                                                    dateFilter === 'today' ? 'Today' :
-                                                        dateFilter === '3days' ? 'Last 3 days' :
-                                                            dateFilter === 'week' ? 'Last week' :
-                                                                dateFilter === 'month' ? 'Last month' :
-                                                                    dateFilter === 'custom' && customFromDate && customToDate
-                                                                        ? `${new Date(customFromDate).toLocaleString()} - ${new Date(customToDate).toLocaleString()}`
-                                                                        : dateFilter === 'custom' && customFromDate
-                                                                            ? `From ${new Date(customFromDate).toLocaleString()}`
-                                                                            : 'Custom range'}
+                                                {dateFilter === 'today' ? 'Today' : 'Yesterday'}
                                             </p>
                                         </div>
                                         <div className="bg-white/20 rounded-full p-4">
