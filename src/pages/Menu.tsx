@@ -120,12 +120,14 @@ export default function Menu() {
                 {/* Item Info */}
                 <div className="p-3">
                     <div className="mb-2">
+                         <h3 className="text-base font-bold text-white mb-1 leading-tight line-clamp-2">
+                            {item.name}
+                        </h3>
+                        
                         <span className="inline-block px-2 py-0.5 bg-purple-500/30 text-purple-200 text-xs font-semibold rounded-full mb-2 capitalize">
                             {item.type}
                         </span>
-                        <h3 className="text-base font-bold text-white mb-1 leading-tight line-clamp-2">
-                            {item.name}
-                        </h3>
+                       
                     </div>
 
                     {/* Price */}
