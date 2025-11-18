@@ -103,6 +103,7 @@ const AppSidebar: React.FC = () => {
             { name: "Items", path: "/admin/items" },
             { name: "Categories", path: "/admin/categories" },
             { name: "Orders", path: "/admin/orders" },
+            { name: "QR Generator", path: "/admin/qr-generator" },
           ],
         },
         {
