@@ -325,276 +325,276 @@ const GameSession: React.FC = () => {
                         </div>
                     )}
                     <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-4">
-                    <div>
-                        <Label>Room</Label>
-                        <Select
-                            key={startModalOpen ? 'room-select-open' : 'room-select-closed'}
-                            options={[...rooms.map(r => ({ value: r.id, label: r.name }))]}
-                            defaultValue={selectedRoomId ?? ''}
-                            isPlaceHolderDisabled={false}
-                            placeholder='Select a room'
-                            onChange={(v) => {
-                                const roomId = v === '' ? null : String(v);
-                                console.log('Selected room ID:', roomId);
-                                console.log('Available rooms:', rooms.map(r => ({ id: r.id, name: r.name, isOpenSet: r.isOpenSet })));
-                                setSelectedRoomId(roomId);
-                            }}
-                        />
-                    </div>
-
-                    {selectedRoomId && (() => {
-                        const selectedRoom = rooms.find(r => String(r.id) === String(selectedRoomId));
-                        console.log('Selected room ID:', selectedRoomId);
-                        console.log('Found room:', selectedRoom);
-                        if (selectedRoom?.isOpenSet) {
-                            return (
-                                <div className="text-sm text-green-600 bg-green-50 p-3 rounded">
-                                    This is an open set room — no set selection required.
-                                </div>
-                            );
-                        }
-                        return null;
-                    })()}
-
-                    {selectedRoomId && !rooms.find(r => String(r.id) === String(selectedRoomId))?.isOpenSet && loadingAvailability && <div className="text-sm text-gray-500">Loading sets...</div>}
-
-                    {selectedRoomId && !rooms.find(r => String(r.id) === String(selectedRoomId))?.isOpenSet && !loadingAvailability && setAvailability && (
                         <div>
-                            <Label>Select Set</Label>
-                            <div className="flex gap-3 text-xs mb-2">
-                                <div className="flex items-center gap-1">
-                                    <div className="w-3 h-3 bg-green-100 border-2 border-green-500 rounded"></div>
-                                    <span>Available ({setAvailability.availableCount})</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                    <div className="w-3 h-3 bg-red-100 border-2 border-red-500 rounded"></div>
-                                    <span>Occupied ({setAvailability.unavailableCount})</span>
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-6 gap-2">
-                                {setAvailability.available.map((set) => (
-                                    <button
-                                        key={set.id}
-                                        onClick={() => setSelectedSetId(set.id)}
-                                        className={`px-2 py-2 rounded-lg border-2 text-center text-sm font-medium transition ${selectedSetId === set.id
-                                            ? 'border-blue-600 bg-blue-100 text-blue-700'
-                                            : 'border-green-500 bg-green-50 text-green-700 hover:bg-green-100'
-                                            }`}
-                                    >
-                                        {set.name}
-                                    </button>
-                                ))}
-                                {setAvailability.unavailable.map((set) => (
-                                    <div
-                                        key={set.id}
-                                        className="px-2 py-2 rounded-lg border-2 border-red-500 bg-red-50 text-center text-sm font-medium text-red-700 cursor-not-allowed opacity-60"
-                                    >
-                                        {set.name}
+                            <Label>Room</Label>
+                            <Select
+                                key={startModalOpen ? 'room-select-open' : 'room-select-closed'}
+                                options={[...rooms.map(r => ({ value: r.id, label: r.name }))]}
+                                defaultValue={selectedRoomId ?? ''}
+                                isPlaceHolderDisabled={false}
+                                placeholder='Select a room'
+                                onChange={(v) => {
+                                    const roomId = v === '' ? null : String(v);
+                                    console.log('Selected room ID:', roomId);
+                                    console.log('Available rooms:', rooms.map(r => ({ id: r.id, name: r.name, isOpenSet: r.isOpenSet })));
+                                    setSelectedRoomId(roomId);
+                                }}
+                            />
+                        </div>
+
+                        {selectedRoomId && (() => {
+                            const selectedRoom = rooms.find(r => String(r.id) === String(selectedRoomId));
+                            console.log('Selected room ID:', selectedRoomId);
+                            console.log('Found room:', selectedRoom);
+                            if (selectedRoom?.isOpenSet) {
+                                return (
+                                    <div className="text-sm text-green-600 bg-green-50 p-3 rounded">
+                                        This is an open set room — no set selection required.
                                     </div>
-                                ))}
+                                );
+                            }
+                            return null;
+                        })()}
+
+                        {selectedRoomId && !rooms.find(r => String(r.id) === String(selectedRoomId))?.isOpenSet && loadingAvailability && <div className="text-sm text-gray-500">Loading sets...</div>}
+
+                        {selectedRoomId && !rooms.find(r => String(r.id) === String(selectedRoomId))?.isOpenSet && !loadingAvailability && setAvailability && (
+                            <div>
+                                <Label>Select Set</Label>
+                                <div className="flex gap-3 text-xs mb-2">
+                                    <div className="flex items-center gap-1">
+                                        <div className="w-3 h-3 bg-green-100 border-2 border-green-500 rounded"></div>
+                                        <span>Available ({setAvailability.availableCount})</span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <div className="w-3 h-3 bg-red-100 border-2 border-red-500 rounded"></div>
+                                        <span>Occupied ({setAvailability.unavailableCount})</span>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-6 gap-2">
+                                    {setAvailability.available.map((set) => (
+                                        <button
+                                            key={set.id}
+                                            onClick={() => setSelectedSetId(set.id)}
+                                            className={`px-2 py-2 rounded-lg border-2 text-center text-sm font-medium transition ${selectedSetId === set.id
+                                                ? 'border-blue-600 bg-blue-100 text-blue-700'
+                                                : 'border-green-500 bg-green-50 text-green-700 hover:bg-green-100'
+                                                }`}
+                                        >
+                                            {set.name}
+                                        </button>
+                                    ))}
+                                    {setAvailability.unavailable.map((set) => (
+                                        <div
+                                            key={set.id}
+                                            className="px-2 py-2 rounded-lg border-2 border-red-500 bg-red-50 text-center text-sm font-medium text-red-700 cursor-not-allowed opacity-60"
+                                        >
+                                            {set.name}
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
+                        )}
+
+                        <div>
+                            <Label>Hours</Label>
+                            <Input type="number" value={startHours.toString()} onChange={(e) => setStartHours(Number(e.target.value))} min={'1'} disabled={!!selectedSetting?.isOffer || selectedSetting?.hours === 0} />
+                            {selectedSetting?.isOffer && (
+                                <div className="text-xs text-gray-500 mt-1">This setting is an offer — duration is fixed.</div>
+                            )}
+                            {selectedSetting?.hours === 0 && (
+                                <div className="text-xs text-gray-500 mt-1">This is an open hour setting — duration is not applicable.</div>
+                            )}
                         </div>
-                    )}
 
-                    <div>
-                        <Label>Hours</Label>
-                        <Input type="number" value={startHours.toString()} onChange={(e) => setStartHours(Number(e.target.value))} min={'1'} disabled={!!selectedSetting?.isOffer || selectedSetting?.hours === 0} />
-                        {selectedSetting?.isOffer && (
-                            <div className="text-xs text-gray-500 mt-1">This setting is an offer — duration is fixed.</div>
-                        )}
-                        {selectedSetting?.hours === 0 && (
-                            <div className="text-xs text-gray-500 mt-1">This is an open hour setting — duration is not applicable.</div>
-                        )}
-                    </div>
-
-                    {/* Discount Selection */}
-                    <div>
-                        <Label>Apply Discount</Label>
-                        {loadingDiscounts ? (
-                            <div className="text-xs text-gray-500">Loading discounts...</div>
-                        ) : (
-                            <Select
-                                options={[
-                                    { value: '', label: 'No Discount' },
-                                    ...discounts.map(d => ({
-                                        value: d.id,
-                                        label: `${d.name} (${d.percentage}% off)`
-                                    }))
-                                ]}
-                                defaultValue={selectedDiscountId ?? ''}
-                                onChange={(v: string | number) => setSelectedDiscountId(v === '' ? null : Number(v))}
-                            />
-                        )}
-                    </div>
-
-                    {/* Client Selection */}
-                    <div>
-                        <Label>Client (Optional)</Label>
-                        <div className="flex gap-2">
-                            <Input
-                                placeholder="Search by phone..."
-                                value={clientPhone}
-                                onChange={(e) => setClientPhone(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        handleClientSearch();
-                                    }
-                                }}
-                                className="flex-1"
-                            />
-                            <button
-                                className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition text-sm"
-                                onClick={handleClientSearch}
-                                disabled={searchingClient}
-                            >
-                                {searchingClient ? <Loader size={14} /> : 'Search'}
-                            </button>
+                        {/* Discount Selection */}
+                        <div>
+                            <Label>Apply Discount</Label>
+                            {loadingDiscounts ? (
+                                <div className="text-xs text-gray-500">Loading discounts...</div>
+                            ) : (
+                                <Select
+                                    options={[
+                                        { value: '', label: 'No Discount' },
+                                        ...discounts.map(d => ({
+                                            value: d.id,
+                                            label: `${d.name} (${d.percentage}% off)`
+                                        }))
+                                    ]}
+                                    defaultValue={selectedDiscountId ?? ''}
+                                    onChange={(v: string | number) => setSelectedDiscountId(v === '' ? null : Number(v))}
+                                />
+                            )}
                         </div>
-                        {clientResults.length > 0 && (
-                            <Select
-                                options={[
-                                    { value: '', label: 'Select client...' },
-                                    ...clientResults.map(c => ({
-                                        value: c.id,
-                                        label: `${c.firstName} ${c.lastName} (${c.phoneNumber})`
-                                    }))
-                                ]}
-                                defaultValue={selectedClient?.id ?? ''}
-                                onChange={(v: string | number) => {
-                                    const client = clientResults.find(c => c.id === Number(v));
-                                    setSelectedClient(client || null);
-                                }}
-                                className="mt-2"
-                            />
-                        )}
-                        {selectedClient && (
-                            <div className="mt-2 text-xs bg-blue-50 text-blue-700 p-2 rounded flex items-center justify-between">
-                                <span>Selected: {selectedClient.firstName} {selectedClient.lastName}</span>
+
+                        {/* Client Selection */}
+                        <div>
+                            <Label>Client (Optional)</Label>
+                            <div className="flex gap-2">
+                                <Input
+                                    placeholder="Search by phone..."
+                                    value={clientPhone}
+                                    onChange={(e) => setClientPhone(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            handleClientSearch();
+                                        }
+                                    }}
+                                    className="flex-1"
+                                />
                                 <button
-                                    onClick={() => {
+                                    className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition text-sm"
+                                    onClick={handleClientSearch}
+                                    disabled={searchingClient}
+                                >
+                                    {searchingClient ? <Loader size={14} /> : 'Search'}
+                                </button>
+                            </div>
+                            {clientResults.length > 0 && (
+                                <Select
+                                    options={[
+                                        { value: '', label: 'Select client...' },
+                                        ...clientResults.map(c => ({
+                                            value: c.id,
+                                            label: `${c.firstName} ${c.lastName} (${c.phoneNumber})`
+                                        }))
+                                    ]}
+                                    defaultValue={selectedClient?.id ?? ''}
+                                    onChange={(v: string | number) => {
+                                        const client = clientResults.find(c => c.id === Number(v));
+                                        setSelectedClient(client || null);
+                                    }}
+                                    className="mt-2"
+                                />
+                            )}
+                            {selectedClient && (
+                                <div className="mt-2 text-xs bg-blue-50 text-blue-700 p-2 rounded flex items-center justify-between">
+                                    <span>Selected: {selectedClient.firstName} {selectedClient.lastName}</span>
+                                    <button
+                                        onClick={() => {
+                                            setSelectedClient(null);
+                                            setClientResults([]);
+                                            setClientPhone('');
+                                        }}
+                                        className="text-blue-600 hover:text-blue-800"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        <div>
+                            <Label>Total</Label>
+                            {(() => {
+                                const subtotal = selectedSetting?.hours === 0 ? (selectedSetting?.price ?? 0) : ((selectedSetting?.price ?? 0) * startHours);
+                                const selectedDiscount = discounts.find(d => d.id === selectedDiscountId);
+                                const discountAmount = selectedDiscount ? (subtotal * selectedDiscount.percentage) / 100 : 0;
+                                const total = subtotal - discountAmount;
+                                return (
+                                    <div>
+                                        {selectedDiscount ? (
+                                            <div className="space-y-1">
+                                                <div className="text-sm text-gray-600">Subtotal: ${subtotal.toFixed(2)}</div>
+                                                <div className="text-sm text-green-600">Discount ({selectedDiscount.name} - {selectedDiscount.percentage}%): -${discountAmount.toFixed(2)}</div>
+                                                <div className="text-lg font-semibold">${total.toFixed(2)}</div>
+                                            </div>
+                                        ) : (
+                                            <div className="text-lg font-semibold">${subtotal.toFixed(2)}</div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                className="px-3 py-1 bg-green-600 text-white rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={(() => {
+                                    if (!selectedRoomId) return true;
+                                    const selectedRoom = rooms.find(r => String(r.id) === String(selectedRoomId));
+                                    console.log('Submit button - Selected room:', selectedRoom);
+                                    if (selectedRoom?.isOpenSet) return false; // Enable immediately for open set rooms
+                                    return !selectedSetId; // Require set selection for non-open-set rooms
+                                })()}
+                                onClick={async () => {
+                                    if (!selectedSetting || !selectedRoomId) return;
+                                    const selectedRoom = rooms.find(r => String(r.id) === String(selectedRoomId));
+                                    const isOpenSetRoom = selectedRoom?.isOpenSet;
+                                    if (!isOpenSetRoom && !selectedSetId) return;
+
+                                    setStarting(true);
+                                    try {
+                                        const response = await createGameSession({
+                                            gameId: selectedSetting.gameId,
+                                            gameSettingId: selectedSetting.id,
+                                            hours: startHours,
+                                            status: String(STATUS_ENABLED),
+                                            setId: isOpenSetRoom ? undefined : selectedSetId!,
+                                            isOpenHour: selectedSetting.isOpenHour,
+                                            discountId: selectedDiscountId,
+                                            userId: selectedClient?.id,
+                                        });
+
+                                        // Check if the response indicates success
+                                        if (response && response.success === false) {
+                                            setStarting(false);
+                                            setToast({
+                                                variant: 'error',
+                                                title: 'Failed',
+                                                message: response.message || response.error || 'Failed to start session'
+                                            });
+                                            setTimeout(() => setToast(null), 5000);
+                                            return;
+                                        }
+
+                                        // Fetch the latest transaction for this user to show as invoice
+                                        if (claims?.name) {
+                                            const invoiceRes = await getGameTransactions({
+                                                CreatedBy: [claims.name],
+                                                PageSize: 1,
+                                                Page: 1
+                                            });
+                                            if (invoiceRes.data && invoiceRes.data.length > 0) {
+                                                setCurrentInvoice(invoiceRes.data[0]);
+                                                setInvoiceModalOpen(true);
+                                            }
+                                        }
+
+                                        setToast({
+                                            variant: 'success',
+                                            title: 'Session started',
+                                            message: response?.message || 'Session created successfully'
+                                        });
+                                        setStartModalOpen(false);
+                                        setSelectedRoomId(null);
+                                        setSelectedSetId(null);
+                                        setSelectedDiscountId(null);
                                         setSelectedClient(null);
                                         setClientResults([]);
                                         setClientPhone('');
-                                    }}
-                                    className="text-blue-600 hover:text-blue-800"
-                                >
-                                    ✕
-                                </button>
-                            </div>
-                        )}
-                    </div>
 
-                    <div>
-                        <Label>Total</Label>
-                        {(() => {
-                            const subtotal = selectedSetting?.hours === 0 ? (selectedSetting?.price ?? 0) : ((selectedSetting?.price ?? 0) * startHours);
-                            const selectedDiscount = discounts.find(d => d.id === selectedDiscountId);
-                            const discountAmount = selectedDiscount ? (subtotal * selectedDiscount.percentage) / 100 : 0;
-                            const total = subtotal - discountAmount;
-                            return (
-                                <div>
-                                    {selectedDiscount ? (
-                                        <div className="space-y-1">
-                                            <div className="text-sm text-gray-600">Subtotal: ${subtotal.toFixed(2)}</div>
-                                            <div className="text-sm text-green-600">Discount ({selectedDiscount.name} - {selectedDiscount.percentage}%): -${discountAmount.toFixed(2)}</div>
-                                            <div className="text-lg font-semibold">${total.toFixed(2)}</div>
-                                        </div>
-                                    ) : (
-                                        <div className="text-lg font-semibold">${subtotal.toFixed(2)}</div>
-                                    )}
-                                </div>
-                            );
-                        })()}
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            className="px-3 py-1 bg-green-600 text-white rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                            disabled={(() => {
-                                if (!selectedRoomId) return true;
-                                const selectedRoom = rooms.find(r => String(r.id) === String(selectedRoomId));
-                                console.log('Submit button - Selected room:', selectedRoom);
-                                if (selectedRoom?.isOpenSet) return false; // Enable immediately for open set rooms
-                                return !selectedSetId; // Require set selection for non-open-set rooms
-                            })()}
-                            onClick={async () => {
-                                if (!selectedSetting || !selectedRoomId) return;
-                                const selectedRoom = rooms.find(r => String(r.id) === String(selectedRoomId));
-                                const isOpenSetRoom = selectedRoom?.isOpenSet;
-                                if (!isOpenSetRoom && !selectedSetId) return;
-
-                                setStarting(true);
-                                try {
-                                    const response = await createGameSession({
-                                        gameId: selectedSetting.gameId,
-                                        gameSettingId: selectedSetting.id,
-                                        hours: startHours,
-                                        status: String(STATUS_ENABLED),
-                                        setId: isOpenSetRoom ? undefined : selectedSetId!,
-                                        isOpenHour: selectedSetting.isOpenHour,
-                                        discountId: selectedDiscountId,
-                                        userId: selectedClient?.id,
-                                    });
-
-                                    // Check if the response indicates success
-                                    if (response && response.success === false) {
-                                        setStarting(false);
-                                        setToast({
-                                            variant: 'error',
-                                            title: 'Failed',
-                                            message: response.message || response.error || 'Failed to start session'
-                                        });
-                                        setTimeout(() => setToast(null), 5000);
-                                        return;
-                                    }
-
-                                    // Fetch the latest transaction for this user to show as invoice
-                                    if (claims?.name) {
-                                        const invoiceRes = await getGameTransactions({
-                                            CreatedBy: [claims.name],
-                                            PageSize: 1,
-                                            Page: 1
-                                        });
-                                        if (invoiceRes.data && invoiceRes.data.length > 0) {
-                                            setCurrentInvoice(invoiceRes.data[0]);
-                                            setInvoiceModalOpen(true);
+                                        // Refresh invoices list if it's visible
+                                        if (showInvoicesSection) {
+                                            setShowInvoicesSection(false);
+                                            setTimeout(() => setShowInvoicesSection(true), 100);
                                         }
+                                    } catch (e: unknown) {
+                                        let message = 'Failed to start session';
+                                        if (e && typeof e === 'object') {
+                                            const maybe = e as { message?: unknown };
+                                            if (typeof maybe.message === 'string') message = maybe.message;
+                                        }
+                                        setToast({ variant: 'error', title: 'Failed', message });
+                                    } finally {
+                                        setStarting(false);
+                                        setTimeout(() => setToast(null), 3000);
                                     }
-
-                                    setToast({
-                                        variant: 'success',
-                                        title: 'Session started',
-                                        message: response?.message || 'Session created successfully'
-                                    });
-                                    setStartModalOpen(false);
-                                    setSelectedRoomId(null);
-                                    setSelectedSetId(null);
-                                    setSelectedDiscountId(null);
-                                    setSelectedClient(null);
-                                    setClientResults([]);
-                                    setClientPhone('');
-
-                                    // Refresh invoices list if it's visible
-                                    if (showInvoicesSection) {
-                                        setShowInvoicesSection(false);
-                                        setTimeout(() => setShowInvoicesSection(true), 100);
-                                    }
-                                } catch (e: unknown) {
-                                    let message = 'Failed to start session';
-                                    if (e && typeof e === 'object') {
-                                        const maybe = e as { message?: unknown };
-                                        if (typeof maybe.message === 'string') message = maybe.message;
-                                    }
-                                    setToast({ variant: 'error', title: 'Failed', message });
-                                } finally {
-                                    setStarting(false);
-                                    setTimeout(() => setToast(null), 3000);
-                                }
-                            }}
-                        >
-                            {starting ? <Loader size={14} /> : 'Submit'}
-                        </button>
-                        <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => { setStartModalOpen(false); setSelectedRoomId(null); setSelectedSetId(null); }}>Cancel</button>
-                    </div>
+                                }}
+                            >
+                                {starting ? <Loader size={14} /> : 'Submit'}
+                            </button>
+                            <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => { setStartModalOpen(false); setSelectedRoomId(null); setSelectedSetId(null); }}>Cancel</button>
+                        </div>
                     </div>
                 </div>
             </Modal>
