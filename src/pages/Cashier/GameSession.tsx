@@ -318,7 +318,7 @@ const GameSession: React.FC = () => {
             )}
             {/* Start session modal */}
             <Modal isOpen={startModalOpen} onClose={() => { setStartModalOpen(false); setSelectedRoomId(null); setSelectedSetId(null); }} title={selectedSetting ? `Start: ${selectedSetting.name}` : 'Start session'}>
-                <div className="space-y-4">
+                <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
                     {toast && <Alert variant={toast.variant} title={toast.title} message={toast.message} />}
 
                     <div>

@@ -193,21 +193,31 @@ const GameInvoice: React.FC<GameInvoiceProps> = ({ transaction, onPrint }) => {
 
             {/* Total */}
             <div className="space-y-1 border-b-2 border-gray-800 pb-2 mb-4">
-                {transaction.discount && (() => {
+                {(() => {
                     const itemsSubtotal = transaction.items.reduce((sum, item) => sum + item.lineTotal, 0);
-                    const discountAmount = (itemsSubtotal * transaction.discount.percentage) / 100;
-                    return (
-                        <>
-                            <div className="flex justify-between text-sm">
-                                <span>Subtotal:</span>
-                                <span>${itemsSubtotal.toFixed(2)}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span>Discount ({transaction.discount.name} - {transaction.discount.percentage}%):</span>
-                                <span>-${discountAmount.toFixed(2)}</span>
-                            </div>
-                        </>
-                    );
+
+                    if (transaction.discount) {
+                        // Calculate the original subtotal before discount
+                        // totalPrice = subtotal - (subtotal * discount%)
+                        // subtotal = totalPrice / (1 - discount%/100)
+                        const discountMultiplier = 1 - (transaction.discount.percentage / 100);
+                        const originalSubtotal = transaction.totalPrice / discountMultiplier;
+                        const discountAmount = originalSubtotal - transaction.totalPrice;
+
+                        return (
+                            <>
+                                <div className="flex justify-between text-sm">
+                                    <span>Subtotal:</span>
+                                    <span>${originalSubtotal.toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span>Discount ({transaction.discount.name} - {transaction.discount.percentage}%):</span>
+                                    <span>-${discountAmount.toFixed(2)}</span>
+                                </div>
+                            </>
+                        );
+                    }
+                    return null;
                 })()}
                 <div className="flex justify-between text-lg font-bold">
                     <span>TOTAL (USD):</span>
