@@ -86,6 +86,17 @@ export type ItemTransactionLine = {
   imagePath?: string | null;
 };
 
+export type DiscountInfo = {
+  id: number;
+  name: string;
+  type: string;
+  description?: string | null;
+  percentage: number;
+  isActive: boolean;
+  createdOn: string;
+  updatedOn: string;
+};
+
 export type ItemTransaction = {
   transactionId: number;
   createdOn: string;
@@ -98,6 +109,7 @@ export type ItemTransaction = {
   hours: number;
   totalPrice: number;
   items: ItemTransactionLine[];
+  discount?: DiscountInfo | null;
 };
 
 export type GameTransaction = ItemTransaction & {

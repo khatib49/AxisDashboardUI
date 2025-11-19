@@ -142,6 +142,22 @@ const ItemInvoice: React.FC<ItemInvoiceProps> = ({ transaction, onPrint }) => {
 
             {/* Totals */}
             <div className="space-y-1 border-b-2 border-gray-800 pb-2 mb-4">
+                {transaction.discount && (() => {
+                    const itemsSubtotal = transaction.items.reduce((sum, item) => sum + item.lineTotal, 0);
+                    const discountAmount = (itemsSubtotal * transaction.discount.percentage) / 100;
+                    return (
+                        <>
+                            <div className="flex justify-between text-sm">
+                                <span>Subtotal:</span>
+                                <span>${itemsSubtotal.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span>Discount ({transaction.discount.name} - {transaction.discount.percentage}%):</span>
+                                <span>-${discountAmount.toFixed(2)}</span>
+                            </div>
+                        </>
+                    );
+                })()}
                 <div className="flex justify-between text-lg font-bold">
                     <span>TOTAL (USD):</span>
                     <span>${transaction.totalPrice.toFixed(2)}</span>
