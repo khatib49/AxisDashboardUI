@@ -58,12 +58,16 @@ export type ApiResponse<T = unknown> = {
 
 export async function createCoffeeShopOrder(
   itemsRequest: OrderItemRequest[],
-  discountId?: number | null
+  discountId?: number | null,
+  userId?: number | null
 ) {
-  // POST the array as JSON body with optional discountId in query params
+  // POST the array as JSON body with optional discountId and userId in query params
   const params: Record<string, unknown> = {};
   if (discountId) {
     params.discountId = discountId;
+  }
+  if (userId) {
+    params.userId = userId;
   }
   const res = await post<ApiResponse>(
     "/transactions/CreateCoffeeShopOrder",

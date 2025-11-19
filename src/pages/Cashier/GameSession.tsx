@@ -15,6 +15,7 @@ import { getGameTransactions, GameTransaction } from '../../services/transaction
 import { useAuth } from '../../context/AuthContext';
 import GameInvoice from '../../components/invoice/GameInvoice';
 import { getDiscounts, DiscountDto } from '../../services/discountService';
+import { searchClientsByPhone, ClientUserDto } from '../../services/clientService';
 // ...existing imports...
 
 const PAGE_SIZE = 8;
@@ -52,6 +53,40 @@ const GameSession: React.FC = () => {
     const [discounts, setDiscounts] = useState<DiscountDto[]>([]);
     const [loadingDiscounts, setLoadingDiscounts] = useState(false);
     const [selectedDiscountId, setSelectedDiscountId] = useState<number | null>(null);
+
+    // Client search states
+    const [clientPhone, setClientPhone] = useState('');
+    const [searchingClient, setSearchingClient] = useState(false);
+    const [clientResults, setClientResults] = useState<ClientUserDto[]>([]);
+    const [selectedClient, setSelectedClient] = useState<ClientUserDto | null>(null);
+
+    const handleClientSearch = async () => {
+        if (!clientPhone.trim()) {
+            setClientResults([]);
+            return;
+        }
+        setSearchingClient(true);
+        try {
+            const results = await searchClientsByPhone(clientPhone);
+            setClientResults(results || []);
+            if (results.length === 0) {
+                setToast({
+                    variant: "info",
+                    title: "No Results",
+                    message: "No clients found with that phone number"
+                });
+            }
+        } catch (err: unknown) {
+            let message = "Failed to search clients";
+            if (err && typeof err === "object") {
+                const maybe = err as { message?: unknown };
+                if (typeof maybe.message === "string") message = maybe.message;
+            }
+            setToast({ variant: "error", title: "Search failed", message });
+        } finally {
+            setSearchingClient(false);
+        }
+    };
 
     useEffect(() => {
         let mounted = true;
@@ -388,6 +423,63 @@ const GameSession: React.FC = () => {
                         )}
                     </div>
 
+                    {/* Client Selection */}
+                    <div>
+                        <Label>Client (Optional)</Label>
+                        <div className="flex gap-2">
+                            <Input
+                                placeholder="Search by phone..."
+                                value={clientPhone}
+                                onChange={(e) => setClientPhone(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        handleClientSearch();
+                                    }
+                                }}
+                                className="flex-1"
+                            />
+                            <button
+                                className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition text-sm"
+                                onClick={handleClientSearch}
+                                disabled={searchingClient}
+                            >
+                                {searchingClient ? <Loader size={14} /> : 'Search'}
+                            </button>
+                        </div>
+                        {clientResults.length > 0 && (
+                            <Select
+                                options={[
+                                    { value: '', label: 'Select client...' },
+                                    ...clientResults.map(c => ({
+                                        value: c.id,
+                                        label: `${c.firstName} ${c.lastName} (${c.phoneNumber})`
+                                    }))
+                                ]}
+                                defaultValue={selectedClient?.id ?? ''}
+                                onChange={(v: string | number) => {
+                                    const client = clientResults.find(c => c.id === Number(v));
+                                    setSelectedClient(client || null);
+                                }}
+                                className="mt-2"
+                            />
+                        )}
+                        {selectedClient && (
+                            <div className="mt-2 text-xs bg-blue-50 text-blue-700 p-2 rounded flex items-center justify-between">
+                                <span>Selected: {selectedClient.firstName} {selectedClient.lastName}</span>
+                                <button
+                                    onClick={() => {
+                                        setSelectedClient(null);
+                                        setClientResults([]);
+                                        setClientPhone('');
+                                    }}
+                                    className="text-blue-600 hover:text-blue-800"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
                     <div>
                         <Label>Total</Label>
                         {(() => {
@@ -436,6 +528,7 @@ const GameSession: React.FC = () => {
                                         setId: isOpenSetRoom ? undefined : selectedSetId!,
                                         isOpenHour: selectedSetting.isOpenHour,
                                         discountId: selectedDiscountId,
+                                        userId: selectedClient?.id,
                                     });
 
                                     // Check if the response indicates success
@@ -470,6 +563,9 @@ const GameSession: React.FC = () => {
                                     setSelectedRoomId(null);
                                     setSelectedSetId(null);
                                     setSelectedDiscountId(null);
+                                    setSelectedClient(null);
+                                    setClientResults([]);
+                                    setClientPhone('');
 
                                     // Refresh invoices list if it's visible
                                     if (showInvoicesSection) {

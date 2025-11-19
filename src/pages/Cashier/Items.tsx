@@ -19,6 +19,7 @@ import { STATUS_ENABLED, getStatusName, STATUS_PROCESSED_PAID } from '../../serv
 import Select from "../../components/form/Select";
 import ItemInvoice from "../../components/invoice/ItemInvoice";
 import { getDiscounts, DiscountDto } from "../../services/discountService";
+import { searchClientsByPhone, ClientUserDto } from "../../services/clientService";
 
 export default function CashierItems() {
     const [items, setItems] = useState<ItemDto[]>([]);
@@ -68,6 +69,12 @@ export default function CashierItems() {
     const [discounts, setDiscounts] = useState<DiscountDto[]>([]);
     const [loadingDiscounts, setLoadingDiscounts] = useState(false);
     const [selectedDiscountId, setSelectedDiscountId] = useState<number | null>(null);
+
+    // Client search states
+    const [clientPhone, setClientPhone] = useState('');
+    const [searchingClient, setSearchingClient] = useState(false);
+    const [clientResults, setClientResults] = useState<ClientUserDto[]>([]);
+    const [selectedClient, setSelectedClient] = useState<ClientUserDto | null>(null);
 
     const auth = useAuth();
 
@@ -269,6 +276,34 @@ export default function CashierItems() {
         }
     }
 
+    async function handleClientSearch() {
+        if (!clientPhone.trim()) {
+            setClientResults([]);
+            return;
+        }
+        setSearchingClient(true);
+        try {
+            const results = await searchClientsByPhone(clientPhone);
+            setClientResults(results || []);
+            if (results.length === 0) {
+                setNotification({
+                    variant: "info",
+                    title: "No Results",
+                    message: "No clients found with that phone number"
+                });
+            }
+        } catch (err: unknown) {
+            let message = "Failed to search clients";
+            if (err && typeof err === "object") {
+                const maybe = err as { message?: unknown };
+                if (typeof maybe.message === "string") message = maybe.message;
+            }
+            setNotification({ variant: "error", title: "Search failed", message });
+        } finally {
+            setSearchingClient(false);
+        }
+    }
+
     return (
         <div className="p-6">
             <h1 className="text-2xl font-semibold mb-4">Items (Cashier)</h1>
@@ -424,6 +459,63 @@ export default function CashierItems() {
                                             )}
                                         </div>
 
+                                        {/* Client Selection */}
+                                        <div className="mt-3">
+                                            <label className="text-sm font-medium text-gray-700 mb-1 block">Client (Optional)</label>
+                                            <div className="flex gap-2">
+                                                <Input
+                                                    placeholder="Search by phone..."
+                                                    value={clientPhone}
+                                                    onChange={(e) => setClientPhone(e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            handleClientSearch();
+                                                        }
+                                                    }}
+                                                    className="flex-1"
+                                                />
+                                                <button
+                                                    className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition text-sm"
+                                                    onClick={handleClientSearch}
+                                                    disabled={searchingClient}
+                                                >
+                                                    {searchingClient ? <Loader size={14} /> : 'Search'}
+                                                </button>
+                                            </div>
+                                            {clientResults.length > 0 && (
+                                                <Select
+                                                    options={[
+                                                        { value: '', label: 'Select client...' },
+                                                        ...clientResults.map(c => ({
+                                                            value: c.id,
+                                                            label: `${c.firstName} ${c.lastName} (${c.phoneNumber})`
+                                                        }))
+                                                    ]}
+                                                    defaultValue={selectedClient?.id ?? ''}
+                                                    onChange={(v: string | number) => {
+                                                        const client = clientResults.find(c => c.id === Number(v));
+                                                        setSelectedClient(client || null);
+                                                    }}
+                                                    className="mt-2"
+                                                />
+                                            )}
+                                            {selectedClient && (
+                                                <div className="mt-2 text-xs bg-blue-50 text-blue-700 p-2 rounded flex items-center justify-between">
+                                                    <span>Selected: {selectedClient.firstName} {selectedClient.lastName}</span>
+                                                    <button
+                                                        onClick={() => {
+                                                            setSelectedClient(null);
+                                                            setClientResults([]);
+                                                            setClientPhone('');
+                                                        }}
+                                                        className="text-blue-600 hover:text-blue-800"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+
                                         <div className="mt-3 bg-gray-50 border p-2 rounded">
                                             <div className="text-sm font-medium border-b pb-2 mb-2">Receipt</div>
                                             <div className="space-y-2">
@@ -464,7 +556,7 @@ export default function CashierItems() {
                                                     if (orderItems.length === 0) return;
                                                     setOrderSubmitting(true);
                                                     try {
-                                                        const response = await createCoffeeShopOrder(orderItems as OrderItemRequest[], selectedDiscountId);
+                                                        const response = await createCoffeeShopOrder(orderItems as OrderItemRequest[], selectedDiscountId, selectedClient?.id);
 
                                                         // Check if the response indicates failure
                                                         if (response && response.success === false) {
@@ -491,6 +583,9 @@ export default function CashierItems() {
 
                                                         setSelectedItems({});
                                                         setSelectedDiscountId(null);
+                                                        setSelectedClient(null);
+                                                        setClientResults([]);
+                                                        setClientPhone('');
                                                         setIsDrawerOpen(false);
                                                         // refresh items list to reflect updated stock
                                                         setItemsReloadToken(t => t + 1);
