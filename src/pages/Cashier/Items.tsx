@@ -560,10 +560,11 @@ export default function CashierItems() {
 
                                                         // Check if the response indicates failure
                                                         if (response && response.success === false) {
+                                                            setOrderSubmitting(false);
                                                             setNotification({
                                                                 variant: 'error',
                                                                 title: 'Order failed',
-                                                                message: response.error || response.message || 'Failed to create order'
+                                                                message: response.message || response.error || 'Failed to create order'
                                                             });
                                                             return;
                                                         }

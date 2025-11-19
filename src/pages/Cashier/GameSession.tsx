@@ -318,9 +318,13 @@ const GameSession: React.FC = () => {
             )}
             {/* Start session modal */}
             <Modal isOpen={startModalOpen} onClose={() => { setStartModalOpen(false); setSelectedRoomId(null); setSelectedSetId(null); }} title={selectedSetting ? `Start: ${selectedSetting.name}` : 'Start session'}>
-                <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-                    {toast && <Alert variant={toast.variant} title={toast.title} message={toast.message} />}
-
+                <div className="space-y-4">
+                    {toast && (
+                        <div className="mb-4">
+                            <Alert variant={toast.variant} title={toast.title} message={toast.message} />
+                        </div>
+                    )}
+                    <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-4">
                     <div>
                         <Label>Room</Label>
                         <Select
@@ -533,11 +537,13 @@ const GameSession: React.FC = () => {
 
                                     // Check if the response indicates success
                                     if (response && response.success === false) {
+                                        setStarting(false);
                                         setToast({
                                             variant: 'error',
                                             title: 'Failed',
-                                            message: response.error || response.message || 'Failed to start session'
+                                            message: response.message || response.error || 'Failed to start session'
                                         });
+                                        setTimeout(() => setToast(null), 5000);
                                         return;
                                     }
 
@@ -588,6 +594,7 @@ const GameSession: React.FC = () => {
                             {starting ? <Loader size={14} /> : 'Submit'}
                         </button>
                         <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => { setStartModalOpen(false); setSelectedRoomId(null); setSelectedSetId(null); }}>Cancel</button>
+                    </div>
                     </div>
                 </div>
             </Modal>
