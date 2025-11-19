@@ -56,11 +56,19 @@ export type ApiResponse<T = unknown> = {
   data: T;
 };
 
-export async function createCoffeeShopOrder(itemsRequest: OrderItemRequest[]) {
-  // POST the array as JSON body
+export async function createCoffeeShopOrder(
+  itemsRequest: OrderItemRequest[],
+  discountId?: number | null
+) {
+  // POST the array as JSON body with optional discountId in query params
+  const params: Record<string, unknown> = {};
+  if (discountId) {
+    params.discountId = discountId;
+  }
   const res = await post<ApiResponse>(
     "/transactions/CreateCoffeeShopOrder",
-    itemsRequest
+    itemsRequest,
+    { params }
   );
   return res;
 }

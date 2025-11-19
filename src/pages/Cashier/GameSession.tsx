@@ -14,6 +14,7 @@ import { getSetAvailability, SetAvailabilityDto } from '../../services/setServic
 import { getGameTransactions, GameTransaction } from '../../services/transactionService';
 import { useAuth } from '../../context/AuthContext';
 import GameInvoice from '../../components/invoice/GameInvoice';
+import { getDiscounts, DiscountDto } from '../../services/discountService';
 // ...existing imports...
 
 const PAGE_SIZE = 8;
@@ -46,6 +47,11 @@ const GameSession: React.FC = () => {
     const [loadingInvoices, setLoadingInvoices] = useState(false);
     const [showInvoicesSection, setShowInvoicesSection] = useState(false);
     const [totalInvoices, setTotalInvoices] = useState<number>(0);
+
+    // Discount states
+    const [discounts, setDiscounts] = useState<DiscountDto[]>([]);
+    const [loadingDiscounts, setLoadingDiscounts] = useState(false);
+    const [selectedDiscountId, setSelectedDiscountId] = useState<number | null>(null);
 
     useEffect(() => {
         let mounted = true;
@@ -92,6 +98,27 @@ const GameSession: React.FC = () => {
             .catch(() => { /* ignore */ });
         return () => { mounted = false; };
     }, []);
+
+    // Load active discounts when modal opens
+    useEffect(() => {
+        if (!startModalOpen) return;
+        let mounted = true;
+        setLoadingDiscounts(true);
+        getDiscounts(1, 100)
+            .then((res) => {
+                if (!mounted) return;
+                // Filter only active discounts
+                const activeDiscounts = (res.data || []).filter(d => d.isActive);
+                setDiscounts(activeDiscounts);
+            })
+            .catch(() => {
+                /* ignore */
+            })
+            .finally(() => {
+                if (mounted) setLoadingDiscounts(false);
+            });
+        return () => { mounted = false; };
+    }, [startModalOpen]);
 
     // Load set availability when room is selected
     useEffect(() => {
@@ -228,6 +255,7 @@ const GameSession: React.FC = () => {
                                                         setSelectedRoomId(null);
                                                         setSelectedSetId(null);
                                                         setSetAvailability(null);
+                                                        setSelectedDiscountId(null);
                                                         setStartModalOpen(true);
                                                     }}>Start</button>
                                                 </div>
@@ -339,9 +367,48 @@ const GameSession: React.FC = () => {
                             <div className="text-xs text-gray-500 mt-1">This is an open hour setting — duration is not applicable.</div>
                         )}
                     </div>
+
+                    {/* Discount Selection */}
+                    <div>
+                        <Label>Apply Discount</Label>
+                        {loadingDiscounts ? (
+                            <div className="text-xs text-gray-500">Loading discounts...</div>
+                        ) : (
+                            <Select
+                                options={[
+                                    { value: '', label: 'No Discount' },
+                                    ...discounts.map(d => ({
+                                        value: d.id,
+                                        label: `${d.name} (${d.percentage}% off)`
+                                    }))
+                                ]}
+                                defaultValue={selectedDiscountId ?? ''}
+                                onChange={(v: string | number) => setSelectedDiscountId(v === '' ? null : Number(v))}
+                            />
+                        )}
+                    </div>
+
                     <div>
                         <Label>Total</Label>
-                        <div className="text-lg font-semibold">${selectedSetting?.hours === 0 ? (selectedSetting?.price ?? 0) : ((selectedSetting?.price ?? 0) * startHours)}</div>
+                        {(() => {
+                            const subtotal = selectedSetting?.hours === 0 ? (selectedSetting?.price ?? 0) : ((selectedSetting?.price ?? 0) * startHours);
+                            const selectedDiscount = discounts.find(d => d.id === selectedDiscountId);
+                            const discountAmount = selectedDiscount ? (subtotal * selectedDiscount.percentage) / 100 : 0;
+                            const total = subtotal - discountAmount;
+                            return (
+                                <div>
+                                    {selectedDiscount ? (
+                                        <div className="space-y-1">
+                                            <div className="text-sm text-gray-600">Subtotal: ${subtotal.toFixed(2)}</div>
+                                            <div className="text-sm text-green-600">Discount ({selectedDiscount.name} - {selectedDiscount.percentage}%): -${discountAmount.toFixed(2)}</div>
+                                            <div className="text-lg font-semibold">${total.toFixed(2)}</div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-lg font-semibold">${subtotal.toFixed(2)}</div>
+                                    )}
+                                </div>
+                            );
+                        })()}
                     </div>
                     <div className="flex items-center gap-2">
                         <button
@@ -368,6 +435,7 @@ const GameSession: React.FC = () => {
                                         status: String(STATUS_ENABLED),
                                         setId: isOpenSetRoom ? undefined : selectedSetId!,
                                         isOpenHour: selectedSetting.isOpenHour,
+                                        discountId: selectedDiscountId,
                                     });
 
                                     // Check if the response indicates success
@@ -401,6 +469,7 @@ const GameSession: React.FC = () => {
                                     setStartModalOpen(false);
                                     setSelectedRoomId(null);
                                     setSelectedSetId(null);
+                                    setSelectedDiscountId(null);
 
                                     // Refresh invoices list if it's visible
                                     if (showInvoicesSection) {

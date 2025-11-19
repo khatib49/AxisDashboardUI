@@ -18,6 +18,7 @@ import StatusToggle from '../../components/ui/StatusToggle';
 import { STATUS_ENABLED, getStatusName, STATUS_PROCESSED_PAID } from '../../services/statuses';
 import Select from "../../components/form/Select";
 import ItemInvoice from "../../components/invoice/ItemInvoice";
+import { getDiscounts, DiscountDto } from "../../services/discountService";
 
 export default function CashierItems() {
     const [items, setItems] = useState<ItemDto[]>([]);
@@ -62,6 +63,11 @@ export default function CashierItems() {
     const [showInvoicesSection, setShowInvoicesSection] = useState(false);
     const [totalInvoices, setTotalInvoices] = useState<number>(0);
     const [dateFilter, setDateFilter] = useState<'today' | 'yesterday'>('today');
+
+    // Discount states
+    const [discounts, setDiscounts] = useState<DiscountDto[]>([]);
+    const [loadingDiscounts, setLoadingDiscounts] = useState(false);
+    const [selectedDiscountId, setSelectedDiscountId] = useState<number | null>(null);
 
     const auth = useAuth();
 
@@ -127,6 +133,27 @@ export default function CashierItems() {
             });
         return () => { mounted = false; };
     }, []);
+
+    // Load active discounts when drawer opens
+    useEffect(() => {
+        if (!isDrawerOpen) return;
+        let mounted = true;
+        setLoadingDiscounts(true);
+        getDiscounts(1, 100)
+            .then((res) => {
+                if (!mounted) return;
+                // Filter only active discounts
+                const activeDiscounts = (res.data || []).filter(d => d.isActive);
+                setDiscounts(activeDiscounts);
+            })
+            .catch(() => {
+                /* ignore */
+            })
+            .finally(() => {
+                if (mounted) setLoadingDiscounts(false);
+            });
+        return () => { mounted = false; };
+    }, [isDrawerOpen]);
 
     // Load user's item invoices
     useEffect(() => {
@@ -204,7 +231,12 @@ export default function CashierItems() {
             return { itemId, name, qty, unit, lineTotal, image };
         });
 
-    const orderTotal = orderLines.reduce((s, l) => s + l.lineTotal, 0);
+    const orderSubtotal = orderLines.reduce((s, l) => s + l.lineTotal, 0);
+
+    // Calculate discount amount
+    const selectedDiscount = discounts.find(d => d.id === selectedDiscountId);
+    const discountAmount = selectedDiscount ? (orderSubtotal * selectedDiscount.percentage) / 100 : 0;
+    const orderTotal = orderSubtotal - discountAmount;
 
     // Creation UI is intentionally not exposed to cashiers in the header.
 
@@ -372,6 +404,26 @@ export default function CashierItems() {
                                     <div className="mt-4">
                                         <div className="text-sm text-gray-700">Date: {orderTimestamp ? orderTimestamp.toLocaleDateString() : ''} {orderTimestamp ? orderTimestamp.toLocaleTimeString() : ''}</div>
 
+                                        {/* Discount Selection */}
+                                        <div className="mt-3">
+                                            <label className="text-sm font-medium text-gray-700 mb-1 block">Apply Discount</label>
+                                            {loadingDiscounts ? (
+                                                <div className="text-xs text-gray-500">Loading discounts...</div>
+                                            ) : (
+                                                <Select
+                                                    options={[
+                                                        { value: '', label: 'No Discount' },
+                                                        ...discounts.map(d => ({
+                                                            value: d.id,
+                                                            label: `${d.name} (${d.percentage}% off)`
+                                                        }))
+                                                    ]}
+                                                    defaultValue={selectedDiscountId ?? ''}
+                                                    onChange={(v: string | number) => setSelectedDiscountId(v === '' ? null : Number(v))}
+                                                />
+                                            )}
+                                        </div>
+
                                         <div className="mt-3 bg-gray-50 border p-2 rounded">
                                             <div className="text-sm font-medium border-b pb-2 mb-2">Receipt</div>
                                             <div className="space-y-2">
@@ -391,7 +443,13 @@ export default function CashierItems() {
                                             </div>
 
                                             <div className="border-t mt-3 pt-3 text-sm">
-                                                <div className="flex items-center justify-between"><div>Subtotal</div><div>${orderTotal.toFixed(2)}</div></div>
+                                                <div className="flex items-center justify-between"><div>Subtotal</div><div>${orderSubtotal.toFixed(2)}</div></div>
+                                                {selectedDiscount && (
+                                                    <div className="flex items-center justify-between mt-1 text-green-600">
+                                                        <div>Discount ({selectedDiscount.name} - {selectedDiscount.percentage}%)</div>
+                                                        <div>-${discountAmount.toFixed(2)}</div>
+                                                    </div>
+                                                )}
                                                 <div className="flex items-center justify-between mt-1"><div>Tax</div><div>$0.00</div></div>
                                                 <div className="flex items-center justify-between mt-2 font-semibold"><div>Total</div><div>${orderTotal.toFixed(2)}</div></div>
                                             </div>
@@ -406,7 +464,7 @@ export default function CashierItems() {
                                                     if (orderItems.length === 0) return;
                                                     setOrderSubmitting(true);
                                                     try {
-                                                        const response = await createCoffeeShopOrder(orderItems as OrderItemRequest[]);
+                                                        const response = await createCoffeeShopOrder(orderItems as OrderItemRequest[], selectedDiscountId);
 
                                                         // Check if the response indicates failure
                                                         if (response && response.success === false) {
@@ -432,6 +490,7 @@ export default function CashierItems() {
                                                         }
 
                                                         setSelectedItems({});
+                                                        setSelectedDiscountId(null);
                                                         setIsDrawerOpen(false);
                                                         // refresh items list to reflect updated stock
                                                         setItemsReloadToken(t => t + 1);

@@ -182,8 +182,8 @@ const GameInvoice: React.FC<GameInvoiceProps> = ({ transaction, onPrint }) => {
                                 <span className="w-16 text-right">${item.unitPrice.toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between text-xs mt-1">
-                                <span className="pl-2 font-bold">{item.categoryName}</span>
-                                <span className="font-bold">x{item.quantity}</span>
+                                <span className="pl-2 font-bold">x{item.quantity}</span>
+                                <span className="flex-1"></span>
                                 <span className="w-16 text-right font-semibold">${item.lineTotal.toFixed(2)}</span>
                             </div>
                         </div>
