@@ -162,6 +162,7 @@ const AppSidebar: React.FC = () => {
 
         { icon: <TableIcon />, name: "Rooms", path: "/gamecashier/rooms" },
         { icon: <BoxCubeIcon />, name: "Items", path: "/gamecashier/items" },
+        { icon: <UserCircleIcon />, name: "Clients", path: "/gamecashier/clients" },
       ];
     }
 

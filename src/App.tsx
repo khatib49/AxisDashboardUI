@@ -43,6 +43,7 @@ import Expenses from './pages/Admin/Expenses';
 import ExpenseCategories from './pages/Admin/ExpenseCategories';
 import QRCodeGenerator from './pages/Admin/QRCodeGenerator';
 import DiscountManagement from './pages/Admin/DiscountManagement';
+import ClientManagement from './pages/GameCashier/ClientManagement';
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { authenticated, loading } = useAuth();
@@ -164,6 +165,7 @@ export default function App() {
               <Route path="/gamecashier/rooms" element={<GameCashieRoute><GameCashierRooms /></GameCashieRoute>} />
               {/* Make Cashier Items also available to game cashier roles */}
               <Route path="/gamecashier/items" element={<GameCashieRoute><CashierItems /></GameCashieRoute>} />
+              <Route path="/gamecashier/clients" element={<GameCashieRoute><ClientManagement /></GameCashieRoute>} />
             </Route>
 
             {/* Auth Layout */}
