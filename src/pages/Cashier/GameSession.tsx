@@ -649,84 +649,248 @@ const GameSession: React.FC = () => {
                 }}
                 title="Session Started"
             >
-                <div className="p-4">
+                <div className="max-h-[80vh] overflow-y-auto">
                     {sessionSummaryData && (
-                        <div className="space-y-4">
-                            <div className="text-center mb-4">
-                                <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-3">
-                                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
+                        <div className="bg-white p-6 max-w-sm mx-auto font-mono text-sm">
+                            {/* Header */}
+                            <div className="text-center border-b-2 border-gray-800 pb-4 mb-4">
+                                <div className="text-xl font-bold mb-1">SESSION STARTED</div>
+                                <div className="text-xs">AXIS GAMING</div>
+                                <div className="text-xs mt-2">
+                                    {new Date(sessionSummaryData.createdOn).toLocaleString('en-US', {
+                                        year: 'numeric',
+                                        month: '2-digit',
+                                        day: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                    })}
                                 </div>
-                                <h3 className="text-xl font-semibold text-gray-900">Session Active</h3>
-                                <p className="text-sm text-gray-600 mt-1">Your game session has been started successfully</p>
                             </div>
 
-                            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                                <div className="flex justify-between items-center pb-2 border-b border-gray-200">
-                                    <span className="text-sm font-medium text-gray-600">Session ID:</span>
-                                    <span className="text-sm font-semibold text-gray-900">#{sessionSummaryData.transactionId}</span>
+                            {/* Session Details */}
+                            <div className="border-b-2 border-gray-800 pb-4 mb-4">
+                                <div className="font-bold mb-2">SESSION DETAILS:</div>
+                                <div className="space-y-1">
+                                    <div className="flex justify-between">
+                                        <span>Transaction ID:</span>
+                                        <span className="font-semibold">#{sessionSummaryData.id || sessionSummaryData.transactionId}</span>
+                                    </div>
+
+                                    {(sessionSummaryData.room || sessionSummaryData.roomName) && (
+                                        <div className="flex justify-between">
+                                            <span>Room:</span>
+                                            <span className="font-semibold">{sessionSummaryData.room || sessionSummaryData.roomName}</span>
+                                        </div>
+                                    )}
+
+                                    {(sessionSummaryData.set || sessionSummaryData.setName) && (
+                                        <div className="flex justify-between">
+                                            <span>Set:</span>
+                                            <span className="font-semibold">{sessionSummaryData.set || sessionSummaryData.setName}</span>
+                                        </div>
+                                    )}
+
+                                    {(sessionSummaryData.game || sessionSummaryData.gameName) && (
+                                        <div className="flex justify-between">
+                                            <span>Game:</span>
+                                            <span className="font-semibold">{sessionSummaryData.game || sessionSummaryData.gameName}</span>
+                                        </div>
+                                    )}
+
+                                    {(sessionSummaryData.gameType || sessionSummaryData.gameTypeName) && (
+                                        <div className="flex justify-between">
+                                            <span>Game Type:</span>
+                                            <span className="font-semibold">{sessionSummaryData.gameType || sessionSummaryData.gameTypeName}</span>
+                                        </div>
+                                    )}
+
+                                    {(sessionSummaryData.gameSetting || sessionSummaryData.gameSettingName) && (
+                                        <div className="flex justify-between">
+                                            <span>Setting:</span>
+                                            <span className="font-semibold">{sessionSummaryData.gameSetting || sessionSummaryData.gameSettingName}</span>
+                                        </div>
+                                    )}
+
+                                    <div className="flex justify-between">
+                                        <span>Duration:</span>
+                                        <span className="font-semibold">
+                                            {sessionSummaryData.isDayPass ? 'Day Pass' : (sessionSummaryData.hours === 0 ? 'Open Hour' : `${sessionSummaryData.hours}h`)}
+                                        </span>
+                                    </div>
+
+                                    {sessionSummaryData.numberOfPersons && (
+                                        <div className="flex justify-between">
+                                            <span>Persons:</span>
+                                            <span className="font-semibold">{sessionSummaryData.numberOfPersons}</span>
+                                        </div>
+                                    )}
                                 </div>
+                            </div>
 
-                                {sessionSummaryData.roomName && (
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm font-medium text-gray-600">Room:</span>
-                                        <span className="text-sm font-semibold text-gray-900">{sessionSummaryData.roomName}</span>
-                                    </div>
-                                )}
+                            {/* Footer */}
+                            <div className="text-center text-xs pb-8 mb-4">
+                                <p className="font-bold">Session Active</p>
+                                <p className="mt-1">Close session to generate invoice</p>
+                            </div>
 
-                                {sessionSummaryData.setName && (
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm font-medium text-gray-600">Set:</span>
-                                        <span className="text-sm font-semibold text-gray-900">{sessionSummaryData.setName}</span>
-                                    </div>
-                                )}
-
-                                {sessionSummaryData.gameName && (
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm font-medium text-gray-600">Game:</span>
-                                        <span className="text-sm font-semibold text-gray-900">{sessionSummaryData.gameName}</span>
-                                    </div>
-                                )}
-
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm font-medium text-gray-600">Duration:</span>
-                                    <span className="text-sm font-semibold text-gray-900">
-                                        {sessionSummaryData.isDayPass ? 'Day Pass' : (sessionSummaryData.hours === 0 ? 'Open Hour' : `${sessionSummaryData.hours}h`)}
-                                    </span>
-                                </div>
-
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm font-medium text-gray-600">Started:</span>
-                                    <span className="text-sm font-semibold text-gray-900">
-                                        {new Date(sessionSummaryData.createdOn).toLocaleString('en-US', {
-                                            month: 'short',
-                                            day: 'numeric',
+                            {/* Print Button */}
+                            <div className="text-center print:hidden">
+                                <button
+                                    onClick={() => {
+                                        // Print the session summary using same format as ItemInvoice
+                                        const formattedDate = new Date(sessionSummaryData.createdOn).toLocaleString('en-US', {
+                                            year: 'numeric',
+                                            month: '2-digit',
+                                            day: '2-digit',
                                             hour: '2-digit',
-                                            minute: '2-digit'
-                                        })}
-                                    </span>
-                                </div>
-                            </div>
+                                            minute: '2-digit',
+                                        });
 
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">
-                                <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <p className="text-sm text-blue-800">
-                                    This is an open session. Close the session to generate the final invoice.
-                                </p>
-                            </div>
+                                        const win = window.open('', 'PRINT', 'width=420,height=700');
+                                        if (!win) return;
 
-                            <button
-                                onClick={() => {
-                                    setSessionSummaryModalOpen(false);
-                                    setSessionSummaryData(null);
-                                }}
-                                className="w-full px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition"
-                            >
-                                OK
-                            </button>
+                                        win.document.open();
+                                        win.document.write(`
+                                            <html>
+                                                <head>
+                                                    <meta charSet="utf-8" />
+                                                    <title>Session Started #${sessionSummaryData.id || sessionSummaryData.transactionId}</title>
+                                                    <style>
+                                                        /* --- POS PAGE: 80mm roll --- */
+                                                        @page {
+                                                            size: 80mm auto;
+                                                            margin: 0 0 18mm 0; /* bottom margin to guarantee extra feed */
+                                                        }
+                                                        html, body {
+                                                            width: 80mm;
+                                                            margin: 0;
+                                                            padding: 0;
+                                                            background: #fff;
+                                                            -webkit-print-color-adjust: exact;
+                                                            print-color-adjust: exact;
+                                                        }
+
+                                                        /* Root container in popup */
+                                                        .pos-print {
+                                                            width: 76mm !important;          /* safe printable width */
+                                                            margin: 0 auto !important;
+                                                            padding: 5mm 2mm 16mm !important; /* extra bottom padding */
+                                                            box-sizing: border-box !important;
+                                                            page-break-inside: avoid !important;
+                                                            max-width: none !important;
+                                                        }
+
+                                                        /* Larger, receipt-friendly typography */
+                                                        .pos-print, .pos-print * {
+                                                            font-family: 'Courier New', ui-monospace, Menlo, Consolas, monospace !important;
+                                                            font-size: 15px !important;
+                                                            line-height: 1.5 !important;
+                                                            color: #000 !important;
+                                                        }
+
+                                                        .pos-print .text-xs { font-size: 12px !important; }
+                                                        .pos-print .text-sm { font-size: 15px !important; }
+                                                        .pos-print .text-lg { font-size: 18px !important; }
+                                                        .pos-print .text-xl { font-size: 20px !important; }
+                                                        .pos-print .text-2xl { font-size: 22px !important; }
+                                                        .pos-print .font-bold { font-weight: 700 !important; }
+                                                        .pos-print .font-semibold { font-weight: 600 !important; }
+                                                        .pos-print .border-b-2 { border-bottom-width: 2px !important; border-color: #000 !important; }
+                                                        .pos-print .flex { display: flex !important; }
+                                                        .pos-print .justify-between { justify-content: space-between !important; }
+                                                        .pos-print .text-center { text-align: center !important; }
+                                                        .pos-print .mb-4 { margin-bottom: 8px !important; }
+                                                        .pos-print .pb-4 { padding-bottom: 8px !important; }
+                                                        .pos-print .mb-2 { margin-bottom: 6px !important; }
+                                                        .pos-print .mb-3 { margin-bottom: 8px !important; }
+                                                        .pos-print .mt-1 { margin-top: 4px !important; }
+                                                        .pos-print .mt-2 { margin-top: 6px !important; }
+                                                        .pos-print .space-y-1 > * + * { margin-top: 4px !important; }
+                                                        .pos-print button { display: none !important; }
+
+                                                        /* Final spacer in case the driver trims trailing blanks */
+                                                        .pos-spacer { height: 20mm; width: 100%; display: block; }
+                                                    </style>
+                                                </head>
+                                                <body>
+                                                    <div class="pos-print">
+                                                        <!-- Header -->
+                                                        <div class="text-center border-b-2 pb-4 mb-4">
+                                                            <div class="text-xl font-bold mb-1">SESSION STARTED</div>
+                                                            <div class="text-xs">AXIS GAMING</div>
+                                                            <div class="text-xs mt-2">${formattedDate}</div>
+                                                        </div>
+
+                                                        <!-- Session Details -->
+                                                        <div class="border-b-2 pb-4 mb-4">
+                                                            <div class="font-bold mb-2">SESSION DETAILS:</div>
+                                                            <div class="space-y-1">
+                                                                <div class="flex justify-between">
+                                                                    <span>Transaction ID:</span>
+                                                                    <span class="font-semibold">#${sessionSummaryData.id || sessionSummaryData.transactionId}</span>
+                                                                </div>
+                                                                ${(sessionSummaryData.room || sessionSummaryData.roomName) ? `
+                                                                <div class="flex justify-between">
+                                                                    <span>Room:</span>
+                                                                    <span class="font-semibold">${sessionSummaryData.room || sessionSummaryData.roomName}</span>
+                                                                </div>
+                                                                ` : ''}
+                                                                ${(sessionSummaryData.set || sessionSummaryData.setName) ? `
+                                                                <div class="flex justify-between">
+                                                                    <span>Set:</span>
+                                                                    <span class="font-semibold">${sessionSummaryData.set || sessionSummaryData.setName}</span>
+                                                                </div>
+                                                                ` : ''}
+                                                                ${(sessionSummaryData.game || sessionSummaryData.gameName) ? `
+                                                                <div class="flex justify-between">
+                                                                    <span>Game:</span>
+                                                                    <span class="font-semibold">${sessionSummaryData.game || sessionSummaryData.gameName}</span>
+                                                                </div>
+                                                                ` : ''}
+                                                                ${(sessionSummaryData.gameType || sessionSummaryData.gameTypeName) ? `
+                                                                <div class="flex justify-between">
+                                                                    <span>Game Type:</span>
+                                                                    <span class="font-semibold">${sessionSummaryData.gameType || sessionSummaryData.gameTypeName}</span>
+                                                                </div>
+                                                                ` : ''}
+                                                                ${(sessionSummaryData.gameSetting || sessionSummaryData.gameSettingName) ? `
+                                                                <div class="flex justify-between">
+                                                                    <span>Setting:</span>
+                                                                    <span class="font-semibold">${sessionSummaryData.gameSetting || sessionSummaryData.gameSettingName}</span>
+                                                                </div>
+                                                                ` : ''}
+                                                                <div class="flex justify-between">
+                                                                    <span>Duration:</span>
+                                                                    <span class="font-semibold">${sessionSummaryData.isDayPass ? 'Day Pass' : (sessionSummaryData.hours === 0 ? 'Open Hour' : `${sessionSummaryData.hours}h`)}</span>
+                                                                </div>
+                                                                ${sessionSummaryData.numberOfPersons ? `
+                                                                <div class="flex justify-between">
+                                                                    <span>Persons:</span>
+                                                                    <span class="font-semibold">${sessionSummaryData.numberOfPersons}</span>
+                                                                </div>
+                                                                ` : ''}
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Footer -->
+                                                        <div class="text-center text-xs pb-8 mb-4">
+                                                            <p class="font-bold">Session Active</p>
+                                                            <p class="mt-1">Close session to generate invoice</p>
+                                                        </div>
+                                                    </div>
+                                                    <div class="pos-spacer"></div>
+                                                </body>
+                                            </html>
+                                        `);
+                                        win.document.close();
+
+                                        setTimeout(() => { win.focus(); win.print(); win.close(); }, 150);
+                                    }}
+                                    className="px-6 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition font-sans text-sm"
+                                >
+                                    Print Receipt
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>

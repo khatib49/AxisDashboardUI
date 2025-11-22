@@ -174,6 +174,14 @@ export type GameTransaction = ItemTransaction & {
   gameCategoryName?: string | null;
   gameSettingId?: number | null;
   gameSettingName?: string | null;
+  // Additional fields from API response
+  id?: number;
+  room?: string | null;
+  set?: string | null;
+  game?: string | null;
+  gameType?: string | null;
+  gameSetting?: string | null;
+  numberOfPersons?: number;
 };
 
 export type PagedDataResponse<T> = {
