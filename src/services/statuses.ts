@@ -16,6 +16,7 @@ export const STATUSES: StatusItem[] = [
 export const STATUS_ENABLED = 1;
 export const STATUS_DISABLED = 2;
 export const STATUS_PROCESSED_PAID = 6;
+export const STATUS_PROCESSED_UNPAID = 7;
 
 export function getStatusName(id?: number | null) {
   if (id == null) return undefined;

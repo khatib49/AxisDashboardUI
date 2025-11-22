@@ -56,6 +56,54 @@ export type ApiResponse<T = unknown> = {
   data: T;
 };
 
+export type OpenSessionDto = {
+  id: number;
+  roomId?: number | null;
+  room?: string | null;
+  gameTypeId?: number | null;
+  gameType?: string | null;
+  gameId?: number | null;
+  game?: string | null;
+  gameSettingId?: number | null;
+  gameSetting?: string | null;
+  hours: number;
+  totalPrice: number;
+  statusId: number;
+  createdOn: string;
+  modifiedOn?: string | null;
+  createdBy: string;
+  items?: unknown[];
+  setId?: number | null;
+  set?: string | null;
+  discountId?: number | null;
+  discountName?: string | null;
+  numberOfPersons?: number;
+  isDayPass?: boolean;
+};
+
+export async function getOpenPs5Sessions() {
+  const res = await get<ApiResponse<OpenSessionDto[]>>(
+    "/transactions/GetOpenPs5Sessions"
+  );
+  return res;
+}
+
+export async function getOpenBoardGameSessions() {
+  const res = await get<ApiResponse<OpenSessionDto[]>>(
+    "/transactions/GetOpenBoardGameSessions"
+  );
+  return res;
+}
+
+export async function closeGameSession(invoiceId: number) {
+  console.log("Closing session with invoiceId:", invoiceId);
+  const url = `/transactions/sessions/${invoiceId}/close`;
+  console.log("POST URL:", url);
+  const res = await post<ApiResponse>(url, null);
+  console.log("Close session response:", res);
+  return res;
+}
+
 export async function createCoffeeShopOrder(
   itemsRequest: OrderItemRequest[],
   discountId?: number | null,
@@ -111,6 +159,7 @@ export type ItemTransaction = {
   setId?: number | null;
   setName?: string | null;
   hours: number;
+  isDayPass?: boolean;
   totalPrice: number;
   items: ItemTransactionLine[];
   discount?: DiscountInfo | null;
@@ -186,10 +235,20 @@ export async function getGameTransactions(query: TransactionsReportQuery = {}) {
   if (query.search) params.search = query.search;
   if (query.createdBy) params.createdBy = query.createdBy;
 
+  console.log("getGameTransactions query params:", params);
+
   const res = await get<PagedDataResponse<GameTransaction>>(
     "/TransactionsReports/game-transactions",
-    { params }
+    {
+      params,
+      paramsSerializer: {
+        indexes: null, // Send arrays as CreatedBy=value1&CreatedBy=value2
+      },
+    }
   );
+
+  console.log("getGameTransactions response:", res);
+
   return res;
 }
 

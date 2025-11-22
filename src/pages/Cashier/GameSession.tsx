@@ -31,6 +31,7 @@ const GameSession: React.FC = () => {
     const [selectedSetting, setSelectedSetting] = useState<GameSettingDto | null>(null);
     const [startModalOpen, setStartModalOpen] = useState(false);
     const [startHours, setStartHours] = useState<number>(1);
+    const [numberOfPersons, setNumberOfPersons] = useState<number>(1);
     const [starting, setStarting] = useState(false);
     const [toast, setToast] = useState<{ variant: 'success' | 'error' | 'info', title: string, message: string } | null>(null);
 
@@ -48,6 +49,10 @@ const GameSession: React.FC = () => {
     const [loadingInvoices, setLoadingInvoices] = useState(false);
     const [showInvoicesSection, setShowInvoicesSection] = useState(false);
     const [totalInvoices, setTotalInvoices] = useState<number>(0);
+
+    // Session summary modal for open sessions (status 7)
+    const [sessionSummaryModalOpen, setSessionSummaryModalOpen] = useState(false);
+    const [sessionSummaryData, setSessionSummaryData] = useState<GameTransaction | null>(null);
 
     // Discount states
     const [discounts, setDiscounts] = useState<DiscountDto[]>([]);
@@ -175,7 +180,7 @@ const GameSession: React.FC = () => {
         let mounted = true;
         setLoadingAvailability(true);
         const roomIdNum = Number(selectedRoomId);
-        getSetAvailability(roomIdNum, 1)
+        getSetAvailability(roomIdNum, 7)
             .then((res) => {
                 if (!mounted) return;
                 setSetAvailability(res);
@@ -286,7 +291,8 @@ const GameSession: React.FC = () => {
                                                 <div className="text-right">
                                                     <button className="px-2 py-1 bg-blue-600 text-white text-xs rounded" onClick={() => {
                                                         setSelectedSetting(s);
-                                                        setStartHours(s.hours ?? 1);
+                                                        setStartHours(s.isDayPass ? 0 : (s.hours ?? 1));
+                                                        setNumberOfPersons(1);
                                                         setSelectedRoomId(null);
                                                         setSelectedSetId(null);
                                                         setSetAvailability(null);
@@ -398,13 +404,27 @@ const GameSession: React.FC = () => {
 
                         <div>
                             <Label>Hours</Label>
-                            <Input type="number" value={startHours.toString()} onChange={(e) => setStartHours(Number(e.target.value))} min={'1'} disabled={!!selectedSetting?.isOffer || selectedSetting?.hours === 0} />
+                            <Input type="number" value={startHours.toString()} onChange={(e) => setStartHours(Number(e.target.value))} min={'1'} disabled={!!selectedSetting?.isOffer || selectedSetting?.hours === 0 || !!selectedSetting?.isDayPass} />
                             {selectedSetting?.isOffer && (
                                 <div className="text-xs text-gray-500 mt-1">This setting is an offer — duration is fixed.</div>
                             )}
                             {selectedSetting?.hours === 0 && (
                                 <div className="text-xs text-gray-500 mt-1">This is an open hour setting — duration is not applicable.</div>
                             )}
+                            {selectedSetting?.isDayPass && (
+                                <div className="text-xs text-gray-500 mt-1">This is an open day pass — duration is not applicable.</div>
+                            )}
+                        </div>
+
+                        <div>
+                            <Label>Number of Persons</Label>
+                            <Input
+                                type="number"
+                                value={numberOfPersons.toString()}
+                                onChange={(e) => setNumberOfPersons(Math.max(1, Number(e.target.value)))}
+                                min={'1'}
+                            />
+                            <div className="text-xs text-gray-500 mt-1">Total will be calculated per person.</div>
                         </div>
 
                         {/* Discount Selection */}
@@ -487,7 +507,8 @@ const GameSession: React.FC = () => {
                         <div>
                             <Label>Total</Label>
                             {(() => {
-                                const subtotal = selectedSetting?.hours === 0 ? (selectedSetting?.price ?? 0) : ((selectedSetting?.price ?? 0) * startHours);
+                                const basePrice = selectedSetting?.hours === 0 ? (selectedSetting?.price ?? 0) : ((selectedSetting?.price ?? 0) * startHours);
+                                const subtotal = basePrice * numberOfPersons;
                                 const selectedDiscount = discounts.find(d => d.id === selectedDiscountId);
                                 const discountAmount = selectedDiscount ? (subtotal * selectedDiscount.percentage) / 100 : 0;
                                 const total = subtotal - discountAmount;
@@ -495,12 +516,15 @@ const GameSession: React.FC = () => {
                                     <div>
                                         {selectedDiscount ? (
                                             <div className="space-y-1">
-                                                <div className="text-sm text-gray-600">Subtotal: ${subtotal.toFixed(2)}</div>
+                                                <div className="text-sm text-gray-600">${basePrice.toFixed(2)} × {numberOfPersons} person{numberOfPersons !== 1 ? 's' : ''} = ${subtotal.toFixed(2)}</div>
                                                 <div className="text-sm text-green-600">Discount ({selectedDiscount.name} - {selectedDiscount.percentage}%): -${discountAmount.toFixed(2)}</div>
                                                 <div className="text-lg font-semibold">${total.toFixed(2)}</div>
                                             </div>
                                         ) : (
-                                            <div className="text-lg font-semibold">${subtotal.toFixed(2)}</div>
+                                            <div>
+                                                <div className="text-sm text-gray-600 mb-1">${basePrice.toFixed(2)} × {numberOfPersons} person{numberOfPersons !== 1 ? 's' : ''}</div>
+                                                <div className="text-lg font-semibold">${subtotal.toFixed(2)}</div>
+                                            </div>
                                         )}
                                     </div>
                                 );
@@ -533,6 +557,8 @@ const GameSession: React.FC = () => {
                                             isOpenHour: selectedSetting.isOpenHour,
                                             discountId: selectedDiscountId,
                                             userId: selectedClient?.id,
+                                            isDayPass: selectedSetting?.isDayPass,
+                                            numberOfPersons: numberOfPersons,
                                         });
 
                                         // Check if the response indicates success
@@ -547,15 +573,15 @@ const GameSession: React.FC = () => {
                                             return;
                                         }
 
-                                        // Fetch the latest transaction for this user to show as invoice
-                                        if (claims?.name) {
-                                            const invoiceRes = await getGameTransactions({
-                                                CreatedBy: [claims.name],
-                                                PageSize: 1,
-                                                Page: 1
-                                            });
-                                            if (invoiceRes.data && invoiceRes.data.length > 0) {
-                                                setCurrentInvoice(invoiceRes.data[0]);
+                                        // Show invoice for closed sessions or summary for open sessions (status 7)
+                                        if (response?.data) {
+                                            if (response.data.statusId === 7) {
+                                                // Show summary modal for open session (no price)
+                                                setSessionSummaryData(response.data as unknown as GameTransaction);
+                                                setSessionSummaryModalOpen(true);
+                                            } else {
+                                                // Show full invoice for closed sessions
+                                                setCurrentInvoice(response.data as unknown as GameTransaction);
                                                 setInvoiceModalOpen(true);
                                             }
                                         }
@@ -572,6 +598,7 @@ const GameSession: React.FC = () => {
                                         setSelectedClient(null);
                                         setClientResults([]);
                                         setClientPhone('');
+                                        setNumberOfPersons(1);
 
                                         // Refresh invoices list if it's visible
                                         if (showInvoicesSection) {
@@ -610,6 +637,98 @@ const GameSession: React.FC = () => {
             >
                 <div className="max-h-[80vh] overflow-y-auto">
                     {currentInvoice && <GameInvoice transaction={currentInvoice} />}
+                </div>
+            </Modal>
+
+            {/* Session Summary Modal (for open sessions - status 7) */}
+            <Modal
+                isOpen={sessionSummaryModalOpen}
+                onClose={() => {
+                    setSessionSummaryModalOpen(false);
+                    setSessionSummaryData(null);
+                }}
+                title="Session Started"
+            >
+                <div className="p-4">
+                    {sessionSummaryData && (
+                        <div className="space-y-4">
+                            <div className="text-center mb-4">
+                                <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-3">
+                                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <h3 className="text-xl font-semibold text-gray-900">Session Active</h3>
+                                <p className="text-sm text-gray-600 mt-1">Your game session has been started successfully</p>
+                            </div>
+
+                            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                                <div className="flex justify-between items-center pb-2 border-b border-gray-200">
+                                    <span className="text-sm font-medium text-gray-600">Session ID:</span>
+                                    <span className="text-sm font-semibold text-gray-900">#{sessionSummaryData.transactionId}</span>
+                                </div>
+
+                                {sessionSummaryData.roomName && (
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm font-medium text-gray-600">Room:</span>
+                                        <span className="text-sm font-semibold text-gray-900">{sessionSummaryData.roomName}</span>
+                                    </div>
+                                )}
+
+                                {sessionSummaryData.setName && (
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm font-medium text-gray-600">Set:</span>
+                                        <span className="text-sm font-semibold text-gray-900">{sessionSummaryData.setName}</span>
+                                    </div>
+                                )}
+
+                                {sessionSummaryData.gameName && (
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm font-medium text-gray-600">Game:</span>
+                                        <span className="text-sm font-semibold text-gray-900">{sessionSummaryData.gameName}</span>
+                                    </div>
+                                )}
+
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm font-medium text-gray-600">Duration:</span>
+                                    <span className="text-sm font-semibold text-gray-900">
+                                        {sessionSummaryData.isDayPass ? 'Day Pass' : (sessionSummaryData.hours === 0 ? 'Open Hour' : `${sessionSummaryData.hours}h`)}
+                                    </span>
+                                </div>
+
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm font-medium text-gray-600">Started:</span>
+                                    <span className="text-sm font-semibold text-gray-900">
+                                        {new Date(sessionSummaryData.createdOn).toLocaleString('en-US', {
+                                            month: 'short',
+                                            day: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                        })}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">
+                                <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <p className="text-sm text-blue-800">
+                                    This is an open session. Close the session to generate the final invoice.
+                                </p>
+                            </div>
+
+                            <button
+                                onClick={() => {
+                                    setSessionSummaryModalOpen(false);
+                                    setSessionSummaryData(null);
+                                }}
+                                className="w-full px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition"
+                            >
+                                OK
+                            </button>
+                        </div>
+                    )}
                 </div>
             </Modal>
 
@@ -714,7 +833,7 @@ const GameSession: React.FC = () => {
                                                         <div>
                                                             <p className="text-gray-500">Durations</p>
                                                             <p className="font-medium text-gray-800">
-                                                                {invoice.hours === 0 ? 'Open Hour' : `${invoice.hours}h`}
+                                                                {invoice.isDayPass ? 'Day Pass' : (invoice.hours === 0 ? 'Open Hour' : `${invoice.hours}h`)}
                                                             </p>
                                                         </div>
                                                     </div>

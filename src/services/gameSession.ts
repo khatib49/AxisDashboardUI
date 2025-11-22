@@ -9,6 +9,8 @@ export type CreateGameSessionRequest = {
   isOpenHour?: boolean;
   discountId?: number | null; // optional discount id
   userId?: number | null; // optional user/client id
+  isDayPass?: boolean;
+  numberOfPersons?: number;
 };
 
 export async function createGameSession(body: CreateGameSessionRequest) {
@@ -30,6 +32,12 @@ export async function createGameSession(body: CreateGameSessionRequest) {
   }
   if (body.userId !== undefined && body.userId !== null) {
     params.userId = body.userId;
+  }
+  if (body.isDayPass !== undefined) {
+    params.isDayPass = body.isDayPass;
+  }
+  if (body.numberOfPersons !== undefined) {
+    params.numberOfPersons = body.numberOfPersons;
   }
   const res = await api.post("/transactions/CreateGameSession", null, {
     params,

@@ -145,24 +145,6 @@ const GameInvoice: React.FC<GameInvoiceProps> = ({ transaction, onPrint }) => {
                         <span className="font-semibold">{transaction.gameName}</span>
                     </div>
                 )}
-                {transaction.gameTypeName && (
-                    <div className="flex justify-between">
-                        <span>Type:</span>
-                        <span className="font-semibold">{transaction.gameTypeName}</span>
-                    </div>
-                )}
-                {transaction.gameCategoryName && (
-                    <div className="flex justify-between">
-                        <span>Category:</span>
-                        <span className="font-semibold">{transaction.gameCategoryName}</span>
-                    </div>
-                )}
-                {transaction.gameSettingName && (
-                    <div className="flex justify-between">
-                        <span>Setting:</span>
-                        <span className="font-semibold">{transaction.gameSettingName}</span>
-                    </div>
-                )}
                 <div className="flex justify-between">
                     <span>Duration:</span>
                     <span className="font-semibold">

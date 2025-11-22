@@ -65,7 +65,7 @@ export async function deleteSet(id: number) {
 
 export async function getSetAvailability(
   roomId: number,
-  ongoingStatusId: number = 1
+  ongoingStatusId: number = 10
 ) {
   const res = await get<SetAvailabilityDto>(
     `/room/${roomId}/sets/availability`,

@@ -30,6 +30,8 @@ import Transactions from "./pages/Admin/Transactions";
 import GameTransactions from "./pages/Admin/GameTransactions";
 import Rooms from "./pages/Admin/Rooms";
 import GameCashierRooms from "./pages/GameCashier/Rooms";
+import Ps5Sessions from "./pages/GameCashier/Ps5Sessions";
+import BoardGameSessions from "./pages/GameCashier/BoardGameSessions";
 import Orders from "./pages/Admin/Orders";
 import CategoryManagement from "./pages/Admin/CategoryManagement";
 import CashierItems from './pages/Cashier/Items';
@@ -163,6 +165,8 @@ export default function App() {
               {/* GameCashie routes (non-admin paths) */}
               <Route path="/game/sessions" element={<GameCashieRoute><GameSession /></GameCashieRoute>} />
               <Route path="/gamecashier/rooms" element={<GameCashieRoute><GameCashierRooms /></GameCashieRoute>} />
+              <Route path="/gamecashier/ps5-sessions" element={<GameCashieRoute><Ps5Sessions /></GameCashieRoute>} />
+              <Route path="/gamecashier/board-sessions" element={<GameCashieRoute><BoardGameSessions /></GameCashieRoute>} />
               {/* Make Cashier Items also available to game cashier roles */}
               <Route path="/gamecashier/items" element={<GameCashieRoute><CashierItems /></GameCashieRoute>} />
               <Route path="/gamecashier/clients" element={<GameCashieRoute><ClientManagement /></GameCashieRoute>} />

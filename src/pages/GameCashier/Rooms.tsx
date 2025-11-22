@@ -60,7 +60,7 @@ export default function GameCashierRooms() {
         let mounted = true;
         setLoadingAvailability(true);
         const roomIdNum = Number(selectedRoom.id);
-        getSetAvailability(roomIdNum, 1)
+        getSetAvailability(roomIdNum, 7)
             .then(res => {
                 if (!mounted) return;
                 setSetAvailability(res);
