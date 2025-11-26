@@ -223,7 +223,12 @@ export async function getItemTransactions(query: TransactionsReportQuery = {}) {
 
   const res = await get<PagedDataResponse<ItemTransaction>>(
     "/TransactionsReports/item-transactions",
-    { params }
+    {
+      params,
+      paramsSerializer: {
+        indexes: null, // Send arrays as CreatedBy=value1&CreatedBy=value2
+      },
+    }
   );
   return res;
 }

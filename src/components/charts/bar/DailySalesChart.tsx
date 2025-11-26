@@ -5,7 +5,7 @@ import { getDailySales, DailySalesData } from "../../../services/transactionServ
 import { getCategories, CategoryDto } from "../../../services/categoryService";
 import Loader from "../../ui/Loader";
 
-type DateFilter = 'today' | '3days' | '2weeks' | 'month';
+type DateFilter = 'today' | 'yesterday' | '3days' | '2weeks' | 'month';
 
 export default function DailySalesChart() {
     const [salesData, setSalesData] = useState<DailySalesData[]>([]);
@@ -38,14 +38,25 @@ export default function DailySalesChart() {
         const now = new Date();
         let from: Date;
 
-        // Always set 'to' to end of today (23:59:59 UTC)
-        const to = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
+        // Set 'to' to end of today by default (may be adjusted for specific filters)
+        let to = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
 
         switch (dateFilter) {
-            case 'today':
+            case 'today': {
                 // Today: from 00:00:00 to 23:59:59 UTC of current date
-                from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
+                const today = new Date();
+                from = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 0, 0, 0, 0));
                 break;
+            }
+            case 'yesterday': {
+                // Yesterday: from 00:00:00 to 23:59:59 UTC of yesterday
+                const yesterday = new Date(now);
+                yesterday.setDate(yesterday.getDate() - 1);
+                from = new Date(Date.UTC(yesterday.getUTCFullYear(), yesterday.getUTCMonth(), yesterday.getUTCDate(), 0, 0, 0, 0));
+                // Set 'to' to end of yesterday instead of end of today
+                to.setTime(new Date(Date.UTC(yesterday.getUTCFullYear(), yesterday.getUTCMonth(), yesterday.getUTCDate(), 23, 59, 59, 999)).getTime());
+                break;
+            }
             case '3days':
                 // Last 3 days: 3 days ago at 00:00:00 to end of today
                 from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 3, 0, 0, 0, 0));
@@ -199,6 +210,7 @@ export default function DailySalesChart() {
 
     const filterButtons: { value: DateFilter; label: string }[] = [
         { value: 'today', label: 'Today' },
+        { value: 'yesterday', label: 'Yesterday' },
         { value: '3days', label: 'Last 3 Days' },
         { value: '2weeks', label: 'Last 2 Weeks' },
         { value: 'month', label: 'Last Month' },
