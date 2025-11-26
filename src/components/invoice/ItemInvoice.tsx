@@ -144,7 +144,9 @@ const ItemInvoice: React.FC<ItemInvoiceProps> = ({ transaction, onPrint }) => {
             <div className="space-y-1 border-b-2 border-gray-800 pb-2 mb-4">
                 {transaction.discount && (() => {
                     const itemsSubtotal = transaction.items.reduce((sum, item) => sum + item.lineTotal, 0);
-                    const discountAmount = (itemsSubtotal * transaction.discount.percentage) / 100;
+                    // Ensure percentage is in decimal form (5% = 0.05)
+                    const discountRate = transaction.discount.percentage > 1 ? transaction.discount.percentage / 100 : transaction.discount.percentage;
+                    const discountAmount = itemsSubtotal * discountRate;
                     return (
                         <>
                             <div className="flex justify-between text-sm">

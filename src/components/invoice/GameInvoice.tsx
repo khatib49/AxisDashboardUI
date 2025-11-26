@@ -175,18 +175,24 @@ const GameInvoice: React.FC<GameInvoiceProps> = ({ transaction, onPrint }) => {
 
             {/* Total */}
             <div className="space-y-1 border-b-2 border-gray-800 pb-2 mb-4">
-                {transaction.discount ? (
-                    <>
-                        <div className="flex justify-between text-sm">
-                            <span>Subtotal:</span>
-                            <span>${(transaction.totalPrice / (1 - transaction.discount.percentage / 100)).toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                            <span>Discount ({transaction.discount.name} - {transaction.discount.percentage}%):</span>
-                            <span>-${((transaction.totalPrice / (1 - transaction.discount.percentage / 100)) - transaction.totalPrice).toFixed(2)}</span>
-                        </div>
-                    </>
-                ) : null}
+                {transaction.discount && (() => {
+                    // Calculate subtotal before discount by reversing the discount calculation
+                    const discountRate = transaction.discount.percentage > 1 ? transaction.discount.percentage / 100 : transaction.discount.percentage;
+                    const subtotal = transaction.totalPrice / (1 - discountRate);
+                    const discountAmount = subtotal - transaction.totalPrice;
+                    return (
+                        <>
+                            <div className="flex justify-between text-sm">
+                                <span>Subtotal:</span>
+                                <span>${subtotal.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span>Discount ({transaction.discount.name} - {transaction.discount.percentage}%):</span>
+                                <span>-${discountAmount.toFixed(2)}</span>
+                            </div>
+                        </>
+                    );
+                })()}
                 <div className="flex justify-between text-lg font-bold">
                     <span>TOTAL (USD):</span>
                     <span>${transaction.totalPrice.toFixed(2)}</span>
