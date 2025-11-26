@@ -20,6 +20,7 @@ import Select from "../../components/form/Select";
 import ItemInvoice from "../../components/invoice/ItemInvoice";
 import { getDiscounts, DiscountDto } from "../../services/discountService";
 import { searchClientsByPhone, ClientUserDto } from "../../services/clientService";
+import ChangeCalculator from "../../components/common/ChangeCalculator";
 
 export default function CashierItems() {
     const [items, setItems] = useState<ItemDto[]>([]);
@@ -64,6 +65,9 @@ export default function CashierItems() {
     const [showInvoicesSection, setShowInvoicesSection] = useState(false);
     const [totalInvoices, setTotalInvoices] = useState<number>(0);
     const [dateFilter, setDateFilter] = useState<'today' | 'yesterday'>('today');
+
+    // Change calculator state
+    const [calculatorOpen, setCalculatorOpen] = useState(false);
 
     // Discount states
     const [discounts, setDiscounts] = useState<DiscountDto[]>([]);
@@ -310,6 +314,15 @@ export default function CashierItems() {
 
             <div className="mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => setCalculatorOpen(true)}
+                        className="px-4 py-2 bg-green-600 text-white rounded shadow hover:bg-green-700 transition flex items-center gap-2"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        Calculator
+                    </button>
                     <div className="flex items-center">
                         <label className="text-sm text-gray-600 mr-2">Category</label>
                         <div className="w-48">
@@ -821,6 +834,13 @@ export default function CashierItems() {
                     </div>
                 </div>
             </Modal>
+
+            {/* Change Calculator */}
+            <ChangeCalculator
+                isOpen={calculatorOpen}
+                onClose={() => setCalculatorOpen(false)}
+                totalAmount={orderTotal}
+            />
 
             {/* Toast container bottom-right */}
             <div className="fixed bottom-6 right-6 z-50">
