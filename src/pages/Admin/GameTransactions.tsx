@@ -9,6 +9,14 @@ export default function GameTransactions() {
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(false);
     const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
+    const [search, setSearch] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    // Debounce search input (500ms)
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(search), 500);
+        return () => clearTimeout(timer);
+    }, [search]);
 
     const toggleExpanded = (id: number) => {
         setExpandedIds((prev) => {
@@ -27,7 +35,11 @@ export default function GameTransactions() {
         async function load() {
             setLoading(true);
             try {
-                const res = await getGameTransactions({ Page: page, PageSize: pageSize });
+                const res = await getGameTransactions({
+                    Page: page,
+                    PageSize: pageSize,
+                    Search: debouncedSearch || undefined
+                });
                 if (!cancelled) {
                     setItems(res.data || []);
                     setTotal(res.totalCount || 0);
@@ -42,13 +54,27 @@ export default function GameTransactions() {
         return () => {
             cancelled = true;
         };
-    }, [page, pageSize]);
+    }, [page, pageSize, debouncedSearch]);
 
     const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
     return (
         <div className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Game Transactions</h2>
+            <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold">Game Transactions</h2>
+                <div className="w-64">
+                    <input
+                        type="text"
+                        placeholder="Search invoices..."
+                        value={search}
+                        onChange={(e) => {
+                            setSearch(e.target.value);
+                            setPage(1); // Reset to first page on search
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                </div>
+            </div>
 
             <div className="bg-white shadow rounded-md overflow-hidden">
                 <div className="space-y-4 p-4">

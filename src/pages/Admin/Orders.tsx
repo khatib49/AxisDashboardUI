@@ -17,6 +17,10 @@ const Orders: React.FC = () => {
     const [pageSize] = useState(10);
     const [itemTotal, setItemTotal] = useState(0);
     const [gameTotal, setGameTotal] = useState(0);
+    const [itemSearch, setItemSearch] = useState('');
+    const [debouncedItemSearch, setDebouncedItemSearch] = useState('');
+    const [gameSearch, setGameSearch] = useState('');
+    const [debouncedGameSearch, setDebouncedGameSearch] = useState('');
 
     // Edit modal states
     const [editModalOpen, setEditModalOpen] = useState(false);
@@ -31,17 +35,33 @@ const Orders: React.FC = () => {
 
     const [message, setMessage] = useState<string | null>(null);
 
+    // Debounce item search (500ms)
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedItemSearch(itemSearch), 500);
+        return () => clearTimeout(timer);
+    }, [itemSearch]);
+
+    // Debounce game search (500ms)
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedGameSearch(gameSearch), 500);
+        return () => clearTimeout(timer);
+    }, [gameSearch]);
+
     // Load item transactions
     const loadItemTransactions = useCallback(() => {
         setLoadingItems(true);
-        getItemTransactions({ Page: itemPage, PageSize: pageSize })
+        getItemTransactions({
+            Page: itemPage,
+            PageSize: pageSize,
+            Search: debouncedItemSearch || undefined
+        })
             .then((res) => {
                 setItemOrders(res.data || []);
                 setItemTotal(res.totalCount);
             })
             .catch(() => { /* ignore */ })
             .finally(() => setLoadingItems(false));
-    }, [itemPage, pageSize]);
+    }, [itemPage, pageSize, debouncedItemSearch]);
 
     useEffect(() => {
         loadItemTransactions();
@@ -50,14 +70,18 @@ const Orders: React.FC = () => {
     // Load game transactions
     const loadGameTransactions = useCallback(() => {
         setLoadingGames(true);
-        getGameTransactions({ Page: gamePage, PageSize: pageSize })
+        getGameTransactions({
+            Page: gamePage,
+            PageSize: pageSize,
+            Search: debouncedGameSearch || undefined
+        })
             .then((res) => {
                 setGameOrders(res.data || []);
                 setGameTotal(res.totalCount);
             })
             .catch(() => { /* ignore */ })
             .finally(() => setLoadingGames(false));
-    }, [gamePage, pageSize]);
+    }, [gamePage, pageSize, debouncedGameSearch]);
 
     useEffect(() => {
         loadGameTransactions();
@@ -138,7 +162,19 @@ const Orders: React.FC = () => {
             <div className="mb-10">
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-semibold">Coffee Shop Orders</h2>
-                    <span className="text-sm text-gray-600">Total: {itemTotal}</span>
+                    <div className="flex items-center gap-4">
+                        <input
+                            type="text"
+                            placeholder="Search coffee shop orders..."
+                            value={itemSearch}
+                            onChange={(e) => {
+                                setItemSearch(e.target.value);
+                                setItemPage(1);
+                            }}
+                            className="w-64 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                        />
+                        <span className="text-sm text-gray-600">Total: {itemTotal}</span>
+                    </div>
                 </div>
 
                 {loadingItems && (
@@ -154,15 +190,19 @@ const Orders: React.FC = () => {
                 {!loadingItems && itemOrders.length > 0 && (
                     <div className="space-y-4">
                         <div className="grid grid-cols-12 gap-2 font-medium text-sm border-b pb-2">
+                            <div className="col-span-1">Invoice</div>
                             <div className="col-span-2">Date/Time</div>
                             <div className="col-span-2">Cashier</div>
-                            <div className="col-span-3">Items</div>
+                            <div className="col-span-2">Items</div>
                             <div className="col-span-1">Total</div>
                             <div className="col-span-2">Status</div>
                             <div className="col-span-2">Actions</div>
                         </div>
                         {itemOrders.map((o, idx) => (
                             <div key={`${o.transactionId}-${idx}`} className="grid grid-cols-12 gap-2 items-center p-3 bg-white border rounded hover:shadow-md transition">
+                                <div className="col-span-1 text-sm">
+                                    <div className="font-bold text-gray-900">#{o.transactionId}</div>
+                                </div>
                                 <div className="col-span-2">
                                     <div className="font-medium text-sm">
                                         {new Date(o.createdOn).toLocaleDateString()}
@@ -175,7 +215,7 @@ const Orders: React.FC = () => {
                                     <div className="font-medium">{o.createdBy}</div>
                                     {o.roomName && <div className="text-xs text-gray-500">{o.roomName}</div>}
                                 </div>
-                                <div className="col-span-3 text-sm">
+                                <div className="col-span-2 text-sm">
                                     {o.items && o.items.length > 0 ? (
                                         <div className="space-y-1">
                                             {o.items.map((item, itemIdx) => (
@@ -223,7 +263,19 @@ const Orders: React.FC = () => {
             <div>
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-semibold">Game Session Orders</h2>
-                    <span className="text-sm text-gray-600">Total: {gameTotal}</span>
+                    <div className="flex items-center gap-4">
+                        <input
+                            type="text"
+                            placeholder="Search game session orders..."
+                            value={gameSearch}
+                            onChange={(e) => {
+                                setGameSearch(e.target.value);
+                                setGamePage(1);
+                            }}
+                            className="w-64 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                        />
+                        <span className="text-sm text-gray-600">Total: {gameTotal}</span>
+                    </div>
                 </div>
 
                 {loadingGames && (
@@ -239,6 +291,7 @@ const Orders: React.FC = () => {
                 {!loadingGames && gameOrders.length > 0 && (
                     <div className="space-y-4">
                         <div className="grid grid-cols-12 gap-2 font-medium text-sm border-b pb-2">
+                            <div className="col-span-1">Invoice</div>
                             <div className="col-span-2">Date/Time</div>
                             <div className="col-span-2">Cashier</div>
                             <div className="col-span-2">Room/Game</div>
@@ -246,10 +299,13 @@ const Orders: React.FC = () => {
                             <div className="col-span-1">Hours</div>
                             <div className="col-span-1">Total</div>
                             <div className="col-span-1">Status</div>
-                            <div className="col-span-2">Actions</div>
+                            <div className="col-span-1">Actions</div>
                         </div>
                         {gameOrders.map((o, idx) => (
                             <div key={`${o.transactionId}-${idx}`} className="grid grid-cols-12 gap-2 items-center p-3 bg-white border rounded hover:shadow-md transition">
+                                <div className="col-span-1 text-sm">
+                                    <div className="font-bold text-gray-900">#{o.transactionId}</div>
+                                </div>
                                 <div className="col-span-2">
                                     <div className="font-medium text-sm">
                                         {new Date(o.createdOn).toLocaleDateString()}
