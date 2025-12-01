@@ -489,22 +489,35 @@ const GameSession: React.FC = () => {
                                 <Select
                                     options={[
                                         { value: '', label: 'Select client...' },
-                                        ...clientResults.map(c => ({
-                                            value: c.id,
-                                            label: `${c.firstName} ${c.lastName} (${c.phoneNumber})`
-                                        }))
+                                        ...clientResults.map(c => {
+                                            const firstName = c.firstName || '';
+                                            const lastName = c.lastName || '';
+                                            const fullName = `${firstName} ${lastName}`.trim() || c.email || 'Unknown';
+                                            const phone = c.phoneNumber || 'No phone';
+                                            return {
+                                                value: c.id,
+                                                label: `${fullName} (${phone})`
+                                            };
+                                        })
                                     ]}
                                     defaultValue={selectedClient?.id ?? ''}
                                     onChange={(v: string | number) => {
                                         const client = clientResults.find(c => c.id === Number(v));
                                         setSelectedClient(client || null);
                                     }}
-                                    className="mt-2"
+                                    className="mt-2 w-80"
                                 />
                             )}
                             {selectedClient && (
                                 <div className="mt-2 text-xs bg-blue-50 text-blue-700 p-2 rounded flex items-center justify-between">
-                                    <span>Selected: {selectedClient.firstName} {selectedClient.lastName}</span>
+                                    <span>
+                                        Selected: {(() => {
+                                            const firstName = selectedClient.firstName || '';
+                                            const lastName = selectedClient.lastName || '';
+                                            const fullName = `${firstName} ${lastName}`.trim();
+                                            return fullName || selectedClient.email || 'Unknown';
+                                        })()}
+                                    </span>
                                     <button
                                         onClick={() => {
                                             setSelectedClient(null);
