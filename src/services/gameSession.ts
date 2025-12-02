@@ -11,6 +11,7 @@ export type CreateGameSessionRequest = {
   userId?: number | null; // optional user/client id
   isDayPass?: boolean;
   numberOfPersons?: number;
+  comment?: string; // optional comment
 };
 
 export async function createGameSession(body: CreateGameSessionRequest) {
@@ -38,6 +39,9 @@ export async function createGameSession(body: CreateGameSessionRequest) {
   }
   if (body.numberOfPersons !== undefined) {
     params.numberOfPersons = body.numberOfPersons;
+  }
+  if (body.comment !== undefined && body.comment !== "") {
+    params.comment = body.comment;
   }
   const res = await api.post("/transactions/CreateGameSession", null, {
     params,

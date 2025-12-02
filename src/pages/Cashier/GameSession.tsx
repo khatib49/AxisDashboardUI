@@ -69,6 +69,9 @@ const GameSession: React.FC = () => {
     const [clientResults, setClientResults] = useState<ClientUserDto[]>([]);
     const [selectedClient, setSelectedClient] = useState<ClientUserDto | null>(null);
 
+    // Comment state
+    const [comment, setComment] = useState('');
+
     const handleClientSearch = async () => {
         if (!clientPhone.trim()) {
             setClientResults([]);
@@ -532,6 +535,18 @@ const GameSession: React.FC = () => {
                             )}
                         </div>
 
+                        {/* Comment Section */}
+                        <div>
+                            <Label>Comment (Optional)</Label>
+                            <textarea
+                                value={comment}
+                                onChange={(e) => setComment(e.target.value)}
+                                placeholder="Add any notes or comments..."
+                                rows={3}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                            />
+                        </div>
+
                         <div>
                             <Label>Total</Label>
                             {(() => {
@@ -587,6 +602,7 @@ const GameSession: React.FC = () => {
                                             userId: selectedClient?.id,
                                             isDayPass: selectedSetting?.isDayPass,
                                             numberOfPersons: numberOfPersons,
+                                            comment: comment,
                                         });
 
                                         // Check if the response indicates success
@@ -627,6 +643,7 @@ const GameSession: React.FC = () => {
                                         setClientResults([]);
                                         setClientPhone('');
                                         setNumberOfPersons(1);
+                                        setComment('');
 
                                         // Refresh invoices list if it's visible
                                         if (showInvoicesSection) {

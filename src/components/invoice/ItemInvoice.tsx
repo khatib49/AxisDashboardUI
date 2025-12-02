@@ -170,6 +170,14 @@ const ItemInvoice: React.FC<ItemInvoiceProps> = ({ transaction, onPrint }) => {
                 </div>
             </div>
 
+            {/* Comment */}
+            {transaction.comment && (
+                <div className="border-b-2 border-gray-800 pb-4 mb-4">
+                    <div className="font-bold mb-2">COMMENT:</div>
+                    <div className="text-sm whitespace-pre-wrap">{transaction.comment}</div>
+                </div>
+            )}
+
             {/* Footer */}
             <div className="text-center text-xs pb-8 mb-4">
                 <p>Thank you for your order at AXIS COFFEE SHOP!</p>

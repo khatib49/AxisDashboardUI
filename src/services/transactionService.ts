@@ -107,15 +107,19 @@ export async function closeGameSession(invoiceId: number) {
 export async function createCoffeeShopOrder(
   itemsRequest: OrderItemRequest[],
   discountId?: number | null,
-  userId?: number | null
+  userId?: number | null,
+  comment?: string
 ) {
-  // POST the array as JSON body with optional discountId and userId in query params
+  // POST the array as JSON body with optional discountId, userId, and comment in query params
   const params: Record<string, unknown> = {};
   if (discountId) {
     params.discountId = discountId;
   }
   if (userId) {
     params.userId = userId;
+  }
+  if (comment !== undefined && comment !== "") {
+    params.comment = comment;
   }
   const res = await post<ApiResponse>(
     "/transactions/CreateCoffeeShopOrder",
@@ -163,6 +167,7 @@ export type ItemTransaction = {
   totalPrice: number;
   items: ItemTransactionLine[];
   discount?: DiscountInfo | null;
+  comment?: string | null;
 };
 
 export type GameTransaction = ItemTransaction & {

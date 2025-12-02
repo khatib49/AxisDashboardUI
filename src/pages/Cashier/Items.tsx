@@ -80,6 +80,9 @@ export default function CashierItems() {
     const [clientResults, setClientResults] = useState<ClientUserDto[]>([]);
     const [selectedClient, setSelectedClient] = useState<ClientUserDto | null>(null);
 
+    // Comment state
+    const [comment, setComment] = useState('');
+
     const auth = useAuth();
 
     const [notification, setNotification] = useState<{
@@ -540,6 +543,18 @@ export default function CashierItems() {
                                             )}
                                         </div>
 
+                                        {/* Comment Section */}
+                                        <div className="mt-3">
+                                            <label className="text-sm font-medium text-gray-700 mb-1 block">Comment (Optional)</label>
+                                            <textarea
+                                                value={comment}
+                                                onChange={(e) => setComment(e.target.value)}
+                                                placeholder="Add any notes or comments..."
+                                                rows={3}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                                            />
+                                        </div>
+
                                         <div className="mt-3 bg-gray-50 border p-2 rounded">
                                             <div className="text-sm font-medium border-b pb-2 mb-2">Receipt</div>
                                             <div className="space-y-2">
@@ -580,7 +595,7 @@ export default function CashierItems() {
                                                     if (orderItems.length === 0) return;
                                                     setOrderSubmitting(true);
                                                     try {
-                                                        const response = await createCoffeeShopOrder(orderItems as OrderItemRequest[], selectedDiscountId, selectedClient?.id);
+                                                        const response = await createCoffeeShopOrder(orderItems as OrderItemRequest[], selectedDiscountId, selectedClient?.id, comment);
 
                                                         // Check if the response indicates failure
                                                         if (response && response.success === false) {
@@ -611,6 +626,7 @@ export default function CashierItems() {
                                                         setSelectedClient(null);
                                                         setClientResults([]);
                                                         setClientPhone('');
+                                                        setComment('');
                                                         setIsDrawerOpen(false);
                                                         // refresh items list to reflect updated stock
                                                         setItemsReloadToken(t => t + 1);
