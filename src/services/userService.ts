@@ -52,9 +52,15 @@ export const deleteUser = async (id: string) => {
   return res.data;
 };
 
+export const getClientsCount = async (): Promise<{ count: number }> => {
+  const res = await api.get("/users/clients/count");
+  return res.data;
+};
+
 export default {
   getUsers,
   registerUser,
   updateUser,
   deleteUser,
+  getClientsCount,
 };

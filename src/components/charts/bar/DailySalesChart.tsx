@@ -6,8 +6,13 @@ import { getCategories, CategoryDto } from "../../../services/categoryService";
 import Loader from "../../ui/Loader";
 
 type DateFilter = 'today' | 'yesterday' | '3days' | '2weeks' | 'month';
+type CategoryType = 'all' | 'item' | 'game';
 
-export default function DailySalesChart() {
+interface DailySalesChartProps {
+    categoryType?: CategoryType;
+}
+
+export default function DailySalesChart({ categoryType = 'all' }: DailySalesChartProps) {
     const [salesData, setSalesData] = useState<DailySalesData[]>([]);
     const [itemCategories, setItemCategories] = useState<CategoryDto[]>([]);
     const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
@@ -15,19 +20,32 @@ export default function DailySalesChart() {
     const [error, setError] = useState<string | null>(null);
     const [dateFilter, setDateFilter] = useState<DateFilter>('month');
 
-    // Load item categories on mount
+    // Load categories on mount based on categoryType
     useEffect(() => {
         let mounted = true;
-        getCategories(1, 100)
-            .then((res) => {
-                if (!mounted) return;
-                setItemCategories(res.data || []);
-            })
-            .catch(() => {
-                // Ignore category load errors
-            });
+
+        // Only load categories if we need filtering (not for 'game' type since there are no game categories for filtering)
+        if (categoryType !== 'game') {
+            getCategories(1, 100)
+                .then((res) => {
+                    if (!mounted) return;
+                    // Filter categories based on type
+                    const allCategories = res.data || [];
+                    if (categoryType === 'item') {
+                        // Assuming item categories have type 'item' or specific IDs
+                        // You may need to adjust this based on your category structure
+                        setItemCategories(allCategories);
+                    } else {
+                        setItemCategories(allCategories);
+                    }
+                })
+                .catch(() => {
+                    // Ignore category load errors
+                });
+        }
+
         return () => { mounted = false; };
-    }, []);
+    }, [categoryType]);
 
     useEffect(() => {
         let mounted = true;
@@ -177,20 +195,33 @@ export default function DailySalesChart() {
         },
     };
 
-    const series = [
-        {
-            name: "Items Sales",
-            data: itemsData.length > 0 ? itemsData : [0],
-        },
-        {
-            name: "Games Sales",
-            data: gamesData.length > 0 ? gamesData : [0],
-        },
-        {
-            name: "Total Sales",
-            data: grandTotalData.length > 0 ? grandTotalData : [0],
-        },
-    ];
+    // Build series based on categoryType
+    const series = (() => {
+        const result = [];
+
+        if (categoryType === 'all' || categoryType === 'item') {
+            result.push({
+                name: "Items Sales",
+                data: itemsData.length > 0 ? itemsData : [0],
+            });
+        }
+
+        if (categoryType === 'all' || categoryType === 'game') {
+            result.push({
+                name: "Games Sales",
+                data: gamesData.length > 0 ? gamesData : [0],
+            });
+        }
+
+        if (categoryType === 'all') {
+            result.push({
+                name: "Total Sales",
+                data: grandTotalData.length > 0 ? grandTotalData : [0],
+            });
+        }
+
+        return result;
+    })();
 
     if (loading) {
         return (
@@ -300,10 +331,12 @@ export default function DailySalesChart() {
                 </button>
             </div>
 
-            {/* Category Filter */}
-            {itemCategories.length > 0 && (
+            {/* Category Filter - Only show for 'all' or 'item' types */}
+            {categoryType !== 'game' && itemCategories.length > 0 && (
                 <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <h3 className="text-sm font-semibold mb-3 text-gray-700 dark:text-gray-300">Filter by Item Category:</h3>
+                    <h3 className="text-sm font-semibold mb-3 text-gray-700 dark:text-gray-300">
+                        Filter by {categoryType === 'item' ? 'F&B' : 'Item'} Category:
+                    </h3>
                     <div className="flex flex-wrap gap-3">
                         {itemCategories.map((cat) => (
                             <label

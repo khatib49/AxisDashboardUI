@@ -334,6 +334,89 @@ export async function deleteTransaction(id: number) {
   return res;
 }
 
+export type OrdersCountQuery = {
+  from?: string;
+  to?: string;
+  categoryIds?: string;
+};
+
+export async function getOrdersCount(query: OrdersCountQuery = {}) {
+  const params: Record<string, unknown> = {};
+  if (query.from) params.from = query.from;
+  if (query.to) params.to = query.to;
+  if (query.categoryIds) params.categoryIds = query.categoryIds;
+
+  const res = await get<{ ordersCount: number }>(
+    "/TransactionsReports/orders/count",
+    { params }
+  );
+  return res;
+}
+
+export async function getClientsCount() {
+  const res = await get<{ count: number }>(
+    "/TransactionsReports/clients/count"
+  );
+  return res;
+}
+
+export type ItemSalesReportDto = {
+  itemId: number;
+  itemName: string;
+  categoryId: number;
+  categoryName: string;
+  totalQuantity: number;
+  totalAmount: number;
+  imagePath?: string | null;
+};
+
+export type ItemSalesReportQuery = {
+  from?: string;
+  to?: string;
+  categoryIds?: string;
+  top?: number;
+};
+
+export async function getItemSalesReport(query: ItemSalesReportQuery = {}) {
+  const params: Record<string, unknown> = {};
+  if (query.from) params.from = query.from;
+  if (query.to) params.to = query.to;
+  if (query.categoryIds) params.categoryIds = query.categoryIds;
+  if (query.top !== undefined) params.top = query.top;
+
+  const res = await get<ItemSalesReportDto[]>(
+    "/TransactionsReports/items/report",
+    { params }
+  );
+  return res;
+}
+
+export type GameHourlySalesDto = {
+  hour: number;
+  sessionsCount: number;
+  totalHours: number;
+  totalAmount: number;
+};
+
+export type GameHourlySalesQuery = {
+  from?: string;
+  to?: string;
+  categoryIds?: string;
+};
+
+export async function getGameHourlyHeatmap(query: GameHourlySalesQuery = {}) {
+  const params: Record<string, unknown> = {};
+  if (query.from) params.from = query.from;
+  if (query.to) params.to = query.to;
+  if (query.categoryIds) params.categoryIds = query.categoryIds;
+
+  const res = await get<GameHourlySalesDto[]>(
+    "/TransactionsReports/games/hourly-heatmap",
+    { params }
+  );
+  return res;
+}
+
 export default {
   getTransactions,
   createCoffeeShopOrder,
@@ -341,6 +424,10 @@ export default {
   getGameTransactions,
   getDailySales,
   getTotalSales,
+  getOrdersCount,
+  getClientsCount,
+  getItemSalesReport,
+  getGameHourlyHeatmap,
   updateTransaction,
   deleteTransaction,
 };
