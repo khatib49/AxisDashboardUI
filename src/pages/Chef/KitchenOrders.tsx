@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getKitchenOrders, getKitchenOrderById, startPreparingOrder, markOrderReady, KitchenOrderDto } from '../../services/kitchenService';
+import { getKitchenOrders, getKitchenOrderById, startPreparingOrder, markOrderReady, markOrderServed, KitchenOrderDto } from '../../services/kitchenService';
 import PageMeta from '../../components/common/PageMeta';
 import Loader from '../../components/ui/Loader';
 import Modal from '../../components/ui/Modal';
@@ -87,6 +87,22 @@ export default function KitchenOrders() {
         }
     };
 
+    const handleMarkServed = async (transactionId: number) => {
+        try {
+            setActionLoading(true);
+            await markOrderServed(transactionId);
+            closeModal();
+            loadOrders();
+        } catch (err: unknown) {
+            const message = err && typeof err === 'object' && 'message' in err
+                ? String(err.message)
+                : 'Failed to mark order as served';
+            setError(message);
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
     const getStatusBadge = (statusId: number, statusName: string) => {
         const statusConfig: Record<number, { bg: string; text: string; label: string }> = {
             11: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Pending' }, // Food Pending
@@ -120,6 +136,16 @@ export default function KitchenOrders() {
                     className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
                 >
                     Mark Ready
+                </button>
+            );
+        }
+        if (order.foodStatusId === 13) { // Food Ready
+            return (
+                <button
+                    onClick={() => handleMarkServed(order.transactionId)}
+                    className="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm"
+                >
+                    Mark Served
                 </button>
             );
         }
@@ -287,6 +313,15 @@ export default function KitchenOrders() {
                                 disabled={actionLoading}
                             >
                                 {actionLoading ? <Loader size={16} /> : 'Mark Ready'}
+                            </button>
+                        )}
+                        {selectedOrder && selectedOrder.foodStatusId === 13 && (
+                            <button
+                                className="bg-purple-600 text-white px-3 py-1 rounded flex items-center gap-2"
+                                onClick={() => handleMarkServed(selectedOrder.transactionId)}
+                                disabled={actionLoading}
+                            >
+                                {actionLoading ? <Loader size={16} /> : 'Mark Served'}
                             </button>
                         )}
                     </>
