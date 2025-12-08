@@ -50,6 +50,8 @@ import GamingProfit from './pages/Admin/GamingProfit';
 import TcgProfit from './pages/Admin/TcgProfit';
 import FnbProfit from './pages/Admin/FnbProfit';
 import OverallProfit from './pages/Admin/OverallProfit';
+import KitchenOrders from './pages/Chef/KitchenOrders';
+import KitchenStats from './pages/Chef/KitchenStats';
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { authenticated, loading } = useAuth();
@@ -90,6 +92,14 @@ const AdminFnBRoute: React.FC<{ children: React.ReactElement }> = ({ children })
   return children;
 };
 
+const ChefRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
+  const { hasRole, loading, authenticated } = useAuth();
+  if (loading) return <div className="p-6 text-center">Loading...</div>;
+  if (!authenticated) return <Navigate to="/signin" replace />;
+  if (!hasRole("chef")) return <Navigate to="/" replace />;
+  return children;
+};
+
 export default function App() {
   // Role-based home element: redirect non-admin operational roles away from dashboard
   const RoleHome: React.FC = () => {
@@ -102,6 +112,9 @@ export default function App() {
     }
     if (hasRole("admin_fnb")) {
       return <Navigate to="/admin-fnb/dashboard" replace />;
+    }
+    if (hasRole("chef")) {
+      return <Navigate to="/chef/orders" replace />;
     }
     return <Home />;
   };
@@ -172,6 +185,10 @@ export default function App() {
               <Route path="/admin-fnb/profit" element={<AdminFnBRoute><FnbProfit /></AdminFnBRoute>} />
               <Route path="/admin-fnb/items" element={<AdminFnBRoute><AdminFnBItems /></AdminFnBRoute>} />
               <Route path="/admin-fnb/orders" element={<AdminFnBRoute><AdminFnBOrders /></AdminFnBRoute>} />
+
+              {/* Chef routes */}
+              <Route path="/chef/orders" element={<ChefRoute><KitchenOrders /></ChefRoute>} />
+              <Route path="/chef/stats" element={<ChefRoute><KitchenStats /></ChefRoute>} />
 
               {/* GameCashie routes (non-admin paths) */}
               <Route path="/game/sessions" element={<GameCashieRoute><GameSession /></GameCashieRoute>} />

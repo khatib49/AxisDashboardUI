@@ -186,12 +186,20 @@ const AppSidebar: React.FC = () => {
       ];
     }
 
+    // Chef: kitchen order management only
+    if (hasRole("chef")) {
+      return [
+        { icon: <ListIcon />, name: "Kitchen Orders", path: "/chef/orders" },
+        { icon: <PieChartIcon />, name: "Statistics", path: "/chef/stats" },
+      ];
+    }
+
     return baseNavItems; // non-admin retains original navigation
   }, [hasRole]);
 
   const computedOthersItems = useMemo(() => {
-    // Hide others section for admin and cashier
-    if (hasRole("admin") || hasRole("cashier")) return [];
+    // Hide others section for admin, cashier, and chef
+    if (hasRole("admin") || hasRole("cashier") || hasRole("chef")) return [];
     return baseOthersItems;
   }, [hasRole]);
 
