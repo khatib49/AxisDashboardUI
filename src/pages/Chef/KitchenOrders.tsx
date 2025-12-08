@@ -46,8 +46,8 @@ export default function KitchenOrders() {
             setSelectedOrder(detailedOrder);
             openModal();
         } catch (err: unknown) {
-            const message = err && typeof err === 'object' && 'message' in err 
-                ? String(err.message) 
+            const message = err && typeof err === 'object' && 'message' in err
+                ? String(err.message)
                 : 'Failed to load order details';
             setError(message);
         } finally {
@@ -153,8 +153,8 @@ export default function KitchenOrders() {
                             key={filter.value}
                             onClick={() => setStatusFilter(filter.value)}
                             className={`px-4 py-2 rounded-lg font-medium transition ${statusFilter === filter.value
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300'
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300'
                                 }`}
                         >
                             {filter.label}
@@ -184,11 +184,11 @@ export default function KitchenOrders() {
                                     key={order.transactionId}
                                     className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border-l-4"
                                     style={{
-                                        borderLeftColor: 
+                                        borderLeftColor:
                                             order.foodStatusId === 11 ? '#FCD34D' : // Food Pending - yellow
-                                            order.foodStatusId === 12 ? '#60A5FA' : // Food InProgress - blue
-                                            order.foodStatusId === 13 ? '#34D399' : // Food Ready - green
-                                            '#9CA3AF' // Food Served - gray
+                                                order.foodStatusId === 12 ? '#60A5FA' : // Food InProgress - blue
+                                                    order.foodStatusId === 13 ? '#34D399' : // Food Ready - green
+                                                        '#9CA3AF' // Food Served - gray
                                     }}
                                 >
                                     <div className="flex justify-between items-start mb-3">

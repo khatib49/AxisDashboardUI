@@ -106,9 +106,7 @@ export async function markOrderServed(
 /**
  * Update food status manually (admin only)
  */
-export async function updateFoodStatus(
-  dto: UpdateFoodStatusDto
-): Promise<{
+export async function updateFoodStatus(dto: UpdateFoodStatusDto): Promise<{
   message: string;
   transactionId: number;
   newFoodStatusId: number;
