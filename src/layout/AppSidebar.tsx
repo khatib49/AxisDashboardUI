@@ -132,6 +132,16 @@ const AppSidebar: React.FC = () => {
           ],
         },
         { icon: <PieChartIcon />, name: "Discount Management", path: "/admin/discounts" },
+        {
+          icon: <DollarLineIcon />,
+          name: "Profit",
+          subItems: [
+            { name: "Gaming Profit", path: "/admin/profit/gaming" },
+            { name: "TCG Profit", path: "/admin/profit/tcg" },
+            { name: "F&B Profit", path: "/admin/profit/fnb" },
+            { name: "Overall Profit", path: "/admin/profit/overall" },
+          ],
+        },
       ];
     }
 
@@ -151,6 +161,7 @@ const AppSidebar: React.FC = () => {
             { name: "Orders", path: "/admin-fnb/orders" },
           ],
         },
+        { icon: <DollarLineIcon />, name: "Profit", path: "/admin-fnb/profit" },
       ];
     }
 

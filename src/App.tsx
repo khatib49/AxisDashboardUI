@@ -46,6 +46,10 @@ import ExpenseCategories from './pages/Admin/ExpenseCategories';
 import QRCodeGenerator from './pages/Admin/QRCodeGenerator';
 import DiscountManagement from './pages/Admin/DiscountManagement';
 import ClientManagement from './pages/GameCashier/ClientManagement';
+import GamingProfit from './pages/Admin/GamingProfit';
+import TcgProfit from './pages/Admin/TcgProfit';
+import FnbProfit from './pages/Admin/FnbProfit';
+import OverallProfit from './pages/Admin/OverallProfit';
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { authenticated, loading } = useAuth();
@@ -157,8 +161,15 @@ export default function App() {
               <Route path="/admin/expenses" element={<AdminRoute><Expenses /></AdminRoute>} />
               <Route path="/admin/expense-categories" element={<AdminRoute><ExpenseCategories /></AdminRoute>} />
 
+              {/* Admin Profit routes */}
+              <Route path="/admin/profit/gaming" element={<AdminRoute><GamingProfit /></AdminRoute>} />
+              <Route path="/admin/profit/tcg" element={<AdminRoute><TcgProfit /></AdminRoute>} />
+              <Route path="/admin/profit/fnb" element={<AdminRoute><FnbProfit /></AdminRoute>} />
+              <Route path="/admin/profit/overall" element={<AdminRoute><OverallProfit /></AdminRoute>} />
+
               {/* Admin F&B routes */}
               <Route path="/admin-fnb/dashboard" element={<AdminFnBRoute><AdminFnBDashboard /></AdminFnBRoute>} />
+              <Route path="/admin-fnb/profit" element={<AdminFnBRoute><FnbProfit /></AdminFnBRoute>} />
               <Route path="/admin-fnb/items" element={<AdminFnBRoute><AdminFnBItems /></AdminFnBRoute>} />
               <Route path="/admin-fnb/orders" element={<AdminFnBRoute><AdminFnBOrders /></AdminFnBRoute>} />
 
