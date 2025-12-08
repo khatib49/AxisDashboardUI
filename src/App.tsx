@@ -105,7 +105,7 @@ const BarTenderRoute: React.FC<{ children: React.ReactElement }> = ({ children }
   const { hasRole, loading, authenticated } = useAuth();
   if (loading) return <div className="p-6 text-center">Loading...</div>;
   if (!authenticated) return <Navigate to="/signin" replace />;
-  if (!hasRole("bartender")) return <Navigate to="/" replace />;
+  if (!hasRole("bartender")) return <Navigate to="/bartender/orders" replace />;
   return children;
 };
 
@@ -129,9 +129,11 @@ export default function App() {
     if (hasRole("chef")) {
       return <Navigate to="/chef/orders" replace />;
     }
+
     if (hasRole("bartender")) {
       return <Navigate to="/bartender/orders" replace />;
     }
+
     return <Home />;
   };
   return (
