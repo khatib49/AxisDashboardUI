@@ -100,6 +100,15 @@ const ChefRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => 
   return children;
 };
 
+
+const BarTenderRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
+  const { hasRole, loading, authenticated } = useAuth();
+  if (loading) return <div className="p-6 text-center">Loading...</div>;
+  if (!authenticated) return <Navigate to="/signin" replace />;
+  if (!hasRole("bartender")) return <Navigate to="/" replace />;
+  return children;
+};
+
 export default function App() {
   // Role-based home element: redirect non-admin operational roles away from dashboard
   const RoleHome: React.FC = () => {
@@ -115,6 +124,13 @@ export default function App() {
     }
     if (hasRole("chef")) {
       return <Navigate to="/chef/orders" replace />;
+    }
+    
+    if (hasRole("chef")) {
+      return <Navigate to="/chef/orders" replace />;
+    }
+    if (hasRole("bartender")) {
+      return <Navigate to="/bartender/orders" replace />;
     }
     return <Home />;
   };
@@ -189,6 +205,12 @@ export default function App() {
               {/* Chef routes */}
               <Route path="/chef/orders" element={<ChefRoute><KitchenOrders /></ChefRoute>} />
               <Route path="/chef/stats" element={<ChefRoute><KitchenStats /></ChefRoute>} />
+
+
+              {/* BarTender routes */}
+              <Route path="/bartender/orders" element={<BarTenderRoute><KitchenOrders /></BarTenderRoute>} />
+              <Route path="/bartender/stats" element={<BarTenderRoute><KitchenStats /></BarTenderRoute>} />
+
 
               {/* GameCashie routes (non-admin paths) */}
               <Route path="/game/sessions" element={<GameCashieRoute><GameSession /></GameCashieRoute>} />
