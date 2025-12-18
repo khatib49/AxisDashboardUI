@@ -301,7 +301,7 @@ const LoyaltyCheck: React.FC = () => {
                             </div>
                         ) : (
                             <div className="space-y-3">
-                                {customerData.recentTickets.map((ticket, index) => (
+                                {customerData.recentTickets.map((ticket) => (
                                     <div
                                         key={ticket.ticketId}
                                         className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/10 dark:to-blue-900/10 rounded-lg border border-purple-200 dark:border-purple-800 hover:shadow-md transition-all"
