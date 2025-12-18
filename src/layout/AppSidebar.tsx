@@ -19,6 +19,7 @@ import {
 import { useSidebar } from "../context/SidebarContext";
 import { useAuth } from "../context/AuthContext";
 import SidebarWidget from "./SidebarWidget";
+import TicketIcon from "../icons/tickets";
 
 type NavItem = {
   name: string;
@@ -142,6 +143,15 @@ const AppSidebar: React.FC = () => {
             { name: "Overall Profit", path: "/admin/profit/overall" },
           ],
         },
+        {
+        icon: <TicketIcon />, // You'll need to add this icon
+        name: "AXIS PLUS Rewards",
+        subItems: [
+          { name: "Customer Lookup", path: "/admin/loyalty/customers" },
+          { name: "Leaderboard", path: "/admin/loyalty/leaderboard" },
+          { name: "Conduct Draws", path: "/admin/loyalty/draws" },
+        ],
+      },
       ];
     }
 
@@ -175,6 +185,7 @@ const AppSidebar: React.FC = () => {
         { icon: <TableIcon />, name: "Rooms", path: "/gamecashier/rooms" },
         { icon: <BoxCubeIcon />, name: "Items", path: "/gamecashier/items" },
         { icon: <UserCircleIcon />, name: "Clients", path: "/gamecashier/clients" },
+        { icon: <TicketIcon />, name: "AXIS PLUS Check", path: "/cashier/loyalty-check" },
       ];
     }
 
@@ -183,6 +194,7 @@ const AppSidebar: React.FC = () => {
       return [
         { icon: <BoxCubeIcon />, name: "Items", path: "/cashier/items" },
         { icon: <TableIcon />, name: "Orders", path: "/cashier/orders" },
+        { icon: <TicketIcon />, name: "AXIS PLUS Check", path: "/cashier/loyalty-check" },
       ];
     }
 

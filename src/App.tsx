@@ -52,6 +52,10 @@ import FnbProfit from './pages/Admin/FnbProfit';
 import OverallProfit from './pages/Admin/OverallProfit';
 import KitchenOrders from './pages/Chef/KitchenOrders';
 import KitchenStats from './pages/Chef/KitchenStats';
+import LoyaltyCheck from './pages/Cashier/LoyaltyCheck';
+import LoyaltyCustomers from './pages/Admin/LoyaltyCustomers';
+import LoyaltyLeaderboard from './pages/Admin/LoyaltyLeaderboard';
+import LoyaltyDraws from './pages/Admin/LoyaltyDraws';
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { authenticated, loading } = useAuth();
@@ -191,6 +195,9 @@ export default function App() {
               <Route path="/admin/discounts" element={<AdminRoute><DiscountManagement /></AdminRoute>} />
               <Route path="/admin/expenses" element={<AdminRoute><Expenses /></AdminRoute>} />
               <Route path="/admin/expense-categories" element={<AdminRoute><ExpenseCategories /></AdminRoute>} />
+              <Route path="/admin/loyalty/customers" element={<ProtectedRoute><LoyaltyCustomers /></ProtectedRoute>} />
+              <Route path="/admin/loyalty/leaderboard" element={<ProtectedRoute><LoyaltyLeaderboard /></ProtectedRoute>} />
+              <Route path="/admin/loyalty/draws" element={<ProtectedRoute><LoyaltyDraws /></ProtectedRoute>} />
 
               {/* Admin Profit routes */}
               <Route path="/admin/profit/gaming" element={<AdminRoute><GamingProfit /></AdminRoute>} />
@@ -219,6 +226,12 @@ export default function App() {
               <Route path="/gamecashier/rooms" element={<GameCashieRoute><GameCashierRooms /></GameCashieRoute>} />
               <Route path="/gamecashier/ps5-sessions" element={<GameCashieRoute><Ps5Sessions /></GameCashieRoute>} />
               <Route path="/gamecashier/board-sessions" element={<GameCashieRoute><BoardGameSessions /></GameCashieRoute>} />
+              <Route path="/cashier/loyalty-check" element={<ProtectedRoute>
+     <LoyaltyCheck />
+        </ProtectedRoute>
+    } 
+/>
+
               {/* Make Cashier Items also available to game cashier roles */}
               <Route path="/gamecashier/items" element={<GameCashieRoute><CashierItems /></GameCashieRoute>} />
               <Route path="/gamecashier/clients" element={<GameCashieRoute><ClientManagement /></GameCashieRoute>} />

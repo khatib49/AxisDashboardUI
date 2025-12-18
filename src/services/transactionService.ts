@@ -168,6 +168,7 @@ export type ItemTransaction = {
   items: ItemTransactionLine[];
   discount?: DiscountInfo | null;
   comment?: string | null;
+  userName?: string | null;
 };
 
 export type GameTransaction = ItemTransaction & {

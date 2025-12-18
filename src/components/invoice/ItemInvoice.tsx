@@ -118,6 +118,10 @@ const ItemInvoice: React.FC<ItemInvoiceProps> = ({ transaction, onPrint }) => {
                 <div className="text-xs mt-2">{formattedDate}</div>
             </div>
 
+            {/* <div className="text-center border-b-2 border-gray-800 pb-4 mb-4">
+                            <div className="text-xs">Name : {transaction.userName}</div>
+                        </div> */}
+
             {/* Items */}
             <div className="border-b-2 border-gray-800 pb-4 mb-4">
                 <div className="font-bold mb-2">ITEMS:</div>
