@@ -84,12 +84,16 @@ export default function GameTransactions() {
                         <div className="px-4 py-6 text-center text-sm text-gray-500">No transactions found</div>
                     ) : (
                         items.map((t) => {
-                            const isExpanded = expandedIds.has(t.transactionId);
-                            return (
-                                <div key={t.transactionId} className="border rounded-lg overflow-hidden">
+                                                    const isExpanded = typeof t.transactionId === 'number' ? expandedIds.has(t.transactionId) : false;
+                                                    return (
+                                                        <div key={t.transactionId} className="border rounded-lg overflow-hidden">
                                     <div
                                         className="p-4 cursor-pointer hover:bg-gray-50 transition"
-                                        onClick={() => toggleExpanded(t.transactionId)}
+                                        onClick={() => {
+                                            if (typeof t.transactionId === 'number') {
+                                                toggleExpanded(t.transactionId);
+                                            }
+                                        }}
                                     >
                                         <div className="flex items-start justify-between">
                                             <div className="flex-1 grid grid-cols-2 gap-4">
@@ -162,7 +166,7 @@ export default function GameTransactions() {
                                                 </div>
                                                 <div>
                                                     <div className="text-xs text-gray-500">Items Count</div>
-                                                    <div className="text-sm text-gray-900">{t.items.length} item(s)</div>
+                                                    <div className="text-sm text-gray-900">{t.items ? t.items.length : 0} item(s)</div>
                                                 </div>
                                             </div>
                                             <div className="ml-4 flex-shrink-0">
@@ -178,7 +182,7 @@ export default function GameTransactions() {
                                         </div>
                                     </div>
 
-                                    {isExpanded && t.items.length > 0 && (
+                                    {isExpanded && t.items && t.items.length > 0 && (
                                         <div className="border-t bg-gray-50 p-4">
                                             <div className="text-xs font-medium text-gray-700 mb-3">Items Detail</div>
                                             <div className="space-y-2">

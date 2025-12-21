@@ -102,7 +102,7 @@ const Orders: React.FC = () => {
         setSaving(true);
         setMessage(null);
         try {
-            await updateTransaction(editingTransaction.transactionId, editData);
+            await updateTransaction(editingTransaction.transactionId!, editData);
             setMessage('Transaction updated successfully');
             setEditModalOpen(false);
             setEditingTransaction(null);
@@ -242,7 +242,7 @@ const Orders: React.FC = () => {
                                 <div className="col-span-2 text-sm">
                                     <div className="flex items-center gap-2">
                                         <button className="text-blue-600 hover:text-blue-800 text-xs" onClick={() => handleEdit(o)}>Edit</button>
-                                        <button className="text-red-600 hover:text-red-800 text-xs" onClick={() => handleDeleteClick(o.transactionId)}>Delete</button>
+                                        <button className="text-red-600 hover:text-red-800 text-xs" onClick={() => (o.transactionId !== undefined ? handleDeleteClick(o.transactionId) : undefined)}>Delete</button>
                                     </div>
                                 </div>
                             </div>
@@ -341,7 +341,7 @@ const Orders: React.FC = () => {
                                 <div className="col-span-2 text-sm">
                                     <div className="flex items-center gap-2">
                                         <button className="text-blue-600 hover:text-blue-800 text-xs" onClick={() => handleEdit(o)}>Edit</button>
-                                        <button className="text-red-600 hover:text-red-800 text-xs" onClick={() => handleDeleteClick(o.transactionId)}>Delete</button>
+                                        <button className="text-red-600 hover:text-red-800 text-xs" onClick={() => { if (typeof o.transactionId === 'number') handleDeleteClick(o.transactionId); }}>Delete</button>
                                     </div>
                                 </div>
                             </div>

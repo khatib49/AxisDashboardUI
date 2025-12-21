@@ -56,6 +56,7 @@ import LoyaltyCheck from './pages/Cashier/LoyaltyCheck';
 import LoyaltyCustomers from './pages/Admin/LoyaltyCustomers';
 import LoyaltyLeaderboard from './pages/Admin/LoyaltyLeaderboard';
 import LoyaltyDraws from './pages/Admin/LoyaltyDraws';
+import OpenInvoices from './pages/Cashier/OpenInvoices';
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { authenticated, loading } = useAuth();
@@ -231,7 +232,9 @@ export default function App() {
         </ProtectedRoute>
     } 
 />
-
+              
+            <Route path="/cashier/open-invoices" element={<ProtectedRoute><OpenInvoices /></ProtectedRoute>} />
+            
               {/* Make Cashier Items also available to game cashier roles */}
               <Route path="/gamecashier/items" element={<GameCashieRoute><CashierItems /></GameCashieRoute>} />
               <Route path="/gamecashier/clients" element={<GameCashieRoute><ClientManagement /></GameCashieRoute>} />

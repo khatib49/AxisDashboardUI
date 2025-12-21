@@ -26,7 +26,7 @@ const ItemInvoice: React.FC<ItemInvoiceProps> = ({ transaction, onPrint }) => {
             /* --- POS PAGE: 80mm roll --- */
             @page {
               size: 80mm auto;
-              margin: 0 0 18mm 0; /* bottom margin to guarantee extra feed */
+              margin: 0 0 18mm 0;
             }
             html, body {
               width: 80mm;
@@ -37,17 +37,15 @@ const ItemInvoice: React.FC<ItemInvoiceProps> = ({ transaction, onPrint }) => {
               print-color-adjust: exact;
             }
 
-            /* Root container in popup */
             .pos-print {
-              width: 76mm !important;          /* safe printable width */
+              width: 76mm !important;
               margin: 0 auto !important;
-              padding: 5mm 2mm 16mm !important; /* extra bottom padding */
+              padding: 5mm 2mm 16mm !important;
               box-sizing: border-box !important;
               page-break-inside: avoid !important;
               max-width: none !important;
             }
 
-            /* Larger, receipt-friendly typography */
             .pos-print, .pos-print * {
               font-family: 'Courier New', ui-monospace, Menlo, Consolas, monospace !important;
               font-size: 15px !important;
@@ -55,7 +53,6 @@ const ItemInvoice: React.FC<ItemInvoiceProps> = ({ transaction, onPrint }) => {
               color: #000 !important;
             }
 
-            /* Tailwind fallbacks (if stylesheet isn't loaded in popup) */
             .pos-print .text-xs { font-size: 12px !important; }
             .pos-print .text-sm { font-size: 15px !important; }
             .pos-print .text-lg { font-size: 18px !important; }
@@ -73,7 +70,6 @@ const ItemInvoice: React.FC<ItemInvoiceProps> = ({ transaction, onPrint }) => {
             .pos-print .mt-1 { margin-top: 4px !important; }
             .pos-print .print\\:hidden, .pos-print button { display: none !important; }
 
-            /* Final spacer in case the driver trims trailing blanks */
             .pos-spacer { height: 20mm; width: 100%; display: block; }
           </style>
         </head>
@@ -82,7 +78,6 @@ const ItemInvoice: React.FC<ItemInvoiceProps> = ({ transaction, onPrint }) => {
     `);
         win.document.close();
 
-        // (Optional) bring Tailwind/app styles into the popup so classes render
         document.querySelectorAll('link[rel="stylesheet"], style').forEach(n => {
             try { win.document.head.appendChild(n.cloneNode(true)); } catch {
                 console.info('Could not clone stylesheet for print window.');
@@ -108,7 +103,6 @@ const ItemInvoice: React.FC<ItemInvoiceProps> = ({ transaction, onPrint }) => {
         minute: '2-digit',
     });
 
-    // Screen/modal view (unchanged)
     return (
         <div id="item-invoice" className="bg-white p-6 max-w-sm mx-auto font-mono text-sm">
             {/* Header */}
@@ -116,11 +110,24 @@ const ItemInvoice: React.FC<ItemInvoiceProps> = ({ transaction, onPrint }) => {
                 <div className="text-xl font-bold mb-1">ORDER RECEIPT</div>
                 <div className="text-xs">AXIS COFFEE SHOP</div>
                 <div className="text-xs mt-2">{formattedDate}</div>
+                <div className="text-xs">Invoice #{transaction.transactionId}</div>
             </div>
 
-            {/* <div className="text-center border-b-2 border-gray-800 pb-4 mb-4">
-                            <div className="text-xs">Name : {transaction.userName}</div>
-                        </div> */}
+            {/* Customer & Set Info */}
+            {(transaction.userName || transaction.setName) && (
+                <div className="border-b-2 border-gray-800 pb-4 mb-4">
+                    {transaction.userName && (
+                        <div className="text-sm mb-1">
+                            <span className="font-bold">Customer:</span> {transaction.userName}
+                        </div>
+                    )}
+                    {transaction.setName && (
+                        <div className="text-sm">
+                            <span className="font-bold">Set:</span> {transaction.setName}
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Items */}
             <div className="border-b-2 border-gray-800 pb-4 mb-4">
@@ -148,8 +155,9 @@ const ItemInvoice: React.FC<ItemInvoiceProps> = ({ transaction, onPrint }) => {
             <div className="space-y-1 border-b-2 border-gray-800 pb-2 mb-4">
                 {transaction.discount && (() => {
                     const itemsSubtotal = transaction.items.reduce((sum, item) => sum + item.lineTotal, 0);
-                    // Ensure percentage is in decimal form (5% = 0.05)
-                    const discountRate = transaction.discount.percentage > 1 ? transaction.discount.percentage / 100 : transaction.discount.percentage;
+                    const discountRate = transaction.discount.percentage > 1 
+                        ? transaction.discount.percentage / 100 
+                        : transaction.discount.percentage;
                     const discountAmount = itemsSubtotal * discountRate;
                     return (
                         <>
@@ -170,7 +178,10 @@ const ItemInvoice: React.FC<ItemInvoiceProps> = ({ transaction, onPrint }) => {
                 </div>
                 <div className="flex justify-between text-lg font-bold">
                     <span>TOTAL (LBP):</span>
-                    <span>{(transaction.totalPrice * 90000).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} LBP</span>
+                    <span>{(transaction.totalPrice * 90000).toLocaleString('en-US', { 
+                        minimumFractionDigits: 0, 
+                        maximumFractionDigits: 0 
+                    })} LBP</span>
                 </div>
             </div>
 
@@ -185,6 +196,7 @@ const ItemInvoice: React.FC<ItemInvoiceProps> = ({ transaction, onPrint }) => {
             {/* Footer */}
             <div className="text-center text-xs pb-8 mb-4">
                 <p>Thank you for your order at AXIS COFFEE SHOP!</p>
+                <p className="mt-1">Served by: {transaction.createdBy}</p>
             </div>
 
             {/* Print Button */}

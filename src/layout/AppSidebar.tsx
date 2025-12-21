@@ -182,8 +182,9 @@ const AppSidebar: React.FC = () => {
         { icon: <PlugInIcon />, name: "Game Session", path: "/game/sessions" },
         { icon: <PlugInIcon />, name: "PS5 Sessions", path: "/gamecashier/ps5-sessions" },
         { icon: <PlugInIcon />, name: "Board Games", path: "/gamecashier/board-sessions" },
-        { icon: <TableIcon />, name: "Rooms", path: "/gamecashier/rooms" },
         { icon: <BoxCubeIcon />, name: "Items", path: "/gamecashier/items" },
+        { icon: <BoxCubeIcon />, name: "Open Items Invoice", path: "/cashier/open-invoices" },
+        { icon: <TableIcon />, name: "Rooms", path: "/gamecashier/rooms" },
         { icon: <UserCircleIcon />, name: "Clients", path: "/gamecashier/clients" },
         { icon: <TicketIcon />, name: "AXIS PLUS Check", path: "/cashier/loyalty-check" },
       ];

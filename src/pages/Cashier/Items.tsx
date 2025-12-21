@@ -7,7 +7,7 @@ import {
     ItemDto,
     ItemListResponse,
 } from "../../services/itemService";
-import { createCoffeeShopOrder, OrderItemRequest, getItemTransactions, ItemTransaction } from '../../services/transactionService';
+import { createCoffeeShopOrder, getItemTransactions, ItemTransaction } from '../../services/transactionService';
 import { useAuth } from '../../context/AuthContext';
 import Modal from "../../components/ui/Modal";
 import Input from "../../components/form/input/InputField";
@@ -586,76 +586,203 @@ export default function CashierItems() {
                                             </div>
                                         </div>
 
-                                        <div className="mt-4">
-                                            <button
-                                                className="px-3 py-2 bg-green-600 text-white rounded w-full flex items-center justify-center disabled:opacity-60"
-                                                disabled={orderSubmitting}
-                                                onClick={async () => {
-                                                    const orderItems = Object.entries(selectedItems).filter(([, q]) => q > 0).map(([itemId, q]) => ({ itemId, quantity: q }));
-                                                    if (orderItems.length === 0) return;
-                                                    setOrderSubmitting(true);
-                                                    try {
-                                                        const response = await createCoffeeShopOrder(orderItems as OrderItemRequest[], selectedDiscountId, selectedClient?.id, comment);
+{/* Inside your drawer, replace the single submit button with two buttons */}
+<div className="mt-4 space-y-2">
+    {/* Pay Now Button */}
+<button
+    className="px-3 py-2 bg-green-600 text-white rounded w-full flex items-center justify-center disabled:opacity-60"
+    disabled={orderSubmitting}
+    onClick={async () => {
+        const orderItems = Object.entries(selectedItems)
+            .filter(([, q]) => q > 0)
+            .map(([itemId, q]) => ({ itemId: parseInt(itemId), quantity: q }));
+        
+        if (orderItems.length === 0) return;
+        
+        setOrderSubmitting(true);
+        try {
+            const response = await createCoffeeShopOrder(
+                orderItems, 
+                selectedDiscountId, 
+                selectedClient?.id, 
+                comment,
+                false  // Close invoice immediately
+            );
 
-                                                        // Check if the response indicates failure
-                                                        if (response && response.success === false) {
-                                                            setOrderSubmitting(false);
-                                                            setNotification({
-                                                                variant: 'error',
-                                                                title: 'Order failed',
-                                                                message: response.message || response.error || 'Failed to create order'
-                                                            });
-                                                            return;
-                                                        }
+            if (response && response.success === false) {
+                setOrderSubmitting(false);
+                setNotification({
+                    variant: 'error',
+                    title: 'Order failed',
+                    message: response.message || response.error || 'Failed to create order'
+                });
+                return;
+            }
 
-                                                        // Fetch the latest transaction for this user to show as invoice
-                                                        if (auth?.claims?.name) {
-                                                            const invoiceRes = await getItemTransactions({
-                                                                CreatedBy: [auth.claims.name],
-                                                                PageSize: 1,
-                                                                Page: 1
-                                                            });
-                                                            if (invoiceRes.data && invoiceRes.data.length > 0) {
-                                                                setCurrentInvoice(invoiceRes.data[0]);
-                                                                setInvoiceModalOpen(true);
-                                                            }
-                                                        }
+            // Convert response to ItemTransaction
+            if (response.success && response.data) {
+                const invoiceData: ItemTransaction = {
+                    transactionId: response.data.id,
+                    createdOn: response.data.createdOn,
+                    statusId: response.data.statusId,
+                    createdBy: response.data.createdBy,
+                    totalPrice: response.data.totalPrice,
+                    roomId: response.data.roomId,
+                    roomName: response.data.room,
+                    setId: response.data.setId,
+                    setName: response.data.set,
+                    userId: response.data.userId,
+                    userName: response.data.userName,
+                    comment: response.data.comment,
+                    discount: response.data.discountId ? {
+                        name: response.data.discountName || '',
+                        percentage: response.data.discountPercentage || 0
+                    } : null,
+                    items: response.data.items?.map((item: any) => ({
+                        itemId: item.itemId,
+                        itemName: item.itemName,
+                        quantity: item.quantity,
+                        unitPrice: item.price,
+                        lineTotal: item.price * item.quantity,
+                        categoryName: '',
+                        itemType: item.type || '',
+                    })) || []
+                };
 
-                                                        setSelectedItems({});
-                                                        setSelectedDiscountId(null);
-                                                        setSelectedClient(null);
-                                                        setClientResults([]);
-                                                        setClientPhone('');
-                                                        setComment('');
-                                                        setIsDrawerOpen(false);
-                                                        // refresh items list to reflect updated stock
-                                                        setItemsReloadToken(t => t + 1);
-                                                        setNotification({
-                                                            variant: 'success',
-                                                            title: 'Order Created',
-                                                            message: response?.message || 'Order submitted successfully'
-                                                        });
+                setCurrentInvoice(invoiceData);
+                setInvoiceModalOpen(true);
+            }
 
-                                                        // Refresh invoices list if it's visible
-                                                        if (showInvoicesSection) {
-                                                            setShowInvoicesSection(false);
-                                                            setTimeout(() => setShowInvoicesSection(true), 100);
-                                                        }
-                                                    } catch (err) {
-                                                        let message = 'Failed to create order';
-                                                        if (err && typeof err === 'object') {
-                                                            const maybe = err as { message?: unknown };
-                                                            if (typeof maybe.message === 'string') message = maybe.message;
-                                                        }
-                                                        setNotification({ variant: 'error', title: 'Order failed', message });
-                                                    } finally {
-                                                        setOrderSubmitting(false);
-                                                    }
-                                                }}
-                                            >
-                                                {orderSubmitting ? <Loader size={16} /> : 'Submit Order'}
-                                            </button>
-                                        </div>
+            setSelectedItems({});
+            setSelectedDiscountId(null);
+            setSelectedClient(null);
+            setClientResults([]);
+            setClientPhone('');
+            setComment('');
+            setIsDrawerOpen(false);
+            setItemsReloadToken(t => t + 1);
+            setNotification({
+                variant: 'success',
+                title: 'Order Created',
+                message: response?.message || 'Order submitted successfully'
+            });
+
+            if (showInvoicesSection) {
+                setShowInvoicesSection(false);
+                setTimeout(() => setShowInvoicesSection(true), 100);
+            }
+        } catch (err) {
+            let message = 'Failed to create order';
+            if (err && typeof err === 'object') {
+                const maybe = err as { message?: unknown };
+                if (typeof maybe.message === 'string') message = maybe.message;
+            }
+            setNotification({ variant: 'error', title: 'Order failed', message });
+        } finally {
+            setOrderSubmitting(false);
+        }
+    }}
+>
+    {orderSubmitting ? <Loader size={16} /> : 'Pay Now & Close'}
+</button>
+
+        {/* Pay Later Button - UPDATED */}
+
+<button
+    className="px-3 py-2 bg-orange-600 text-white rounded w-full flex items-center justify-center disabled:opacity-60"
+    disabled={orderSubmitting}
+    onClick={async () => {
+        const orderItems = Object.entries(selectedItems)
+            .filter(([, q]) => q > 0)
+            .map(([itemId, q]) => ({ itemId: parseInt(itemId), quantity: q }));
+        
+        if (orderItems.length === 0) return;
+        
+        setOrderSubmitting(true);
+        try {
+            const response = await createCoffeeShopOrder(
+                orderItems, 
+                selectedDiscountId, 
+                selectedClient?.id, 
+                comment,
+                true  // Keep invoice open
+            );
+
+            if (response && response.success === false) {
+                setOrderSubmitting(false);
+                setNotification({
+                    variant: 'error',
+                    title: 'Failed',
+                    message: response.message || response.error || 'Failed to create open invoice'
+                });
+                return;
+            }
+
+            // Convert response to ItemTransaction
+            if (response.success && response.data) {
+                const invoiceData: ItemTransaction = {
+                    transactionId: response.data.id,
+                    createdOn: response.data.createdOn,
+                    statusId: response.data.statusId,
+                    createdBy: response.data.createdBy,
+                    totalPrice: response.data.totalPrice,
+                    roomId: response.data.roomId,
+                    roomName: response.data.room,        // backend sends "room"
+                    setId: response.data.setId,
+                    setName: response.data.set,          // backend sends "set"
+                    userId: response.data.userId,
+                    userName: response.data.userName,
+                    comment: response.data.comment,
+                    discount: response.data.discountId ? {
+                        name: response.data.discountName || '',
+                        percentage: response.data.discountPercentage || 0
+                    } : null,
+                    items: response.data.items?.map((item: any) => ({
+                        itemId: item.itemId,
+                        itemName: item.itemName,
+                        quantity: item.quantity,
+                        unitPrice: item.price,
+                        lineTotal: item.price * item.quantity,
+                        categoryName: '',
+                        itemType: item.type || '',
+                    })) || []
+                };
+
+                setCurrentInvoice(invoiceData);
+                setInvoiceModalOpen(true);
+            }
+
+            setSelectedItems({});
+            setSelectedDiscountId(null);
+            setSelectedClient(null);
+            setClientResults([]);
+            setClientPhone('');
+            setComment('');
+            setIsDrawerOpen(false);
+            setItemsReloadToken(t => t + 1);
+            setNotification({
+                variant: 'success',
+                title: 'Open Invoice Created',
+                message: 'Invoice created. Customer can pay later.'
+            });
+        } catch (err) {
+            let message = 'Failed to create open invoice';
+            if (err && typeof err === 'object') {
+                const maybe = err as { message?: unknown };
+                if (typeof maybe.message === 'string') message = maybe.message;
+            }
+            setNotification({ variant: 'error', title: 'Failed', message });
+        } finally {
+            setOrderSubmitting(false);
+        }
+    }}
+>
+    {orderSubmitting ? <Loader size={16} /> : 'Pay Later (Open Invoice)'}
+</button>
+
+
+</div>
+
                                     </div>
                                 </div>
                             </div>
