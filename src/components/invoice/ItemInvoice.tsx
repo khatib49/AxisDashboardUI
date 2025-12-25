@@ -196,7 +196,7 @@ const ItemInvoice: React.FC<ItemInvoiceProps> = ({ transaction, onPrint }) => {
             {/* Footer */}
             <div className="text-center text-xs pb-8 mb-4">
                 <p>Thank you for your order at AXIS COFFEE SHOP!</p>
-                <p className="mt-1">Served by: {transaction.createdBy}</p>
+                {/* <p className="mt-1">Served by: {transaction.createdBy}</p> */}
             </div>
 
             {/* Print Button */}

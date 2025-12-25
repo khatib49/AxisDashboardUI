@@ -14,8 +14,15 @@ import Input from '../../components/form/input/InputField';
 import Select from '../../components/form/Select';
 import Alert from '../../components/ui/alert/Alert';
 import ItemInvoice from '../../components/invoice/ItemInvoice';
+import { updateOpenInvoiceSet } from '../../services/transactionService';
+import { getSets, SetDto } from '../../services/setService';
 
 const OpenInvoices: React.FC = () => {
+    const [editingSetInvoiceId, setEditingSetInvoiceId] = useState<number | null>(null);
+const [editSetValue, setEditSetValue] = useState<number | null>(null);
+const [sets, setSets] = useState<SetDto[]>([]);
+const [, setLoadingSets] = useState(false);
+
     // Open invoices state
     const [openInvoices, setOpenInvoices] = useState<OpenInvoiceDto[]>([]);
     const [loading, setLoading] = useState(true);
@@ -84,6 +91,57 @@ const OpenInvoices: React.FC = () => {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+    let mounted = true;
+    setLoadingSets(true);
+    getSets()
+        .then((res) => {
+            if (!mounted) return;
+            setSets(res.data || []);
+        })
+        .catch(() => {
+            /* ignore */
+        })
+        .finally(() => {
+            if (mounted) setLoadingSets(false);
+        });
+    return () => { mounted = false; };
+}, []);
+
+// Add handler for updating set
+const handleUpdateSet = async (invoiceId: number, setId: number | null) => {
+    try {
+        const response = await updateOpenInvoiceSet(invoiceId, setId);
+        if (response.success) {
+            setNotification({
+                variant: 'success',
+                title: 'Set Updated',
+                message: 'Set number updated successfully',
+            });
+            setEditingSetInvoiceId(null);
+            setEditSetValue(null);
+            await loadOpenInvoices();
+        } else {
+            setNotification({
+                variant: 'error',
+                title: 'Failed',
+                message: response.message || 'Failed to update set',
+            });
+        }
+    } catch (err: unknown) {
+        let message = 'Failed to update set';
+        if (err && typeof err === 'object') {
+            const maybe = err as { message?: unknown };
+            if (typeof maybe.message === 'string') message = maybe.message;
+        }
+        setNotification({
+            variant: 'error',
+            title: 'Error',
+            message,
+        });
+    }
+};
 
     useEffect(() => {
         loadOpenInvoices();
@@ -457,6 +515,59 @@ const handleCloseInvoice = async (invoiceId: number) => {
                             {invoice.items?.length || 0}
                         </span>
                     </div>
+
+                      {/* SET NUMBER - NEW */}
+<div className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded">
+    <span className="text-gray-600 font-medium">Set/Table:</span>
+    {editingSetInvoiceId === invoice.id ? (
+        <div className="flex items-center gap-2">
+            <Select
+                options={[
+                    { value: '', label: 'No Set' },
+                    ...sets.map(s => ({
+                        value: s.id,
+                        label: s.name
+                    }))
+                ]}
+                defaultValue={editSetValue ?? ''}
+                onChange={(v: string | number) => setEditSetValue(v === '' ? null : Number(v))}
+                className="w-32"
+            />
+            <button
+                onClick={() => handleUpdateSet(invoice.id, editSetValue)}
+                className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
+            >
+                ✓
+            </button>
+            <button
+                onClick={() => {
+                    setEditingSetInvoiceId(null);
+                    setEditSetValue(null);
+                }}
+                className="px-2 py-1 bg-gray-400 text-white rounded text-xs hover:bg-gray-500"
+            >
+                ✕
+            </button>
+        </div>
+    ) : (
+        <div className="flex items-center gap-2">
+            <span className="font-semibold text-gray-900">
+                {invoice.set || 'Not Assigned'}
+            </span>
+            <button
+                onClick={() => {
+                    setEditingSetInvoiceId(invoice.id);
+                    setEditSetValue(invoice.setId || null);
+                }}
+                className="text-blue-600 hover:text-blue-800 text-xs"
+            >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+            </button>
+        </div>
+    )}
+</div>
 
                     {invoice.discountName && (
                         <div className="flex items-center justify-between text-sm">

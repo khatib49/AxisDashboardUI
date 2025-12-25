@@ -21,8 +21,14 @@ import ItemInvoice from "../../components/invoice/ItemInvoice";
 import { getDiscounts, DiscountDto } from "../../services/discountService";
 import { searchClientsByPhone, ClientUserDto } from "../../services/clientService";
 import ChangeCalculator from "../../components/common/ChangeCalculator";
+import { getSets, SetDto } from '../../services/setService';
+
 
 export default function CashierItems() {
+    const [sets, setSets] = useState<SetDto[]>([]);
+const [selectedSetId, setSelectedSetId] = useState<number | null>(null);
+const [loadingSets, setLoadingSets] = useState(false);
+
     const [items, setItems] = useState<ItemDto[]>([]);
     // Cache of items by id to persist details across category/page switches
     const [itemLookup, setItemLookup] = useState<Record<string, ItemDto>>({});
@@ -96,6 +102,24 @@ export default function CashierItems() {
         const t = setTimeout(() => setNotification(null), 4000);
         return () => clearTimeout(t);
     }, [notification]);
+
+    useEffect(() => {
+    if (!isDrawerOpen) return;
+    let mounted = true;
+    setLoadingSets(true);
+    getSets()
+        .then((res) => {
+            if (!mounted) return;
+            setSets(res.data || []);
+        })
+        .catch(() => {
+            /* ignore */
+        })
+        .finally(() => {
+            if (mounted) setLoadingSets(false);
+        });
+    return () => { mounted = false; };
+}, [isDrawerOpen]);
 
     useEffect(() => {
         let mounted = true;
@@ -543,6 +567,26 @@ export default function CashierItems() {
                                             )}
                                         </div>
 
+{/* Set Selection */}
+<div className="mt-3">
+    <label className="text-sm font-medium text-gray-700 mb-1 block">Set/Table (Optional)</label>
+    {loadingSets ? (
+        <div className="text-xs text-gray-500">Loading sets...</div>
+    ) : (
+        <Select
+            options={[
+                { value: '', label: 'No Set' },
+                ...sets.map(s => ({
+                    value: s.id,
+                    label: s.name
+                }))
+            ]}
+            defaultValue={selectedSetId ?? ''}
+            onChange={(v: string | number) => setSelectedSetId(v === '' ? null : Number(v))}
+        />
+    )}
+</div>
+
                                         {/* Comment Section */}
                                         <div className="mt-3">
                                             <label className="text-sm font-medium text-gray-700 mb-1 block">Comment (Optional)</label>
@@ -606,7 +650,8 @@ export default function CashierItems() {
                 selectedDiscountId, 
                 selectedClient?.id, 
                 comment,
-                false  // Close invoice immediately
+                false,
+                selectedSetId   // Close invoice immediately
             );
 
             if (response && response.success === false) {
@@ -705,7 +750,8 @@ export default function CashierItems() {
                 selectedDiscountId, 
                 selectedClient?.id, 
                 comment,
-                true  // Keep invoice open
+                true ,
+                selectedSetId  // Keep invoice open
             );
 
             if (response && response.success === false) {
@@ -758,6 +804,7 @@ export default function CashierItems() {
             setClientResults([]);
             setClientPhone('');
             setComment('');
+            setSelectedSetId(null);
             setIsDrawerOpen(false);
             setItemsReloadToken(t => t + 1);
             setNotification({

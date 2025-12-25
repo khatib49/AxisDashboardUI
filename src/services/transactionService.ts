@@ -373,18 +373,31 @@ export async function closeGameSession(invoiceId: number) {
 
 // --- Coffee Shop Orders ---
 
+export async function updateOpenInvoiceSet(
+    invoiceId: number,
+    setId: number | null
+): Promise<{ success: boolean; data?: any; message?: string; error?: string }> {
+    const res = await put<{ success: boolean; data?: any; message?: string; error?: string }>(
+        `/transactions/UpdateOpenInvoiceSet/${invoiceId}`,
+        { setId }
+    );
+    return res;
+}
+
 export async function createCoffeeShopOrder(
     items: OrderItemRequest[],
     discountId: number | null = null,
     userId: number | null = null,
     comment: string | null = null,
-    isOpenInvoice: boolean = false
+    isOpenInvoice: boolean = false,
+    setId: number | null = null 
 ): Promise<{ success: boolean; data?: any; message?: string; error?: string }> {
     const body: any = {
         userId,
         itemsRequest: items,
         discountId: discountId || 0,
         isOpenInvoice,
+        setId,
     };
 
     if (comment) {
