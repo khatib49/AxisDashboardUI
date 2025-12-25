@@ -146,6 +146,40 @@ const OpenInvoices: React.FC = () => {
 
     // Handle close invoice
     // Handle close invoice - UPDATED
+// Handle print invoice - NEW
+const handlePrintInvoice = (invoice: OpenInvoiceDto) => {
+    // Convert OpenInvoiceDto to ItemTransaction for the invoice component
+    const invoiceData: ItemTransaction = {
+        transactionId: invoice.id,
+        createdOn: invoice.createdOn,
+        statusId: invoice.statusId,
+        createdBy: invoice.createdBy,
+        totalPrice: invoice.totalPrice,
+        roomId: invoice.roomId,
+        roomName: invoice.room || undefined,
+        setId: invoice.setId,
+        setName: invoice.set || undefined,
+        userId: invoice.userId,
+        userName: invoice.userName,
+        comment: invoice.comment,
+        discount: invoice.discountId ? {
+            name: invoice.discountName || '',
+            percentage: invoice.discountPercentage || 0
+        } : null,
+        items: invoice.items?.map((item) => ({
+            itemId: item.itemId,
+            itemName: item.itemName,
+            quantity: item.quantity,
+            unitPrice: item.price,
+            lineTotal: item.price * item.quantity,
+            categoryName: '',
+            itemType: item.type || '',
+        })) || []
+    };
+
+    setCurrentInvoice(invoiceData);
+    setIsInvoiceModalOpen(true);
+};
 
     // Handle close invoice - UPDATED WITH CORRECT PROPERTY NAMES
 const handleCloseInvoice = async (invoiceId: number) => {
@@ -369,144 +403,180 @@ const handleCloseInvoice = async (invoiceId: number) => {
             {!loading && !error && openInvoices.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {openInvoices.map((invoice) => (
-                        <div
-                            key={invoice.id}
-                            className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-orange-200 hover:border-orange-400"
+                     <div
+                key={invoice.id}
+                className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-orange-200 hover:border-orange-400"
+            >
+                <div className="bg-gradient-to-r from-orange-600 to-orange-700 p-4 text-white">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold">Invoice #{invoice.id}</h3>
+                        <span className="px-3 py-1 bg-white/20 rounded-full text-xs font-medium">
+                            OPEN
+                        </span>
+                    </div>
+                </div>
+
+                <div className="p-4 space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">Created:</span>
+                        <span className="font-medium text-gray-900">
+                            {new Date(invoice.createdOn).toLocaleDateString()}
+                        </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">Time:</span>
+                        <span className="font-medium text-gray-900">
+                            {new Date(invoice.createdOn).toLocaleTimeString()}
+                        </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">Created By:</span>
+                        <span
+                            className="font-medium text-gray-900 text-xs truncate max-w-[150px]"
+                            title={invoice.createdBy}
                         >
-                            <div className="bg-gradient-to-r from-orange-600 to-orange-700 p-4 text-white">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="text-lg font-semibold">Invoice #{invoice.id}</h3>
-                                    <span className="px-3 py-1 bg-white/20 rounded-full text-xs font-medium">
-                                        OPEN
-                                    </span>
-                                </div>
-                            </div>
+                            {invoice.createdBy}
+                        </span>
+                    </div>
 
-                            <div className="p-4 space-y-3">
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-600">Created:</span>
-                                    <span className="font-medium text-gray-900">
-                                        {new Date(invoice.createdOn).toLocaleDateString()}
-                                    </span>
-                                </div>
-
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-600">Time:</span>
-                                    <span className="font-medium text-gray-900">
-                                        {new Date(invoice.createdOn).toLocaleTimeString()}
-                                    </span>
-                                </div>
-
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-600">Created By:</span>
-                                    <span
-                                        className="font-medium text-gray-900 text-xs truncate max-w-[150px]"
-                                        title={invoice.createdBy}
-                                    >
-                                        {invoice.createdBy}
-                                    </span>
-                                </div>
-
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-600">Items:</span>
-                                    <span className="font-medium text-gray-900">
-                                        {invoice.items?.length || 0}
-                                    </span>
-                                </div>
-
-                                {invoice.discountName && (
-                                    <div className="flex items-center justify-between text-sm">
-                                        <span className="text-gray-600">Discount:</span>
-                                        <span className="font-medium text-green-600">
-                                            {invoice.discountName}
-                                        </span>
-                                    </div>
-                                )}
-
-                                {/* Items Preview */}
-                                <div className="border-t border-gray-200 pt-3">
-                                    <p className="text-xs font-medium text-gray-600 mb-2">
-                                        Items in Invoice:
-                                    </p>
-                                    <div className="space-y-1 max-h-32 overflow-y-auto">
-                                        {invoice.items?.map((item) => (
-                                            <div
-                                                key={item.itemId}
-                                                className="flex justify-between text-xs"
-                                            >
-                                                <span className="text-gray-700 truncate max-w-[150px]">
-                                                    {item.itemName}
-                                                </span>
-                                                <span className="text-gray-600">
-                                                    {item.quantity} × ${item.price.toFixed(2)}
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200">
-                                    <span className="text-gray-600">Total:</span>
-                                    <span className="font-bold text-lg text-orange-600">
-                                        ${invoice.totalPrice.toFixed(2)}
-                                    </span>
-                                </div>
-
-                                <div className="flex gap-2 mt-4">
-                                    <button
-                                        onClick={() => {
-                                            setSelectedInvoice(invoice);
-                                            setIsAddItemsModalOpen(true);
-                                        }}
-                                        className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
-                                    >
-                                        <svg
-                                            className="w-4 h-4"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                                            />
-                                        </svg>
-                                        Add Items
-                                    </button>
-                                    <button
-                                        onClick={() => handleCloseInvoice(invoice.id)}
-                                        disabled={closingInvoiceId === invoice.id}
-                                        className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
-                                    >
-                                        {closingInvoiceId === invoice.id ? (
-                                            <>
-                                                <Loader size={16} />
-                                                Closing...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <svg
-                                                    className="w-4 h-4"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    viewBox="0 0 24 24"
-                                                >
-                                                    <path
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                        strokeWidth={2}
-                                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                                    />
-                                                </svg>
-                                                Close & Pay
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-                            </div>
+                    {/* CLIENT NAME - NEW */}
+                    {invoice.userName && (
+                        <div className="flex items-center justify-between text-sm bg-blue-50 p-2 rounded">
+                            <span className="text-blue-600 font-medium">Client:</span>
+                            <span className="font-semibold text-blue-900 truncate max-w-[150px]" title={invoice.userName}>
+                                {invoice.userName}
+                            </span>
                         </div>
+                    )}
+
+                    <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">Items:</span>
+                        <span className="font-medium text-gray-900">
+                            {invoice.items?.length || 0}
+                        </span>
+                    </div>
+
+                    {invoice.discountName && (
+                        <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">Discount:</span>
+                            <span className="font-medium text-green-600">
+                                {invoice.discountName}
+                            </span>
+                        </div>
+                    )}
+
+                    {/* Items Preview */}
+                    <div className="border-t border-gray-200 pt-3">
+                        <p className="text-xs font-medium text-gray-600 mb-2">
+                            Items in Invoice:
+                        </p>
+                        <div className="space-y-1 max-h-32 overflow-y-auto">
+                            {invoice.items?.map((item) => (
+                                <div
+                                    key={item.itemId}
+                                    className="flex justify-between text-xs"
+                                >
+                                    <span className="text-gray-700 truncate max-w-[150px]">
+                                        {item.itemName}
+                                    </span>
+                                    <span className="text-gray-600">
+                                        {item.quantity} × ${item.price.toFixed(2)}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200">
+                        <span className="text-gray-600">Total:</span>
+                        <span className="font-bold text-lg text-orange-600">
+                            ${invoice.totalPrice.toFixed(2)}
+                        </span>
+                    </div>
+
+                    {/* ACTION BUTTONS - UPDATED WITH PRINT */}
+                    <div className="grid grid-cols-3 gap-2 mt-4">
+                        {/* Add Items Button */}
+                        <button
+                            onClick={() => {
+                                setSelectedInvoice(invoice);
+                                setIsAddItemsModalOpen(true);
+                            }}
+                            className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-1 shadow-md hover:shadow-lg text-sm"
+                        >
+                            <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                                />
+                            </svg>
+                            Add
+                        </button>
+
+                        {/* Print Button - NEW */}
+                        <button
+                            onClick={() => handlePrintInvoice(invoice)}
+                            className="px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-1 shadow-md hover:shadow-lg text-sm"
+                        >
+                            <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+                                />
+                            </svg>
+                            Print
+                        </button>
+
+                        {/* Close & Pay Button */}
+                        <button
+                            onClick={() => handleCloseInvoice(invoice.id)}
+                            disabled={closingInvoiceId === invoice.id}
+                            className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg text-sm"
+                        >
+                            {closingInvoiceId === invoice.id ? (
+                                <>
+                                    <Loader size={14} />
+                                </>
+                            ) : (
+                                <>
+                                    <svg
+                                        className="w-4 h-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                        />
+                                    </svg>
+                                    Pay
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+
                     ))}
                 </div>
             )}
