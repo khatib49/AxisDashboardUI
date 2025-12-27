@@ -401,7 +401,7 @@ const LoyaltyDraws: React.FC = () => {
                                 <div className="flex justify-between items-center pb-3 border-b border-white/20 gap-2">
                                     <span className="text-white/80 font-medium text-sm sm:text-base">AXIS PLUS Tickets:</span>
                                     <span className="text-base sm:text-lg md:text-xl font-bold">{winnerData.winner.ticketsHeld}</span>
-                                </div>
+                                </div> 
                                 {/* <div className="flex justify-between items-center gap-2">
                                     <span className="text-white/80 font-medium text-sm sm:text-base">Winning Chance:</span>
                                     <span className="text-base sm:text-lg md:text-xl font-bold">
