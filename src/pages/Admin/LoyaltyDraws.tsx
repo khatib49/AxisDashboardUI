@@ -402,17 +402,17 @@ const LoyaltyDraws: React.FC = () => {
                                     <span className="text-white/80 font-medium text-sm sm:text-base">AXIS PLUS Tickets:</span>
                                     <span className="text-base sm:text-lg md:text-xl font-bold">{winnerData.winner.ticketsHeld}</span>
                                 </div>
-                                <div className="flex justify-between items-center gap-2">
+                                {/* <div className="flex justify-between items-center gap-2">
                                     <span className="text-white/80 font-medium text-sm sm:text-base">Winning Chance:</span>
                                     <span className="text-base sm:text-lg md:text-xl font-bold">
                                         {((winnerData.winner.ticketsHeld / winnerData.totalTicketsInDraw) * 100).toFixed(1)}%
                                     </span>
-                                </div>
+                                </div> */}
                             </div>
                         </div>
 
                         {/* Statistics */}
-                        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                        {/* <div className="grid grid-cols-2 gap-3 sm:gap-4">
                             <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg sm:rounded-xl p-4 sm:p-6 text-center border-2 border-purple-200 dark:border-purple-800">
                                 <p className="text-3xl sm:text-4xl font-black text-purple-600 dark:text-purple-400 mb-1 sm:mb-2">
                                     {winnerData.totalEligibleCustomers}
@@ -429,7 +429,7 @@ const LoyaltyDraws: React.FC = () => {
                                     Total Tickets
                                 </p>
                             </div>
-                        </div>
+                        </div> */}
 
                         {/* Action Buttons */}
                         <div className="flex flex-col sm:flex-row gap-3">
