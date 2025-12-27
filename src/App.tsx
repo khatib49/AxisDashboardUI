@@ -57,6 +57,11 @@ import LoyaltyCustomers from './pages/Admin/LoyaltyCustomers';
 import LoyaltyLeaderboard from './pages/Admin/LoyaltyLeaderboard';
 import LoyaltyDraws from './pages/Admin/LoyaltyDraws';
 import OpenInvoices from './pages/Cashier/OpenInvoices';
+import AccountingDashboard from './pages/Accounting/AccountingDashboard';
+import ChartOfAccounts from './components/Accounting/ChartOfAccounts';
+import JournalEntryList from './components/Accounting/JournalEntryList';
+import TrialBalance from './components/Accounting/TrialBalance';
+import GeneralLedger from './components/Accounting/GeneralLedger';
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { authenticated, loading } = useAuth();
@@ -216,6 +221,16 @@ export default function App() {
               <Route path="/chef/orders" element={<ChefRoute><KitchenOrders /></ChefRoute>} />
               <Route path="/chef/stats" element={<ChefRoute><KitchenStats /></ChefRoute>} />
 
+              {/* Accounting routes */}
+              <Route path="/accounting" element={<AdminRoute><AccountingDashboard /></AdminRoute>} />
+              <Route path="/accounting/accounts" element={<AdminRoute><ChartOfAccounts /></AdminRoute>} />
+              <Route path="/accounting/journal" element={<AdminRoute><JournalEntryList accountTypes={[]} accounts={[]} onSuccess={function (): void {
+                throw new Error("Function not implemented.");
+              } } onCancel={function (): void {
+                throw new Error("Function not implemented.");
+              } } /></AdminRoute>} />
+              <Route path="/accounting/trial-balance" element={<AdminRoute><TrialBalance /></AdminRoute>} />
+              <Route path="/accounting/general-ledger" element={<AdminRoute><GeneralLedger /></AdminRoute>} />
 
               {/* BarTender routes */}
               <Route path="/bartender/orders" element={<BarTenderRoute><KitchenOrders /></BarTenderRoute>} />

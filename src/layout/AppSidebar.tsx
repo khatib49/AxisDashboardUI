@@ -152,6 +152,18 @@ const AppSidebar: React.FC = () => {
           { name: "Conduct Draws", path: "/admin/loyalty/draws" },
         ],
       },
+      {
+  icon: <DollarLineIcon />,
+  name: "Accounting",
+  subItems: [
+    { name: "Dashboard", path: "/accounting" },
+    { name: "Chart of Accounts", path: "/accounting/accounts" },
+    { name: "Journal Entries", path: "/accounting/journal" },
+    { name: "Trial Balance", path: "/accounting/trial-balance" },
+    { name: "General Ledger", path: "/accounting/general-ledger" },
+  ],
+},
+
       ];
     }
 

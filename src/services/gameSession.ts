@@ -14,6 +14,55 @@ export type CreateGameSessionRequest = {
   comment?: string; // optional comment
 };
 
+// Add TransactionItemDto type if needed
+export type TransactionItemDto = {
+  // Define properties as per your backend DTO
+  // Example:
+  // id: number;
+  // name: string;
+  // quantity: number;
+  // price: number;
+};
+
+export type TransactionDto = {
+  id: number;
+  roomId?: number;
+  room: string;
+  gameTypeId?: number;
+  gameType: string;
+  gameId?: number;
+  game: string;
+  gameSettingId?: number;
+  gameSetting: string;
+  hours: number;
+  totalPrice: number;
+  statusId: number;
+  createdOn: string;
+  modifiedOn?: string;
+  createdBy: string;
+  items: TransactionItemDto[];
+  setId?: number;
+  set: string;
+  discountId?: number;
+  discountPercentage?: number;
+  discountName?: string;
+  numberOfPersons: number;
+  isDayPass: boolean;
+  comment?: string;
+  userId?: number;
+  userName?: string;
+};
+
+export type BaseResponse<T> = {
+  success: boolean;
+  error: string | null;
+  message: string;
+  data: T | null;
+};
+
+export type CreateGameSessionResponse = BaseResponse<TransactionDto>;
+
+
 export async function createGameSession(body: CreateGameSessionRequest) {
   // POST request with params in query string as requested by the backend
   const params: Record<string, unknown> = {
@@ -43,7 +92,7 @@ export async function createGameSession(body: CreateGameSessionRequest) {
   if (body.comment !== undefined && body.comment !== "") {
     params.comment = body.comment;
   }
-  const res = await api.post("/transactions/CreateGameSession", null, {
+  const res = await api.post<CreateGameSessionResponse>("/transactions/CreateGameSession", null, {
     params,
   });
   return res.data;
