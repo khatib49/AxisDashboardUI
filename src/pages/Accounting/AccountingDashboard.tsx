@@ -78,7 +78,6 @@ const AccountingDashboard: React.FC = () => {
 
   const totalAssets = getAccountTypeBalance('Asset');
   const totalLiabilities = getAccountTypeBalance('Liability');
-  const totalEquity = getAccountTypeBalance('Equity');
   const totalRevenue = getAccountTypeBalance('Revenue');
   const totalExpenses = getAccountTypeBalance('Expense');
 
@@ -87,9 +86,6 @@ const AccountingDashboard: React.FC = () => {
   const netIncome = totalRevenue - totalExpenses;
 
   // Quick stats for current month
-  const currentMonthEntries = recentEntries.filter(
-    entry => dayjs(entry.entryDate).isAfter(dayjs().startOf('month'))
-  );
   const postedEntriesCount = recentEntries.filter(e => e.isPosted).length;
   const draftEntriesCount = recentEntries.filter(e => !e.isPosted && !e.isVoided).length;
 

@@ -135,7 +135,7 @@ const JournalEntryForm: React.FC<JournalEntryFormProps> = ({ onSuccess, onCancel
         description: values.description,
         referenceType: values.referenceType || 'Adjustment',
         referenceId: values.referenceId,
-        lines: validLines.map((line, index) => ({
+        lines: validLines.map((line) => ({
           accountId: line.accountId,
           debitAmount: line.debitAmount || 0,
           creditAmount: line.creditAmount || 0,
