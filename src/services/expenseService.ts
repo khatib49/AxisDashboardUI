@@ -49,19 +49,34 @@ export type PagedExpensesResult = {
 };
 
 export type ExpenseCategoryCreateDto = {
-  name: string;
+   name: string;
   description?: string | null;
+  accountId?: number | null;  // NEW
 };
 
 export type ExpenseCategoryDto = {
-  id: number;
+    id: number;
   name: string;
   description?: string | null;
+  accountId?: number | null;  // NEW
+  accountNumber?: string | null;  // NEW
+  accountName?: string | null;  // NEW
 };
 
 export type ExpenseCategoryUpdateDto = {
-  name: string;
+ name: string;
   description?: string | null;
+  accountId?: number | null;  // NEW
+};
+
+export async function getExpenseAccounts(): Promise<AccountDto[]> {
+  return await get<AccountDto[]>("/accounts/expense-accounts");
+}
+
+export type AccountDto = {
+  id: number;
+  accountNumber: string;
+  accountName: string;
 };
 
 // Get expense by ID

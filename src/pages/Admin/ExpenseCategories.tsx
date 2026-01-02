@@ -1,12 +1,15 @@
+// pages/Admin/ExpenseCategories.tsx
 import { useEffect, useState } from "react";
 import {
     getExpenseCategories,
     createExpenseCategory,
     updateExpenseCategory,
     deleteExpenseCategory,
+    getExpenseAccounts,  // NEW
     ExpenseCategoryDto,
     ExpenseCategoryCreateDto,
     ExpenseCategoryUpdateDto,
+    AccountDto,  // NEW
 } from "../../services/expenseService";
 import Modal from "../../components/ui/Modal";
 import Input from "../../components/form/input/InputField";
@@ -16,23 +19,22 @@ import Alert from "../../components/ui/alert/Alert";
 
 export default function ExpenseCategories() {
     const [categories, setCategories] = useState<ExpenseCategoryDto[]>([]);
+    const [accounts, setAccounts] = useState<AccountDto[]>([]);  // NEW
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [reloadToken] = useState(0);
 
-    // Form states
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editing, setEditing] = useState<ExpenseCategoryDto | null>(null);
     const [form, setForm] = useState<{
         name: string;
         description: string;
+        accountId: number | null;  // NEW
     }>({
         name: "",
         description: "",
+        accountId: null,  // NEW
     });
     const [submitting, setSubmitting] = useState(false);
-
-    // Delete confirmation
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [deleting, setDeleting] = useState(false);
 
@@ -48,20 +50,24 @@ export default function ExpenseCategories() {
         return () => clearTimeout(t);
     }, [notification]);
 
-    // Load categories
+    // Load categories AND accounts
     useEffect(() => {
         let mounted = true;
         setLoading(true);
         setError(null);
 
-        getExpenseCategories()
-            .then((data) => {
+        Promise.all([
+            getExpenseCategories(),
+            getExpenseAccounts()  // NEW
+        ])
+            .then(([categoriesData, accountsData]) => {
                 if (!mounted) return;
-                setCategories(data || []);
+                setCategories(categoriesData || []);
+                setAccounts(accountsData || []);  // NEW
             })
             .catch((err) => {
                 if (!mounted) return;
-                setError(err?.message || "Failed to load expense categories");
+                setError(err?.message || "Failed to load data");
             })
             .finally(() => {
                 if (!mounted) return;
@@ -71,13 +77,14 @@ export default function ExpenseCategories() {
         return () => {
             mounted = false;
         };
-    }, [reloadToken]);
+    }, []);
 
     function openCreateForm() {
         setEditing(null);
         setForm({
             name: "",
             description: "",
+            accountId: null,  // NEW
         });
         setIsFormOpen(true);
     }
@@ -87,6 +94,7 @@ export default function ExpenseCategories() {
         setForm({
             name: category.name,
             description: category.description || "",
+            accountId: category.accountId || null,  // NEW
         });
         setIsFormOpen(true);
     }
@@ -107,6 +115,7 @@ export default function ExpenseCategories() {
                 const dto: ExpenseCategoryUpdateDto = {
                     name: form.name,
                     description: form.description || null,
+                    accountId: form.accountId,  // NEW
                 };
                 const updated = await updateExpenseCategory(editing.id, dto);
                 setCategories((s) =>
@@ -121,6 +130,7 @@ export default function ExpenseCategories() {
                 const dto: ExpenseCategoryCreateDto = {
                     name: form.name,
                     description: form.description || null,
+                    accountId: form.accountId,  // NEW
                 };
                 const created = await createExpenseCategory(dto);
                 setCategories((s) => [...s, created]);
@@ -207,6 +217,10 @@ export default function ExpenseCategories() {
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Description
                                     </th>
+                                    {/* NEW COLUMN */}
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Mapped Account
+                                    </th>
                                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Actions
                                     </th>
@@ -216,7 +230,7 @@ export default function ExpenseCategories() {
                                 {categories.length === 0 && (
                                     <tr>
                                         <td
-                                            colSpan={4}
+                                            colSpan={5}
                                             className="px-6 py-10 text-center text-gray-500"
                                         >
                                             No categories found
@@ -233,6 +247,16 @@ export default function ExpenseCategories() {
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-500">
                                             {category.description || "-"}
+                                        </td>
+                                        {/* NEW CELL */}
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                            {category.accountNumber ? (
+                                                <span className="text-blue-600 font-mono">
+                                                    {category.accountNumber} - {category.accountName}
+                                                </span>
+                                            ) : (
+                                                <span className="text-gray-400 italic">Not mapped</span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <button
@@ -289,6 +313,33 @@ export default function ExpenseCategories() {
                             }
                         />
                     </div>
+                    
+                    {/* NEW: Account Mapping Dropdown */}
+                    <div>
+                        <Label>Map to Expense Account (Optional)</Label>
+                        <select
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            value={form.accountId || ""}
+                            onChange={(e) =>
+                                setForm((f) => ({
+                                    ...f,
+                                    accountId: e.target.value ? Number(e.target.value) : null
+                                }))
+                            }
+                        >
+                            <option value="">-- No mapping (use auto-detection) --</option>
+                            {accounts.map((account) => (
+                                <option key={account.id} value={account.id}>
+                                    {account.accountNumber} - {account.accountName}
+                                </option>
+                            ))}
+                        </select>
+                        <p className="mt-1 text-xs text-gray-500">
+                            If set, expenses in this category will always use this account.
+                            Otherwise, the system will auto-detect based on the category name.
+                        </p>
+                    </div>
+
                     <div className="flex items-center gap-2 pt-2">
                         <button
                             className="px-4 py-2 bg-green-600 text-white rounded flex items-center gap-2 disabled:opacity-50"
