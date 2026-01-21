@@ -190,6 +190,19 @@ export default function Menu() {
                     >
                         🍔 Food
                     </button>
+                    
+                    <button
+                        onClick={() => {
+                            setSelectedItemType("Drinks");
+                            setSelectedCategory(null);
+                        }}
+                        className={`px-8 sm:px-12 py-4 rounded-2xl font-bold text-base sm:text-lg transition-all duration-300 transform hover:scale-105 ${selectedItemType === "Drinks"
+                            ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-2xl shadow-blue-500/50"
+                            : "bg-white/10 text-white backdrop-blur-sm hover:bg-white/20"
+                            }`}
+                    >
+                        Drinks
+                    </button>
                     <button
                         onClick={() => {
                             setSelectedItemType("Retail");

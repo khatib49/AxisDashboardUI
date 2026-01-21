@@ -20,6 +20,8 @@ import { useSidebar } from "../context/SidebarContext";
 import { useAuth } from "../context/AuthContext";
 import SidebarWidget from "./SidebarWidget";
 import TicketIcon from "../icons/tickets";
+import KitchenDisplay from "../pages/Chef/KitchenDisplay";
+import BarDisplay from "../pages/bartender/BarDisplay";
 
 type NavItem = {
   name: string;
@@ -214,8 +216,14 @@ const AppSidebar: React.FC = () => {
     // Chef: kitchen order management only
     if (hasRole("chef")) {
       return [
-        { icon: <ListIcon />, name: "Kitchen Orders", path: "/chef/orders" },
-        { icon: <PieChartIcon />, name: "Statistics", path: "/chef/stats" },
+        { icon: <ListIcon />, name: "Kitchen Orders", path: "/chef/kitchen-display", element: <KitchenDisplay /> },
+      ];
+    }
+
+    
+    if (hasRole("bartender")) {
+      return [
+        { icon: <ListIcon />, name: "Bar Orders", path: '/bartender/bar-display', element: <BarDisplay /> },
       ];
     }
 

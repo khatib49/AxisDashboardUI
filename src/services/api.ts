@@ -156,6 +156,15 @@ export async function put<T = unknown, B = unknown>(
   return res.data;
 }
 
+export async function patch<T = unknown, B = unknown>(
+  url: string,
+  body?: B,
+  config?: AxiosRequestConfig
+): Promise<T> {
+  const res = await api.patch<T>(url, body, config);
+  return res.data;
+}
+
 export async function del<T = unknown>(
   url: string,
   config?: AxiosRequestConfig

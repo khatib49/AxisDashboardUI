@@ -204,6 +204,7 @@ export default function CategoryManagement() {
                     <Select options={[
                         { value: "", label: "-- None --" },
                         { value: "Retail", label: "Retail" },
+                        { value: "Drinks", label: "Drinks" },
                         { value: "Food", label: "Food" }
                     ]} defaultValue={form.itemType} onChange={(v: string | number) => setForm((f) => ({ ...f, itemType: v === "" ? "" : String(v) }))} />
                 </div>

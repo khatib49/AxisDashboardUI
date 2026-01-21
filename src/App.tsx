@@ -62,6 +62,8 @@ import ChartOfAccounts from './components/Accounting/ChartOfAccounts';
 import JournalEntryList from './components/Accounting/JournalEntryList';
 import TrialBalance from './components/Accounting/TrialBalance';
 import GeneralLedger from './components/Accounting/GeneralLedger';
+import KitchenDisplay from "./pages/Chef/KitchenDisplay";
+import BarDisplay from "./pages/bartender/BarDisplay";
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { authenticated, loading } = useAuth();
@@ -115,7 +117,7 @@ const BarTenderRoute: React.FC<{ children: React.ReactElement }> = ({ children }
   const { hasRole, loading, authenticated } = useAuth();
   if (loading) return <div className="p-6 text-center">Loading...</div>;
   if (!authenticated) return <Navigate to="/signin" replace />;
-  if (!hasRole("bartender")) return <Navigate to="/bartender/orders" replace />;
+  if (!hasRole("bartender")) return <Navigate to="/bartender/bar-display" replace />;
   return children;
 };
 
@@ -137,11 +139,11 @@ export default function App() {
     }
     
     if (hasRole("chef")) {
-      return <Navigate to="/chef/orders" replace />;
+      return <Navigate to="/chef/kitchen-display" replace />;
     }
 
     if (hasRole("bartender")) {
-      return <Navigate to="/bartender/orders" replace />;
+      return <Navigate to="/bartender/bar-display" replace />;
     }
 
     return <Home />;
@@ -220,6 +222,7 @@ export default function App() {
               {/* Chef routes */}
               <Route path="/chef/orders" element={<ChefRoute><KitchenOrders /></ChefRoute>} />
               <Route path="/chef/stats" element={<ChefRoute><KitchenStats /></ChefRoute>} />
+              <Route path="/chef/kitchen-display" element={<ChefRoute><KitchenDisplay /></ChefRoute>} />
 
               {/* Accounting routes */}
               <Route path="/accounting" element={<AdminRoute><AccountingDashboard /></AdminRoute>} />
@@ -233,8 +236,7 @@ export default function App() {
               <Route path="/accounting/general-ledger" element={<AdminRoute><GeneralLedger /></AdminRoute>} />
 
               {/* BarTender routes */}
-              <Route path="/bartender/orders" element={<BarTenderRoute><KitchenOrders /></BarTenderRoute>} />
-              <Route path="/bartender/stats" element={<BarTenderRoute><KitchenStats /></BarTenderRoute>} />
+              <Route path="/bartender/bar-display" element={<BarTenderRoute><BarDisplay /></BarTenderRoute>} />
 
 
               {/* GameCashie routes (non-admin paths) */}
