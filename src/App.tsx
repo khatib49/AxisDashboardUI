@@ -134,9 +134,6 @@ export default function App() {
     if (hasRole("admin_fnb")) {
       return <Navigate to="/admin-fnb/dashboard" replace />;
     }
-    if (hasRole("chef")) {
-      return <Navigate to="/chef/orders" replace />;
-    }
     
     if (hasRole("chef")) {
       return <Navigate to="/chef/kitchen-display" replace />;
@@ -220,7 +217,7 @@ export default function App() {
               <Route path="/admin-fnb/orders" element={<AdminFnBRoute><AdminFnBOrders /></AdminFnBRoute>} />
 
               {/* Chef routes */}
-              <Route path="/chef/orders" element={<ChefRoute><KitchenOrders /></ChefRoute>} />
+              {/* <Route path="/chef/orders" element={<ChefRoute><KitchenOrders /></ChefRoute>} /> */}
               <Route path="/chef/stats" element={<ChefRoute><KitchenStats /></ChefRoute>} />
               <Route path="/chef/kitchen-display" element={<ChefRoute><KitchenDisplay /></ChefRoute>} />
 
