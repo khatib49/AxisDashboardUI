@@ -87,6 +87,7 @@ console.log('   - Final SignalR Hub URL:', SIGNALR_HUB_URL);
       console.error('Expected array but got:', response);
       setOrders([]);
     }
+    console.log('SignalR Hub URL:', SIGNALR_HUB_URL);
     
     setLoading(false);
   } catch (error: any) {

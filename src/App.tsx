@@ -50,7 +50,6 @@ import GamingProfit from './pages/Admin/GamingProfit';
 import TcgProfit from './pages/Admin/TcgProfit';
 import FnbProfit from './pages/Admin/FnbProfit';
 import OverallProfit from './pages/Admin/OverallProfit';
-import KitchenOrders from './pages/Chef/KitchenOrders';
 import KitchenStats from './pages/Chef/KitchenStats';
 import LoyaltyCheck from './pages/Cashier/LoyaltyCheck';
 import LoyaltyCustomers from './pages/Admin/LoyaltyCustomers';
