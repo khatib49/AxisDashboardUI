@@ -47,17 +47,17 @@ const KitchenDisplay: React.FC = () => {
     }
   };
 
-  const getSignalRBaseUrl = () => {
-  const envUrl = import.meta.env.VITE_API_BASE_URL;
+//   const getSignalRBaseUrl = () => {
+//   const envUrl = import.meta.env.VITE_API_BASE_URL;
   
-  if (envUrl) {
-    // If env has /api suffix, remove it for SignalR
-    return envUrl.replace('/api', '');
-  }
+//   if (envUrl) {
+//     // If env has /api suffix, remove it for SignalR
+//     return envUrl.replace('/api', '');
+//   }
   
-  // Local development fallback
-  return 'https://localhost:7164';
-};
+//   // Local development fallback
+//   return 'https://localhost:7164';
+// };
 
 // const SIGNALR_BASE_URL = getSignalRBaseUrl();
 // const SIGNALR_HUB_URL = `${SIGNALR_BASE_URL}/hubs/kitchenbar`;
