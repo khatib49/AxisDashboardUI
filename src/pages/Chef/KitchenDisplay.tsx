@@ -47,26 +47,27 @@ const KitchenDisplay: React.FC = () => {
     }
   };
 
-//   const getSignalRBaseUrl = () => {
-//   const envUrl = import.meta.env.VITE_API_BASE_URL;
+const getSignalRUrl = (): string => {
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
   
-//   if (envUrl) {
-//     // If env has /api suffix, remove it for SignalR
-//     return envUrl.replace('/api', '');
-//   }
+  console.log('🔧 Raw VITE_API_BASE_URL:', envUrl);
   
-//   // Local development fallback
-//   return 'https://localhost:7164';
-// };
+  if (envUrl) {
+    // Remove /api suffix and any trailing slashes
+    const baseUrl = envUrl.replace(/\/api\/?$/, '');
+    const hubUrl = `${baseUrl}/hubs/kitchenbar`;
+    console.log('🔧 Constructed Hub URL:', hubUrl);
+    return hubUrl;
+  }
+  
+  // Fallback
+  return 'https://axisapiwebapp-fvh5e7bda3aag0g7.francecentral-01.azurewebsites.net/hubs/kitchenbar';
+};
 
-// const SIGNALR_BASE_URL = getSignalRBaseUrl();
-// const SIGNALR_HUB_URL = `${SIGNALR_BASE_URL}/hubs/kitchenbar`;
+const SIGNALR_HUB_URL = getSignalRUrl();
 
-// console.log('🔧 Kitchen Display Configuration:');
-// console.log('   - VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
-// console.log('   - SignalR Base URL:', SIGNALR_BASE_URL);
-// console.log('   - SignalR Hub URL:', SIGNALR_HUB_URL);
-
+console.log('🍳 Kitchen Display Configuration:');
+console.log('   - Final SignalR Hub URL:', SIGNALR_HUB_URL);
   // Fetch pending orders using your api instance
 
   const fetchPendingOrders = async () => {
