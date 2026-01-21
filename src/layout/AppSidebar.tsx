@@ -28,6 +28,7 @@ type NavItem = {
   icon: React.ReactNode;
   path?: string;
   subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
+  element?: React.ReactNode;
 };
 
 const baseNavItems: NavItem[] = [
@@ -216,14 +217,14 @@ const AppSidebar: React.FC = () => {
     // Chef: kitchen order management only
     if (hasRole("chef")) {
       return [
-        { icon: <ListIcon />, name: "Kitchen Orders", path: "/chef/kitchen-display", element: <KitchenDisplay /> },
+        { icon: <ListIcon />, name: "Kitchen Orders", path: "/chef/kitchen-display", element: <KitchenDisplay />, subItems: undefined },
       ];
     }
 
     
     if (hasRole("bartender")) {
       return [
-        { icon: <ListIcon />, name: "Bar Orders", path: '/bartender/bar-display', element: <BarDisplay /> },
+        { icon: <ListIcon />, name: "Bar Orders", path: '/bartender/bar-display', element: <BarDisplay />, subItems: undefined },
       ];
     }
 

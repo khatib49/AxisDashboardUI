@@ -59,13 +59,13 @@ const KitchenDisplay: React.FC = () => {
   return 'https://localhost:7164';
 };
 
-const SIGNALR_BASE_URL = getSignalRBaseUrl();
-const SIGNALR_HUB_URL = `${SIGNALR_BASE_URL}/hubs/kitchenbar`;
+// const SIGNALR_BASE_URL = getSignalRBaseUrl();
+// const SIGNALR_HUB_URL = `${SIGNALR_BASE_URL}/hubs/kitchenbar`;
 
-console.log('🔧 Kitchen Display Configuration:');
-console.log('   - VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
-console.log('   - SignalR Base URL:', SIGNALR_BASE_URL);
-console.log('   - SignalR Hub URL:', SIGNALR_HUB_URL);
+// console.log('🔧 Kitchen Display Configuration:');
+// console.log('   - VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
+// console.log('   - SignalR Base URL:', SIGNALR_BASE_URL);
+// console.log('   - SignalR Hub URL:', SIGNALR_HUB_URL);
 
   // Fetch pending orders using your api instance
 

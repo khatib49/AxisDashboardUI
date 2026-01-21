@@ -3,10 +3,12 @@ import { getItems, ItemDto } from "../services/itemService";
 import { getCategoriesByType, CategoryDto } from "../services/categoryService";
 
 export default function Menu() {
+    type ItemType = "Food" | "Retail" | "Drinks";
+
     const [items, setItems] = useState<ItemDto[]>([]);
     const [categories, setCategories] = useState<CategoryDto[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
-    const [selectedItemType, setSelectedItemType] = useState<"Retail" | "Food">("Food");
+    const [selectedItemType, setSelectedItemType] = useState<ItemType>("Food");
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -70,8 +72,12 @@ export default function Menu() {
 
     // Filter categories by selected item type
     const filteredCategories = categories.filter(
-        (cat) => cat.itemType === selectedItemType
-    );
+        cat => {
+  if (selectedItemType === "Drinks") {
+    return cat.itemType === "Bar" || cat.itemType === "Drinks";
+  }
+  return cat.itemType === selectedItemType;
+}    );
 
     // Filter items by selected item type and optionally by category
     const filteredItems = items.filter((item) => {

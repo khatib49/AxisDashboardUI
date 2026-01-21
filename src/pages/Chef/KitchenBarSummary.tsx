@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Statistic, Row, Col, Badge } from 'antd';
+import { Card, Statistic, Row, Col } from 'antd';
 import { ShopOutlined, CoffeeOutlined } from '@ant-design/icons';
 import axios from 'axios';
 
