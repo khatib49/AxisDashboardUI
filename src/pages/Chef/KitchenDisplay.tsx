@@ -9,10 +9,20 @@ import * as signalR from '@microsoft/signalr';
 import api, { patch, post } from '../../services/api'; // Import your existing api instance
 
 const { Title, Text } = Typography;
+// ✅ MOVE OUTSIDE COMPONENT - Define at module level
+const getSignalRUrl = (): string => {
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  
+  if (envUrl) {
+    const baseUrl = envUrl.replace(/\/api\/?$/, '');
+    return `${baseUrl}/hubs/kitchenbar`;
+  }
+  
+  return 'https://axisapiwebapp-fvh5e7bda3aag0g7.francecentral-01.azurewebsites.net/hubs/kitchenbar';
+};
 
-// Get base URL from your api instance
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://axisapiwebapp-fvh5e7bda3aag0g7.francecentral-01.azurewebsites.net';
-const SIGNALR_HUB_URL = `${API_BASE_URL}/hubs/kitchenbar`;
+// ✅ Calculate once at module level
+const SIGNALR_HUB_URL = getSignalRUrl();
 
 interface KitchenBarOrder {
   id: number;
@@ -46,29 +56,6 @@ const KitchenDisplay: React.FC = () => {
       audioRef.current.play().catch(err => console.log('Audio play error:', err));
     }
   };
-
-const getSignalRUrl = (): string => {
-  const envUrl = import.meta.env.VITE_API_BASE_URL;
-  
-  console.log('🔧 Raw VITE_API_BASE_URL:', envUrl);
-  
-  if (envUrl) {
-    // Remove /api suffix and any trailing slashes
-    const baseUrl = envUrl.replace(/\/api\/?$/, '');
-    const hubUrl = `${baseUrl}/hubs/kitchenbar`;
-    console.log('🔧 Constructed Hub URL:', hubUrl);
-    return hubUrl;
-  }
-  
-  // Fallback
-  return 'https://axisapiwebapp-fvh5e7bda3aag0g7.francecentral-01.azurewebsites.net/hubs/kitchenbar';
-};
-
-const SIGNALR_HUB_URL = getSignalRUrl();
-
-console.log('🍳 Kitchen Display Configuration:');
-console.log('   - Final SignalR Hub URL:', SIGNALR_HUB_URL);
-  // Fetch pending orders using your api instance
 
   const fetchPendingOrders = async () => {
   try {
