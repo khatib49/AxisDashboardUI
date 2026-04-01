@@ -123,7 +123,7 @@ export default function Items() {
 
     function openCreate() {
         setEditing(null);
-        setForm({ name: "", quantity: 0, price: 0, type: "", categoryId: null, gameId: null, statusId: STATUS_ENABLED });
+        setForm({ name: "", quantity: 0, price: 0, type: "", categoryId: null, buyPrice: null, gameId: null, statusId: STATUS_ENABLED });
         // clear any previous selected image
         if (imagePreview) { try { URL.revokeObjectURL(imagePreview); } catch (e) { void e; } }
         setImageFile(null);
@@ -133,7 +133,8 @@ export default function Items() {
 
     function openEdit(item: ItemDto) {
         setEditing(item);
-        setForm({ name: item.name, quantity: item.quantity, price: item.price, type: item.type, categoryId: item.categoryId, gameId: item.gameId, statusId: item.statusId ?? null });
+        setForm({ name: item.name, quantity: item.quantity, price: item.price, type: item.type, categoryId: item.categoryId, buyPrice: item.buyPrice,
+             gameId: item.gameId, statusId: item.statusId ?? null });
         // prefill image preview if available
         if (item.imagePath) {
             const resolved = resolveImageUrl(item.imagePath);
@@ -260,6 +261,7 @@ export default function Items() {
                                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Image</TableCell>
                                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Name</TableCell>
                                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Quantity</TableCell>
+                                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Buy Price</TableCell>
                                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Price</TableCell>
                                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Type</TableCell>
                                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Category</TableCell>
@@ -283,6 +285,9 @@ export default function Items() {
                                             <div className="font-medium text-gray-800 dark:text-white/90">{it.name}</div>
                                         </TableCell>
                                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{it.quantity}</TableCell>
+                                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+    {it.buyPrice != null ? `$${Number(it.buyPrice).toFixed(2)}` : '—'}
+</TableCell>
                                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{it.price}</TableCell>
                                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{it.type}</TableCell>
                                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{categories.find(c => c.id === it.categoryId)?.name ?? String(it.categoryId)}</TableCell>
@@ -379,6 +384,9 @@ export default function Items() {
                     <Input type="number" placeholder="Quantity" value={form.quantity} onChange={(e) => setForm((f) => ({ ...f, quantity: Number(e.target.value) }))} />
                     <label className="text-sm text-gray-600">Price (usd)</label>
                     <Input type="number" step={0.01} placeholder="Price" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: Number(e.target.value) }))} />
+                    <label className="text-sm text-gray-600">Buy Price (usd)</label>
+                    <Input type="number" step={0.01} placeholder="Buy Price" value={form.buyPrice ?? ''} onChange={(e) => setForm((f) => ({ ...f, buyPrice: e.target.value ? Number(e.target.value) : null }))} />
+                    <label className="text-sm text-gray-600">Type</label>
                     <Input placeholder="Type" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))} />
                     <label className="text-sm text-gray-600">Category</label>
                     <Select options={[{ value: '', label: '-- Select category --' }, ...categories.map((c) => ({ value: c.id, label: c.name }))]} defaultValue={form.categoryId ?? ''} onChange={(v: string | number) => setForm((f) => ({ ...f, categoryId: v === '' ? null : Number(v) }))} />

@@ -10,6 +10,7 @@ export type ItemDto = {
   gameId: string | null;
   statusId?: number | null;
   imagePath?: string | null;
+  buyPrice?: number | null;  
 };
 
 const basePath = "/item";
@@ -47,6 +48,9 @@ export async function createItem(
   form.append("price", String(body.price));
   form.append("type", body.type);
   form.append("categoryId", String(body.categoryId ?? "0"));
+if (body.buyPrice !== undefined && body.buyPrice !== null) {
+  form.append("buyPrice", String(body.buyPrice));
+}
 
   if (body.statusId !== undefined && body.statusId !== null) {
     form.append("statusId", String(body.statusId));
@@ -73,6 +77,11 @@ export async function updateItem(
   form.append("price", String(body.price));
   form.append("type", body.type);
   form.append("categoryId", String(body.categoryId ?? "0"));
+
+  if (body.buyPrice !== undefined && body.buyPrice !== null) {
+  form.append("buyPrice", String(body.buyPrice));
+}
+
   if (body.statusId !== undefined && body.statusId !== null)
     form.append("statusId", String(body.statusId));
   // Only append image if a file is provided; otherwise keep existing image on server
