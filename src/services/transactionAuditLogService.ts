@@ -14,7 +14,7 @@ export interface TransactionAuditLog {
 
 export interface PaginatedAuditLogs {
   totalCount: number;
-  items: TransactionAuditLog[];
+  data: TransactionAuditLog[];
   page: number;
   pageSize: number;
 }

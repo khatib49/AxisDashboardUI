@@ -25,7 +25,7 @@ const fetchLogs = async () => {
   setError(null);
   try {
     const result = await transactionAuditLogService.getAll(page, PAGE_SIZE);
-    setLogs(result.items ?? []);      // ← was just result
+    setLogs(result.data ?? []);      // ← was just result
     setTotal(result.totalCount ?? 0);
   } catch {
     setError('Failed to load audit logs.');

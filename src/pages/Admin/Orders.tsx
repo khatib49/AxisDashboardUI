@@ -2,7 +2,8 @@ import React, { useEffect, useState, useCallback } from "react";
 import {
     getItemTransactions, getGameTransactions,
     ItemTransaction, GameTransaction,
-    updateTransaction, deleteTransaction, TransactionUpdateDto
+    updateTransaction, deleteTransaction, TransactionUpdateDto,
+    removeItemFromOpenInvoice
 } from '../../services/transactionService';
 import { getStatusName, STATUS_PROCESSED_PAID } from '../../services/statuses';
 import Loader from '../../components/ui/Loader';
@@ -145,10 +146,7 @@ const Orders: React.FC = () => {
         const key = `${order.transactionId}-${itemId}`;
         setRemovingItem(key);
         try {
-            const updatedItems = (order.items || [])
-                .filter(i => i.itemId !== itemId)
-                .map(i => ({ itemId: i.itemId, quantity: i.quantity }));
-            await updateTransaction(order.transactionId!, { items: updatedItems } as TransactionUpdateDto);
+            await removeItemFromOpenInvoice(order.transactionId!, itemId);
             setMessage({ text: 'Item removed successfully', type: 'success' });
             loadItemTransactions();
         } catch {

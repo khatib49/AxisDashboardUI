@@ -570,17 +570,15 @@ export async function getGameHourlyHeatmap(query: GameHourlySalesQuery = {}) {
 }
 
 
-// Add this new function to transactionService.ts
-export async function removeItemFromTransaction(
-  transactionId: number,
-  itemIdToRemove: number,
-  currentItems: Array<{ itemId: number; quantity: number }>  // ← matches the inline type in ItemTransaction.items
-): Promise<void> {
-  const updatedItems = currentItems
-    .filter(i => i.itemId !== itemIdToRemove)
-    .map(i => ({ itemId: i.itemId, quantity: i.quantity }));
-
-  await updateTransaction(transactionId, { items: updatedItems } as TransactionUpdateDto);
+// DELETE /api/transactions/{transactionId}/items/{itemId}
+export async function removeItemFromOpenInvoice(
+    transactionId: number,
+    itemId: number
+): Promise<{ success: boolean; message?: string; error?: string }> {
+    const res = await del<{ success: boolean; message?: string; error?: string }>(
+        `/transactions/${transactionId}/items/${itemId}`
+    );
+    return res;
 }
 // --- Default Export ---
 
@@ -603,5 +601,5 @@ export default {
     getOpenPs5Sessions,
     getOpenBoardGameSessions,
     closeGameSession,
-    removeItemFromTransaction
+    removeItemFromOpenInvoice
 };
