@@ -58,14 +58,15 @@ export type TransactionQuery = {
 };
 
 export type TransactionUpdateDto = {
-    roomId?: number | null;
-    gameTypeId?: number | null;
-    gameId?: number | null;
-    gameSettingId?: number | null;
-    hours?: number | null;
-    totalPrice?: number | null;
-    statusId?: number | null;
-    setId?: number | null;
+  roomId?: number | null;
+  gameTypeId?: number | null;
+  gameId?: number | null;
+  gameSettingId?: number | null;
+  hours?: number | null;
+  totalPrice?: number | null;
+  statusId?: number | null;
+  setId?: number | null;
+  items?: Array<{ itemId: number; quantity: number }> | null;  // ← ADD THIS LINE ONLY
 };
 
 // ============ OPEN SESSION TYPES ============
@@ -568,6 +569,19 @@ export async function getGameHourlyHeatmap(query: GameHourlySalesQuery = {}) {
     return res;
 }
 
+
+// Add this new function to transactionService.ts
+export async function removeItemFromTransaction(
+  transactionId: number,
+  itemIdToRemove: number,
+  currentItems: Array<{ itemId: number; quantity: number }>  // ← matches the inline type in ItemTransaction.items
+): Promise<void> {
+  const updatedItems = currentItems
+    .filter(i => i.itemId !== itemIdToRemove)
+    .map(i => ({ itemId: i.itemId, quantity: i.quantity }));
+
+  await updateTransaction(transactionId, { items: updatedItems } as TransactionUpdateDto);
+}
 // --- Default Export ---
 
 export default {
@@ -589,4 +603,5 @@ export default {
     getOpenPs5Sessions,
     getOpenBoardGameSessions,
     closeGameSession,
+    removeItemFromTransaction
 };
