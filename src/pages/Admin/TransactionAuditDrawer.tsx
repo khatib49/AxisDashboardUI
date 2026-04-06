@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { TransactionAuditLog, transactionAuditLogService } from '../../services/transactionAuditLogService';
 import { AuditActionBadge } from '../../components/AuditLog/AuditActionBadge';
 

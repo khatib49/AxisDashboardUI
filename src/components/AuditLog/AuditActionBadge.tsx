@@ -1,5 +1,3 @@
-import React from 'react';
-
 const actionColors: Record<string, string> = {
   Created:          'bg-green-100 text-green-800',
   CloseGameSession: 'bg-blue-100 text-blue-800',
