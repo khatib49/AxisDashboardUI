@@ -63,6 +63,7 @@ import TrialBalance from './components/Accounting/TrialBalance';
 import GeneralLedger from './components/Accounting/GeneralLedger';
 import KitchenDisplay from "./pages/Chef/KitchenDisplay";
 import BarDisplay from "./pages/bartender/BarDisplay";
+import { TransactionAuditLogsPage } from "./pages/Admin/TransactionAuditLogsPage";
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { authenticated, loading } = useAuth();
@@ -182,6 +183,7 @@ export default function App() {
 
               {/* Admin (guard inside element) */}
               <Route path="/admin/users" element={<AdminRoute><UsersManagement /></AdminRoute>} />
+              <Route path="/admin/audit-logs" element={<AdminRoute><TransactionAuditLogsPage /></AdminRoute>} />
               <Route path="/admin/items" element={<AdminRoute><Items /></AdminRoute>} />
               <Route path="/admin/orders" element={<AdminRoute><Orders /></AdminRoute>} />
               <Route path="/cashier/items" element={<CashierRoute><CashierItems /></CashierRoute>} />

@@ -135,6 +135,7 @@ const AppSidebar: React.FC = () => {
             { name: "Categories", path: "/admin/expense-categories" },
           ],
         },
+        { name: 'Audit Logs', path: '/admin/audit-logs', icon: <BoxCubeIcon /> },
         { icon: <PieChartIcon />, name: "Discount Management", path: "/admin/discounts" },
         {
           icon: <DollarLineIcon />,
