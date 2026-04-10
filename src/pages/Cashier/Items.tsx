@@ -709,7 +709,7 @@ export default function CashierItems() {
                                                                 })) || [],
                                                                 {
                                                                     comment,
-                                                                    customerName: selectedClient?.name,
+                                                                    customerName: selectedClient ? `${selectedClient.firstName || ''} ${selectedClient.lastName || ''}`.trim() : undefined,
                                                                     setName: sets.find(s => s.id === selectedSetId)?.name,
                                                                     orderTime: response.data.createdOn,
                                                                 }
@@ -826,7 +826,7 @@ export default function CashierItems() {
                                                                 })) || [],
                                                                 {
                                                                     comment,
-                                                                    customerName: selectedClient?.name,
+                                                                    customerName: selectedClient ? `${selectedClient.firstName || ''} ${selectedClient.lastName || ''}`.trim() : undefined,
                                                                     setName: sets.find(s => s.id === selectedSetId)?.name,
                                                                     orderTime: response.data.createdOn,
                                                                 }
