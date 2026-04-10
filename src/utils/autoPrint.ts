@@ -35,24 +35,30 @@ const POS_STYLES = `
   .pos-spacer { height: 15mm; width: 100%; display: block; }
 `;
 
-export function autoPrintHtml(html: string, title = 'Receipt') {
-  const win = window.open('', 'PRINT_' + Date.now(), 'width=320,height=600');
+export function autoPrintHtml(html: string, title = "Receipt") {
+  const win = window.open("", "PRINT_" + Date.now(), "width=320,height=600");
   if (!win) return;
 
   win.document.open();
-  win.document.write(`<html><head><meta charset="utf-8"/><title>${title}</title><style>${POS_STYLES}</style></head><body></body></html>`);
+  win.document.write(
+    `<html><head><meta charset="utf-8"/><title>${title}</title><style>${POS_STYLES}</style></head><body></body></html>`,
+  );
   win.document.close();
 
-  const container = win.document.createElement('div');
-  container.className = 'pos-ticket';
+  const container = win.document.createElement("div");
+  container.className = "pos-ticket";
   container.innerHTML = html;
   win.document.body.appendChild(container);
 
-  const spacer = win.document.createElement('div');
-  spacer.className = 'pos-spacer';
+  const spacer = win.document.createElement("div");
+  spacer.className = "pos-spacer";
   win.document.body.appendChild(spacer);
 
-  setTimeout(() => { win.focus(); win.print(); win.close(); }, 250);
+  setTimeout(() => {
+    win.focus();
+    win.print();
+    win.close();
+  }, 250);
 }
 
 export type TicketItem = {
@@ -63,7 +69,7 @@ export type TicketItem = {
 };
 
 type StationTicketOptions = {
-  stationName: string;  // "KITCHEN" or "BAR"
+  stationName: string; // "KITCHEN" or "BAR"
   transactionId: number;
   items: TicketItem[];
   comment?: string;
@@ -73,10 +79,14 @@ type StationTicketOptions = {
 };
 
 function buildStationTicket(opts: StationTicketOptions): string {
-  const time = new Date(opts.orderTime).toLocaleString('en-US', {
-    timeZone: 'Asia/Beirut',
-    hour: '2-digit', minute: '2-digit', hour12: true,
-    month: '2-digit', day: '2-digit', year: 'numeric',
+  const time = new Date(opts.orderTime).toLocaleString("en-US", {
+    timeZone: "Asia/Beirut",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+    month: "2-digit",
+    day: "2-digit",
+    year: "numeric",
   });
 
   let html = `
@@ -89,8 +99,10 @@ function buildStationTicket(opts: StationTicketOptions): string {
   `;
 
   if (opts.customerName || opts.setName) {
-    if (opts.customerName) html += `<div class="t-flex"><span class="t-bold">Customer:</span><span>${escapeHtml(opts.customerName)}</span></div>`;
-    if (opts.setName) html += `<div class="t-flex"><span class="t-bold">Set:</span><span>${escapeHtml(opts.setName)}</span></div>`;
+    if (opts.customerName)
+      html += `<div class="t-flex"><span class="t-bold">Customer:</span><span>${escapeHtml(opts.customerName)}</span></div>`;
+    if (opts.setName)
+      html += `<div class="t-flex"><span class="t-bold">Set:</span><span>${escapeHtml(opts.setName)}</span></div>`;
     html += `<hr class="t-sep"/>`;
   }
 
@@ -98,8 +110,10 @@ function buildStationTicket(opts: StationTicketOptions): string {
   for (const item of opts.items) {
     html += `<div style="margin-bottom:4px">`;
     html += `<div class="t-semi">${item.quantity}x ${escapeHtml(item.itemName)}</div>`;
-    if (item.categoryName) html += `<div style="font-size:9px;color:#555">&nbsp;&nbsp;${escapeHtml(item.categoryName)}</div>`;
-    if (item.specialInstructions) html += `<div style="font-size:10px;font-style:italic">&nbsp;&nbsp;⚠ ${escapeHtml(item.specialInstructions)}</div>`;
+    if (item.categoryName)
+      html += `<div style="font-size:9px;color:#555">&nbsp;&nbsp;${escapeHtml(item.categoryName)}</div>`;
+    if (item.specialInstructions)
+      html += `<div style="font-size:10px;font-style:italic">&nbsp;&nbsp;⚠ ${escapeHtml(item.specialInstructions)}</div>`;
     html += `</div>`;
   }
 
@@ -116,7 +130,7 @@ function buildStationTicket(opts: StationTicketOptions): string {
 }
 
 function escapeHtml(text: string): string {
-  const div = document.createElement('div');
+  const div = document.createElement("div");
   div.textContent = text;
   return div.innerHTML;
 }
@@ -128,8 +142,19 @@ function escapeHtml(text: string): string {
  */
 export function printStationTickets(
   transactionId: number,
-  items: Array<{ itemName: string; quantity: number; itemType?: string; categoryName?: string; specialInstructions?: string }>,
-  options?: { comment?: string; customerName?: string; setName?: string; orderTime?: string }
+  items: Array<{
+    itemName: string;
+    quantity: number;
+    itemType?: string;
+    categoryName?: string;
+    specialInstructions?: string;
+  }>,
+  options?: {
+    comment?: string;
+    customerName?: string;
+    setName?: string;
+    orderTime?: string;
+  },
 ) {
   const now = options?.orderTime || new Date().toISOString();
 
@@ -138,7 +163,7 @@ export function printStationTickets(
   const drinkItems: TicketItem[] = [];
 
   for (const item of items) {
-    const type = (item.itemType || '').toLowerCase();
+    const type = (item.itemType || "").toLowerCase();
     const ticket: TicketItem = {
       itemName: item.itemName,
       quantity: item.quantity,
@@ -146,9 +171,9 @@ export function printStationTickets(
       specialInstructions: item.specialInstructions,
     };
 
-    if (type === 'food') {
+    if (type === "food") {
       foodItems.push(ticket);
-    } else if (type === 'drink') {
+    } else if (type === "drink") {
       drinkItems.push(ticket);
     }
     // 'Retail' and other types don't get station tickets
@@ -157,7 +182,7 @@ export function printStationTickets(
   // Print kitchen ticket if there are food items
   if (foodItems.length > 0) {
     const html = buildStationTicket({
-      stationName: 'KITCHEN',
+      stationName: "KITCHEN",
       transactionId,
       items: foodItems,
       comment: options?.comment,
@@ -173,7 +198,7 @@ export function printStationTickets(
     const delay = foodItems.length > 0 ? 600 : 0;
     setTimeout(() => {
       const html = buildStationTicket({
-        stationName: 'BAR',
+        stationName: "BAR",
         transactionId,
         items: drinkItems,
         comment: options?.comment,
