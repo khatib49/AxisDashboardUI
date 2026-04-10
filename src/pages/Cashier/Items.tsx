@@ -20,6 +20,7 @@ import Select from "../../components/form/Select";
 import ItemInvoice from "../../components/invoice/ItemInvoice";
 import { getDiscounts, DiscountDto } from "../../services/discountService";
 import { searchClientsByPhone, ClientUserDto } from "../../services/clientService";
+import { printStationTickets } from "../../utils/autoPrint";
 import ChangeCalculator from "../../components/common/ChangeCalculator";
 import { getSets, SetDto } from '../../services/setService';
 
@@ -696,6 +697,23 @@ const [loadingSets, setLoadingSets] = useState(false);
 
                 setCurrentInvoice(invoiceData);
                 setInvoiceModalOpen(true);
+
+                // Auto-print station tickets (kitchen / bar)
+                printStationTickets(
+                    response.data.id,
+                    response.data.items?.map((item: any) => ({
+                        itemName: item.itemName,
+                        quantity: item.quantity,
+                        itemType: item.type || '',
+                        categoryName: item.categoryName || '',
+                    })) || [],
+                    {
+                        comment,
+                        customerName: selectedClient?.name,
+                        setName: sets.find(s => s.id === selectedSetId)?.name,
+                        orderTime: response.data.createdOn,
+                    }
+                );
             }
 
             setSelectedItems({});
@@ -796,6 +814,23 @@ const [loadingSets, setLoadingSets] = useState(false);
 
                 setCurrentInvoice(invoiceData);
                 setInvoiceModalOpen(true);
+
+                // Auto-print station tickets (kitchen / bar)
+                printStationTickets(
+                    response.data.id,
+                    response.data.items?.map((item: any) => ({
+                        itemName: item.itemName,
+                        quantity: item.quantity,
+                        itemType: item.type || '',
+                        categoryName: item.categoryName || '',
+                    })) || [],
+                    {
+                        comment,
+                        customerName: selectedClient?.name,
+                        setName: sets.find(s => s.id === selectedSetId)?.name,
+                        orderTime: response.data.createdOn,
+                    }
+                );
             }
 
             setSelectedItems({});
