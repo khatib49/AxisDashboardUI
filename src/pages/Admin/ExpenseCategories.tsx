@@ -1,15 +1,14 @@
-// pages/Admin/ExpenseCategories.tsx
 import { useEffect, useState } from "react";
 import {
     getExpenseCategories,
     createExpenseCategory,
     updateExpenseCategory,
     deleteExpenseCategory,
-    getExpenseAccounts,  // NEW
+    getExpenseAccounts,
     ExpenseCategoryDto,
     ExpenseCategoryCreateDto,
     ExpenseCategoryUpdateDto,
-    AccountDto,  // NEW
+    AccountDto,
 } from "../../services/expenseService";
 import Modal from "../../components/ui/Modal";
 import Input from "../../components/form/input/InputField";
@@ -17,9 +16,10 @@ import Label from "../../components/form/Label";
 import Loader from "../../components/ui/Loader";
 import Alert from "../../components/ui/alert/Alert";
 
+
 export default function ExpenseCategories() {
     const [categories, setCategories] = useState<ExpenseCategoryDto[]>([]);
-    const [accounts, setAccounts] = useState<AccountDto[]>([]);  // NEW
+    const [accounts, setAccounts] = useState<AccountDto[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -28,11 +28,13 @@ export default function ExpenseCategories() {
     const [form, setForm] = useState<{
         name: string;
         description: string;
-        accountId: number | null;  // NEW
+        accountId: number | null;
+        isCapital: boolean;
     }>({
         name: "",
         description: "",
-        accountId: null,  // NEW
+        accountId: null,
+        isCapital: false,
     });
     const [submitting, setSubmitting] = useState(false);
     const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -50,20 +52,16 @@ export default function ExpenseCategories() {
         return () => clearTimeout(t);
     }, [notification]);
 
-    // Load categories AND accounts
     useEffect(() => {
         let mounted = true;
         setLoading(true);
         setError(null);
 
-        Promise.all([
-            getExpenseCategories(),
-            getExpenseAccounts()  // NEW
-        ])
+        Promise.all([getExpenseCategories(), getExpenseAccounts()])
             .then(([categoriesData, accountsData]) => {
                 if (!mounted) return;
                 setCategories(categoriesData || []);
-                setAccounts(accountsData || []);  // NEW
+                setAccounts(accountsData || []);
             })
             .catch((err) => {
                 if (!mounted) return;
@@ -74,18 +72,12 @@ export default function ExpenseCategories() {
                 setLoading(false);
             });
 
-        return () => {
-            mounted = false;
-        };
+        return () => { mounted = false; };
     }, []);
 
     function openCreateForm() {
         setEditing(null);
-        setForm({
-            name: "",
-            description: "",
-            accountId: null,  // NEW
-        });
+        setForm({ name: "", description: "", accountId: null, isCapital: false });
         setIsFormOpen(true);
     }
 
@@ -94,18 +86,15 @@ export default function ExpenseCategories() {
         setForm({
             name: category.name,
             description: category.description || "",
-            accountId: category.accountId || null,  // NEW
+            accountId: category.accountId || null,
+            isCapital: category.isCapital ?? false,
         });
         setIsFormOpen(true);
     }
 
     async function submitForm() {
         if (!form.name.trim()) {
-            setNotification({
-                variant: "error",
-                title: "Validation",
-                message: "Category name is required",
-            });
+            setNotification({ variant: "error", title: "Validation", message: "Category name is required" });
             return;
         }
 
@@ -115,30 +104,22 @@ export default function ExpenseCategories() {
                 const dto: ExpenseCategoryUpdateDto = {
                     name: form.name,
                     description: form.description || null,
-                    accountId: form.accountId,  // NEW
+                    accountId: form.accountId,
+                    isCapital: form.isCapital,
                 };
                 const updated = await updateExpenseCategory(editing.id, dto);
-                setCategories((s) =>
-                    s.map((c) => (c.id === editing.id ? updated : c))
-                );
-                setNotification({
-                    variant: "success",
-                    title: "Updated",
-                    message: "Category updated successfully",
-                });
+                setCategories((s) => s.map((c) => (c.id === editing.id ? updated : c)));
+                setNotification({ variant: "success", title: "Updated", message: "Category updated successfully" });
             } else {
                 const dto: ExpenseCategoryCreateDto = {
                     name: form.name,
                     description: form.description || null,
-                    accountId: form.accountId,  // NEW
+                    accountId: form.accountId,
+                    isCapital: form.isCapital,
                 };
                 const created = await createExpenseCategory(dto);
                 setCategories((s) => [...s, created]);
-                setNotification({
-                    variant: "success",
-                    title: "Created",
-                    message: "Category created successfully",
-                });
+                setNotification({ variant: "success", title: "Created", message: "Category created successfully" });
             }
             setIsFormOpen(false);
             setEditing(null);
@@ -162,11 +143,7 @@ export default function ExpenseCategories() {
             await deleteExpenseCategory(deleteId);
             setCategories((s) => s.filter((c) => c.id !== deleteId));
             setDeleteId(null);
-            setNotification({
-                variant: "success",
-                title: "Deleted",
-                message: "Category deleted successfully",
-            });
+            setNotification({ variant: "success", title: "Deleted", message: "Category deleted successfully" });
         } catch (err: unknown) {
             let message = "Failed to delete";
             if (err && typeof err === "object") {
@@ -208,31 +185,18 @@ export default function ExpenseCategories() {
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        ID
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Name
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Description
-                                    </th>
-                                    {/* NEW COLUMN */}
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Mapped Account
-                                    </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Actions
-                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mapped Account</th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
                                 {categories.length === 0 && (
                                     <tr>
-                                        <td
-                                            colSpan={5}
-                                            className="px-6 py-10 text-center text-gray-500"
-                                        >
+                                        <td colSpan={6} className="px-6 py-10 text-center text-gray-500">
                                             No categories found
                                         </td>
                                     </tr>
@@ -248,7 +212,17 @@ export default function ExpenseCategories() {
                                         <td className="px-6 py-4 text-sm text-gray-500">
                                             {category.description || "-"}
                                         </td>
-                                        {/* NEW CELL */}
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                            {category.isCapital ? (
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                                    🏗️ Capital
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                    📋 Operating
+                                                </span>
+                                            )}
+                                        </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                                             {category.accountNumber ? (
                                                 <span className="text-blue-600 font-mono">
@@ -279,7 +253,14 @@ export default function ExpenseCategories() {
                     </div>
 
                     <div className="mt-4 text-sm text-gray-600">
-                        Total: {categories.length} categories
+                        Total: {categories.length} categories &nbsp;·&nbsp;
+                        <span className="text-purple-700 font-medium">
+                            {categories.filter(c => c.isCapital).length} Capital
+                        </span>
+                        &nbsp;·&nbsp;
+                        <span className="text-blue-700 font-medium">
+                            {categories.filter(c => !c.isCapital).length} Operating
+                        </span>
                     </div>
                 </>
             )}
@@ -296,11 +277,10 @@ export default function ExpenseCategories() {
                         <Input
                             placeholder="Category name"
                             value={form.name}
-                            onChange={(e) =>
-                                setForm((f) => ({ ...f, name: e.target.value }))
-                            }
+                            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                         />
                     </div>
+
                     <div>
                         <Label>Description</Label>
                         <textarea
@@ -308,13 +288,48 @@ export default function ExpenseCategories() {
                             rows={3}
                             placeholder="Optional description..."
                             value={form.description}
-                            onChange={(e) =>
-                                setForm((f) => ({ ...f, description: e.target.value }))
-                            }
+                            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                         />
                     </div>
-                    
-                    {/* NEW: Account Mapping Dropdown */}
+
+                    {/* Capital toggle */}
+                    <div>
+                        <Label>Expense Type</Label>
+                        <div className="flex items-center gap-4 mt-1">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="expenseType"
+                                    checked={!form.isCapital}
+                                    onChange={() => setForm((f) => ({ ...f, isCapital: false }))}
+                                    className="w-4 h-4 text-blue-600"
+                                />
+                                <span className="text-sm font-medium text-gray-700">
+                                    📋 Operating
+                                </span>
+                                <span className="text-xs text-gray-400">
+                                    (recurring — shown in monthly P&L)
+                                </span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="expenseType"
+                                    checked={form.isCapital}
+                                    onChange={() => setForm((f) => ({ ...f, isCapital: true }))}
+                                    className="w-4 h-4 text-purple-600"
+                                />
+                                <span className="text-sm font-medium text-gray-700">
+                                    🏗️ Capital
+                                </span>
+                                <span className="text-xs text-gray-400">
+                                    (one-time investment — shown separately)
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    {/* Account mapping */}
                     <div>
                         <Label>Map to Expense Account (Optional)</Label>
                         <select
@@ -323,7 +338,7 @@ export default function ExpenseCategories() {
                             onChange={(e) =>
                                 setForm((f) => ({
                                     ...f,
-                                    accountId: e.target.value ? Number(e.target.value) : null
+                                    accountId: e.target.value ? Number(e.target.value) : null,
                                 }))
                             }
                         >
@@ -335,8 +350,8 @@ export default function ExpenseCategories() {
                             ))}
                         </select>
                         <p className="mt-1 text-xs text-gray-500">
-                            If set, expenses in this category will always use this account.
-                            Otherwise, the system will auto-detect based on the category name.
+                            If set, all expenses in this category will use this account for journal entries.
+                            Changing this will automatically backfill missing journal entries.
                         </p>
                     </div>
 
@@ -364,17 +379,10 @@ export default function ExpenseCategories() {
                 </div>
             </Modal>
 
-            {/* Delete Confirmation Modal */}
-            <Modal
-                isOpen={!!deleteId}
-                onClose={() => setDeleteId(null)}
-                title="Confirm Delete"
-            >
+            {/* Delete Modal */}
+            <Modal isOpen={!!deleteId} onClose={() => setDeleteId(null)} title="Confirm Delete">
                 <div className="space-y-4">
-                    <p>
-                        Are you sure you want to delete this category? This action cannot
-                        be undone.
-                    </p>
+                    <p>Are you sure you want to delete this category? This action cannot be undone.</p>
                     <div className="flex items-center gap-2">
                         <button
                             className="px-4 py-2 bg-red-600 text-white rounded flex items-center gap-2 disabled:opacity-50"
@@ -383,25 +391,18 @@ export default function ExpenseCategories() {
                         >
                             {deleting ? <Loader size={16} /> : "Delete"}
                         </button>
-                        <button
-                            className="px-4 py-2 bg-gray-200 rounded"
-                            onClick={() => setDeleteId(null)}
-                        >
+                        <button className="px-4 py-2 bg-gray-200 rounded" onClick={() => setDeleteId(null)}>
                             Cancel
                         </button>
                     </div>
                 </div>
             </Modal>
 
-            {/* Toast notification */}
+            {/* Toast */}
             <div className="fixed bottom-6 right-6 z-50">
                 {notification && (
                     <div className="max-w-sm">
-                        <Alert
-                            variant={notification.variant}
-                            title={notification.title}
-                            message={notification.message}
-                        />
+                        <Alert variant={notification.variant} title={notification.title} message={notification.message} />
                     </div>
                 )}
             </div>

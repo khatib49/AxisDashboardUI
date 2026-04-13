@@ -5,16 +5,16 @@ export type ExpenseCreateDto = {
   amount: number;
   paymentMethod?: string | null;
   comment?: string | null;
-  fromDate: string; // ISO string
-  toDate: string; // ISO string
+  fromDate: string;
+  toDate: string;
 };
 
 export type ExpenseUpdateDto = {
   amount: number;
   paymentMethod?: string | null;
   comment?: string | null;
-  fromDate: string; // ISO string
-  toDate: string; // ISO string
+  fromDate: string;
+  toDate: string;
   categoryId: number;
 };
 
@@ -43,35 +43,34 @@ export type PagedExpensesResult = {
   page: number;
   pageSize: number;
   totalCount: number;
-  totalAmount: number; // sum of page items
-  totalAmountAll: number; // sum of all filtered items (ignore paging)
+  totalAmount: number;
+  totalAmountAll: number;
   items: ExpenseDto[];
 };
 
 export type ExpenseCategoryCreateDto = {
-   name: string;
+  name: string;
   description?: string | null;
-  accountId?: number | null;  // NEW
+  accountId?: number | null;
+  isCapital: boolean;        // NEW
 };
 
 export type ExpenseCategoryDto = {
-    id: number;
+  id: number;
   name: string;
   description?: string | null;
-  accountId?: number | null;  // NEW
-  accountNumber?: string | null;  // NEW
-  accountName?: string | null;  // NEW
+  accountId?: number | null;
+  accountNumber?: string | null;
+  accountName?: string | null;
+  isCapital: boolean;        // NEW
 };
 
 export type ExpenseCategoryUpdateDto = {
- name: string;
+  name: string;
   description?: string | null;
-  accountId?: number | null;  // NEW
+  accountId?: number | null;
+  isCapital: boolean;        // NEW
 };
-
-export async function getExpenseAccounts(): Promise<AccountDto[]> {
-  return await get<AccountDto[]>("/accounts/expense-accounts");
-}
 
 export type AccountDto = {
   id: number;
@@ -79,37 +78,33 @@ export type AccountDto = {
   accountName: string;
 };
 
-// Get expense by ID
+export async function getExpenseAccounts(): Promise<AccountDto[]> {
+  return await get<AccountDto[]>("/accounts/expense-accounts");
+}
+
 export async function getExpenseById(id: number): Promise<ExpenseDto> {
   return await get<ExpenseDto>(`/expense/${id}`);
 }
 
-// Query expenses with filters
 export async function queryExpenses(
   filter?: ExpenseFilter
 ): Promise<PagedExpensesResult> {
   const params = new URLSearchParams();
   if (filter?.from) params.append("from", filter.from);
   if (filter?.to) params.append("to", filter.to);
-  if (filter?.categoryId)
-    params.append("categoryId", String(filter.categoryId));
+  if (filter?.categoryId) params.append("categoryId", String(filter.categoryId));
   if (filter?.page) params.append("page", String(filter.page));
   if (filter?.pageSize) params.append("pageSize", String(filter.pageSize));
-
   const queryString = params.toString();
   return await get<PagedExpensesResult>(
     `/expense${queryString ? `?${queryString}` : ""}`
   );
 }
 
-// Create expense
-export async function createExpense(
-  dto: ExpenseCreateDto
-): Promise<ExpenseDto> {
+export async function createExpense(dto: ExpenseCreateDto): Promise<ExpenseDto> {
   return await post<ExpenseDto>("/expense", dto);
 }
 
-// Update expense
 export async function updateExpense(
   id: number,
   dto: ExpenseUpdateDto
@@ -117,24 +112,20 @@ export async function updateExpense(
   return await put<ExpenseDto>(`/expense/${id}`, dto);
 }
 
-// Delete expense
 export async function deleteExpense(id: number): Promise<void> {
   return await del<void>(`/expense/${id}`);
 }
 
-// Get expense categories
 export async function getExpenseCategories(): Promise<ExpenseCategoryDto[]> {
   return await get<ExpenseCategoryDto[]>("/expensecategory");
 }
 
-// Create expense category
 export async function createExpenseCategory(
   dto: ExpenseCategoryCreateDto
 ): Promise<ExpenseCategoryDto> {
   return await post<ExpenseCategoryDto>("/expensecategory", dto);
 }
 
-// Update expense category
 export async function updateExpenseCategory(
   id: number,
   dto: ExpenseCategoryUpdateDto
@@ -142,7 +133,6 @@ export async function updateExpenseCategory(
   return await put<ExpenseCategoryDto>(`/expensecategory/${id}`, dto);
 }
 
-// Delete expense category
 export async function deleteExpenseCategory(id: number): Promise<void> {
   return await del<void>(`/expensecategory/${id}`);
 }
