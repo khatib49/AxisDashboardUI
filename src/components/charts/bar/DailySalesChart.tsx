@@ -157,12 +157,13 @@ export default function DailySalesChart({ categoryType = 'all' }: DailySalesChar
         },
         xaxis: {
             categories: categories.length > 0 ? categories : ["No data"],
-            axisBorder: {
-                show: false,
+            labels: {
+                rotate: -45,
+                hideOverlappingLabels: true,
+                style: { fontSize: '11px' },
             },
-            axisTicks: {
-                show: false,
-            },
+            axisBorder: { show: false },
+            axisTicks: { show: false },
         },
         legend: {
             show: true,

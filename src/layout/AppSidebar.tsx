@@ -137,16 +137,16 @@ const AppSidebar: React.FC = () => {
         },
         { name: 'Audit Logs', path: '/admin/audit-logs', icon: <BoxCubeIcon /> },
         { icon: <PieChartIcon />, name: "Discount Management", path: "/admin/discounts" },
-        {
-          icon: <DollarLineIcon />,
-          name: "Profit",
-          subItems: [
-            { name: "Gaming Profit", path: "/admin/profit/gaming" },
-            { name: "TCG Profit", path: "/admin/profit/tcg" },
-            { name: "F&B Profit", path: "/admin/profit/fnb" },
-            { name: "Overall Profit", path: "/admin/profit/overall" },
-          ],
-        },
+        // {
+        //   icon: <DollarLineIcon />,
+        //   name: "Profit",
+        //   subItems: [
+        //     { name: "Gaming Profit", path: "/admin/profit/gaming" },
+        //     { name: "TCG Profit", path: "/admin/profit/tcg" },
+        //     { name: "F&B Profit", path: "/admin/profit/fnb" },
+        //     { name: "Overall Profit", path: "/admin/profit/overall" },
+        //   ],
+        // },
         {
         icon: <TicketIcon />, // You'll need to add this icon
         name: "AXIS PLUS Rewards",
