@@ -127,14 +127,6 @@ const AppSidebar: React.FC = () => {
           ],
         },
         { icon: <TableIcon />, name: "Rooms", path: "/admin/rooms" },
-        {
-          icon: <DollarLineIcon />,
-          name: "Entries Management",
-          subItems: [
-            { name: "Entries", path: "/admin/expenses" },
-            { name: "Categories", path: "/admin/expense-categories" },
-          ],
-        },
         { name: 'Audit Logs', path: '/admin/audit-logs', icon: <BoxCubeIcon /> },
         { icon: <PieChartIcon />, name: "Discount Management", path: "/admin/discounts" },
         // {
@@ -168,7 +160,14 @@ const AppSidebar: React.FC = () => {
     { name: "General Ledger", path: "/accounting/general-ledger" },
   ],
 },
-
+        {
+          icon: <DollarLineIcon />,
+          name: "Entries Management",
+          subItems: [
+            { name: "Entries", path: "/admin/expenses" },
+            { name: "Categories", path: "/admin/expense-categories" },
+          ],
+        },
       ];
     }
 
