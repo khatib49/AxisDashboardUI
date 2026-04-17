@@ -64,6 +64,7 @@ import GeneralLedger from './components/Accounting/GeneralLedger';
 import KitchenDisplay from "./pages/Chef/KitchenDisplay";
 import BarDisplay from "./pages/bartender/BarDisplay";
 import { TransactionAuditLogsPage } from "./pages/Admin/TransactionAuditLogsPage";
+import ItemRevenueReport from "./pages/Accounting/ItemRevenueReport";
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { authenticated, loading } = useAuth();
@@ -224,6 +225,7 @@ export default function App() {
 
               {/* Accounting routes */}
               <Route path="/accounting" element={<AdminRoute><AccountingDashboard /></AdminRoute>} />
+              <Route path="/accounting/item-revenue" element={<AdminRoute><ItemRevenueReport /></AdminRoute>} />
               <Route path="/accounting/accounts" element={<AdminRoute><ChartOfAccounts /></AdminRoute>} />
               <Route path="/accounting/journal" element={<AdminRoute><JournalEntryList accountTypes={[]} accounts={[]} onSuccess={function (): void {
                 throw new Error("Function not implemented.");

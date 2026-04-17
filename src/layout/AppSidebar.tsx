@@ -161,6 +161,7 @@ const AppSidebar: React.FC = () => {
   name: "Accounting",
   subItems: [
     { name: "Dashboard", path: "/accounting" },
+    { name: "Item Revenue", path: "/accounting/item-revenue" },
     { name: "Chart of Accounts", path: "/accounting/accounts" },
     { name: "Journal Entries", path: "/accounting/journal" },
     { name: "Trial Balance", path: "/accounting/trial-balance" },
