@@ -160,7 +160,7 @@ const AppSidebar: React.FC = () => {
     { name: "General Ledger", path: "/accounting/general-ledger" },
   ],
 },
-        {
+{
           icon: <DollarLineIcon />,
           name: "Entries Management",
           subItems: [
