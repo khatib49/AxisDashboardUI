@@ -129,9 +129,9 @@ const AppSidebar: React.FC = () => {
         { icon: <TableIcon />, name: "Rooms", path: "/admin/rooms" },
         {
           icon: <DollarLineIcon />,
-          name: "Expenses Management",
+          name: "Entries Management",
           subItems: [
-            { name: "Expenses", path: "/admin/expenses" },
+            { name: "Entries", path: "/admin/expenses" },
             { name: "Categories", path: "/admin/expense-categories" },
           ],
         },
