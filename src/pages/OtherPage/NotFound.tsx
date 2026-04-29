@@ -1,42 +1,63 @@
-import GridShape from "../../components/common/GridShape";
 import { Link } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
+import { AxisMark } from "../../components/common/AxisLogo";
 
 export default function NotFound() {
   return (
     <>
       <PageMeta
-        title="React.js 404 Dashboard | TailAdmin - React.js Admin Dashboard Template"
-        description="This is React.js 404 Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
+        title="AXIS Admin — Page not found"
+        description="The page you tried to reach does not exist in the AXIS Admin console."
       />
-      <div className="relative flex flex-col items-center justify-center min-h-screen p-6 overflow-hidden z-1">
-        <GridShape />
-        <div className="mx-auto w-full max-w-[242px] text-center sm:max-w-[472px]">
-          <h1 className="mb-8 font-bold text-gray-800 text-title-md dark:text-white/90 xl:text-title-2xl">
-            ERROR
-          </h1>
+      <div className="relative flex flex-col items-center justify-center min-h-screen px-6 overflow-hidden bg-gray-50 dark:bg-gray-950">
+        <div className="absolute inset-0 axis-grid-bg opacity-60" />
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(60% 50% at 50% 40%, rgba(91,141,239,0.18) 0%, transparent 70%)",
+          }}
+        />
 
-          <img src="/images/error/404.svg" alt="404" className="dark:hidden" />
-          <img
-            src="/images/error/404-dark.svg"
-            alt="404"
-            className="hidden dark:block"
-          />
+        <div className="relative z-10 flex flex-col items-center text-center max-w-lg">
+          <div className="relative mb-10">
+            <div className="absolute inset-0 bg-brand-500/40 blur-2xl rounded-3xl" />
+            <div className="relative">
+              <AxisMark size={72} />
+            </div>
+          </div>
 
-          <p className="mt-10 mb-6 text-base text-gray-700 dark:text-gray-400 sm:text-lg">
-            We can’t seem to find the page you are looking for!
+          <p className="font-mono text-[11px] tracking-[0.32em] uppercase text-brand-500 dark:text-brand-400">
+            Error 404
           </p>
 
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-5 py-3.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
-          >
-            Back to Home Page
-          </Link>
+          <h1 className="mt-4 font-display text-3xl tracking-[0.06em] text-gray-900 dark:text-white sm:text-4xl">
+            SIGNAL LOST
+          </h1>
+
+          <p className="mt-6 max-w-sm text-base text-gray-600 dark:text-gray-400">
+            The page you&apos;re looking for isn&apos;t here. It may have been
+            moved, renamed, or is restricted to a different role.
+          </p>
+
+          <div className="flex flex-col items-center gap-3 mt-10 sm:flex-row">
+            <Link
+              to="/"
+              className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white transition rounded-lg bg-brand-500 hover:bg-brand-600 focus:outline-none focus:ring-4 focus:ring-brand-500/30"
+            >
+              Back to dashboard
+            </Link>
+            <Link
+              to="/signin"
+              className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-gray-700 transition border rounded-lg border-gray-300 hover:bg-white dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-900"
+            >
+              Sign in again
+            </Link>
+          </div>
         </div>
-        {/* <!-- Footer --> */}
-        <p className="absolute text-sm text-center text-gray-500 -translate-x-1/2 bottom-6 left-1/2 dark:text-gray-400">
-          &copy; {new Date().getFullYear()} - TailAdmin
+
+        <p className="absolute bottom-6 left-1/2 -translate-x-1/2 text-xs font-mono uppercase tracking-[0.32em] text-gray-400 dark:text-gray-600">
+          AXIS · Admin · {new Date().getFullYear()}
         </p>
       </div>
     </>

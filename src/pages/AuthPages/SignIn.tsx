@@ -6,8 +6,8 @@ export default function SignIn() {
   return (
     <>
       <PageMeta
-        title="AXIS GAME LOUNGE - SignIn"
-        description="This is the SignIn page for AXIS GAME LOUNGE"
+        title="AXIS Admin — Sign in"
+        description="Sign in to the AXIS Game Lounge operations console."
       />
       <AuthLayout>
         <SignInForm />
