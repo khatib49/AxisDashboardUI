@@ -156,7 +156,7 @@ export default function SignInForm() {
                   </div>
                 )}
                 <div>
-                  <Button className="w-full disabled:opacity-50" size="lg" variant="gradient" disabled={submitting}>
+                  <Button type="submit" className="w-full disabled:opacity-50" size="lg" variant="gradient" disabled={submitting}>
                     {submitting ? (
                       <span className="inline-flex items-center gap-2">
                         <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
