@@ -817,10 +817,3 @@ span.flatpickr-weekday,
 .py-16{
   padding-block : calc(.25rem * 5) !important;
 }
-.py-12{
-  padding-block : calc(.25rem *2) !important;
-}
-
-.font40{
-  font-size: 40px !important;
-}
