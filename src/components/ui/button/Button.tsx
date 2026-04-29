@@ -1,14 +1,15 @@
 import { ReactNode } from "react";
 
 interface ButtonProps {
-  children: ReactNode; // Button text or content
-  size?: "sm" | "md"; // Button size
-  variant?: "primary" | "outline"; // Button variant
-  startIcon?: ReactNode; // Icon before the text
-  endIcon?: ReactNode; // Icon after the text
-  onClick?: () => void; // Click handler
-  disabled?: boolean; // Disabled state
-  className?: string; // Disabled state
+  children: ReactNode;
+  size?: "sm" | "md" | "lg";
+  variant?: "primary" | "outline" | "ghost" | "danger" | "gradient";
+  startIcon?: ReactNode;
+  endIcon?: ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+  className?: string;
+  type?: "button" | "submit" | "reset";
 }
 
 const Button: React.FC<ButtonProps> = ({
@@ -20,28 +21,35 @@ const Button: React.FC<ButtonProps> = ({
   onClick,
   className = "",
   disabled = false,
+  type = "button",
 }) => {
-  // Size Classes
   const sizeClasses = {
-    sm: "px-4 py-3 text-sm",
-    md: "px-5 py-3.5 text-sm",
+    sm: "px-3.5 py-2 text-xs",
+    md: "px-5 py-2.5 text-sm",
+    lg: "px-6 py-3 text-sm",
   };
 
-  // Variant Classes
   const variantClasses = {
     primary:
-      "bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300",
+      "bg-brand-600 text-white shadow-theme-sm hover:bg-brand-700 hover:shadow-glow-brand active:scale-[0.98] disabled:bg-brand-300",
+    gradient:
+      "gradient-brand text-white shadow-glow-brand hover:shadow-glow-brand-lg hover:brightness-110 active:scale-[0.98] disabled:opacity-60",
     outline:
-      "bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300",
+      "bg-white/70 backdrop-blur-sm text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-white hover:ring-brand-300 hover:text-brand-700 dark:bg-white/[0.03] dark:text-gray-300 dark:ring-white/10 dark:hover:bg-white/[0.06] dark:hover:text-white",
+    ghost:
+      "bg-transparent text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5",
+    danger:
+      "bg-error-500 text-white shadow-theme-sm hover:bg-error-600 active:scale-[0.98] disabled:bg-error-300",
   };
 
   return (
     <button
-      className={`inline-flex items-center justify-center gap-2 rounded-lg transition ${className} ${
+      type={type}
+      className={`relative inline-flex items-center justify-center gap-2 rounded-xl font-semibold tracking-tight transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/50 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 ${
         sizeClasses[size]
       } ${variantClasses[variant]} ${
         disabled ? "cursor-not-allowed opacity-50" : ""
-      }`}
+      } ${className}`}
       onClick={onClick}
       disabled={disabled}
     >

@@ -1,27 +1,36 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { Link, useLocation } from "react-router";
 
-// Assume these icons are imported from an icon library
+import { ChevronDownIcon, HorizontaLDots } from "../icons";
 import {
-  BoxCubeIcon,
-  CalenderIcon,
-  ChevronDownIcon,
-  DollarLineIcon,
-  GridIcon,
-  HorizontaLDots,
-  ListIcon,
-  PageIcon,
-  PieChartIcon,
-  PlugInIcon,
-  TableIcon,
-  UserCircleIcon,
-} from "../icons";
+  NavDashboardIcon,
+  NavMenuIcon,
+  NavUsersIcon,
+  NavInventoryIcon,
+  NavGameIcon,
+  NavTransactionsIcon,
+  NavRoomsIcon,
+  NavAuditIcon,
+  NavDiscountIcon,
+  NavRewardsIcon,
+  NavAccountingIcon,
+  NavEntriesIcon,
+  NavCalendarIcon,
+  NavProfileIcon,
+  NavFormIcon,
+  NavTableIcon,
+  NavPagesIcon,
+  NavKitchenIcon,
+  NavBarIcon,
+  NavItemsIcon,
+  NavOrdersIcon,
+} from "../components/common/NavIcons";
 import { useSidebar } from "../context/SidebarContext";
 import { useAuth } from "../context/AuthContext";
 import SidebarWidget from "./SidebarWidget";
-import TicketIcon from "../icons/tickets";
 import KitchenDisplay from "../pages/Chef/KitchenDisplay";
 import BarDisplay from "../pages/bartender/BarDisplay";
+import BrandLogo from "../components/common/BrandLogo";
 
 type NavItem = {
   name: string;
@@ -33,33 +42,33 @@ type NavItem = {
 
 const baseNavItems: NavItem[] = [
   {
-    icon: <GridIcon />,
+    icon: <NavDashboardIcon />,
     name: "Dashboard",
     subItems: [{ name: "Ecommerce", path: "/", pro: false }],
   },
   {
-    icon: <CalenderIcon />,
+    icon: <NavCalendarIcon />,
     name: "Calendar",
     path: "/calendar",
   },
   {
-    icon: <UserCircleIcon />,
+    icon: <NavProfileIcon />,
     name: "User Profile",
     path: "/profile",
   },
   {
     name: "Forms",
-    icon: <ListIcon />,
+    icon: <NavFormIcon />,
     subItems: [{ name: "Form Elements", path: "/form-elements", pro: false }],
   },
   {
     name: "Tables",
-    icon: <TableIcon />,
+    icon: <NavTableIcon />,
     subItems: [{ name: "Basic Tables", path: "/basic-tables", pro: false }],
   },
   {
     name: "Pages",
-    icon: <PageIcon />,
+    icon: <NavPagesIcon />,
     subItems: [
       { name: "Blank Page", path: "/blank", pro: false },
       { name: "404 Error", path: "/error-404", pro: false },
@@ -94,14 +103,14 @@ const AppSidebar: React.FC = () => {
     if (hasRole("admin")) {
       return [
         {
-          icon: <GridIcon />,
+          icon: <NavDashboardIcon />,
           name: "Dashboard",
           subItems: [{ name: "Ecommerce", path: "/" }],
         },
-        { icon: <ListIcon />, name: "Menu", path: "/menu" },
-        { icon: <UserCircleIcon />, name: "Users Management", path: "/admin/users" },
+        { icon: <NavMenuIcon />, name: "Menu", path: "/menu" },
+        { icon: <NavUsersIcon />, name: "Users Management", path: "/admin/users" },
         {
-          icon: <BoxCubeIcon />,
+          icon: <NavInventoryIcon />,
           name: "Inventory Management",
           subItems: [
             { name: "Items", path: "/admin/items" },
@@ -111,7 +120,7 @@ const AppSidebar: React.FC = () => {
           ],
         },
         {
-          icon: <PlugInIcon />,
+          icon: <NavGameIcon />,
           name: "Game",
           subItems: [
             { name: "Overview", path: "/admin/game" },
@@ -119,16 +128,16 @@ const AppSidebar: React.FC = () => {
           ],
         },
         {
-          icon: <PieChartIcon />,
+          icon: <NavTransactionsIcon />,
           name: "Transactions",
           subItems: [
             { name: "Item Transactions", path: "/admin/transactions" },
             { name: "Game Transactions", path: "/admin/game-transactions" },
           ],
         },
-        { icon: <TableIcon />, name: "Rooms", path: "/admin/rooms" },
-        { name: 'Audit Logs', path: '/admin/audit-logs', icon: <BoxCubeIcon /> },
-        { icon: <PieChartIcon />, name: "Discount Management", path: "/admin/discounts" },
+        { icon: <NavRoomsIcon />, name: "Rooms", path: "/admin/rooms" },
+        { name: 'Audit Logs', path: '/admin/audit-logs', icon: <NavAuditIcon /> },
+        { icon: <NavDiscountIcon />, name: "Discount Management", path: "/admin/discounts" },
         // {
         //   icon: <DollarLineIcon />,
         //   name: "Profit",
@@ -140,7 +149,7 @@ const AppSidebar: React.FC = () => {
         //   ],
         // },
         {
-        icon: <TicketIcon />, // You'll need to add this icon
+        icon: <NavRewardsIcon />,
         name: "AXIS PLUS Rewards",
         subItems: [
           { name: "Customer Lookup", path: "/admin/loyalty/customers" },
@@ -149,7 +158,7 @@ const AppSidebar: React.FC = () => {
         ],
       },
       {
-  icon: <DollarLineIcon />,
+  icon: <NavAccountingIcon />,
   name: "Accounting",
   subItems: [
     { name: "Dashboard", path: "/accounting" },
@@ -161,7 +170,7 @@ const AppSidebar: React.FC = () => {
   ],
 },
 {
-          icon: <DollarLineIcon />,
+          icon: <NavEntriesIcon />,
           name: "Entries Management",
           subItems: [
             { name: "Entries", path: "/admin/expenses" },
@@ -175,57 +184,56 @@ const AppSidebar: React.FC = () => {
     if (hasRole("admin_fnb")) {
       return [
         {
-          icon: <GridIcon />,
+          icon: <NavDashboardIcon />,
           name: "Dashboard",
           path: "/admin-fnb/dashboard",
         },
         {
-          icon: <BoxCubeIcon />,
+          icon: <NavInventoryIcon />,
           name: "F&B Management",
           subItems: [
             { name: "Items", path: "/admin-fnb/items" },
             { name: "Orders", path: "/admin-fnb/orders" },
           ],
         },
-        { icon: <DollarLineIcon />, name: "Profit", path: "/admin-fnb/profit" },
+        { icon: <NavAccountingIcon />, name: "Profit", path: "/admin-fnb/profit" },
       ];
     }
 
     // GameCashie: limited menu for game cashier operations
     if (hasRole("GameCashier") || hasRole("gamecashier") || hasRole("game_cashier") || hasRole("cashiergame")) {
       return [
-        // use non-admin paths so the GameCashie role isn't blocked by AdminRoute
-        { icon: <PlugInIcon />, name: "Game Session", path: "/game/sessions" },
-        { icon: <PlugInIcon />, name: "PS5 Sessions", path: "/gamecashier/ps5-sessions" },
-        { icon: <PlugInIcon />, name: "Board Games", path: "/gamecashier/board-sessions" },
-        { icon: <BoxCubeIcon />, name: "Items", path: "/gamecashier/items" },
-        { icon: <BoxCubeIcon />, name: "Open Items Invoice", path: "/cashier/open-invoices" },
-        { icon: <TableIcon />, name: "Rooms", path: "/gamecashier/rooms" },
-        { icon: <UserCircleIcon />, name: "Clients", path: "/gamecashier/clients" },
-        { icon: <TicketIcon />, name: "AXIS PLUS Check", path: "/cashier/loyalty-check" },
+        { icon: <NavGameIcon />, name: "Game Session", path: "/game/sessions" },
+        { icon: <NavGameIcon />, name: "PS5 Sessions", path: "/gamecashier/ps5-sessions" },
+        { icon: <NavGameIcon />, name: "Board Games", path: "/gamecashier/board-sessions" },
+        { icon: <NavItemsIcon />, name: "Items", path: "/gamecashier/items" },
+        { icon: <NavOrdersIcon />, name: "Open Items Invoice", path: "/cashier/open-invoices" },
+        { icon: <NavRoomsIcon />, name: "Rooms", path: "/gamecashier/rooms" },
+        { icon: <NavUsersIcon />, name: "Clients", path: "/gamecashier/clients" },
+        { icon: <NavRewardsIcon />, name: "AXIS PLUS Check", path: "/cashier/loyalty-check" },
       ];
     }
 
     // Cashier: show Items and Orders as separate top-level links
     if (hasRole("cashier")) {
       return [
-        { icon: <BoxCubeIcon />, name: "Items", path: "/cashier/items" },
-        { icon: <TableIcon />, name: "Orders", path: "/cashier/orders" },
-        { icon: <TicketIcon />, name: "AXIS PLUS Check", path: "/cashier/loyalty-check" },
+        { icon: <NavItemsIcon />, name: "Items", path: "/cashier/items" },
+        { icon: <NavOrdersIcon />, name: "Orders", path: "/cashier/orders" },
+        { icon: <NavRewardsIcon />, name: "AXIS PLUS Check", path: "/cashier/loyalty-check" },
       ];
     }
 
     // Chef: kitchen order management only
     if (hasRole("chef")) {
       return [
-        { icon: <ListIcon />, name: "Kitchen Orders", path: "/chef/kitchen-display", element: <KitchenDisplay />, subItems: undefined },
+        { icon: <NavKitchenIcon />, name: "Kitchen Orders", path: "/chef/kitchen-display", element: <KitchenDisplay />, subItems: undefined },
       ];
     }
 
-    
+
     if (hasRole("bartender")) {
       return [
-        { icon: <ListIcon />, name: "Bar Orders", path: '/bartender/bar-display', element: <BarDisplay />, subItems: undefined },
+        { icon: <NavBarIcon />, name: "Bar Orders", path: '/bartender/bar-display', element: <BarDisplay />, subItems: undefined },
       ];
     }
 
@@ -288,13 +296,21 @@ const AppSidebar: React.FC = () => {
   };
 
   const renderMenuItems = (items: NavItem[], menuType: "main" | "others") => (
-    <ul className="flex flex-col gap-4">
-      {items.map((nav, index) => (
-        <li key={nav.name}>
+    <ul className="flex flex-col gap-1">
+      {items.map((nav, index) => {
+        const isOpen = openSubmenu?.type === menuType && openSubmenu?.index === index;
+        const hasActiveChild = nav.subItems?.some((s) => isActive(s.path));
+        const isItemActive = nav.path ? isActive(nav.path) : !!hasActiveChild;
+        return (
+        <li key={nav.name} className="relative">
+          {/* Active left indicator */}
+          {isItemActive && (
+            <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full gradient-brand shadow-glow-brand" aria-hidden="true" />
+          )}
           {nav.subItems ? (
             <button
               onClick={() => handleSubmenuToggle(index, menuType)}
-              className={`menu-item group ${openSubmenu?.type === menuType && openSubmenu?.index === index
+              className={`menu-item group ${isOpen || hasActiveChild
                 ? "menu-item-active"
                 : "menu-item-inactive"
                 } cursor-pointer ${!isExpanded && !isHovered
@@ -303,7 +319,7 @@ const AppSidebar: React.FC = () => {
                 }`}
             >
               <span
-                className={`menu-item-icon-size  ${openSubmenu?.type === menuType && openSubmenu?.index === index
+                className={`menu-item-icon-size transition-colors  ${(isOpen || hasActiveChild)
                   ? "menu-item-icon-active"
                   : "menu-item-icon-inactive"
                   }`}
@@ -311,14 +327,13 @@ const AppSidebar: React.FC = () => {
                 {nav.icon}
               </span>
               {(isExpanded || isHovered || isMobileOpen) && (
-                <span className="menu-item-text">{nav.name}</span>
+                <span className="menu-item-text font-medium">{nav.name}</span>
               )}
               {(isExpanded || isHovered || isMobileOpen) && (
                 <ChevronDownIcon
-                  className={`ml-auto w-5 h-5 transition-transform duration-200 ${openSubmenu?.type === menuType &&
-                    openSubmenu?.index === index
+                  className={`ml-auto w-4 h-4 transition-transform duration-200 ${isOpen
                     ? "rotate-180 text-brand-500"
-                    : ""
+                    : "text-gray-400"
                     }`}
                 />
               )}
@@ -328,10 +343,10 @@ const AppSidebar: React.FC = () => {
               <Link
                 to={nav.path}
                 className={`menu-item group ${isActive(nav.path) ? "menu-item-active" : "menu-item-inactive"
-                  }`}
+                  } ${!isExpanded && !isHovered ? "lg:justify-center" : ""}`}
               >
                 <span
-                  className={`menu-item-icon-size ${isActive(nav.path)
+                  className={`menu-item-icon-size transition-colors ${isActive(nav.path)
                     ? "menu-item-icon-active"
                     : "menu-item-icon-inactive"
                     }`}
@@ -339,7 +354,7 @@ const AppSidebar: React.FC = () => {
                   {nav.icon}
                 </span>
                 {(isExpanded || isHovered || isMobileOpen) && (
-                  <span className="menu-item-text">{nav.name}</span>
+                  <span className="menu-item-text font-medium">{nav.name}</span>
                 )}
               </Link>
             )
@@ -351,13 +366,10 @@ const AppSidebar: React.FC = () => {
               }}
               className="overflow-hidden transition-all duration-300"
               style={{
-                height:
-                  openSubmenu?.type === menuType && openSubmenu?.index === index
-                    ? `${subMenuHeight[`${menuType}-${index}`]}px`
-                    : "0px",
+                height: isOpen ? `${subMenuHeight[`${menuType}-${index}`]}px` : "0px",
               }}
             >
-              <ul className="mt-2 space-y-1 ml-9">
+              <ul className="mt-1 space-y-0.5 ml-6 pl-3 border-l border-gray-200/70 dark:border-white/5">
                 {nav.subItems.map((subItem) => (
                   <li key={subItem.name}>
                     <Link
@@ -397,13 +409,14 @@ const AppSidebar: React.FC = () => {
             </div>
           )}
         </li>
-      ))}
+        );
+      })}
     </ul>
   );
 
   return (
     <aside
-      className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200 
+      className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-4 left-0 glass-panel text-gray-900 dark:text-white h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200/60 dark:border-white/5
         ${isExpanded || isMobileOpen
           ? "w-[290px]"
           : isHovered
@@ -415,47 +428,36 @@ const AppSidebar: React.FC = () => {
       onMouseEnter={() => !isExpanded && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
+      {/* Decorative gradient blob */}
+      <div className="pointer-events-none absolute -top-20 -left-10 w-64 h-64 rounded-full bg-brand-500/10 blur-3xl" aria-hidden="true" />
+      <div className="pointer-events-none absolute bottom-10 -right-10 w-56 h-56 rounded-full bg-accent-300/10 blur-3xl" aria-hidden="true" />
+
       <div
-        className={`py-8 flex ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-center"
+        className={`relative py-7 flex ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-start pl-2"
           }`}
       >
-        <Link to="/">
+        <Link to="/" className="group inline-flex items-center transition-transform hover:scale-[1.02]">
           {isExpanded || isHovered || isMobileOpen ? (
-            <>
-              <img
-                className="dark"
-                src="/images/logo/axis-logo.jpeg"
-                alt="Logo"
-                width={150}
-                height={40}
-
-              />
-
-            </>
+            <BrandLogo variant="full" />
           ) : (
-            <img
-              src="/images/logo/axis-logo-chrinked.jpeg"
-              alt="Logo"
-              width={32}
-              height={32}
-            />
+            <BrandLogo variant="icon" size={36} />
           )}
         </Link>
       </div>
-      <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
+      <div className="relative flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
         <nav className="mb-6">
           <div className="flex flex-col gap-4">
             <div>
               <h2
-                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
+                className={`mb-3 text-[10px] font-semibold uppercase tracking-[0.16em] flex leading-[20px] text-gray-400 dark:text-gray-500 ${!isExpanded && !isHovered
                   ? "lg:justify-center"
-                  : "justify-start"
+                  : "justify-start pl-2"
                   }`}
               >
                 {isExpanded || isHovered || isMobileOpen ? (
                   "Menu"
                 ) : (
-                  <HorizontaLDots className="size-6" />
+                  <HorizontaLDots className="size-5" />
                 )}
               </h2>
               {renderMenuItems(computedNavItems, "main")}

@@ -31,15 +31,21 @@ export default function SignInForm() {
   }
   return (
     <div className="flex flex-col flex-1">
-      <div className="w-full max-w-md pt-10 mx-auto" />
-      <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
+      <div className="flex flex-col justify-center flex-1 w-full">
         <div>
-          <div className="mb-5 sm:mb-8">
-            <h1 className="mb-2 font-semibold text-gray-800 text-title-sm dark:text-white/90 sm:text-title-md">
-              Sign In
+          <div className="mb-7 sm:mb-9">
+            <span className="inline-flex items-center gap-2 rounded-full border border-brand-100 bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700 dark:border-brand-500/20 dark:bg-brand-500/10 dark:text-brand-300">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-brand-500 opacity-75 animate-ping" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-brand-500" />
+              </span>
+              Secure access
+            </span>
+            <h1 className="mt-4 mb-2 font-bold tracking-tight text-gray-900 text-title-sm dark:text-white sm:text-title-md">
+              Welcome back
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Enter your email and password to sign in!
+              Sign in with your email and password to continue.
             </p>
           </div>
           <div>
@@ -140,10 +146,26 @@ export default function SignInForm() {
                     Forgot password?
                   </Link>
                 </div>
-                {error && <p className="text-sm text-error-500">{error}</p>}
+                {error && (
+                  <div className="flex items-start gap-2 rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700 dark:border-error-500/20 dark:bg-error-500/10 dark:text-error-300">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="mt-0.5 shrink-0">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                      <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                    <span>{error}</span>
+                  </div>
+                )}
                 <div>
-                  <Button className="w-full disabled:opacity-50" size="sm" disabled={submitting}>
-                    {submitting ? 'Signing in...' : 'Sign in'}
+                  <Button className="w-full disabled:opacity-50" size="lg" variant="gradient" disabled={submitting}>
+                    {submitting ? (
+                      <span className="inline-flex items-center gap-2">
+                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.3" />
+                          <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                        </svg>
+                        Signing in…
+                      </span>
+                    ) : 'Sign in'}
                   </Button>
                 </div>
               </div>

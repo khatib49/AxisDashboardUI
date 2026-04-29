@@ -4,6 +4,7 @@ import { useSidebar } from "../context/SidebarContext";
 import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
 import NotificationDropdown from "../components/header/NotificationDropdown";
 import UserDropdown from "../components/header/UserDropdown";
+import BrandLogo from "../components/common/BrandLogo";
 
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
@@ -42,11 +43,11 @@ const AppHeader: React.FC = () => {
   }, []);
 
   return (
-    <header className="sticky top-0 flex w-full bg-white border-gray-200 z-99999 dark:border-gray-800 dark:bg-gray-900 lg:border-b">
+    <header className="sticky top-0 flex w-full glass-panel border-gray-200/60 z-99999 dark:border-white/5 lg:border-b">
       <div className="flex flex-col items-center justify-between grow lg:flex-row lg:px-6">
-        <div className="flex items-center justify-between w-full gap-2 px-3 py-3 border-b border-gray-200 dark:border-gray-800 sm:gap-4 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-4">
+        <div className="flex items-center justify-between w-full gap-2 px-3 py-3 border-b border-gray-200/60 dark:border-white/5 sm:gap-4 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-3">
           <button
-            className="items-center justify-center w-10 h-10 text-gray-500 border-gray-200 rounded-lg z-99999 dark:border-gray-800 lg:flex dark:text-gray-400 lg:h-11 lg:w-11 lg:border"
+            className="items-center justify-center w-10 h-10 text-gray-500 border-gray-200/70 rounded-xl z-99999 dark:border-white/10 lg:flex dark:text-gray-400 lg:h-11 lg:w-11 lg:border bg-white/40 dark:bg-white/[0.03] hover:bg-white hover:shadow-sm hover:text-brand-600 dark:hover:text-brand-300 transition-all"
             onClick={handleToggle}
             aria-label="Toggle Sidebar"
           >
@@ -85,24 +86,12 @@ const AppHeader: React.FC = () => {
           </button>
 
           <Link to="/" className="lg:hidden">
-            <img
-              className="dark:hidden"
-              src="/images/logo/axis-logo-chrinked.jpeg"
-              alt="Axis Logo"
-              width={40}
-
-            />
-            <img
-              className="hidden dark:block"
-              src="/images/logo/axis-logo-chrinked.jpeg"
-              alt="Axis Logo"
-              width={40}
-            />
+            <BrandLogo variant="icon" size={36} />
           </Link>
 
           <button
             onClick={toggleApplicationMenu}
-            className="flex items-center justify-center w-10 h-10 text-gray-700 rounded-lg z-99999 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 lg:hidden"
+            className="flex items-center justify-center w-10 h-10 text-gray-700 rounded-xl z-99999 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 lg:hidden transition-colors"
           >
             <svg
               width="24"
@@ -159,14 +148,18 @@ const AppHeader: React.FC = () => {
           className={`${isApplicationMenuOpen ? "flex" : "hidden"
             } items-center justify-between w-full gap-4 px-5 py-4 lg:flex shadow-theme-md lg:justify-end lg:px-0 lg:shadow-none`}
         >
-          <div className="flex items-center gap-2 2xsm:gap-3">
-            {/* <!-- Dark Mode Toggler --> */}
-            <ThemeToggleButton />
-            {/* <!-- Dark Mode Toggler --> */}
-            <NotificationDropdown />
-            {/* <!-- Notification Menu Area --> */}
+          {/* Decorative status pill */}
+          <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-full bg-success-50 dark:bg-success-500/10 border border-success-100 dark:border-success-500/20">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-success-500 opacity-75 animate-ping" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-success-500" />
+            </span>
+            <span className="text-xs font-semibold text-success-700 dark:text-success-300">Live</span>
           </div>
-          {/* <!-- User Area --> */}
+          <div className="flex items-center gap-2 2xsm:gap-3">
+            <ThemeToggleButton />
+            <NotificationDropdown />
+          </div>
           <UserDropdown />
         </div>
       </div>
