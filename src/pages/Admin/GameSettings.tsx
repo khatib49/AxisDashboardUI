@@ -27,6 +27,7 @@ export default function GameSettings() {
     const [newHours, setNewHours] = useState<number | ''>('');
     const [newPrice, setNewPrice] = useState<number | ''>('');
     const [isOpenHour, setIsOpenHour] = useState(false);
+    const [newIsDayPass, setNewIsDayPass] = useState(false);
     const [creating, setCreating] = useState(false);
 
     // edit/delete state
@@ -77,6 +78,7 @@ export default function GameSettings() {
         setNewHours('');
         setNewPrice('');
         setIsOpenHour(false);
+        setNewIsDayPass(false);
         setIsOpen(true);
     };
 
@@ -91,6 +93,7 @@ export default function GameSettings() {
                 hours: isOpenHour ? 0 : (newHours === '' ? undefined : newHours),
                 price: newPrice === '' ? undefined : newPrice,
                 isOpenHour: isOpenHour,
+                isDayPass: newIsDayPass,
             };
             if (editingId) {
                 await updateSetting(editingId, body);
@@ -143,7 +146,7 @@ export default function GameSettings() {
             {loading && <div className="text-gray-600">Loading settings...</div>}
 
             {!loading && (
-                <div className="bg-white rounded shadow overflow-hidden">
+                <div className="bg-white rounded shadow">
                     <div className="p-4">
                         <table className="min-w-full">
                             <thead>
@@ -151,6 +154,7 @@ export default function GameSettings() {
                                     <th className="text-left px-4 py-2">Name</th>
                                     <th className="text-left px-4 py-2">Type</th>
                                     <th className="text-left px-4 py-2">Offer</th>
+                                    <th className="text-left px-4 py-2">DayPass</th>
                                     <th className="text-left px-4 py-2">Game</th>
                                     <th className="text-left px-4 py-2">Hours</th>
                                     <th className="text-left px-4 py-2">Price</th>
@@ -164,6 +168,7 @@ export default function GameSettings() {
                                         <td className="px-4 py-2 align-top">{s.name}</td>
                                         <td className="px-4 py-2 align-top">{s.type}</td>
                                         <td className="px-4 py-2 align-top">{s.isOffer ? 'Yes' : 'No'}</td>
+                                        <td className="px-4 py-2 align-top">{s.isDayPass ? 'Yes' : 'No'}</td>
                                         <td className="px-4 py-2 align-top">{s.gameName ?? (games.find(g => g.id === s.gameId)?.name ?? s.gameId)}</td>
                                         <td className="px-4 py-2 align-top">{typeof s.hours === 'number' ? (s.hours === 0 ? 'Open' : s.hours) : '-'}</td>
                                         <td className="px-4 py-2 align-top">{typeof s.price === 'number' ? s.price : '-'}</td>
@@ -177,6 +182,7 @@ export default function GameSettings() {
                                                     setNewName(s.name);
                                                     setNewType(s.type);
                                                     setNewIsOffer(!!s.isOffer);
+                                                    setNewIsDayPass(!!s.isDayPass);
                                                     setNewGameId(s.gameId);
                                                     const hoursValue = typeof s.hours === 'number' ? s.hours : '';
                                                     setIsOpenHour(hoursValue === 0);
@@ -216,7 +222,7 @@ export default function GameSettings() {
                     </>
                 )}
             >
-                <div className="space-y-4">
+                <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
                     <div>
                         <Label>Name</Label>
                         <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Name" />
@@ -248,13 +254,30 @@ export default function GameSettings() {
                         </div>
                     </div>
                     <div>
+                        <Label>Day Pass</Label>
+                        <div className="flex items-center gap-2">
+                            <Switch
+                                key={String(newIsDayPass)}
+                                label="Is this a day pass?"
+                                defaultChecked={newIsDayPass}
+                                onChange={(checked) => {
+                                    setNewIsDayPass(checked);
+                                    if (checked) {
+                                        // clear hours when day pass is enabled and ensure hours input is blocked
+                                        setNewHours('');
+                                    }
+                                }}
+                            />
+                        </div>
+                    </div>
+                    <div>
                         <Label>Hours</Label>
                         <Input
                             type="number"
                             value={newHours === '' ? '' : String(newHours)}
                             onChange={(e) => setNewHours(e.target.value === '' ? '' : Number(e.target.value))}
                             placeholder="Hours"
-                            disabled={isOpenHour}
+                            disabled={isOpenHour || newIsDayPass}
                         />
                     </div>
                     <div>

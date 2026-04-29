@@ -4,6 +4,7 @@ export type CategoryDto = {
   id: number;
   name: string;
   type?: string;
+  itemType?: string;
 };
 
 export type PagedCategoryResponse = {
@@ -49,6 +50,7 @@ export async function getCategoryById(id: number): Promise<CategoryDto> {
 export async function createCategory(payload: {
   name: string;
   type: string;
+  itemType?: string;
 }): Promise<CategoryDto> {
   const res = await api.post<CategoryDto>(`/category`, payload);
   return res.data;
@@ -56,7 +58,7 @@ export async function createCategory(payload: {
 
 export async function updateCategory(
   id: number,
-  payload: { name: string; type: string }
+  payload: { name: string; type: string; itemType?: string }
 ): Promise<void> {
   await api.put(`/category/${id}`, payload);
 }

@@ -4,12 +4,12 @@ export default function SidebarWidget() {
       className={`
         mx-auto mb-10 w-full max-w-60 rounded-2xl bg-gray-50 px-4 py-5 text-center dark:bg-white/[0.03]`}
     >
-      <h3 className="mb-2 font-semibold text-gray-900 dark:text-white">
+      {/* <h3 className="mb-2 font-semibold text-gray-900 dark:text-white">
         AXIS Gaming Lounge
       </h3>
       <p className="mb-4 text-gray-500 text-theme-sm dark:text-gray-400">
-        Leading Tailwind CSS Admin Template with 400+ UI Component and Pages.
-      </p>
+        AXIS GAMING LOUNGE SYSTEM - All Rights Reserved 2025
+      </p> */}
       {/* <a
         href="https://tailadmin.com/pricing"
         target="_blank"

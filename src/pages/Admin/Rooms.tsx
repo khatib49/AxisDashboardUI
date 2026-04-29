@@ -319,7 +319,8 @@ export default function Rooms() {
                     </>
                 )}
             >
-                <div className="space-y-4">
+                {/* Scrollable content area to keep footer actions visible */}
+                <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
                     {setsLoading && <div className="text-gray-600">Loading sets...</div>}
                     {!setsLoading && sets_list.length === 0 && <div className="text-gray-500">No sets found for this room.</div>}
                     {!setsLoading && sets_list.length > 0 && (

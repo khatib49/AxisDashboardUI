@@ -6,6 +6,7 @@ import {
   BoxCubeIcon,
   CalenderIcon,
   ChevronDownIcon,
+  DollarLineIcon,
   GridIcon,
   HorizontaLDots,
   ListIcon,
@@ -18,12 +19,16 @@ import {
 import { useSidebar } from "../context/SidebarContext";
 import { useAuth } from "../context/AuthContext";
 import SidebarWidget from "./SidebarWidget";
+import TicketIcon from "../icons/tickets";
+import KitchenDisplay from "../pages/Chef/KitchenDisplay";
+import BarDisplay from "../pages/bartender/BarDisplay";
 
 type NavItem = {
   name: string;
   icon: React.ReactNode;
   path?: string;
   subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
+  element?: React.ReactNode;
 };
 
 const baseNavItems: NavItem[] = [
@@ -102,6 +107,7 @@ const AppSidebar: React.FC = () => {
             { name: "Items", path: "/admin/items" },
             { name: "Categories", path: "/admin/categories" },
             { name: "Orders", path: "/admin/orders" },
+            { name: "QR Generator", path: "/admin/qr-generator" },
           ],
         },
         {
@@ -121,16 +127,82 @@ const AppSidebar: React.FC = () => {
           ],
         },
         { icon: <TableIcon />, name: "Rooms", path: "/admin/rooms" },
+        { name: 'Audit Logs', path: '/admin/audit-logs', icon: <BoxCubeIcon /> },
+        { icon: <PieChartIcon />, name: "Discount Management", path: "/admin/discounts" },
+        // {
+        //   icon: <DollarLineIcon />,
+        //   name: "Profit",
+        //   subItems: [
+        //     { name: "Gaming Profit", path: "/admin/profit/gaming" },
+        //     { name: "TCG Profit", path: "/admin/profit/tcg" },
+        //     { name: "F&B Profit", path: "/admin/profit/fnb" },
+        //     { name: "Overall Profit", path: "/admin/profit/overall" },
+        //   ],
+        // },
+        {
+        icon: <TicketIcon />, // You'll need to add this icon
+        name: "AXIS PLUS Rewards",
+        subItems: [
+          { name: "Customer Lookup", path: "/admin/loyalty/customers" },
+          { name: "Leaderboard", path: "/admin/loyalty/leaderboard" },
+          { name: "Conduct Draws", path: "/admin/loyalty/draws" },
+        ],
+      },
+      {
+  icon: <DollarLineIcon />,
+  name: "Accounting",
+  subItems: [
+    { name: "Dashboard", path: "/accounting" },
+    { name: "Item Revenue", path: "/accounting/item-revenue" },
+    { name: "Chart of Accounts", path: "/accounting/accounts" },
+    { name: "Journal Entries", path: "/accounting/journal" },
+    { name: "Trial Balance", path: "/accounting/trial-balance" },
+    { name: "General Ledger", path: "/accounting/general-ledger" },
+  ],
+},
+{
+          icon: <DollarLineIcon />,
+          name: "Entries Management",
+          subItems: [
+            { name: "Entries", path: "/admin/expenses" },
+            { name: "Categories", path: "/admin/expense-categories" },
+          ],
+        },
+      ];
+    }
+
+    // Admin F&B: limited menu for food & beverage operations
+    if (hasRole("admin_fnb")) {
+      return [
+        {
+          icon: <GridIcon />,
+          name: "Dashboard",
+          path: "/admin-fnb/dashboard",
+        },
+        {
+          icon: <BoxCubeIcon />,
+          name: "F&B Management",
+          subItems: [
+            { name: "Items", path: "/admin-fnb/items" },
+            { name: "Orders", path: "/admin-fnb/orders" },
+          ],
+        },
+        { icon: <DollarLineIcon />, name: "Profit", path: "/admin-fnb/profit" },
       ];
     }
 
     // GameCashie: limited menu for game cashier operations
-    if (hasRole("GameCashier") || hasRole("gamecashier") || hasRole("game_cashier")) {
+    if (hasRole("GameCashier") || hasRole("gamecashier") || hasRole("game_cashier") || hasRole("cashiergame")) {
       return [
         // use non-admin paths so the GameCashie role isn't blocked by AdminRoute
         { icon: <PlugInIcon />, name: "Game Session", path: "/game/sessions" },
-
+        { icon: <PlugInIcon />, name: "PS5 Sessions", path: "/gamecashier/ps5-sessions" },
+        { icon: <PlugInIcon />, name: "Board Games", path: "/gamecashier/board-sessions" },
+        { icon: <BoxCubeIcon />, name: "Items", path: "/gamecashier/items" },
+        { icon: <BoxCubeIcon />, name: "Open Items Invoice", path: "/cashier/open-invoices" },
         { icon: <TableIcon />, name: "Rooms", path: "/gamecashier/rooms" },
+        { icon: <UserCircleIcon />, name: "Clients", path: "/gamecashier/clients" },
+        { icon: <TicketIcon />, name: "AXIS PLUS Check", path: "/cashier/loyalty-check" },
       ];
     }
 
@@ -139,6 +211,21 @@ const AppSidebar: React.FC = () => {
       return [
         { icon: <BoxCubeIcon />, name: "Items", path: "/cashier/items" },
         { icon: <TableIcon />, name: "Orders", path: "/cashier/orders" },
+        { icon: <TicketIcon />, name: "AXIS PLUS Check", path: "/cashier/loyalty-check" },
+      ];
+    }
+
+    // Chef: kitchen order management only
+    if (hasRole("chef")) {
+      return [
+        { icon: <ListIcon />, name: "Kitchen Orders", path: "/chef/kitchen-display", element: <KitchenDisplay />, subItems: undefined },
+      ];
+    }
+
+    
+    if (hasRole("bartender")) {
+      return [
+        { icon: <ListIcon />, name: "Bar Orders", path: '/bartender/bar-display', element: <BarDisplay />, subItems: undefined },
       ];
     }
 
@@ -146,8 +233,8 @@ const AppSidebar: React.FC = () => {
   }, [hasRole]);
 
   const computedOthersItems = useMemo(() => {
-    // Hide others section for admin and cashier
-    if (hasRole("admin") || hasRole("cashier")) return [];
+    // Hide others section for admin, cashier, and chef
+    if (hasRole("admin") || hasRole("cashier") || hasRole("chef")) return [];
     return baseOthersItems;
   }, [hasRole]);
 

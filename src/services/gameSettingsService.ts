@@ -17,6 +17,7 @@ export type GameSettingDto = {
   hours?: number;
   price?: number;
   isOpenHour?: boolean;
+  isDayPass?: boolean;
   createdOn?: string | null;
   modifiedOn?: string | null;
   attributes: SettingAttribute[];
@@ -34,8 +35,10 @@ export async function getSettings(
   page = 1,
   pageSize = 10
 ): Promise<PagedSettingsResponse> {
+  // Add cache-buster to avoid stale cached responses
+  const ts = Date.now();
   const res = await api.get<PagedSettingsResponse>(
-    `/setting?Page=${page}&PageSize=${pageSize}`
+    `/setting?Page=${page}&PageSize=${pageSize}&_=${ts}`
   );
   return res.data;
 }
@@ -47,6 +50,7 @@ export type CreateSettingRequest = {
   hours?: number;
   price?: number;
   isOpenHour?: boolean;
+  isDayPass?: boolean;
 };
 
 export async function createSetting(body: CreateSettingRequest) {

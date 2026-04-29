@@ -5,6 +5,7 @@ export type UserDto = {
   email: string;
   displayName: string;
   roles: string[];
+  statusId?: number;
 };
 
 export type UserListResponse = {
@@ -25,6 +26,7 @@ export type RegisterRequest = {
   password: string;
   displayName: string;
   roleName: string;
+  statusId?: number;
 };
 
 export const registerUser = async (body: RegisterRequest) => {
@@ -36,6 +38,8 @@ export type UpdateUserRequest = {
   displayName: string;
   email: string;
   roles: string[];
+  statusId?: number;
+  password?: string;
 };
 
 export const updateUser = async (id: string, body: UpdateUserRequest) => {
@@ -43,8 +47,20 @@ export const updateUser = async (id: string, body: UpdateUserRequest) => {
   return res.data;
 };
 
+export const deleteUser = async (id: string) => {
+  const res = await api.delete(`/users/${id}`);
+  return res.data;
+};
+
+export const getClientsCount = async (): Promise<{ count: number }> => {
+  const res = await api.get("/users/clients/count");
+  return res.data;
+};
+
 export default {
   getUsers,
   registerUser,
   updateUser,
+  deleteUser,
+  getClientsCount,
 };

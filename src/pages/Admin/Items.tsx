@@ -33,6 +33,9 @@ export default function Items() {
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [totalCount, setTotalCount] = useState<number | null>(null);
+    const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+    const [search, setSearch] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
 
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editing, setEditing] = useState<ItemDto | null>(null);
@@ -79,7 +82,7 @@ export default function Items() {
     useEffect(() => {
         let mounted = true;
         setLoading(true);
-        getItems(page, pageSize)
+        getItems(page, pageSize, selectedCategory, debouncedSearch)
             .then((data: ItemListResponse) => {
                 if (!mounted) return;
                 setItems(data.data || []);
@@ -97,7 +100,13 @@ export default function Items() {
         return () => {
             mounted = false;
         };
-    }, [page, pageSize]);
+    }, [page, pageSize, selectedCategory, debouncedSearch]);
+
+    // Debounce search input (300ms)
+    useEffect(() => {
+        const t = setTimeout(() => setDebouncedSearch(search), 300);
+        return () => clearTimeout(t);
+    }, [search]);
 
     useEffect(() => {
         let mounted = true;
@@ -114,7 +123,7 @@ export default function Items() {
 
     function openCreate() {
         setEditing(null);
-        setForm({ name: "", quantity: 0, price: 0, type: "", categoryId: null, gameId: null, statusId: STATUS_ENABLED });
+        setForm({ name: "", quantity: 0, price: 0, type: "", categoryId: null, buyPrice: null, gameId: null, statusId: STATUS_ENABLED });
         // clear any previous selected image
         if (imagePreview) { try { URL.revokeObjectURL(imagePreview); } catch (e) { void e; } }
         setImageFile(null);
@@ -124,7 +133,8 @@ export default function Items() {
 
     function openEdit(item: ItemDto) {
         setEditing(item);
-        setForm({ name: item.name, quantity: item.quantity, price: item.price, type: item.type, categoryId: item.categoryId, gameId: item.gameId, statusId: item.statusId ?? null });
+        setForm({ name: item.name, quantity: item.quantity, price: item.price, type: item.type, categoryId: item.categoryId, buyPrice: item.buyPrice,
+             gameId: item.gameId, statusId: item.statusId ?? null });
         // prefill image preview if available
         if (item.imagePath) {
             const resolved = resolveImageUrl(item.imagePath);
@@ -213,10 +223,29 @@ export default function Items() {
         <div className="p-6">
             <h1 className="text-2xl font-semibold mb-4">Items</h1>
 
-            <div className="mb-4 flex items-center gap-3">
+            <div className="mb-4 flex items-center justify-between">
                 <button className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded" onClick={openCreate}>
                     Add Item
                 </button>
+
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center">
+                        <label className="text-sm text-gray-600 mr-2">Category</label>
+                        <div className="w-48">
+                            <Select
+                                options={[{ value: '', label: 'All' }, ...categories.map(c => ({ value: c.id, label: c.name }))]}
+                                defaultValue={selectedCategory ?? ''}
+                                onChange={(v: string | number) => { setPage(1); setSelectedCategory(v === '' ? null : Number(v)); }}
+                            />
+                        </div>
+                    </div>
+                    <div className="flex items-center">
+                        <label className="text-sm text-gray-600 mr-2">Search</label>
+                        <div className="w-56">
+                            <Input placeholder="Search items..." value={search} onChange={(e) => { setPage(1); setSearch(e.target.value); }} className="px-2 py-1" />
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {loading && <div className="text-gray-600">Loading items...</div>}
@@ -232,6 +261,7 @@ export default function Items() {
                                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Image</TableCell>
                                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Name</TableCell>
                                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Quantity</TableCell>
+                                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Buy Price</TableCell>
                                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Price</TableCell>
                                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Type</TableCell>
                                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Category</TableCell>
@@ -255,6 +285,9 @@ export default function Items() {
                                             <div className="font-medium text-gray-800 dark:text-white/90">{it.name}</div>
                                         </TableCell>
                                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{it.quantity}</TableCell>
+                                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+    {it.buyPrice != null ? `$${Number(it.buyPrice).toFixed(2)}` : '—'}
+</TableCell>
                                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{it.price}</TableCell>
                                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{it.type}</TableCell>
                                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{categories.find(c => c.id === it.categoryId)?.name ?? String(it.categoryId)}</TableCell>
@@ -351,6 +384,9 @@ export default function Items() {
                     <Input type="number" placeholder="Quantity" value={form.quantity} onChange={(e) => setForm((f) => ({ ...f, quantity: Number(e.target.value) }))} />
                     <label className="text-sm text-gray-600">Price (usd)</label>
                     <Input type="number" step={0.01} placeholder="Price" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: Number(e.target.value) }))} />
+                    <label className="text-sm text-gray-600">Buy Price (usd)</label>
+                    <Input type="number" step={0.01} placeholder="Buy Price" value={form.buyPrice ?? ''} onChange={(e) => setForm((f) => ({ ...f, buyPrice: e.target.value ? Number(e.target.value) : null }))} />
+                    <label className="text-sm text-gray-600">Type</label>
                     <Input placeholder="Type" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))} />
                     <label className="text-sm text-gray-600">Category</label>
                     <Select options={[{ value: '', label: '-- Select category --' }, ...categories.map((c) => ({ value: c.id, label: c.name }))]} defaultValue={form.categoryId ?? ''} onChange={(v: string | number) => setForm((f) => ({ ...f, categoryId: v === '' ? null : Number(v) }))} />

@@ -10,6 +10,7 @@ export type ItemDto = {
   gameId: string | null;
   statusId?: number | null;
   imagePath?: string | null;
+  buyPrice?: number | null;  
 };
 
 const basePath = "/item";
@@ -41,30 +42,28 @@ export async function getItem(id: string): Promise<ItemDto> {
 export async function createItem(
   body: Omit<ItemDto, "id"> & { image?: File | null }
 ): Promise<ItemDto> {
-  type BodyWithImage = Omit<ItemDto, "id"> & { image?: File | null };
-  const b = body as BodyWithImage;
-  // if an image file is provided, use FormData (multipart)
-  if (b.image) {
-    const file = b.image as File;
-    const form = new FormData();
-    form.append("name", body.name);
-    form.append("quantity", String(body.quantity));
-    form.append("price", String(body.price));
-    form.append("type", body.type);
-    form.append("categoryId", String(body.categoryId ?? "0"));
-    if (body.statusId !== undefined && body.statusId !== null)
-      form.append("statusId", String(body.statusId));
-    form.append("image", file);
-    const res = await api.post<ItemDto>(basePath, form, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-    return res.data;
+  const form = new FormData();
+  form.append("name", body.name);
+  form.append("quantity", String(body.quantity));
+  form.append("price", String(body.price));
+  form.append("type", body.type);
+  form.append("categoryId", String(body.categoryId ?? "0"));
+if (body.buyPrice !== undefined && body.buyPrice !== null) {
+  form.append("buyPrice", String(body.buyPrice));
+}
+
+  if (body.statusId !== undefined && body.statusId !== null) {
+    form.append("statusId", String(body.statusId));
   }
 
-  const res = await api.post<ItemDto>(
-    basePath,
-    body as unknown as Record<string, unknown>
-  );
+  // Only append image if a file is provided
+  if (body.image) {
+    form.append("image", body.image);
+  }
+
+  const res = await api.post<ItemDto>(basePath, form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
   return res.data;
 }
 
@@ -72,29 +71,27 @@ export async function updateItem(
   id: string,
   body: Omit<ItemDto, "id"> & { image?: File | null }
 ): Promise<void> {
-  type BodyWithImage = Omit<ItemDto, "id"> & { image?: File | null };
-  const b = body as BodyWithImage;
-  if (b.image) {
-    const file = b.image as File;
-    const form = new FormData();
-    form.append("name", body.name);
-    form.append("quantity", String(body.quantity));
-    form.append("price", String(body.price));
-    form.append("type", body.type);
-    form.append("categoryId", String(body.categoryId ?? "0"));
-    if (body.statusId !== undefined && body.statusId !== null)
-      form.append("statusId", String(body.statusId));
-    form.append("image", file);
-    await api.put(`${basePath}/${id}`, form, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-    return;
-  }
+  const form = new FormData();
+  form.append("name", body.name);
+  form.append("quantity", String(body.quantity));
+  form.append("price", String(body.price));
+  form.append("type", body.type);
+  form.append("categoryId", String(body.categoryId ?? "0"));
 
-  await api.put(
-    `${basePath}/${id}`,
-    body as unknown as Record<string, unknown>
-  );
+  if (body.buyPrice !== undefined && body.buyPrice !== null) {
+  form.append("buyPrice", String(body.buyPrice));
+}
+
+  if (body.statusId !== undefined && body.statusId !== null)
+    form.append("statusId", String(body.statusId));
+  // Only append image if a file is provided; otherwise keep existing image on server
+  if (body.image) {
+    form.append("image", body.image);
+  }
+  await api.put(`${basePath}/${id}`, form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return;
 }
 
 export async function deleteItem(id: string): Promise<void> {

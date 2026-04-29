@@ -45,14 +45,17 @@ const start = async (token: string): Promise<void> => {
   }
 
   connection = new signalR.HubConnectionBuilder()
-    .withUrl("https://localhost:7164/hubs/reception", {
-      accessTokenFactory: () => token,
-      skipNegotiation: false,
-      transport:
-        signalR.HttpTransportType.WebSockets |
-        signalR.HttpTransportType.ServerSentEvents |
-        signalR.HttpTransportType.LongPolling,
-    })
+    .withUrl(
+      "https://axisapiwebapp-fvh5e7bda3aag0g7.francecentral-01.azurewebsites.net/hubs/reception",
+      {
+        accessTokenFactory: () => token,
+        skipNegotiation: false,
+        transport:
+          signalR.HttpTransportType.WebSockets |
+          signalR.HttpTransportType.ServerSentEvents |
+          signalR.HttpTransportType.LongPolling,
+      }
+    )
     .withAutomaticReconnect({
       nextRetryDelayInMilliseconds: (retryContext) => {
         if (retryContext.previousRetryCount < 5) {

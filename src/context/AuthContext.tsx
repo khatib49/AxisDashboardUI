@@ -139,6 +139,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setToken(null);
     }, []);
 
+    // Logout immediately if the app detects no internet connection
+    useEffect(() => {
+        const handleOffline = () => {
+            // Only act if we currently have a token/auth
+            if (isAuthenticated()) {
+                alert('No internet connection. You will be logged out for security.');
+                doLogout();
+            }
+        };
+
+        // If already offline on mount, logout
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+            handleOffline();
+        }
+
+        window.addEventListener('offline', handleOffline);
+        return () => {
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, [doLogout]);
+
     const hasRole = useCallback((role: string) => !!claims?.roles.includes(role), [claims]);
     const hasAnyRole = useCallback((...r: string[]) => r.some(x => hasRole(x)), [hasRole]);
     const hasAllRoles = useCallback((...r: string[]) => r.every(x => hasRole(x)), [hasRole]);
