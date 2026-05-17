@@ -28,7 +28,12 @@ export default function GameSettings() {
     const [newPrice, setNewPrice] = useState<number | ''>('');
     const [isOpenHour, setIsOpenHour] = useState(false);
     const [newIsDayPass, setNewIsDayPass] = useState(false);
+    const [newIsActive, setNewIsActive] = useState(true);
     const [creating, setCreating] = useState(false);
+
+    // "Show hidden" toggle — when on, the page calls /api/setting?includeHidden=true
+    // so admins can see soft-deleted settings and restore them via the edit modal.
+    const [showHidden, setShowHidden] = useState(false);
 
     // edit/delete state
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -38,12 +43,16 @@ export default function GameSettings() {
     useEffect(() => {
         let mounted = true;
         setLoading(true);
-        getSettings(page, pageSize)
+        getSettings(page, pageSize, showHidden)
             .then((res) => {
                 if (!mounted) return;
                 setSettings((res.data || []).map(s => {
                     const it = s as Partial<GameSettingDto>;
-                    return { ...(it as GameSettingDto), isOffer: !!it.isOffer } as GameSettingDto;
+                    return {
+                        ...(it as GameSettingDto),
+                        isOffer: !!it.isOffer,
+                        isActive: it.isActive ?? true,
+                    } as GameSettingDto;
                 }));
                 setTotalCount(res.totalCount ?? null);
             })
@@ -53,7 +62,7 @@ export default function GameSettings() {
             .finally(() => { if (mounted) setLoading(false); });
 
         return () => { mounted = false; };
-    }, [page, pageSize]);
+    }, [page, pageSize, showHidden]);
 
     useEffect(() => {
         // load games for dropdown (load many pages briefly)
@@ -79,6 +88,7 @@ export default function GameSettings() {
         setNewPrice('');
         setIsOpenHour(false);
         setNewIsDayPass(false);
+        setNewIsActive(true);
         setIsOpen(true);
     };
 
@@ -94,6 +104,8 @@ export default function GameSettings() {
                 price: newPrice === '' ? undefined : newPrice,
                 isOpenHour: isOpenHour,
                 isDayPass: newIsDayPass,
+                // Only send on edit — create always starts active.
+                ...(editingId ? { isActive: newIsActive } : {}),
             };
             if (editingId) {
                 await updateSetting(editingId, body);
@@ -101,10 +113,14 @@ export default function GameSettings() {
                 await createSetting(body);
             }
             // refresh list
-            const refreshed = await getSettings(page, pageSize);
+            const refreshed = await getSettings(page, pageSize, showHidden);
             setSettings((refreshed.data || []).map(s => {
                 const it = s as Partial<GameSettingDto>;
-                return { ...(it as GameSettingDto), isOffer: !!it.isOffer } as GameSettingDto;
+                return {
+                    ...(it as GameSettingDto),
+                    isOffer: !!it.isOffer,
+                    isActive: it.isActive ?? true,
+                } as GameSettingDto;
             }));
             setTotalCount(refreshed.totalCount ?? null);
             setIsOpen(false);
@@ -121,10 +137,14 @@ export default function GameSettings() {
         setDeleting(true);
         try {
             await deleteSetting(deleteId);
-            const refreshed = await getSettings(page, pageSize);
+            const refreshed = await getSettings(page, pageSize, showHidden);
             setSettings((refreshed.data || []).map(s => {
                 const it = s as Partial<GameSettingDto>;
-                return { ...(it as GameSettingDto), isOffer: !!it.isOffer } as GameSettingDto;
+                return {
+                    ...(it as GameSettingDto),
+                    isOffer: !!it.isOffer,
+                    isActive: it.isActive ?? true,
+                } as GameSettingDto;
             }));
             setTotalCount(refreshed.totalCount ?? null);
             setDeleteId(null);
@@ -139,7 +159,16 @@ export default function GameSettings() {
         <div className="p-6">
             <h1 className="text-2xl font-semibold mb-4">Game Settings</h1>
 
-            <div className="mb-4 flex items-center justify-end">
+            <div className="mb-4 flex items-center justify-end gap-3">
+                <label className="flex items-center gap-2 text-sm text-gray-300">
+                    <input
+                        type="checkbox"
+                        checked={showHidden}
+                        onChange={(e) => { setShowHidden(e.target.checked); setPage(1); }}
+                        className="w-4 h-4"
+                    />
+                    Show hidden
+                </label>
                 <button className="bg-green-600 text-white px-3 py-1 rounded" onClick={openModal}>Add Setting</button>
             </div>
 
@@ -163,9 +192,20 @@ export default function GameSettings() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {settings.map((s: GameSettingDto) => (
-                                    <tr key={s.id} className="border-t">
-                                        <td className="px-4 py-2 align-top">{s.name}</td>
+                                {settings.map((s: GameSettingDto) => {
+                                    const hidden = s.isActive === false;
+                                    return (
+                                    <tr key={s.id} className={`border-t ${hidden ? 'opacity-60' : ''}`}>
+                                        <td className="px-4 py-2 align-top">
+                                            <div className="flex items-center gap-2">
+                                                <span>{s.name}</span>
+                                                {hidden && (
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-100 text-red-700">
+                                                        Hidden
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </td>
                                         <td className="px-4 py-2 align-top">{s.type}</td>
                                         <td className="px-4 py-2 align-top">{s.isOffer ? 'Yes' : 'No'}</td>
                                         <td className="px-4 py-2 align-top">{s.isDayPass ? 'Yes' : 'No'}</td>
@@ -188,13 +228,15 @@ export default function GameSettings() {
                                                     setIsOpenHour(hoursValue === 0);
                                                     setNewHours(hoursValue === 0 ? '' : hoursValue);
                                                     setNewPrice(typeof s.price === 'number' ? s.price : '');
+                                                    setNewIsActive(s.isActive !== false);
                                                     setIsOpen(true);
                                                 }}>Edit</button>
-                                                <DeleteIconButton onClick={() => setDeleteId(s.id)} />
+                                                {!hidden && <DeleteIconButton onClick={() => setDeleteId(s.id)} />}
                                             </div>
                                         </td>
                                     </tr>
-                                ))}
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
@@ -288,6 +330,26 @@ export default function GameSettings() {
                         <Label>Game</Label>
                         <Select options={games.map(g => ({ value: g.id, label: g.name }))} defaultValue={newGameId} onChange={(v) => setNewGameId(typeof v === 'number' ? String(v) : v)} />
                     </div>
+                    {/* Active toggle — only shown when editing. Lets admins hide a
+                        setting from the cashier UI without losing it, or restore a
+                        previously hidden one. */}
+                    {editingId && (
+                        <div>
+                            <Label>Active</Label>
+                            <div className="flex items-center gap-2">
+                                <Switch
+                                    key={String(newIsActive)}
+                                    label={newIsActive ? "Visible to cashier" : "Hidden from cashier"}
+                                    defaultChecked={newIsActive}
+                                    onChange={(checked) => setNewIsActive(checked)}
+                                />
+                            </div>
+                            <p className="mt-1 text-xs text-gray-400">
+                                Turn off to hide this setting from the cashier and game-cashier
+                                screens. Historical transactions that referenced it remain intact.
+                            </p>
+                        </div>
+                    )}
                     {/* actions are rendered in the Modal footer */}
                 </div>
             </Modal>

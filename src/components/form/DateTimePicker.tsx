@@ -9,6 +9,9 @@ type DateTimePickerProps = {
     required?: boolean;
     disabled?: boolean;
     className?: string;
+    // 'datetime' (default) shows day + time tabs. 'date' hides the time UI
+    // entirely; a day click confirms immediately at 00:00 local time.
+    mode?: 'date' | 'datetime';
 };
 
 const MONTHS = [
@@ -25,16 +28,36 @@ export default function DateTimePicker({
     value = '',
     onChange,
     label,
-    placeholder = 'Select date & time',
+    placeholder,
     required = false,
     disabled = false,
     className = '',
+    mode = 'datetime',
 }: DateTimePickerProps) {
     const { theme } = useTheme();
     const isDark = theme === 'dark';
+    const dateOnly = mode === 'date';
+    const effectivePlaceholder = placeholder ?? (dateOnly ? 'Select date' : 'Select date & time');
 
     const [isOpen, setIsOpen] = useState(false);
     const [view, setView] = useState<'date' | 'time' | 'month' | 'year'>('date');
+
+    // Track whether the picker should render as a centered mobile overlay
+    // (small screens) or as the desktop dropdown anchored to the input. We
+    // listen to `window.matchMedia('(max-width: 640px)')` so it updates if
+    // the user rotates a tablet etc.
+    const [isMobile, setIsMobile] = useState<boolean>(() => {
+        if (typeof window === 'undefined') return false;
+        return window.matchMedia('(max-width: 640px)').matches;
+    });
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const mq = window.matchMedia('(max-width: 640px)');
+        const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+        mq.addEventListener('change', handler);
+        return () => mq.removeEventListener('change', handler);
+    }, []);
 
     // Parse value or use current Beirut time
     const parsedDate = value ? new Date(value) : null;
@@ -43,10 +66,16 @@ export default function DateTimePicker({
     const [selectedDate, setSelectedDate] = useState<Date>(parsedDate || now);
     const [displayMonth, setDisplayMonth] = useState(parsedDate?.getMonth() ?? now.getMonth());
     const [displayYear, setDisplayYear] = useState(parsedDate?.getFullYear() ?? now.getFullYear());
-    const [hours, setHours] = useState(parsedDate?.getHours() ?? now.getHours());
-    const [minutes, setMinutes] = useState(parsedDate?.getMinutes() ?? now.getMinutes());
+    const [hours, setHours] = useState(parsedDate?.getHours() ?? (dateOnly ? 0 : now.getHours()));
+    const [minutes, setMinutes] = useState(parsedDate?.getMinutes() ?? (dateOnly ? 0 : now.getMinutes()));
 
     const containerRef = useRef<HTMLDivElement>(null);
+
+    // Reset to "date" tab whenever we re-open, so the user never lands on
+    // the time view first.
+    useEffect(() => {
+        if (isOpen) setView('date');
+    }, [isOpen]);
 
     // Close picker when clicking outside
     useEffect(() => {
@@ -61,19 +90,26 @@ export default function DateTimePicker({
         }
     }, [isOpen]);
 
-    // Format display value
+    // Format display value — date-only mode strips the time portion.
     const formatDisplayValue = () => {
         if (!value) return '';
         const date = new Date(value);
-        const options: Intl.DateTimeFormatOptions = {
-            timeZone: BEIRUT_TZ,
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true,
-        };
+        const options: Intl.DateTimeFormatOptions = dateOnly
+            ? {
+                  timeZone: BEIRUT_TZ,
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+              }
+            : {
+                  timeZone: BEIRUT_TZ,
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: true,
+              };
         return new Intl.DateTimeFormat('en-US', options).format(date);
     };
 
@@ -130,6 +166,14 @@ export default function DateTimePicker({
     // Handle day click
     const handleDayClick = (day: number | null) => {
         if (!day) return;
+        if (dateOnly) {
+            // Date-only mode: commit immediately at midnight, no time step.
+            const finalDate = new Date(displayYear, displayMonth, day, 0, 0, 0, 0);
+            setSelectedDate(finalDate);
+            onChange(finalDate.toISOString());
+            setIsOpen(false);
+            return;
+        }
         const newDate = new Date(displayYear, displayMonth, day, hours, minutes);
         setSelectedDate(newDate);
         setView('time');
@@ -141,8 +185,8 @@ export default function DateTimePicker({
             selectedDate.getFullYear(),
             selectedDate.getMonth(),
             selectedDate.getDate(),
-            hours,
-            minutes
+            dateOnly ? 0 : hours,
+            dateOnly ? 0 : minutes
         );
         onChange(finalDate.toISOString());
         setIsOpen(false);
@@ -213,39 +257,61 @@ export default function DateTimePicker({
           ${disabled ? 'opacity-50 cursor-not-allowed' : `${hoverBg} hover:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent cursor-pointer`}
         `}
             >
-                <span className={value ? textColor : secondaryText}>
-                    {value ? formatDisplayValue() : placeholder}
+                <span className={`${value ? textColor : secondaryText} truncate`}>
+                    {value ? formatDisplayValue() : effectivePlaceholder}
                 </span>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
             </button>
 
-            {/* Picker Popup */}
+            {/* Mobile backdrop — only on small screens. Tap to close. */}
+            {isOpen && isMobile && (
+                <div
+                    className="fixed inset-0 bg-black/40 z-40"
+                    onClick={() => setIsOpen(false)}
+                    aria-hidden="true"
+                />
+            )}
+
+            {/* Picker Popup
+                Desktop (≥640px): absolute dropdown anchored to the input.
+                Mobile (<640px):  fixed centered card with viewport-safe sizing.
+                Width is clamped to the viewport so it never overflows inside
+                narrow modals. */}
             {isOpen && (
                 <div className={`
-          absolute top-full left-0 mt-2 z-50 rounded-xl border ${borderColor}
-          ${popupBg} ${shadowColor} overflow-hidden min-w-[320px]
+          ${isMobile
+            ? 'fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[min(95vw,360px)] max-h-[90vh] overflow-y-auto'
+            : 'absolute top-full left-0 mt-2 z-50 w-[min(95vw,360px)] max-h-[80vh] overflow-y-auto'}
+          rounded-xl border ${borderColor}
+          ${popupBg} ${shadowColor}
           animate-in fade-in slide-in-from-top-2 duration-200
         `}>
-                    {/* Header with View Selector */}
+                    {/* Header — hide the Date/Time tabs entirely in date-only mode. */}
                     <div className={`px-4 py-3 border-b ${borderColor} flex items-center justify-between`}>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setView('date')}
-                                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${view === 'date' ? `${selectedBg} text-white` : `${hoverBg} ${textColor}`
-                                    }`}
-                            >
-                                Date
-                            </button>
-                            <button
-                                onClick={() => setView('time')}
-                                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${view === 'time' ? `${selectedBg} text-white` : `${hoverBg} ${textColor}`
-                                    }`}
-                            >
-                                Time
-                            </button>
-                        </div>
+                        {dateOnly ? (
+                            <div className={`text-sm font-semibold ${textColor}`}>
+                                Select a date
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setView('date')}
+                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${view === 'date' ? `${selectedBg} text-white` : `${hoverBg} ${textColor}`
+                                        }`}
+                                >
+                                    Date
+                                </button>
+                                <button
+                                    onClick={() => setView('time')}
+                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${view === 'time' ? `${selectedBg} text-white` : `${hoverBg} ${textColor}`
+                                        }`}
+                                >
+                                    Time
+                                </button>
+                            </div>
+                        )}
                         <button
                             onClick={handleClear}
                             className={`text-sm ${secondaryText} hover:text-red-500 transition-colors`}
@@ -459,20 +525,23 @@ export default function DateTimePicker({
                         </div>
                     )}
 
-                    {/* Footer Actions */}
+                    {/* Footer Actions — date-only mode commits on day click so
+                        the Confirm button is hidden; only Cancel remains. */}
                     <div className={`px-4 py-3 border-t ${borderColor} flex items-center justify-end gap-2`}>
                         <button
                             onClick={() => setIsOpen(false)}
                             className={`px-4 py-2 rounded-lg text-sm font-medium ${hoverBg} ${textColor} transition-all`}
                         >
-                            Cancel
+                            {dateOnly ? 'Close' : 'Cancel'}
                         </button>
-                        <button
-                            onClick={handleConfirm}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium ${selectedBg} text-white transition-all hover:scale-105 active:scale-95 shadow-lg`}
-                        >
-                            Confirm
-                        </button>
+                        {!dateOnly && (
+                            <button
+                                onClick={handleConfirm}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium ${selectedBg} text-white transition-all hover:scale-105 active:scale-95 shadow-lg`}
+                            >
+                                Confirm
+                            </button>
+                        )}
                     </div>
                 </div>
             )}

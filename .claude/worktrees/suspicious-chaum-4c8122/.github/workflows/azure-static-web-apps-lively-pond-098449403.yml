@@ -1,0 +1,41 @@
+name: Azure Static Web Apps CI/CD
+
+on:
+  push:
+    branches: [ Deployment ]
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches: [ Deployment ]
+
+jobs:
+  build_and_deploy_job:
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    runs-on: ubuntu-latest
+    name: Build and Deploy React Vite App
+    env:
+      # 👇 These are your "pipeline variables" available during build
+      VITE_API_BASE_URL: https://axisapiwebapp-fvh5e7bda3aag0g7.francecentral-01.azurewebsites.net/api
+      VITE_API_IMAGE_BASE_URL: https://axisapiwebapp-fvh5e7bda3aag0g7.francecentral-01.azurewebsites.net/
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18' # or 20 if your project needs Node 20
+
+      - name: Install dependencies and build
+        run: |
+          npm ci
+          npm run build
+
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_LIVELY_POND_098449403 }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: "/"        # Path to your Vite app (adjust if it's in a subfolder)
+          output_location: "dist"  # Vite's build output directory

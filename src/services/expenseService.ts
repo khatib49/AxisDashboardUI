@@ -76,10 +76,21 @@ export type AccountDto = {
   id: number;
   accountNumber: string;
   accountName: string;
+  accountTypeId?: number;
+  accountTypeName?: string;
 };
 
+// Legacy: only 5xxx accounts. Kept for any old callers; new code should use
+// getPostableAccounts() so a category can be mapped to Equity / Revenue too.
 export async function getExpenseAccounts(): Promise<AccountDto[]> {
-  return await get<AccountDto[]>("/accounts/expense-accounts");
+  return await get<AccountDto[]>("/accounts/postable");
+}
+
+// Returns all active accounts that allow manual posting, with their AccountType.
+// Used by the Expense Categories form so e.g. "Omar cash out" can map to a 3xxx
+// Equity account and "Toters income" to a 4xxx Revenue account.
+export async function getPostableAccounts(): Promise<AccountDto[]> {
+  return await get<AccountDto[]>("/accounts/postable");
 }
 
 export async function getExpenseById(id: number): Promise<ExpenseDto> {
@@ -135,4 +146,18 @@ export async function updateExpenseCategory(
 
 export async function deleteExpenseCategory(id: number): Promise<void> {
   return await del<void>(`/expensecategory/${id}`);
+}
+
+export type BackfillResult = {
+  total: number;
+  success: number;
+  failed: number;
+  errors: string[];
+};
+
+// Synchronously rebuild all journal entries for this category. Returns the
+// result so the UI can show exactly how many entries were created/repointed
+// or whether the category had no expenses at all.
+export async function rebuildExpenseCategory(id: number): Promise<BackfillResult> {
+  return await post<BackfillResult>(`/expensecategory/${id}/rebuild`, {});
 }

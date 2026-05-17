@@ -253,23 +253,25 @@ export default function Expenses() {
                     <div>
                         <DateTimePicker
                             label="From Date"
+                            mode="date"
                             value={filterFromDate}
                             onChange={(value) => {
                                 setFilterFromDate(value);
                                 setPage(1);
                             }}
-                            placeholder="Please select start date & time"
+                            placeholder="Select start date"
                         />
                     </div>
                     <div>
                         <DateTimePicker
                             label="To Date"
+                            mode="date"
                             value={filterToDate}
                             onChange={(value) => {
                                 setFilterToDate(value);
                                 setPage(1);
                             }}
-                            placeholder="Please select end date & time"
+                            placeholder="Select end date"
                         />
                     </div>
                 </div>
@@ -373,8 +375,8 @@ export default function Expenses() {
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-500">
                                             <div className="space-y-1">
-                                                <div>From: {new Date(expense.fromDate).toLocaleString()}</div>
-                                                <div>To: {new Date(expense.toDate).toLocaleString()}</div>
+                                                <div>From: {new Date(expense.fromDate).toLocaleDateString()}</div>
+                                                <div>To: {new Date(expense.toDate).toLocaleDateString()}</div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
@@ -469,18 +471,20 @@ export default function Expenses() {
                     <div>
                         <DateTimePicker
                             label="From Date"
+                            mode="date"
                             value={form.fromDate}
                             onChange={(value) => setForm((f) => ({ ...f, fromDate: value }))}
-                            placeholder="Select start date & time"
+                            placeholder="Select start date"
                             required
                         />
                     </div>
                     <div>
                         <DateTimePicker
                             label="To Date"
+                            mode="date"
                             value={form.toDate}
                             onChange={(value) => setForm((f) => ({ ...f, toDate: value }))}
-                            placeholder="Select end date & time"
+                            placeholder="Select end date"
                             required
                         />
                     </div>

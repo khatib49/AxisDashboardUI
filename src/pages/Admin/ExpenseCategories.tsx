@@ -5,6 +5,7 @@ import {
     updateExpenseCategory,
     deleteExpenseCategory,
     getExpenseAccounts,
+    rebuildExpenseCategory,
     ExpenseCategoryDto,
     ExpenseCategoryCreateDto,
     ExpenseCategoryUpdateDto,
@@ -39,6 +40,7 @@ export default function ExpenseCategories() {
     const [submitting, setSubmitting] = useState(false);
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [deleting, setDeleting] = useState(false);
+    const [rebuilding, setRebuilding] = useState(false);
 
     const [notification, setNotification] = useState<{
         variant: "success" | "error" | "warning" | "info";
@@ -133,6 +135,50 @@ export default function ExpenseCategories() {
             setNotification({ variant: "error", title: "Save failed", message });
         } finally {
             setSubmitting(false);
+        }
+    }
+
+    // Manually trigger the per-category backfill (re-points existing journal
+    // entries to the currently mapped account and creates entries for any
+    // expense that has none). Synchronous: returns the actual stats so the
+    // admin can tell whether the category had expenses to process.
+    async function handleRebuild() {
+        if (!editing) return;
+        if (!form.accountId) {
+            setNotification({ variant: "warning", title: "No mapping", message: "Save a mapping first, then rebuild." });
+            return;
+        }
+        setRebuilding(true);
+        try {
+            const result = await rebuildExpenseCategory(editing.id);
+            if (result.total === 0) {
+                setNotification({
+                    variant: "info",
+                    title: "Nothing to rebuild",
+                    message: "This category has no expenses yet — nothing to post to the account.",
+                });
+            } else if (result.failed > 0) {
+                setNotification({
+                    variant: "warning",
+                    title: `Rebuilt with ${result.failed} failure(s)`,
+                    message: `Processed ${result.total} expense(s), succeeded ${result.success}. ${result.errors.slice(0, 2).join("; ")}`,
+                });
+            } else {
+                setNotification({
+                    variant: "success",
+                    title: "Rebuild complete",
+                    message: `Processed ${result.total} expense(s). Account balance should be updated — refresh Chart of Accounts.`,
+                });
+            }
+        } catch (err: unknown) {
+            let message = "Failed to rebuild";
+            if (err && typeof err === "object") {
+                const maybe = err as { message?: unknown };
+                if (typeof maybe.message === "string") message = maybe.message;
+            }
+            setNotification({ variant: "error", title: "Rebuild failed", message });
+        } finally {
+            setRebuilding(false);
         }
     }
 
@@ -331,7 +377,7 @@ export default function ExpenseCategories() {
 
                     {/* Account mapping */}
                     <div>
-                        <Label>Map to Expense Account (Optional)</Label>
+                        <Label>Map to Account (Optional)</Label>
                         <select
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             value={form.accountId || ""}
@@ -342,20 +388,42 @@ export default function ExpenseCategories() {
                                 }))
                             }
                         >
-                            <option value="">-- No mapping (use auto-detection) --</option>
-                            {accounts.map((account) => (
-                                <option key={account.id} value={account.id}>
-                                    {account.accountNumber} - {account.accountName}
-                                </option>
-                            ))}
+                            <option value="">-- No mapping --</option>
+                            {/* Group by AccountType so non-expense mappings (Equity for owner
+                                draws like "Omar cash out", Revenue for manual income like
+                                "Toters income") are easy to find. */}
+                            {Array.from(
+                                accounts.reduce((map, a) => {
+                                    const key = a.accountTypeName || "Other";
+                                    if (!map.has(key)) map.set(key, []);
+                                    map.get(key)!.push(a);
+                                    return map;
+                                }, new Map<string, typeof accounts>())
+                            )
+                                .sort(([a], [b]) => {
+                                    // Show in natural accounting order
+                                    const order = ["Asset", "Liability", "Equity", "Revenue", "Expense", "Other"];
+                                    return order.indexOf(a) - order.indexOf(b);
+                                })
+                                .map(([groupName, items]) => (
+                                    <optgroup key={groupName} label={groupName}>
+                                        {items.map((account) => (
+                                            <option key={account.id} value={account.id}>
+                                                {account.accountNumber} - {account.accountName}
+                                            </option>
+                                        ))}
+                                    </optgroup>
+                                ))}
                         </select>
                         <p className="mt-1 text-xs text-gray-500">
-                            If set, all expenses in this category will use this account for journal entries.
-                            Changing this will automatically backfill missing journal entries.
+                            Pick the real account this category posts to. Equity (owner draws),
+                            Revenue (manual income) and Expense accounts are all selectable —
+                            the dashboard classifies entries by account type, not by category.
+                            Changing this will backfill missing journal entries automatically.
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-2 pt-2">
+                    <div className="flex flex-wrap items-center gap-2 pt-2">
                         <button
                             className="px-4 py-2 bg-green-600 text-white rounded flex items-center gap-2 disabled:opacity-50"
                             onClick={submitForm}
@@ -369,6 +437,23 @@ export default function ExpenseCategories() {
                                 "Create Category"
                             )}
                         </button>
+                        {/* Rebuild Balances — only meaningful when editing an
+                            existing category that has a mapped account. Runs
+                            the per-category backfill synchronously and reports
+                            exactly how many expenses were processed. Use this
+                            if Save says "ok" but the account balance still
+                            doesn't reflect what you expect. */}
+                        {editing && (
+                            <button
+                                type="button"
+                                className="px-4 py-2 bg-indigo-600 text-white rounded flex items-center gap-2 disabled:opacity-50"
+                                onClick={handleRebuild}
+                                disabled={rebuilding || !form.accountId}
+                                title={!form.accountId ? "Map an account first" : "Re-post all expenses in this category"}
+                            >
+                                {rebuilding ? <Loader size={16} /> : "Rebuild Balances"}
+                            </button>
+                        )}
                         <button
                             className="px-4 py-2 bg-gray-200 rounded"
                             onClick={() => setIsFormOpen(false)}

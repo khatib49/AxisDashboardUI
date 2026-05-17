@@ -22,6 +22,9 @@ export type GameSettingDto = {
   modifiedOn?: string | null;
   attributes: SettingAttribute[];
   values: unknown[];
+  // false = soft-hidden. Backend filters these out by default; admin UI can
+  // request them via includeHidden=true to restore.
+  isActive?: boolean;
 };
 
 export type PagedSettingsResponse = {
@@ -33,12 +36,14 @@ export type PagedSettingsResponse = {
 
 export async function getSettings(
   page = 1,
-  pageSize = 10
+  pageSize = 10,
+  includeHidden = false
 ): Promise<PagedSettingsResponse> {
   // Add cache-buster to avoid stale cached responses
   const ts = Date.now();
+  const hidden = includeHidden ? `&includeHidden=true` : "";
   const res = await api.get<PagedSettingsResponse>(
-    `/setting?Page=${page}&PageSize=${pageSize}&_=${ts}`
+    `/setting?Page=${page}&PageSize=${pageSize}${hidden}&_=${ts}`
   );
   return res.data;
 }
@@ -51,6 +56,8 @@ export type CreateSettingRequest = {
   price?: number;
   isOpenHour?: boolean;
   isDayPass?: boolean;
+  // Only sent from the admin edit modal; the create flow never sets it.
+  isActive?: boolean;
 };
 
 export async function createSetting(body: CreateSettingRequest) {
