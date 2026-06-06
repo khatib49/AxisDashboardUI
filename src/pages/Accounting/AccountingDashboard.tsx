@@ -72,13 +72,21 @@ const AccountingDashboard: React.FC = () => {
   const loadDashboard = useCallback(async () => {
     setLoading(true);
     try {
+      // Everything follows the reporting-period filter EXCEPT the trial
+      // balance — by Rami's call, trial balance stays all-time so admins
+      // can spot whether the books are out of balance overall, regardless
+      // of which slice they're looking at.
+      const fromIso = dateRange[0].toISOString();
+      const toIso = dateRange[1].toISOString();
       const [dashboardData, trialBalance, entriesResult] = await Promise.all([
-        getAccountingDashboard(
-          dateRange[0].toISOString(),
-          dateRange[1].toISOString()
-        ),
+        getAccountingDashboard(fromIso, toIso),
         getTrialBalance(),
-        searchJournalEntries({ pageNumber: 1, pageSize: 5 })
+        searchJournalEntries({
+          pageNumber: 1,
+          pageSize: 5,
+          fromDate: fromIso,
+          toDate: toIso,
+        }),
       ]);
 
       setDashboard(dashboardData);
@@ -455,7 +463,7 @@ const AccountingDashboard: React.FC = () => {
               <FallOutlined style={{ color: '#ff4d4f' }} />
               <span>Operating Expenses Breakdown</span>
               <Tag color="red">{fmt(opEx?.total ?? 0)}</Tag>
-              <Tooltip title="Recurring operational expenses whose expense date overlaps the selected period. Excludes one-time capital investments.">
+              <Tooltip title="Recurring operational expenses entered (CreatedOn) within the reporting period. Excludes one-time capital investments.">
                 <InfoCircleOutlined style={{ color: '#999' }} />
               </Tooltip>
             </Space>
@@ -558,8 +566,11 @@ const AccountingDashboard: React.FC = () => {
               />
               <div style={{ marginTop: 12 }}>
                 <small style={{ color: '#999' }}>
-                  Revenue and expenses filtered to this date range.
-                  Trial balance reflects all-time posted entries.
+                  Every section on this page is filtered by row creation date
+                  (CreatedOn) within this range — revenue, expenses, capital
+                  investments, and recent journal entries. Trial balance is
+                  the one exception: it stays all-time so you can spot if the
+                  books drift out of balance overall.
                 </small>
               </div>
             </Card>
