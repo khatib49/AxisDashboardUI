@@ -16,7 +16,8 @@ import {
   Tree,
   message,
   Modal,
-  Spin
+  Spin,
+  Tooltip
 } from 'antd';
 import {
   PlusOutlined,
@@ -25,7 +26,8 @@ import {
   EditOutlined,
   DeleteOutlined,
   DollarOutlined,
-  FileTextOutlined
+  FileTextOutlined,
+  FileSearchOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { DataNode } from 'antd/es/tree';
@@ -35,11 +37,14 @@ import {
   getAccountTypes,       // Function
   getAccountHierarchy,   // Function
   getAccountSummary,     // Function
-  deactivateAccount,     // Type
+  getAllAccountBalances, // Function — needed for rollup balances
+  deactivateAccount,     // Function
 } from '../../services/accountsApi';
+import type { AccountBalance } from '../../services/accountsApi';
 
 import type { Account, AccountType, AccountHierarchy, AccountSummary } from '../../services/accounting';
 import AccountForm from './AccountForm';
+import TransactionsReportModal from './TransactionsReportModal';
 
 const { Search } = Input;
 const { Option } = Select;
@@ -51,12 +56,17 @@ const ChartOfAccounts: React.FC = () => {
   const [accountTypes, setAccountTypes] = useState<AccountType[]>([]);
   const [hierarchy, setHierarchy] = useState<AccountHierarchy[]>([]);
   const [summary, setSummary] = useState<AccountSummary[]>([]);
+  // Rollup balances keyed by accountId. Populated from /Accounts/balances.
+  // Used to render the "Rollup" column next to "Balance".
+  const [rollupByAccountId, setRollupByAccountId] = useState<Record<number, number>>({});
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTypeId, setFilterTypeId] = useState<number | undefined>();
   const [showInactive, setShowInactive] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [activeTab, setActiveTab] = useState('1');
+  // Transactions Report modal state — opens from the row-level Report button.
+  const [reportAccount, setReportAccount] = useState<Account | null>(null);
 
   useEffect(() => {
     loadData();
@@ -65,16 +75,23 @@ const ChartOfAccounts: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [accountsData, typesData, hierarchyData, summaryData] = await Promise.all([
+      const [accountsData, typesData, hierarchyData, summaryData, balancesData] = await Promise.all([
         getAllAccounts(filterTypeId, !showInactive ? true : undefined),
         getAccountTypes(),
         getAccountHierarchy(filterTypeId),
-        getAccountSummary()
+        getAccountSummary(),
+        getAllAccountBalances(),
       ]);
       setAccounts(accountsData);
       setAccountTypes(typesData);
       setHierarchy(hierarchyData);
       setSummary(summaryData);
+      // Build the rollup lookup once per refresh.
+      const map: Record<number, number> = {};
+      (balancesData as AccountBalance[]).forEach((b) => {
+        map[b.accountId] = b.rollupBalance ?? b.balance;
+      });
+      setRollupByAccountId(map);
     } catch (error) {
       message.error('Failed to load accounts');
       console.error(error);
@@ -144,18 +161,48 @@ const ChartOfAccounts: React.FC = () => {
       render: (text) => text || '-'
     },
     {
-      title: 'Balance',
+      title: 'Direct',
       dataIndex: 'currentBalance',
       key: 'currentBalance',
       align: 'right',
+      width: 130,
       render: (balance) => `$${balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+    },
+    {
+      // Rollup = this account's balance + every descendant's balance. For
+      // header rows (5200 Utilities Expense etc.) this is the "real" total
+      // people want. For leaves it equals Direct.
+      title: 'Rollup',
+      key: 'rollupBalance',
+      align: 'right',
+      width: 140,
+      render: (_, record) => {
+        const rollup = rollupByAccountId[record.id];
+        const direct = record.currentBalance;
+        const value = rollup ?? direct;
+        const differs = rollup !== undefined && Math.abs(rollup - direct) > 0.005;
+        return (
+          <Tooltip title={differs ? `Direct $${direct.toLocaleString('en-US', { minimumFractionDigits: 2 })} + descendants` : 'Same as Direct (no children)'}>
+            <span style={{ fontWeight: differs ? 600 : 400, color: differs ? '#1F4E79' : undefined }}>
+              ${value.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </span>
+          </Tooltip>
+        );
+      },
     },
     {
       title: 'Actions',
       key: 'actions',
-      width: 150,
+      width: 200,
       render: (_, record) => (
         <Space>
+          <Tooltip title="View transactions report and move lines">
+            <Button
+              type="link"
+              icon={<FileSearchOutlined />}
+              onClick={() => setReportAccount(record)}
+            />
+          </Tooltip>
           <Button
             type="link"
             icon={<EyeOutlined />}
@@ -186,18 +233,29 @@ const ChartOfAccounts: React.FC = () => {
   ];
 
   const convertToTreeData = (items: AccountHierarchy[]): DataNode[] => {
-    return items.map(item => ({
-      title: (
-        <span>
-          <strong>{item.accountNumber}</strong> - {item.accountName}
-          <span style={{ marginLeft: 8, color: '#999' }}>
-            ${item.currentBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+    return items.map(item => {
+      const rollup = rollupByAccountId[item.id];
+      const direct = item.currentBalance;
+      const hasChildren = item.children.length > 0;
+      const showRollup = hasChildren && rollup !== undefined && Math.abs(rollup - direct) > 0.005;
+      return {
+        title: (
+          <span>
+            <strong>{item.accountNumber}</strong> - {item.accountName}
+            <span style={{ marginLeft: 8, color: '#999' }}>
+              ${direct.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </span>
+            {showRollup && (
+              <span style={{ marginLeft: 8, color: '#1F4E79', fontWeight: 600 }}>
+                (rollup ${rollup!.toLocaleString('en-US', { minimumFractionDigits: 2 })})
+              </span>
+            )}
           </span>
-        </span>
-      ),
-      key: item.id.toString(),
-      children: item.children.length > 0 ? convertToTreeData(item.children) : undefined
-    }));
+        ),
+        key: item.id.toString(),
+        children: hasChildren ? convertToTreeData(item.children) : undefined,
+      };
+    });
   };
 
   return (
@@ -374,6 +432,18 @@ const ChartOfAccounts: React.FC = () => {
           }}
         />
       </Modal>
+
+      {/* Transactions Report Modal — opens from the row-level Report button.
+          Lets the admin see every journal-entry line on this account, multi-
+          select via checkboxes, and bulk-move them to another account.
+          After a successful move we reload the whole data set so the Direct/
+          Rollup balances reflect the new state immediately. */}
+      <TransactionsReportModal
+        open={!!reportAccount}
+        account={reportAccount}
+        onClose={() => setReportAccount(null)}
+        onRepointed={loadData}
+      />
     </div>
   );
 };

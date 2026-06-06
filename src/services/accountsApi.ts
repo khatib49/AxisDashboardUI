@@ -56,6 +56,11 @@ export type AccountBalance = {
   creditTotal: number;
   balance: number;
   normalBalance: 'Debit' | 'Credit';
+  // Rollup balance = this account's balance plus the sum of every descendant
+  // account's balance. For header rows on the Chart of Accounts this is the
+  // number people actually want (e.g. "Utilities Expense" total including
+  // its child leaf accounts).
+  rollupBalance?: number;
 };
 
 export type AccountHierarchy = {
@@ -127,6 +132,25 @@ export type GeneralLedgerLine = {
   debit: number;
   credit: number;
   runningBalance: number;
+  isPending?: boolean;
+  // Surfaces JournalEntryLine.Id so the Transactions Report modal can
+  // checkbox-select lines and POST them to /Accounts/repoint-lines.
+  lineId?: number;
+  journalEntryId?: number;
+  isVoided?: boolean;
+};
+
+export type RepointLinesRequest = {
+  lineIds: number[];
+  newAccountId: number;
+  reason?: string;
+};
+
+export type RepointLinesResult = {
+  processed: number;
+  skipped: number;
+  failed: number;
+  errors: string[];
 };
 
 export type AccountValidation = {
@@ -235,8 +259,17 @@ export const getGeneralLedger = async (
   const params = new URLSearchParams();
   if (fromDate) params.append('fromDate', fromDate);
   if (toDate) params.append('toDate', toDate);
-  
+
   const res = await api.get<{ data: GeneralLedger }>(`/Accounts/${accountId}/general-ledger?${params.toString()}`);
+  return res.data.data;
+};
+
+// Bulk-reclassify selected journal-entry lines onto a different account.
+// Wired to the Transactions Report modal on the Chart of Accounts.
+export const repointJournalEntryLines = async (
+  body: RepointLinesRequest
+): Promise<RepointLinesResult> => {
+  const res = await api.post<{ data: RepointLinesResult }>('/Accounts/repoint-lines', body);
   return res.data.data;
 };
 
@@ -269,5 +302,6 @@ export default {
   getAccountSummary,
   getTrialBalance,
   getGeneralLedger,
+  repointJournalEntryLines,
   validateAccount,
 };
