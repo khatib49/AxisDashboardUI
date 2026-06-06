@@ -64,6 +64,7 @@ import KitchenDisplay from "./pages/Chef/KitchenDisplay";
 import BarDisplay from "./pages/bartender/BarDisplay";
 import { TransactionAuditLogsPage } from "./pages/Admin/TransactionAuditLogsPage";
 import ItemRevenueReport from "./pages/Accounting/ItemRevenueReport";
+import Channels from "./pages/Admin/Channels";
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { authenticated, loading } = useAuth();
@@ -199,6 +200,7 @@ export default function App() {
               <Route path="/admin/categories" element={<AdminRoute><CategoryManagement /></AdminRoute>} />
               <Route path="/admin/qr-generator" element={<AdminRoute><QRCodeGenerator /></AdminRoute>} />
               <Route path="/admin/discounts" element={<AdminRoute><DiscountManagement /></AdminRoute>} />
+              <Route path="/admin/channels" element={<AdminRoute><Channels /></AdminRoute>} />
               <Route path="/admin/expenses" element={<AdminRoute><Expenses /></AdminRoute>} />
               <Route path="/admin/expense-categories" element={<AdminRoute><ExpenseCategories /></AdminRoute>} />
               <Route path="/admin/loyalty/customers" element={<ProtectedRoute><LoyaltyCustomers /></ProtectedRoute>} />

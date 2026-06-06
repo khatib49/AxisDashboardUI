@@ -23,6 +23,7 @@ import { searchClientsByPhone, ClientUserDto } from "../../services/clientServic
 import { printStationTickets } from "../../utils/autoPrint";
 import ChangeCalculator from "../../components/common/ChangeCalculator";
 import { getSets, SetDto } from '../../services/setService';
+import { getChannels, ChannelDto } from '../../services/channelService';
 
 
 export default function CashierItems() {
@@ -89,6 +90,11 @@ export default function CashierItems() {
 
     // Comment state
     const [comment, setComment] = useState('');
+
+    // Sales channel state — Toters and any other external channels the admin
+    // has created in /admin/channels. Null = direct / in-house order.
+    const [channels, setChannels] = useState<ChannelDto[]>([]);
+    const [selectedChannelId, setSelectedChannelId] = useState<number | null>(null);
 
     const auth = useAuth();
 
@@ -191,6 +197,11 @@ export default function CashierItems() {
             .finally(() => {
                 if (mounted) setLoadingDiscounts(false);
             });
+        // Load active channels for the F&B order form. The backend already
+        // filters out hidden ones by default.
+        getChannels()
+            .then((data) => { if (mounted) setChannels(data); })
+            .catch(() => { /* ignore — channels are optional on the order */ });
         return () => { mounted = false; };
     }, [isDrawerOpen]);
 
@@ -588,6 +599,25 @@ export default function CashierItems() {
                                             )}
                                         </div>
 
+                                        {/* Channel Selection — for orders coming
+                                            from external apps like Toters. Leave
+                                            on "Direct / In-house" for walk-in
+                                            customers. */}
+                                        <div className="mt-3">
+                                            <label className="text-sm font-medium text-gray-700 mb-1 block">Channel (Optional)</label>
+                                            <Select
+                                                options={[
+                                                    { value: '', label: 'Direct / In-house' },
+                                                    ...channels.map(c => ({
+                                                        value: c.id,
+                                                        label: c.name,
+                                                    })),
+                                                ]}
+                                                defaultValue={selectedChannelId ?? ''}
+                                                onChange={(v: string | number) => setSelectedChannelId(v === '' ? null : Number(v))}
+                                            />
+                                        </div>
+
                                         {/* Comment Section */}
                                         <div className="mt-3">
                                             <label className="text-sm font-medium text-gray-700 mb-1 block">Comment (Optional)</label>
@@ -652,7 +682,8 @@ export default function CashierItems() {
                                                             selectedClient?.id,
                                                             comment,
                                                             false,
-                                                            selectedSetId   // Close invoice immediately
+                                                            selectedSetId,   // Close invoice immediately
+                                                            selectedChannelId
                                                         );
 
                                                         if (response && response.success === false) {
@@ -722,6 +753,7 @@ export default function CashierItems() {
                                                         setClientResults([]);
                                                         setClientPhone('');
                                                         setComment('');
+                                                        setSelectedChannelId(null);
                                                         setIsDrawerOpen(false);
                                                         setItemsReloadToken(t => t + 1);
                                                         setNotification({
@@ -769,7 +801,8 @@ export default function CashierItems() {
                                                             selectedClient?.id,
                                                             comment,
                                                             true,
-                                                            selectedSetId  // Keep invoice open
+                                                            selectedSetId,  // Keep invoice open
+                                                            selectedChannelId
                                                         );
 
                                                         if (response && response.success === false) {
@@ -840,6 +873,7 @@ export default function CashierItems() {
                                                         setClientPhone('');
                                                         setComment('');
                                                         setSelectedSetId(null);
+                                                        setSelectedChannelId(null);
                                                         setIsDrawerOpen(false);
                                                         setItemsReloadToken(t => t + 1);
                                                         setNotification({

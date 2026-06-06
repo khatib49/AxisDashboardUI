@@ -8,6 +8,7 @@ import GameHourlyHeatmap from "../../components/charts/GameHourlyHeatmap";
 import OpenInvoicesCard from "../../components/dashboard/OpenInvoicesCard";
 import LowStockAlert from "../../components/dashboard/LowStockAlert";
 import RevenueTrendChart from "../../components/dashboard/RevenueTrendChart";
+import TransactionsByChannelCard from "../../components/dashboard/TransactionsByChannelCard";
 
 export default function Home() {
     return (
@@ -52,6 +53,13 @@ export default function Home() {
                 {/* Row 5: Game Heatmap */}
                 <div className="col-span-12">
                     <GameHourlyHeatmap />
+                </div>
+
+                {/* Row 6: Transactions filter + Excel export.
+                    Filter by date + channel (Toters etc.), with one-click
+                    XLSX export of the filtered set. */}
+                <div className="col-span-12">
+                    <TransactionsByChannelCard />
                 </div>
 
             </div>

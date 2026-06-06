@@ -138,6 +138,7 @@ const AppSidebar: React.FC = () => {
         { icon: <NavRoomsIcon />, name: "Rooms", path: "/admin/rooms" },
         { name: 'Audit Logs', path: '/admin/audit-logs', icon: <NavAuditIcon /> },
         { icon: <NavDiscountIcon />, name: "Discount Management", path: "/admin/discounts" },
+        { icon: <NavDiscountIcon />, name: "Channels", path: "/admin/channels" },
         // {
         //   icon: <DollarLineIcon />,
         //   name: "Profit",

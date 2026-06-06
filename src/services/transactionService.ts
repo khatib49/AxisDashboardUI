@@ -1,4 +1,4 @@
-import { get, post, put, del } from "./api";
+import api, { get, post, put, del } from "./api";
 
 // ============ CORE TYPES ============
 
@@ -385,13 +385,75 @@ export async function updateOpenInvoiceSet(
     return res;
 }
 
+// Main-dashboard transaction row (flat shape from the new
+// /transactions/dashboard endpoint).
+export type DashboardTransactionRow = {
+    id: number;
+    createdOn: string;
+    createdBy: string;
+    statusId: number;
+    totalPrice: number;
+    channelId?: number | null;
+    channelName?: string | null;
+    comment?: string | null;
+    itemsCount: number;
+};
+
+export type PagedDashboardTransactions = {
+    totalCount: number;
+    data: DashboardTransactionRow[];
+    pageNumber: number;
+    pageSize: number;
+};
+
+export async function getDashboardTransactions(opts: {
+    from?: string | null;
+    to?: string | null;
+    channelId?: number | null;
+    page?: number;
+    pageSize?: number;
+}): Promise<PagedDashboardTransactions> {
+    const p = new URLSearchParams();
+    if (opts.from) p.append("from", opts.from);
+    if (opts.to) p.append("to", opts.to);
+    if (opts.channelId != null) p.append("channelId", String(opts.channelId));
+    if (opts.page) p.append("page", String(opts.page));
+    if (opts.pageSize) p.append("pageSize", String(opts.pageSize));
+    const qs = p.toString();
+    return await get<PagedDashboardTransactions>(
+        `/transactions/dashboard${qs ? `?${qs}` : ""}`
+    );
+}
+
+// Excel export — returns the raw xlsx Blob so the caller can trigger a
+// browser download. Uses the same filter as getDashboardTransactions.
+export async function exportDashboardTransactionsXlsx(opts: {
+    from?: string | null;
+    to?: string | null;
+    channelId?: number | null;
+}): Promise<Blob> {
+    const p = new URLSearchParams();
+    if (opts.from) p.append("from", opts.from);
+    if (opts.to) p.append("to", opts.to);
+    if (opts.channelId != null) p.append("channelId", String(opts.channelId));
+    const qs = p.toString();
+    const res = await api.get<Blob>(
+        `/transactions/dashboard/export${qs ? `?${qs}` : ""}`,
+        { responseType: "blob" }
+    );
+    return res.data as unknown as Blob;
+}
+
 export async function createCoffeeShopOrder(
     items: OrderItemRequest[],
     discountId: number | null = null,
     userId: number | null = null,
     comment: string | null = null,
     isOpenInvoice: boolean = false,
-    setId: number | null = null 
+    setId: number | null = null,
+    // Optional sales channel (e.g. Toters). Trailing param so existing
+    // callers don't break; the cashier UI will start passing it.
+    channelId: number | null = null
 ): Promise<{ success: boolean; data?: any; message?: string; error?: string }> {
     const body: any = {
         userId,
@@ -401,9 +463,8 @@ export async function createCoffeeShopOrder(
         setId,
     };
 
-    if (comment) {
-        body.comment = comment;
-    }
+    if (comment) body.comment = comment;
+    if (channelId != null) body.channelId = channelId;
 
     const res = await post<{ success: boolean; data?: any; message?: string; error?: string }>(
         "/transactions/CreateCoffeeShopOrder",
