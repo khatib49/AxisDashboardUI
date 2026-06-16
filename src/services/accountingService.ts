@@ -32,6 +32,10 @@ export type ExpenseSummaryDto = {
 export type CogsSummaryDto = {
   tcgCogs: number;
   total: number;
+  // Ingredient COGS = sum of cost on F&B sale consumptions in the period.
+  // Drives the Food Cost % stat and dish-margin context.
+  ingredientCogs?: number | null;
+  foodCostPercent?: number | null;
 };
 
 export type AccountingDashboardDto = {

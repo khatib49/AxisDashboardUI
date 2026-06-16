@@ -66,6 +66,11 @@ import { TransactionAuditLogsPage } from "./pages/Admin/TransactionAuditLogsPage
 import ItemRevenueReport from "./pages/Accounting/ItemRevenueReport";
 import BooksAudit from "./pages/Accounting/BooksAudit";
 import HierarchyAudit from "./pages/Accounting/HierarchyAudit";
+import Ingredients from "./pages/Chef/Ingredients";
+import StockMovements from "./pages/Chef/StockMovements";
+import Suppliers from "./pages/Chef/Suppliers";
+import Purchases from "./pages/Chef/Purchases";
+import InventoryValuation from "./pages/Chef/InventoryValuation";
 import Channels from "./pages/Admin/Channels";
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
@@ -112,6 +117,17 @@ const ChefRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => 
   if (loading) return <div className="p-6 text-center">Loading...</div>;
   if (!authenticated) return <Navigate to="/signin" replace />;
   if (!hasRole("chef")) return <Navigate to="/" replace />;
+  return children;
+};
+
+// Chef OR admin (or admin_fnb) — used by the stock management pages,
+// since admins should also be able to inspect ingredients, recipes and
+// the movement audit.
+const ChefOrAdminRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
+  const { hasRole, loading, authenticated } = useAuth();
+  if (loading) return <div className="p-6 text-center">Loading...</div>;
+  if (!authenticated) return <Navigate to="/signin" replace />;
+  if (!(hasRole("chef") || hasRole("admin") || hasRole("admin_fnb"))) return <Navigate to="/" replace />;
   return children;
 };
 
@@ -225,6 +241,12 @@ export default function App() {
               {/* <Route path="/chef/orders" element={<ChefRoute><KitchenOrders /></ChefRoute>} /> */}
               <Route path="/chef/stats" element={<ChefRoute><KitchenStats /></ChefRoute>} />
               <Route path="/chef/kitchen-display" element={<ChefRoute><KitchenDisplay /></ChefRoute>} />
+              {/* Stock management — chef + admin + admin_fnb */}
+              <Route path="/chef/ingredients" element={<ChefOrAdminRoute><Ingredients /></ChefOrAdminRoute>} />
+              <Route path="/chef/stock-movements" element={<ChefOrAdminRoute><StockMovements /></ChefOrAdminRoute>} />
+              <Route path="/chef/suppliers" element={<ChefOrAdminRoute><Suppliers /></ChefOrAdminRoute>} />
+              <Route path="/chef/purchases" element={<ChefOrAdminRoute><Purchases /></ChefOrAdminRoute>} />
+              <Route path="/chef/inventory-valuation" element={<ChefOrAdminRoute><InventoryValuation /></ChefOrAdminRoute>} />
 
               {/* Accounting routes */}
               <Route path="/accounting" element={<AdminRoute><AccountingDashboard /></AdminRoute>} />

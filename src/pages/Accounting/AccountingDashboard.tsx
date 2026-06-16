@@ -491,6 +491,56 @@ const AccountingDashboard: React.FC = () => {
           </Col>
         </Row>
 
+        {/* Ingredient COGS + Food Cost % — only renders when stock tracking
+            has captured any cost in the period. Tied to the recipe + cost
+            data from the Stock Management module. */}
+        {(dashboard?.cogs?.ingredientCogs ?? 0) > 0 && (
+          <Row gutter={16}>
+            <Col xs={24} md={12}>
+              <Card>
+                <Statistic
+                  title={
+                    <Space>
+                      🍔 Ingredient COGS
+                      <Tooltip title="Sum of ingredient cost across every F&B sale in the period. Computed at sale time from the recipe × the ingredient's latest Buy Price.">
+                        <InfoCircleOutlined style={{ color: '#999' }} />
+                      </Tooltip>
+                    </Space>
+                  }
+                  value={dashboard!.cogs.ingredientCogs ?? 0}
+                  prefix="$"
+                  precision={2}
+                  valueStyle={{ color: '#ff4d4f' }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} md={12}>
+              <Card>
+                <Statistic
+                  title={
+                    <Space>
+                      Food Cost %
+                      <Tooltip title="Ingredient COGS / Total Revenue × 100. Industry benchmark is roughly 28–35% for full-service F&B.">
+                        <InfoCircleOutlined style={{ color: '#999' }} />
+                      </Tooltip>
+                    </Space>
+                  }
+                  value={dashboard!.cogs.foodCostPercent ?? 0}
+                  suffix="%"
+                  precision={1}
+                  valueStyle={{
+                    color: (dashboard!.cogs.foodCostPercent ?? 0) > 35
+                      ? '#ff4d4f'
+                      : (dashboard!.cogs.foodCostPercent ?? 0) > 28
+                        ? '#fa8c16'
+                        : '#52c41a'
+                  }}
+                />
+              </Card>
+            </Col>
+          </Row>
+        )}
+
         {/* TCG COGS */}
         {(dashboard?.cogs?.total ?? 0) > 0 && (
           <Card

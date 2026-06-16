@@ -698,6 +698,24 @@ export default function CashierItems() {
 
                                                         // Convert response to ItemTransaction
                                                         if (response.success && response.data) {
+                                                            // Stock-management warnings — if any ingredient
+                                                            // went negative as a result of this sale, the
+                                                            // backend returns them on data.stockWarnings.
+                                                            // Show a yellow toast naming them; the sale
+                                                            // still went through.
+                                                            const warnings = response.data.stockWarnings as
+                                                                | Array<{ ingredientName: string; quantityAfter: number; unit: string }>
+                                                                | undefined;
+                                                            if (warnings && warnings.length > 0) {
+                                                                const list = warnings
+                                                                    .map(w => `${w.ingredientName} (${w.quantityAfter} ${w.unit})`)
+                                                                    .join(', ');
+                                                                setNotification({
+                                                                    variant: 'warning',
+                                                                    title: 'Stock alert',
+                                                                    message: `Sale went through, but these went negative: ${list}`
+                                                                });
+                                                            }
                                                             const invoiceData: ItemTransaction = {
                                                                 transactionId: response.data.id,
                                                                 createdOn: response.data.createdOn,

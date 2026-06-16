@@ -17,6 +17,7 @@ import DeleteIconButton from "../../components/ui/DeleteIconButton";
 import { getCategoriesByType, CategoryDto } from "../../services/categoryService";
 import { getStatusName, STATUS_ENABLED, STATUS_DISABLED } from '../../services/statuses';
 import StatusToggle from '../../components/ui/StatusToggle';
+import RecipeEditorModal from '../../components/stock/RecipeEditorModal';
 import {
     Table,
     TableBody,
@@ -56,6 +57,9 @@ export default function Items() {
 
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [deleting, setDeleting] = useState(false);
+
+    // Recipe editor modal state — opens when chef clicks "Recipe" on a row.
+    const [recipeItem, setRecipeItem] = useState<ItemDto | null>(null);
 
     const [notification, setNotification] = useState<{
         variant: "success" | "error" | "warning" | "info";
@@ -307,6 +311,14 @@ export default function Items() {
                                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                                             <div className="flex items-center gap-2">
                                                 <button className="text-sm px-2 py-1 bg-gray-200 rounded" onClick={() => openEdit(it)}>Edit</button>
+                                                {/* Recipe button — opens the stock-tracking recipe editor for this item */}
+                                                <button
+                                                    className="text-sm px-2 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200"
+                                                    onClick={() => setRecipeItem(it)}
+                                                    title="Configure ingredients consumed when this item is sold"
+                                                >
+                                                    Recipe
+                                                </button>
                                                 <DeleteIconButton onClick={() => setDeleteId(it.id)} />
                                             </div>
                                         </TableCell>
@@ -441,6 +453,17 @@ export default function Items() {
                     </div>
                 )}
             </div>
+
+            {/* Recipe editor — opens from the Recipe button on each item row.
+                Lets the chef define which ingredients (and how much) get
+                deducted from stock when this item is sold. */}
+            <RecipeEditorModal
+                open={!!recipeItem}
+                itemId={recipeItem ? Number(recipeItem.id) : null}
+                itemName={recipeItem?.name}
+                onClose={() => setRecipeItem(null)}
+                onSaved={() => { /* nothing else to refresh on the Items list */ }}
+            />
         </div>
     );
 }

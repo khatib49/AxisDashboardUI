@@ -120,6 +120,19 @@ const AppSidebar: React.FC = () => {
           ],
         },
         {
+          icon: <NavInventoryIcon />,
+          name: "Stock Management",
+          subItems: [
+            { name: "Ingredients", path: "/chef/ingredients" },
+            { name: "Suppliers", path: "/chef/suppliers" },
+            { name: "Purchases", path: "/chef/purchases" },
+            { name: "Inventory Valuation", path: "/chef/inventory-valuation" },
+            // The waste log is the same audit page filtered to Type=Waste.
+            { name: "Waste Log", path: "/chef/stock-movements?type=Waste" },
+            { name: "Stock Movements", path: "/chef/stock-movements" },
+          ],
+        },
+        {
           icon: <NavGameIcon />,
           name: "Game",
           subItems: [
