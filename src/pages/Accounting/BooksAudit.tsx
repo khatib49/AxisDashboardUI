@@ -15,7 +15,6 @@ import {
   Statistic,
   Row,
   Col,
-  Table,
   Tag,
   message,
   Typography,

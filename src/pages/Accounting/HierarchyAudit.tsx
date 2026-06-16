@@ -195,7 +195,7 @@ export default function HierarchyAudit() {
       title: "Fix",
       key: "fix",
       width: 220,
-      render: (_, r) => (
+      render: () => (
         <Button size="small" onClick={() => navigate(`/accounting/accounts`)}>
           Reactivate or re-parent
         </Button>
