@@ -64,6 +64,8 @@ import KitchenDisplay from "./pages/Chef/KitchenDisplay";
 import BarDisplay from "./pages/bartender/BarDisplay";
 import { TransactionAuditLogsPage } from "./pages/Admin/TransactionAuditLogsPage";
 import ItemRevenueReport from "./pages/Accounting/ItemRevenueReport";
+import BooksAudit from "./pages/Accounting/BooksAudit";
+import HierarchyAudit from "./pages/Accounting/HierarchyAudit";
 import Channels from "./pages/Admin/Channels";
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
@@ -230,6 +232,8 @@ export default function App() {
               <Route path="/accounting/accounts" element={<AdminRoute><ChartOfAccounts /></AdminRoute>} />
               <Route path="/accounting/trial-balance" element={<AdminRoute><TrialBalance /></AdminRoute>} />
               <Route path="/accounting/general-ledger" element={<AdminRoute><GeneralLedger /></AdminRoute>} />
+              <Route path="/accounting/audit" element={<AdminRoute><BooksAudit /></AdminRoute>} />
+              <Route path="/accounting/hierarchy-audit" element={<AdminRoute><HierarchyAudit /></AdminRoute>} />
 
               {/* BarTender routes */}
               <Route path="/bartender/bar-display" element={<BarTenderRoute><BarDisplay /></BarTenderRoute>} />

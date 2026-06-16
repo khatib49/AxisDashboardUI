@@ -273,6 +273,42 @@ export const repointJournalEntryLines = async (
   return res.data.data;
 };
 
+// Hierarchy audit — read-only.
+export type HierarchyAccountRef = {
+  id: number;
+  accountNumber: string;
+  accountName: string;
+  accountTypeId: number;
+  accountTypeName: string;
+  isActive: boolean;
+};
+
+export type HierarchyTypeMismatch = {
+  child: HierarchyAccountRef;
+  parent: HierarchyAccountRef;
+};
+
+export type HierarchyHeaderIssue = {
+  account: HierarchyAccountRef;
+  childCount: number;
+  allowsManualEntry: boolean;
+  directBalance: number;
+};
+
+export type AccountHierarchyAudit = {
+  totalAccounts: number;
+  totalActive: number;
+  typeMismatches: HierarchyTypeMismatch[];
+  headersAllowingManualEntry: HierarchyHeaderIssue[];
+  headersWithDirectPostings: HierarchyHeaderIssue[];
+  inactiveParentsWithActiveChildren: HierarchyAccountRef[];
+};
+
+export const getHierarchyAudit = async (): Promise<AccountHierarchyAudit> => {
+  const res = await api.get<{ data: AccountHierarchyAudit }>('/Accounts/hierarchy-audit');
+  return res.data.data;
+};
+
 // ============================================
 // VALIDATION
 // ============================================

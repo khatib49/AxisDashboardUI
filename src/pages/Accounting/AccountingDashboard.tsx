@@ -271,13 +271,76 @@ const AccountingDashboard: React.FC = () => {
           </Space>
         </Card>
 
-        {/* Revenue Breakdown */}
+        {/* Revenue Breakdown — Gross / Discounts / Net summary at the top so
+            the owner sees how much margin is being given away. The per-source
+            cards below stay on NET to match what hits Cash on Hand. */}
+        {(revenue?.totalGross ?? 0) > totalRevenue && (
+          <Card size="small">
+            <Row gutter={16}>
+              <Col span={8}>
+                <Statistic
+                  title={
+                    <Space>
+                      Gross Revenue
+                      <Tooltip title="Sum of menu prices before any discount. Matches the credit side on 4xxx Revenue accounts.">
+                        <InfoCircleOutlined style={{ color: '#999' }} />
+                      </Tooltip>
+                    </Space>
+                  }
+                  value={revenue?.totalGross ?? totalRevenue}
+                  prefix="$"
+                  precision={2}
+                  valueStyle={{ color: '#1F4E79' }}
+                />
+              </Col>
+              <Col span={8}>
+                <Statistic
+                  title={
+                    <Space>
+                      − Discounts Given
+                      <Tooltip title="Sum of all percentage discounts applied at the cashier. Booked to 4900 Sales Discounts (contra-revenue).">
+                        <InfoCircleOutlined style={{ color: '#999' }} />
+                      </Tooltip>
+                    </Space>
+                  }
+                  value={revenue?.discountsGiven ?? 0}
+                  prefix="− $"
+                  precision={2}
+                  valueStyle={{ color: '#ff4d4f' }}
+                />
+              </Col>
+              <Col span={8}>
+                <Statistic
+                  title={
+                    <Space>
+                      = Net Revenue
+                      <Tooltip title="What the customer actually paid. Matches the debit side on 1000 Cash on Hand.">
+                        <InfoCircleOutlined style={{ color: '#999' }} />
+                      </Tooltip>
+                    </Space>
+                  }
+                  value={totalRevenue}
+                  prefix="$"
+                  precision={2}
+                  valueStyle={{ color: '#52c41a' }}
+                />
+              </Col>
+            </Row>
+          </Card>
+        )}
+
+        {/* Revenue Breakdown — per-source (Gaming / FNB / TCG) at NET */}
         <Card
           title={
             <Space>
               <RiseOutlined style={{ color: '#52c41a' }} />
               <span>Revenue Breakdown</span>
               <Tag color="green">{fmt(totalRevenue)}</Tag>
+              {(revenue?.discountsGiven ?? 0) > 0 && (
+                <Tag color="orange">
+                  {fmt(revenue!.discountsGiven!)} given as discount
+                </Tag>
+              )}
             </Space>
           }
         >
@@ -463,7 +526,7 @@ const AccountingDashboard: React.FC = () => {
               <FallOutlined style={{ color: '#ff4d4f' }} />
               <span>Operating Expenses Breakdown</span>
               <Tag color="red">{fmt(opEx?.total ?? 0)}</Tag>
-              <Tooltip title="Recurring operational expenses entered (CreatedOn) within the reporting period. Excludes one-time capital investments.">
+              <Tooltip title="Recurring operational expenses whose period overlaps the reporting range. Each amount is prorated by overlap days — annual rent shows ~1/12 in a monthly filter.">
                 <InfoCircleOutlined style={{ color: '#999' }} />
               </Tooltip>
             </Space>
@@ -566,11 +629,13 @@ const AccountingDashboard: React.FC = () => {
               />
               <div style={{ marginTop: 12 }}>
                 <small style={{ color: '#999' }}>
-                  Every section on this page is filtered by row creation date
-                  (CreatedOn) within this range — revenue, expenses, capital
-                  investments, and recent journal entries. Trial balance is
-                  the one exception: it stays all-time so you can spot if the
-                  books drift out of balance overall.
+                  Revenue (sales) is filtered by the transaction's payment date.
+                  Expenses and capital investments are filtered by the expense's
+                  period AND prorated by overlap days — a $90k annual rent
+                  shows as $7,500 in a monthly filter, and the full $90k only
+                  when the filter spans the whole year. Trial balance is the
+                  exception: it stays all-time so you can spot if the books
+                  drift out of balance overall.
                 </small>
               </div>
             </Card>

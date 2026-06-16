@@ -167,6 +167,8 @@ const AppSidebar: React.FC = () => {
     { name: "Chart of Accounts", path: "/accounting/accounts" },
     { name: "Trial Balance", path: "/accounting/trial-balance" },
     { name: "General Ledger", path: "/accounting/general-ledger" },
+    { name: "Books Audit", path: "/accounting/audit" },
+    { name: "Hierarchy Audit", path: "/accounting/hierarchy-audit" },
   ],
 },
 {
