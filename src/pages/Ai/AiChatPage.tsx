@@ -476,7 +476,7 @@ export default function AiChatPage() {
           ) : items.length === 0 ? (
             <EmptyState />
           ) : (
-            items.map((it, idx) => {
+            items.map((it) => {
               if (it.kind === "user") return <UserBubble key={`u-${it.m.id}`} m={it.m} />;
               return (
                 <div key={`a-${it.m.id}`}>
