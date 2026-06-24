@@ -150,6 +150,28 @@ const AppSidebar: React.FC = () => {
         },
         { icon: <NavRoomsIcon />, name: "Rooms", path: "/admin/rooms" },
         { name: 'Audit Logs', path: '/admin/audit-logs', icon: <NavAuditIcon /> },
+        {
+          name: 'AI Assistant',
+          path: '/ai/chat',
+          icon: (
+            // Inline sparkle/AI icon — kept here so we don't have to edit NavIcons just for this
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          ),
+        },
+        {
+          name: 'Integrations',
+          path: '/admin/integrations',
+          icon: (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 7H6a3 3 0 00-3 3v4a3 3 0 003 3h3" />
+              <path d="M15 7h3a3 3 0 013 3v4a3 3 0 01-3 3h-3" />
+              <path d="M8 12h8" />
+            </svg>
+          ),
+        },
         { icon: <NavDiscountIcon />, name: "Discount Management", path: "/admin/discounts" },
         { icon: <NavDiscountIcon />, name: "Channels", path: "/admin/channels" },
         // {

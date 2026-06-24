@@ -62,7 +62,9 @@ import TrialBalance from './components/Accounting/TrialBalance';
 import GeneralLedger from './components/Accounting/GeneralLedger';
 import KitchenDisplay from "./pages/Chef/KitchenDisplay";
 import BarDisplay from "./pages/bartender/BarDisplay";
-import { TransactionAuditLogsPage } from "./pages/Admin/TransactionAuditLogsPage";
+import { AuditLogsPage } from "./pages/Admin/AuditLogsPage";
+import AiChatPage from "./pages/Ai/AiChatPage";
+import IntegrationsPage from "./pages/Admin/Integrations";
 import ItemRevenueReport from "./pages/Accounting/ItemRevenueReport";
 import BooksAudit from "./pages/Accounting/BooksAudit";
 import HierarchyAudit from "./pages/Accounting/HierarchyAudit";
@@ -202,7 +204,9 @@ export default function App() {
 
               {/* Admin (guard inside element) */}
               <Route path="/admin/users" element={<AdminRoute><UsersManagement /></AdminRoute>} />
-              <Route path="/admin/audit-logs" element={<AdminRoute><TransactionAuditLogsPage /></AdminRoute>} />
+              <Route path="/admin/audit-logs" element={<AdminRoute><AuditLogsPage /></AdminRoute>} />
+              <Route path="/ai/chat" element={<AdminRoute><AiChatPage /></AdminRoute>} />
+              <Route path="/admin/integrations" element={<AdminRoute><IntegrationsPage /></AdminRoute>} />
               <Route path="/admin/items" element={<AdminRoute><Items /></AdminRoute>} />
               <Route path="/admin/orders" element={<AdminRoute><Orders /></AdminRoute>} />
               <Route path="/cashier/items" element={<CashierRoute><CashierItems /></CashierRoute>} />

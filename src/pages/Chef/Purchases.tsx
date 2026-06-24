@@ -10,7 +10,7 @@ import {
   Card, Table, Tag, Button, Space, Modal, Form, Input, InputNumber, Select,
   DatePicker, message, Typography, Tooltip, Divider, Empty,
 } from "antd";
-import { PlusOutlined, DeleteOutlined, ReloadOutlined, EyeOutlined } from "@ant-design/icons";
+import { PlusOutlined, DeleteOutlined, ReloadOutlined, EyeOutlined, SearchOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import dayjs, { Dayjs } from "dayjs";
 import {
@@ -44,6 +44,7 @@ export default function Purchases() {
 
   const [supplierFilter, setSupplierFilter] = useState<number | "all">("all");
   const [ingredientFilter, setIngredientFilter] = useState<number | "all">("all");
+  const [search, setSearch] = useState("");
   const [range, setRange] = useState<[Dayjs, Dayjs]>([
     dayjs().subtract(30, "day").startOf("day"),
     dayjs().endOf("day"),
@@ -86,6 +87,23 @@ export default function Purchases() {
   useEffect(() => { reload(); /* eslint-disable-next-line */ }, [filterArgs, page, pageSize]);
 
   const ingredientById = useMemo(() => new Map(ingredients.map((i) => [i.id, i])), [ingredients]);
+
+  // Text search runs against the currently-loaded page: supplier name,
+  // invoice number, notes, and any line ingredient name. The supplier /
+  // ingredient / date filters above are still server-side; this is just
+  // a quick free-text pass on top.
+  const visibleRows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter(r => {
+      if ((r.supplierName ?? "").toLowerCase().includes(q)) return true;
+      if ((r.invoiceNumber ?? "").toLowerCase().includes(q)) return true;
+      if ((r.notes ?? "").toLowerCase().includes(q)) return true;
+      if ((r.createdBy ?? "").toLowerCase().includes(q)) return true;
+      if (String(r.id).includes(q)) return true;
+      return r.lines.some(l => (l.ingredientName ?? "").toLowerCase().includes(q));
+    });
+  }, [rows, search]);
 
   function openCreate() {
     form.resetFields();
@@ -196,7 +214,16 @@ export default function Purchases() {
             <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>New Purchase</Button>
           </Space>
 
-          <Table size="small" loading={loading} rowKey="id" columns={columns} dataSource={rows}
+          <Input
+            allowClear
+            prefix={<SearchOutlined />}
+            placeholder="Search supplier, invoice #, ingredient, notes…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ maxWidth: 420 }}
+          />
+
+          <Table size="small" loading={loading} rowKey="id" columns={columns} dataSource={visibleRows}
             pagination={{
               current: page, pageSize, total, showSizeChanger: true,
               pageSizeOptions: [10, 20, 50],

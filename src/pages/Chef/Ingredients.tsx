@@ -32,6 +32,7 @@ import {
   ReloadOutlined,
   ToolOutlined,
   ExclamationCircleOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import {
@@ -56,6 +57,20 @@ export default function Ingredients() {
   const [rows, setRows] = useState<IngredientDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [includeHidden, setIncludeHidden] = useState(false);
+  const [search, setSearch] = useState("");
+
+  // Client-side filter on the loaded list — matches name / unit / notes.
+  // Filtering after low-stock count keeps the badge accurate to the
+  // underlying inventory, not to whatever the user is currently searching.
+  const filteredRows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter(r =>
+      r.name.toLowerCase().includes(q) ||
+      (r.unit ?? "").toLowerCase().includes(q) ||
+      (r.notes ?? "").toLowerCase().includes(q)
+    );
+  }, [rows, search]);
 
   const [modal, setModal] = useState<ModalKind>(null);
   const [active, setActive] = useState<IngredientDto | null>(null);
@@ -277,12 +292,21 @@ export default function Ingredients() {
             </Tag>
           )}
 
+          <Input
+            allowClear
+            prefix={<SearchOutlined />}
+            placeholder="Search by name, unit, or notes…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ maxWidth: 360 }}
+          />
+
           <Table
             size="small"
             loading={loading}
             rowKey="id"
             columns={columns}
-            dataSource={rows}
+            dataSource={filteredRows}
             pagination={{ pageSize: 20, showSizeChanger: true, showTotal: (t) => `${t} ingredient(s)` }}
             scroll={{ x: 900 }}
           />

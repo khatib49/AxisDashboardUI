@@ -3,12 +3,12 @@
 // Admin / chef CRUD for vendors. The supplier dropdown on the New
 // Purchase form pulls from this list.
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Card, Table, Tag, Button, Space, Modal, Form, Input, Switch as AntSwitch,
   message, Typography,
 } from "antd";
-import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined } from "@ant-design/icons";
+import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined, SearchOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import {
   SupplierDto, getSuppliers, createSupplier, updateSupplier, deactivateSupplier,
@@ -20,9 +20,22 @@ export default function Suppliers() {
   const [rows, setRows] = useState<SupplierDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [includeHidden, setIncludeHidden] = useState(false);
+  const [search, setSearch] = useState("");
   const [modal, setModal] = useState<"add" | "edit" | null>(null);
   const [active, setActive] = useState<SupplierDto | null>(null);
   const [form] = Form.useForm();
+
+  // Client-side filter: matches name / contact / notes, case-insensitive.
+  // Cheap because the supplier list is small (dozens, not thousands).
+  const filteredRows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter(r =>
+      r.name.toLowerCase().includes(q) ||
+      (r.contactInfo ?? "").toLowerCase().includes(q) ||
+      (r.notes ?? "").toLowerCase().includes(q)
+    );
+  }, [rows, search]);
 
   async function reload() {
     setLoading(true);
@@ -113,8 +126,18 @@ export default function Suppliers() {
               <Button type="primary" icon={<PlusOutlined />} onClick={openAdd}>New Supplier</Button>
             </Space>
           </Space>
-          <Table size="small" loading={loading} rowKey="id" columns={columns} dataSource={rows}
-            pagination={{ pageSize: 20, showSizeChanger: true }} />
+
+          <Input
+            allowClear
+            prefix={<SearchOutlined />}
+            placeholder="Search by name, contact, or notes…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ maxWidth: 360 }}
+          />
+
+          <Table size="small" loading={loading} rowKey="id" columns={columns} dataSource={filteredRows}
+            pagination={{ pageSize: 20, showSizeChanger: true, showTotal: (t) => `${t} supplier(s)` }} />
         </Space>
       </Card>
 
