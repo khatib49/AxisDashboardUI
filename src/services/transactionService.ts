@@ -67,6 +67,8 @@ export type TransactionUpdateDto = {
   statusId?: number | null;
   setId?: number | null;
   items?: Array<{ itemId: number; quantity: number }> | null;  // ← ADD THIS LINE ONLY
+  // Attach or change the client on a session. > 0 sets, 0 clears, null leaves alone.
+  userId?: number | null;
 };
 
 // ============ OPEN SESSION TYPES ============
@@ -94,6 +96,11 @@ export type OpenSessionDto = {
     discountName?: string | null;
     numberOfPersons?: number;
     isDayPass?: boolean;
+    // Client attached to the session (nullable — cashier can add/change later).
+    // Backend TransactionDto already returns these; adding them to the FE
+    // type just surfaces what's already in the payload.
+    userId?: number | null;
+    userName?: string | null;
 };
 
 // ============ DISCOUNT TYPES ============

@@ -4,6 +4,7 @@ import Loader from '../../components/ui/Loader';
 import Modal from '../../components/ui/Modal';
 import GameInvoice from '../../components/invoice/GameInvoice';
 import { GameTransaction } from '../../services/transactionService';
+import AttachClientModal from './AttachClientModal';
 
 const Ps5Sessions: React.FC = () => {
     const [sessions, setSessions] = useState<OpenSessionDto[]>([]);
@@ -13,6 +14,8 @@ const Ps5Sessions: React.FC = () => {
     const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
     const [currentInvoice, setCurrentInvoice] = useState<GameTransaction | null>(null);
     const [toast, setToast] = useState<{ variant: 'success' | 'error', title: string, message: string } | null>(null);
+    // Attach-client modal state — one modal reused across all cards.
+    const [attachingSession, setAttachingSession] = useState<OpenSessionDto | null>(null);
 
     const loadSessions = async () => {
         setLoading(true);
@@ -200,6 +203,18 @@ const Ps5Sessions: React.FC = () => {
                                     </span>
                                 </div>
 
+                                {/* Client row — click to attach or change. */}
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-600">Client:</span>
+                                    <button
+                                        onClick={() => setAttachingSession(session)}
+                                        className="font-medium text-xs px-2 py-0.5 rounded border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 truncate max-w-[170px]"
+                                        title={session.userName ?? "Attach a client"}
+                                    >
+                                        {session.userName ? session.userName : "+ Add Client"}
+                                    </button>
+                                </div>
+
                                 <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200">
                                     <span className="text-gray-600">Price:</span>
                                     <span className="font-bold text-lg text-green-600">${session.totalPrice.toFixed(2)}</span>
@@ -243,6 +258,24 @@ const Ps5Sessions: React.FC = () => {
                     {currentInvoice && <GameInvoice transaction={currentInvoice} />}
                 </div>
             </Modal>
+
+            {/* Attach / change client */}
+            {attachingSession && (
+                <AttachClientModal
+                    open={!!attachingSession}
+                    transactionId={attachingSession.id}
+                    currentUserId={attachingSession.userId ?? null}
+                    currentUserName={attachingSession.userName ?? null}
+                    onCancel={() => setAttachingSession(null)}
+                    onSaved={(userId, userName) => {
+                        setSessions(prev => prev.map(s =>
+                            s.id === attachingSession.id
+                                ? { ...s, userId, userName }
+                                : s));
+                        setAttachingSession(null);
+                    }}
+                />
+            )}
         </div>
     );
 };

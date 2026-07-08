@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
-import { getGameTransactions, GameTransaction } from '../../services/transactionService';
+import {
+  getGameTransactions, GameTransaction,
+  updateTransaction, deleteTransaction, TransactionUpdateDto,
+} from '../../services/transactionService';
 import { getStatusName, STATUS_ENABLED } from '../../services/statuses';
 
 export default function GameTransactions() {
@@ -11,6 +14,63 @@ export default function GameTransactions() {
     const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
     const [search, setSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    // Edit modal state — only the scalar fields TransactionUpdateDto accepts
+    // are exposed; changing items is done from the cashier open-invoice flow,
+    // not here.
+    const [editing, setEditing] = useState<GameTransaction | null>(null);
+    const [editDraft, setEditDraft] = useState<TransactionUpdateDto>({});
+    const [saving, setSaving] = useState(false);
+
+    // Delete confirmation state
+    const [deletingId, setDeletingId] = useState<number | null>(null);
+    const [deleting, setDeleting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const openEdit = (t: GameTransaction) => {
+        setEditing(t);
+        setEditDraft({
+            hours: t.hours ?? null,
+            totalPrice: t.totalPrice ?? null,
+            statusId: t.statusId ?? null,
+        });
+        setError(null);
+    };
+
+    const saveEdit = async () => {
+        if (!editing?.transactionId) return;
+        setSaving(true); setError(null);
+        try {
+            await updateTransaction(editing.transactionId, editDraft);
+            setEditing(null);
+            // Refresh list
+            setPage(p => p);
+            const res = await getGameTransactions({
+                Page: page, PageSize: pageSize,
+                Search: debouncedSearch || undefined,
+            });
+            setItems(res.data || []);
+        } catch (e: any) {
+            setError(e?.response?.data?.message ?? e?.message ?? 'Save failed');
+        } finally { setSaving(false); }
+    };
+
+    const confirmDelete = async () => {
+        if (!deletingId) return;
+        setDeleting(true); setError(null);
+        try {
+            await deleteTransaction(deletingId);
+            setDeletingId(null);
+            const res = await getGameTransactions({
+                Page: page, PageSize: pageSize,
+                Search: debouncedSearch || undefined,
+            });
+            setItems(res.data || []);
+            setTotal(res.totalCount || 0);
+        } catch (e: any) {
+            setError(e?.response?.data?.message ?? e?.message ?? 'Delete failed');
+        } finally { setDeleting(false); }
+    };
 
     // Debounce search input (500ms)
     useEffect(() => {
@@ -169,7 +229,25 @@ export default function GameTransactions() {
                                                     <div className="text-sm text-gray-900">{t.items ? t.items.length : 0} item(s)</div>
                                                 </div>
                                             </div>
-                                            <div className="ml-4 flex-shrink-0">
+                                            <div className="ml-4 flex-shrink-0 flex items-center gap-2">
+                                                {/* Edit / Delete — stopPropagation so they don't toggle expand */}
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); openEdit(t); }}
+                                                    className="px-2.5 py-1 text-xs bg-blue-50 text-blue-700 rounded border border-blue-200 hover:bg-blue-100"
+                                                    title="Edit"
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (typeof t.transactionId === 'number') setDeletingId(t.transactionId);
+                                                    }}
+                                                    className="px-2.5 py-1 text-xs bg-red-50 text-red-700 rounded border border-red-200 hover:bg-red-100"
+                                                    title="Delete"
+                                                >
+                                                    Delete
+                                                </button>
                                                 <svg
                                                     className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
                                                     fill="none"
@@ -244,6 +322,96 @@ export default function GameTransactions() {
                     </button>
                 </div>
             </div>
+
+            {/* ── Edit modal ──────────────────────────────────────────── */}
+            {editing && (
+                <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => !saving && setEditing(null)}>
+                    <div className="bg-white rounded-lg shadow-xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+                        <div className="px-5 py-3 border-b border-gray-200">
+                            <h3 className="font-semibold text-gray-800">Edit Transaction #{editing.transactionId}</h3>
+                            <p className="text-xs text-gray-500">Changing items must be done from the cashier flow.</p>
+                        </div>
+                        <div className="p-5 space-y-4">
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Hours</label>
+                                <input
+                                    type="number"
+                                    step="0.5"
+                                    min="0"
+                                    value={editDraft.hours ?? ''}
+                                    onChange={(e) => setEditDraft(d => ({ ...d, hours: e.target.value === '' ? null : Number(e.target.value) }))}
+                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Total Price ($)</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={editDraft.totalPrice ?? ''}
+                                    onChange={(e) => setEditDraft(d => ({ ...d, totalPrice: e.target.value === '' ? null : Number(e.target.value) }))}
+                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Status ID</label>
+                                <input
+                                    type="number"
+                                    value={editDraft.statusId ?? ''}
+                                    onChange={(e) => setEditDraft(d => ({ ...d, statusId: e.target.value === '' ? null : Number(e.target.value) }))}
+                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+                            {error && (
+                                <div className="p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">{error}</div>
+                            )}
+                        </div>
+                        <div className="px-5 py-3 border-t border-gray-200 flex justify-end gap-2">
+                            <button
+                                disabled={saving}
+                                onClick={() => setEditing(null)}
+                                className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 rounded"
+                            >Cancel</button>
+                            <button
+                                disabled={saving}
+                                onClick={saveEdit}
+                                className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                            >{saving ? 'Saving…' : 'Save'}</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Delete confirmation ─────────────────────────────────── */}
+            {deletingId != null && (
+                <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => !deleting && setDeletingId(null)}>
+                    <div className="bg-white rounded-lg shadow-xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+                        <div className="px-5 py-3 border-b border-gray-200">
+                            <h3 className="font-semibold text-gray-800">Delete transaction #{deletingId}?</h3>
+                        </div>
+                        <div className="p-5 text-sm text-gray-700 space-y-2">
+                            <p>This will reverse the transaction and restore any stock consumed by it. This action is logged permanently in the audit log.</p>
+                            <p className="text-xs text-gray-500">Any associated F&amp;B ingredient consumption will be reversed automatically.</p>
+                            {error && (
+                                <div className="p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">{error}</div>
+                            )}
+                        </div>
+                        <div className="px-5 py-3 border-t border-gray-200 flex justify-end gap-2">
+                            <button
+                                disabled={deleting}
+                                onClick={() => setDeletingId(null)}
+                                className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 rounded"
+                            >Cancel</button>
+                            <button
+                                disabled={deleting}
+                                onClick={confirmDelete}
+                                className="px-3 py-1.5 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+                            >{deleting ? 'Deleting…' : 'Delete'}</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

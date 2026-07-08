@@ -9,8 +9,16 @@ import OpenInvoicesCard from "../../components/dashboard/OpenInvoicesCard";
 import LowStockAlert from "../../components/dashboard/LowStockAlert";
 import RevenueTrendChart from "../../components/dashboard/RevenueTrendChart";
 import TransactionsByChannelCard from "../../components/dashboard/TransactionsByChannelCard";
+import CashOnHandCard from "../../components/dashboard/CashOnHandCard";
+import dayjs from "dayjs";
 
 export default function Home() {
+    // Cash on Hand uses month-to-date on the main dashboard so the owner
+    // sees "how much cash accumulated so far this month on top of my baseline".
+    // The accounting page has its own period picker for more granular views.
+    const fromIso = dayjs().startOf("month").toISOString();
+    const toIso = dayjs().endOf("day").toISOString();
+
     return (
         <>
             <PageMeta
@@ -18,6 +26,13 @@ export default function Home() {
                 description="AXIS GAME LOUNGE AND COFFEE SHOP - BEIRUT - LEBANON"
             />
             <div className="grid grid-cols-12 gap-4 md:gap-6">
+
+                {/* Row 0: Cash on Hand — spans the width so the owner sees
+                    the number the moment the page opens. Uses baseline +
+                    month-to-date revenue − opex. Editable via pencil icon. */}
+                <div className="col-span-12 md:col-span-6 xl:col-span-4">
+                    <CashOnHandCard fromIso={fromIso} toIso={toIso} mode="compact" />
+                </div>
 
                 {/* Row 1: Total Sales + Metrics */}
                 <div className="col-span-12 xl:col-span-5">

@@ -261,7 +261,7 @@ export default function ExpenseCategories() {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                                             {category.isCapital ? (
                                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                                                    🏗️ Capital
+                                                    🏗️ Asset
                                                 </span>
                                             ) : (
                                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -301,7 +301,7 @@ export default function ExpenseCategories() {
                     <div className="mt-4 text-sm text-gray-600">
                         Total: {categories.length} categories &nbsp;·&nbsp;
                         <span className="text-purple-700 font-medium">
-                            {categories.filter(c => c.isCapital).length} Capital
+                            {categories.filter(c => c.isCapital).length} Asset
                         </span>
                         &nbsp;·&nbsp;
                         <span className="text-blue-700 font-medium">
@@ -366,10 +366,10 @@ export default function ExpenseCategories() {
                                     className="w-4 h-4 text-purple-600"
                                 />
                                 <span className="text-sm font-medium text-gray-700">
-                                    🏗️ Capital
+                                    🏗️ Asset
                                 </span>
                                 <span className="text-xs text-gray-400">
-                                    (one-time investment — shown separately)
+                                    (one-time purchase — shown separately)
                                 </span>
                             </label>
                         </div>

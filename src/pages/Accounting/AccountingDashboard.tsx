@@ -48,6 +48,15 @@ import type { JournalEntry } from '../../services/accounting';
 // Add this import at the top with the other service imports
 import { backfillTransactions, backfillExpenses, BackfillResultDto } from '../../services/accountingService';
 
+// Extra data sources for the owner-summary grid at the top of the page:
+//   - Inventory Valuation is the F&B ingredient stock value
+//   - Item Revenue Report exposes TCG stock buy / sell value at cost + retail
+// Cash on Hand is handled by CashOnHandCard which computes:
+//   cashOnHand = static baseline (IntegrationSettings) + revenue − opex
+import { getInventoryValuation } from '../../services/inventoryValuationService';
+import { getItemRevenueReport } from '../../services/itemRevenueReportService';
+import CashOnHandCard from '../../components/dashboard/CashOnHandCard';
+
 const { RangePicker } = DatePicker;
 
 const fmt = (n: number) =>
@@ -62,6 +71,16 @@ const AccountingDashboard: React.FC = () => {
   const [dashboard, setDashboard] = useState<AccountingDashboardDto | null>(null);
   const [recentEntries, setRecentEntries] = useState<JournalEntry[]>([]);
   const [isBalanced, setIsBalanced] = useState(false);
+
+  // Owner-summary grid data (Rami's "Axis accounting display" layout).
+  // Cash on Hand is now handled by CashOnHandCard which reads the baseline
+  // from IntegrationSettings and computes on the fly — no local state needed.
+  const [inventoryValue, setInventoryValue] = useState<number>(0);
+  const [tcgStockBuy, setTcgStockBuy] = useState<number>(0);
+  const [tcgStockSell, setTcgStockSell] = useState<number>(0);
+  // TCG COGS from the Item Revenue Report — Rami calls this the source of
+  // truth for TCG cost of goods (row 12 of his spec).
+  const [tcgCogsFromReport, setTcgCogsFromReport] = useState<number>(0);
 
   // Date range — default to current month
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([
@@ -78,7 +97,13 @@ const AccountingDashboard: React.FC = () => {
       // of which slice they're looking at.
       const fromIso = dateRange[0].toISOString();
       const toIso = dateRange[1].toISOString();
-      const [dashboardData, trialBalance, entriesResult] = await Promise.all([
+      // Fire the extra owner-summary queries in parallel with the main
+      // dashboard load — they don't block each other, and we swallow their
+      // individual failures so a hiccup on one doesn't blank the page.
+      const invPromise = getInventoryValuation(fromIso, toIso).catch(() => null);
+      const itemReportPromise = getItemRevenueReport({ from: fromIso, to: toIso }).catch(() => null);
+
+      const [dashboardData, trialBalance, entriesResult, inv, itemReport] = await Promise.all([
         getAccountingDashboard(fromIso, toIso),
         getTrialBalance(),
         searchJournalEntries({
@@ -87,11 +112,17 @@ const AccountingDashboard: React.FC = () => {
           fromDate: fromIso,
           toDate: toIso,
         }),
+        invPromise,
+        itemReportPromise,
       ]);
 
       setDashboard(dashboardData);
       setIsBalanced(trialBalance.isBalanced);
       setRecentEntries(entriesResult.items);
+      setInventoryValue(inv?.totalValue ?? 0);
+      setTcgStockBuy(itemReport?.tcgStockBuyValue ?? 0);
+      setTcgStockSell(itemReport?.tcgStockSellValue ?? 0);
+      setTcgCogsFromReport(itemReport?.tcgCogs ?? 0);
     } catch (error) {
       message.error('Failed to load dashboard data');
       console.error(error);
@@ -270,6 +301,39 @@ const AccountingDashboard: React.FC = () => {
             </Button>
           </Space>
         </Card>
+
+        {/* ═══════════════════════════════════════════════════════════════
+             OWNER SUMMARY GRID
+             Fixed layout per Rami's mockup:
+               row 1: [Axis Account (Cash on Hand)  full width]
+               row 2: [Total Revenue | Operating Expenses | Net Income]
+               row 3: [Gaming Revenue]
+               row 4: [F&B Rev | Ing COGS | F&B Net | Food Cost % | Inv Val]
+               row 5: [TCG Rev | TCG COGS | TCG Net | Stock Buy | Stock Sell]
+             Colour palette:
+               green  = revenue
+               red    = expenses / costs
+               cyan   = summaries / nets
+               purple = valuations / stock
+               amber  = ratios (Food Cost %)
+             ═══════════════════════════════════════════════════════════════ */}
+        <OwnerSummaryGrid
+          fromIso={dateRange[0].toISOString()}
+          toIso={dateRange[1].toISOString()}
+          totalRevenue={totalRevenue}
+          operatingExpenses={opEx?.total ?? 0}
+          gamingRevenue={revenue?.gaming ?? 0}
+          fnbRevenue={revenue?.fnb ?? 0}
+          ingredientCogs={dashboard?.cogs?.ingredientCogs ?? 0}
+          foodCostPercent={dashboard?.cogs?.foodCostPercent ?? 0}
+          inventoryValue={inventoryValue}
+          tcgRevenue={revenue?.tcg ?? 0}
+          // TCG COGS — sourced from the Item Revenue Report per Rami's spec
+          // (row 12), since that report is his single source of truth for TCG.
+          tcgCogs={tcgCogsFromReport}
+          tcgStockBuy={tcgStockBuy}
+          tcgStockSell={tcgStockSell}
+        />
 
         {/* Revenue Breakdown — Gross / Discounts / Net summary at the top so
             the owner sees how much margin is being given away. The per-source
@@ -612,9 +676,9 @@ const AccountingDashboard: React.FC = () => {
         <Card
           title={
             <Space>
-              <span>🏗️ Capital Investments</span>
+              <span>🏗️ Assets</span>
               <Tag color="purple">{fmt(capEx?.total ?? 0)}</Tag>
-              <Tooltip title="One-time capital investments (furniture, equipment, civil work, etc.). Shown separately — not included in operating P&L.">
+              <Tooltip title="Assets — one-time purchases (furniture, equipment, civil work, etc.). Shown separately — not included in operating P&L.">
                 <InfoCircleOutlined style={{ color: '#999' }} />
               </Tooltip>
             </Space>
@@ -622,7 +686,7 @@ const AccountingDashboard: React.FC = () => {
         >
           {(capEx?.lines?.length ?? 0) === 0 ? (
             <div style={{ textAlign: 'center', padding: '24px 0', color: '#999' }}>
-              No capital investments in this period
+              No assets in this period
             </div>
           ) : (
             <Table
@@ -680,7 +744,7 @@ const AccountingDashboard: React.FC = () => {
               <div style={{ marginTop: 12 }}>
                 <small style={{ color: '#999' }}>
                   Revenue (sales) is filtered by the transaction's payment date.
-                  Expenses and capital investments are filtered by the expense's
+                  Expenses and assets are filtered by the expense's
                   period AND prorated by overlap days — a $90k annual rent
                   shows as $7,500 in a monthly filter, and the full $90k only
                   when the filter spans the whole year. Trial balance is the
@@ -843,3 +907,155 @@ const AccountingDashboard: React.FC = () => {
 };
 
 export default AccountingDashboard;
+
+// ══════════════════════════════════════════════════════════════════════
+// OwnerSummaryGrid
+// -----------------------------------------------------------------------
+// Rami's fixed layout — five rows of colour-coded metric tiles.
+// Kept in this file (not a separate module) because it's specific to the
+// accounting dashboard and has no reuse potential elsewhere.
+// ══════════════════════════════════════════════════════════════════════
+
+type Palette = 'green' | 'red' | 'cyan' | 'purple' | 'amber';
+
+interface MetricTileProps {
+  label: string;
+  value: string;
+  palette: Palette;
+  tooltip?: string;
+  subtitle?: string;
+}
+
+// Colour tokens — pastel bg + saturated fg for readability at a glance.
+const TILE_STYLES: Record<Palette, { bg: string; fg: string; border: string }> = {
+  green:  { bg: '#DCFCE7', fg: '#166534', border: '#86EFAC' },
+  red:    { bg: '#FECACA', fg: '#991B1B', border: '#F87171' },
+  cyan:   { bg: '#CFFAFE', fg: '#155E75', border: '#67E8F9' },
+  purple: { bg: '#E9D5FF', fg: '#6B21A8', border: '#C4B5FD' },
+  amber:  { bg: '#FEF3C7', fg: '#92400E', border: '#FCD34D' },
+};
+
+const MetricTile: React.FC<MetricTileProps> = ({ label, value, palette, tooltip, subtitle }) => {
+  const s = TILE_STYLES[palette];
+  const inner = (
+    <div
+      style={{
+        background: s.bg,
+        border: `1px solid ${s.border}`,
+        color: s.fg,
+        padding: '10px 14px',
+        borderRadius: 8,
+        minHeight: 70,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        cursor: tooltip ? 'help' : 'default',
+      }}
+    >
+      <div style={{ fontSize: 11, fontWeight: 600, opacity: 0.85, display: 'flex', alignItems: 'center', gap: 4 }}>
+        {label}
+        {tooltip && <InfoCircleOutlined style={{ fontSize: 11, opacity: 0.6 }} />}
+      </div>
+      <div style={{ fontSize: 18, fontWeight: 700, lineHeight: 1.2 }}>{value}</div>
+      {subtitle && (
+        <div style={{ fontSize: 10, opacity: 0.7, marginTop: 2 }}>{subtitle}</div>
+      )}
+    </div>
+  );
+  return tooltip ? <Tooltip title={tooltip}>{inner}</Tooltip> : inner;
+};
+
+interface OwnerSummaryGridProps {
+  // Used by the CashOnHandCard to fetch revenue + opex if not overridden.
+  fromIso: string;
+  toIso: string;
+  totalRevenue: number;
+  operatingExpenses: number;
+  gamingRevenue: number;
+  fnbRevenue: number;
+  ingredientCogs: number;
+  foodCostPercent: number;
+  inventoryValue: number;
+  tcgRevenue: number;
+  tcgCogs: number;
+  tcgStockBuy: number;
+  tcgStockSell: number;
+}
+
+const OwnerSummaryGrid: React.FC<OwnerSummaryGridProps> = (p) => {
+  // Derived nets — kept here (not on the API) because they're pure
+  // subtractions of numbers we already fetched. Cheaper than a second round-trip.
+  const fnbNet = p.fnbRevenue - p.ingredientCogs;
+  const tcgNet = p.tcgRevenue - p.tcgCogs;
+
+  // Net Income per Rami's spec (row 4): Total Revenue − Operating Expenses.
+  // Note: this is NOT the same as dashboard.netIncome which also subtracts
+  // COGS. Rami wants the plain rev − opex figure here.
+  const netIncome = p.totalRevenue - p.operatingExpenses;
+
+  // Small helpers so the JSX stays scannable.
+  const money = (n: number) =>
+    `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const pct = (n: number) => `${n.toLocaleString('en-US', { maximumFractionDigits: 1 })}%`;
+
+  // Grid template: 5 columns on desktop, collapses gracefully.
+  const gridStyle: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
+    gap: 8,
+  };
+
+  return (
+    <Card size="small" title={<span style={{ fontSize: 13 }}>📊 Owner Summary</span>}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {/* Row 1 — Cash on Hand full width. Uses the shared CashOnHandCard
+            component so the main app dashboard reads the same source. */}
+        <CashOnHandCard
+          fromIso={p.fromIso}
+          toIso={p.toIso}
+          mode="full"
+          revenueOverride={p.totalRevenue}
+          operatingExpensesOverride={p.operatingExpenses}
+        />
+
+        {/* Row 2 — Total Revenue | Operating Expenses | Net Income */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
+          <MetricTile palette="green" label="2 · Total Revenue"       value={money(p.totalRevenue)} />
+          <MetricTile palette="red"   label="3 · Operating Expenses" value={money(p.operatingExpenses)} />
+          <MetricTile palette="cyan"  label="4 · Net Income"         value={money(netIncome)}
+            tooltip="Total Revenue − Operating Expenses (does not include COGS — see F&B Net and TCG Net for those)."
+            subtitle={p.totalRevenue > 0 ? `${((netIncome / p.totalRevenue) * 100).toFixed(1)}% margin` : undefined} />
+        </div>
+
+        {/* Row 3 — Gaming Revenue standalone (matches the mockup) */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 8 }}>
+          <MetricTile palette="green" label="5 · Gaming Revenue" value={money(p.gamingRevenue)} />
+        </div>
+
+        {/* Row 4 — F&B strip: Rev | Ing COGS | Net | Food Cost % | Inventory Val */}
+        <div style={gridStyle}>
+          <MetricTile palette="green"  label="6 · F&B Revenue"        value={money(p.fnbRevenue)} />
+          <MetricTile palette="red"    label="7 · Ingredients COGS"    value={money(p.ingredientCogs)} />
+          <MetricTile palette="cyan"   label="8 · F&B Net"             value={money(fnbNet)}
+            tooltip="F&B Revenue − Ingredient COGS" />
+          <MetricTile palette="amber"  label="9 · Food Cost %"         value={pct(p.foodCostPercent)}
+            tooltip="Ingredient COGS ÷ Total Revenue × 100. Target: 28–35% for full-service F&B." />
+          <MetricTile palette="purple" label="10 · Inventory Valuation" value={money(p.inventoryValue)}
+            tooltip="Current ingredient stock value at latest buy cost. Represents money sitting on shelves." />
+        </div>
+
+        {/* Row 5 — TCG strip: Rev | COGS | Net | Stock Buy | Stock Sell */}
+        <div style={gridStyle}>
+          <MetricTile palette="green"  label="11 · TCG Retail Revenue" value={money(p.tcgRevenue)} />
+          <MetricTile palette="red"    label="12 · TCG Cost of Goods Sold" value={money(p.tcgCogs)} />
+          <MetricTile palette="cyan"   label="13 · TCG Net"             value={money(tcgNet)}
+            tooltip="TCG Retail Revenue − TCG COGS" />
+          <MetricTile palette="purple" label="14 · TCG Stock Buy"       value={money(p.tcgStockBuy)}
+            tooltip="What we paid for TCG stock currently on hand (cost basis)." />
+          <MetricTile palette="purple" label="15 · TCG Stock Sell"      value={money(p.tcgStockSell)}
+            tooltip="What TCG stock on hand would generate at retail price if fully sold." />
+        </div>
+      </div>
+    </Card>
+  );
+};

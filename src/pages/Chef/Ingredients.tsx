@@ -41,6 +41,7 @@ import {
   createIngredient,
   updateIngredient,
   deactivateIngredient,
+  hardDeleteIngredient,
   addStock,
   recordWaste,
   adjustStock,
@@ -191,6 +192,34 @@ export default function Ingredients() {
     });
   }
 
+  async function handleHardDelete(r: IngredientDto) {
+    Modal.confirm({
+      title: `Delete "${r.name}" permanently?`,
+      content: (
+        <div>
+          <p>This <b>permanently removes</b> the ingredient row from the database. It only succeeds if the ingredient has no history — no recipes, no stock movements, no purchases.</p>
+          <p style={{ color: "#a16207", marginTop: 8 }}>
+            If it has any history, the server will refuse and tell you why. In that case use <b>Hide</b> instead to preserve the audit trail.
+          </p>
+        </div>
+      ),
+      okText: "Delete permanently",
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        try {
+          await hardDeleteIngredient(r.id);
+          message.success(`"${r.name}" deleted`);
+          reload();
+        } catch (err: unknown) {
+          // The server sends a Conflict with { message: "..." } when the
+          // ingredient has references. Surface that as-is.
+          const raw = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+          message.error(raw ?? "Failed to delete");
+        }
+      },
+    });
+  }
+
   const columns: ColumnsType<IngredientDto> = useMemo(() => [
     {
       title: "Name",
@@ -254,8 +283,22 @@ export default function Ingredients() {
           </Tooltip>
           <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(r)} />
           {r.isActive && (
-            <Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeactivate(r)} />
+            <Tooltip title="Hide (soft delete — keeps history)">
+              <Button size="small" icon={<DeleteOutlined />} onClick={() => handleDeactivate(r)} />
+            </Tooltip>
           )}
+          {/* Hard delete is available for both active and hidden rows —
+              the server enforces the FK-safety check anyway. */}
+          <Tooltip title="Delete permanently (only if unused)">
+            <Button
+              size="small"
+              danger
+              onClick={() => handleHardDelete(r)}
+              style={{ fontSize: 11 }}
+            >
+              Delete
+            </Button>
+          </Tooltip>
         </Space>
       ),
     },

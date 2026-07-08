@@ -95,6 +95,13 @@ export async function deactivateIngredient(id: number): Promise<void> {
   return await del<void>(`/ingredients/${id}`);
 }
 
+// Permanent delete. Server returns 409 with { message } if the ingredient
+// still has references (recipes, movements, purchases); callers should show
+// that message and fall back to Hide.
+export async function hardDeleteIngredient(id: number): Promise<void> {
+  return await del<void>(`/ingredients/${id}/hard`);
+}
+
 export async function addStock(dto: AddStockRequest): Promise<IngredientDto> {
   return await post<IngredientDto>(`/ingredients/add-stock`, dto);
 }
