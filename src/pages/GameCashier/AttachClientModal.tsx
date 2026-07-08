@@ -14,7 +14,7 @@ import { UserOutlined, SearchOutlined } from "@ant-design/icons";
 import {
   ClientUserDto, searchClientsByPhone, getUsersByRoleId,
 } from "../../services/clientService";
-import { updateTransaction } from "../../services/transactionService";
+import { attachClientToTransaction } from "../../services/transactionService";
 
 interface Props {
   open: boolean;
@@ -101,8 +101,11 @@ export default function AttachClientModal({
   const save = async (clearInstead = false) => {
     setSaving(true);
     try {
-      const newUserId = clearInstead ? 0 : (selectedId ?? 0);
-      await updateTransaction(transactionId, { userId: newUserId });
+      // null tells the server to detach; a positive id attaches. Using the
+      // narrow PUT /transactions/{id}/client endpoint so game-cashier and
+      // cashier roles work — the wider PUT /transactions/{id} is admin-only.
+      const newUserId = clearInstead ? null : (selectedId ?? null);
+      await attachClientToTransaction(transactionId, newUserId);
       // Best-effort resolve the display name for the picked client.
       let newName: string | null = null;
       if (!clearInstead && selectedId) {

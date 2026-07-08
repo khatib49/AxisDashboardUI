@@ -354,6 +354,15 @@ export async function deleteTransaction(id: number) {
     return res;
 }
 
+// Narrow endpoint the cashier UI uses to attach or detach a client on
+// an open Board / PS5 session. Backed by PUT /transactions/{id}/client,
+// which is authorized for cashier + gamecashier + admin_fnb + admin.
+// Pass userId = null (or 0) to detach the client.
+export async function attachClientToTransaction(id: number, userId: number | null) {
+    const res = await put(`/transactions/${id}/client`, { userId });
+    return res;
+}
+
 // --- Game Sessions ---
 
 export async function getOpenPs5Sessions() {
