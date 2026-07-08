@@ -13,7 +13,7 @@
 //   • Accounting dashboard  → Owner Summary grid, row 1 (full width)
 //   • Main app dashboard    → compact card in row 1
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { EditOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import { Modal, InputNumber, message, Tooltip, Spin } from "antd";
 import { getAccountingDashboard } from "../../services/accountingService";
