@@ -22,7 +22,7 @@ import {
   CheckCircleOutlined,
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
-import dayjs, { Dayjs } from "dayjs";
+import type { Dayjs } from "dayjs";
 import {
   rebuildConsumptionCosts,
   RebuildConsumptionCostsResultDto,
