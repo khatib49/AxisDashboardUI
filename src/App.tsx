@@ -64,6 +64,7 @@ import KitchenDisplay from "./pages/Chef/KitchenDisplay";
 import BarDisplay from "./pages/bartender/BarDisplay";
 import { AuditLogsPage } from "./pages/Admin/AuditLogsPage";
 import AiChatPage from "./pages/Ai/AiChatPage";
+import ConsumptionRebuild from "./pages/Admin/ConsumptionRebuild";
 import IntegrationsPage from "./pages/Admin/Integrations";
 import ItemRevenueReport from "./pages/Accounting/ItemRevenueReport";
 import BooksAudit from "./pages/Accounting/BooksAudit";
@@ -207,6 +208,7 @@ export default function App() {
               <Route path="/admin/audit-logs" element={<AdminRoute><AuditLogsPage /></AdminRoute>} />
               <Route path="/ai/chat" element={<AdminRoute><AiChatPage /></AdminRoute>} />
               <Route path="/admin/integrations" element={<AdminRoute><IntegrationsPage /></AdminRoute>} />
+              <Route path="/admin/consumption-rebuild" element={<AdminRoute><ConsumptionRebuild /></AdminRoute>} />
               <Route path="/admin/items" element={<AdminRoute><Items /></AdminRoute>} />
               <Route path="/admin/orders" element={<AdminRoute><Orders /></AdminRoute>} />
               <Route path="/cashier/items" element={<CashierRoute><CashierItems /></CashierRoute>} />

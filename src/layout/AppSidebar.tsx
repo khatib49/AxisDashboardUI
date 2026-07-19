@@ -172,6 +172,19 @@ const AppSidebar: React.FC = () => {
             </svg>
           ),
         },
+        {
+          name: 'COGS Rebuild',
+          path: '/admin/consumption-rebuild',
+          icon: (
+            // Small "refresh + database" glyph
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <ellipse cx="12" cy="5" rx="9" ry="3" />
+              <path d="M3 5v6c0 1.657 4.03 3 9 3s9-1.343 9-3V5" />
+              <path d="M3 11v6c0 1.657 4.03 3 9 3s9-1.343 9-3v-6" />
+              <path d="M15 21l2-2-2-2" />
+            </svg>
+          ),
+        },
         { icon: <NavDiscountIcon />, name: "Discount Management", path: "/admin/discounts" },
         { icon: <NavDiscountIcon />, name: "Channels", path: "/admin/channels" },
         // {
