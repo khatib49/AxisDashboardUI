@@ -37,9 +37,18 @@ type DraftLine = {
   key: string;
   ingredientId: number | null;
   quantity: number;
+  // Ingredient's canonical unit (e.g. "kg") — shown as context only.
   unit: string;
+  // Recipe-line unit picked by the chef. May differ from `unit`; backend
+  // converts before touching stock. Never null in the draft — we default
+  // to the ingredient's unit when the row is created.
+  recipeUnit: string;
   notes: string;
 };
+
+// The units we support in the recipe dropdown. Backend UnitConverter
+// handles g↔kg and ml↔l. Same-unit picks are always a no-op.
+const RECIPE_UNITS = ["g", "kg", "ml", "l", "pcs"] as const;
 
 type Props = {
   open: boolean;
@@ -73,6 +82,9 @@ export default function RecipeEditorModal({ open, itemId, itemName, onClose, onS
             ingredientId: l.ingredientId,
             quantity: l.quantity,
             unit: l.unit,
+            // Fall back to the ingredient's unit for legacy rows without
+            // a recipeUnit (pre-Bug#9 migration).
+            recipeUnit: l.recipeUnit ?? l.unit,
             notes: l.notes ?? "",
           }))
         );
@@ -90,7 +102,7 @@ export default function RecipeEditorModal({ open, itemId, itemName, onClose, onS
   function addRow() {
     setDraft((d) => [
       ...d,
-      { key: makeKey(), ingredientId: null, quantity: 0, unit: "", notes: "" },
+      { key: makeKey(), ingredientId: null, quantity: 0, unit: "", recipeUnit: "", notes: "" },
     ]);
   }
 
@@ -103,10 +115,17 @@ export default function RecipeEditorModal({ open, itemId, itemName, onClose, onS
       d.map((r) => {
         if (r.key !== key) return r;
         const next = { ...r, ...patch };
-        // Keep unit in sync with selected ingredient.
+        // When the ingredient changes, sync BOTH the display unit
+        // (context) and the recipe unit (default = same as ingredient).
         if (patch.ingredientId != null) {
           const ing = ingredientById.get(patch.ingredientId);
-          next.unit = ing?.unit ?? "";
+          const ingUnit = ing?.unit ?? "";
+          next.unit = ingUnit;
+          // Only reset recipeUnit if it was empty or was matching the
+          // previous ingredient's unit — respect a chef-picked override.
+          if (!next.recipeUnit || next.recipeUnit === r.unit) {
+            next.recipeUnit = ingUnit;
+          }
         }
         return next;
       })
@@ -130,6 +149,10 @@ export default function RecipeEditorModal({ open, itemId, itemName, onClose, onS
         lines: draft.map((r) => ({
           ingredientId: r.ingredientId as number,
           quantity: r.quantity,
+          // Send the recipe-line unit so the backend can convert to the
+          // ingredient's canonical unit before touching stock. If it matches
+          // the ingredient's unit exactly, the converter is a no-op.
+          unit: r.recipeUnit || null,
           notes: r.notes || null,
         })),
       });
@@ -166,19 +189,36 @@ export default function RecipeEditorModal({ open, itemId, itemName, onClose, onS
     {
       title: "Quantity per dish",
       key: "quantity",
-      width: 200,
-      render: (_, r) => (
-        <Space>
-          <InputNumber
-            min={0}
-            step={0.1}
-            value={r.quantity}
-            onChange={(v) => patchRow(r.key, { quantity: Number(v ?? 0) })}
-            style={{ width: 120 }}
-          />
-          <Text type="secondary">{r.unit || "—"}</Text>
-        </Space>
-      ),
+      width: 260,
+      render: (_, r) => {
+        const showsHint = r.unit && r.recipeUnit && r.recipeUnit !== r.unit;
+        return (
+          <div>
+            <Space>
+              <InputNumber
+                min={0}
+                step={0.1}
+                value={r.quantity}
+                onChange={(v) => patchRow(r.key, { quantity: Number(v ?? 0) })}
+                style={{ width: 100 }}
+              />
+              <Select
+                value={r.recipeUnit || undefined}
+                placeholder="unit"
+                onChange={(v) => patchRow(r.key, { recipeUnit: v })}
+                style={{ width: 90 }}
+                options={RECIPE_UNITS.map((u) => ({ value: u, label: u }))}
+                disabled={r.ingredientId == null}
+              />
+            </Space>
+            {showsHint && (
+              <div style={{ fontSize: 10, color: "#8B5A00", marginTop: 4 }}>
+                stored as <b>{r.unit}</b> → auto-converts
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: "Notes",
@@ -220,7 +260,8 @@ export default function RecipeEditorModal({ open, itemId, itemName, onClose, onS
       <Space direction="vertical" size="middle" style={{ width: "100%" }}>
         <Text type="secondary" style={{ fontSize: 12 }}>
           Each row is one ingredient and how much of it one unit of this dish consumes.
-          Selling this dish will deduct (Quantity × sold qty) from the ingredient's stock.
+          You can pick a different unit than the ingredient's stored unit (e.g. beef stored in
+          <b> kg</b>, recipe in <b>g</b>) — the app converts automatically before touching stock.
           Leaving the recipe empty disables stock tracking for this item.
         </Text>
 

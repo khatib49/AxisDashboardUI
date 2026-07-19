@@ -5,15 +5,22 @@ export type RecipeLineDto = {
   itemId: number;
   ingredientId: number;
   ingredientName: string;
+  // Ingredient's canonical unit (e.g. "kg"). Used to hint the chef where
+  // conversion may kick in.
   unit: string;
   quantity: number;
   notes: string | null;
+  // Per-recipe-line unit — null on legacy rows, in which case it means
+  // "same as ingredient's unit". Backend converts before consuming stock.
+  recipeUnit?: string | null;
 };
 
 export type RecipeLineUpsertDto = {
   ingredientId: number;
   quantity: number;
   notes?: string | null;
+  // Null = "same as ingredient's unit". Otherwise "g", "kg", "ml", "l", "pcs".
+  unit?: string | null;
 };
 
 export type RecipeUpsertRequest = {
