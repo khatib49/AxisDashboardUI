@@ -62,7 +62,11 @@ export default function ConsumptionRebuild() {
         message.success(`Preview complete: ${res.movementsChanged} movement(s) would change.`);
       }
     } catch (e: any) {
-      message.error(e?.response?.data?.message ?? "Preview failed");
+      const d = e?.response?.data;
+      // Backend now returns { error, type, inner } on 500 — show whichever
+      // is most useful. Falls back to the axios message otherwise.
+      const msg = d?.error ?? d?.message ?? d?.inner ?? e?.message ?? "Preview failed";
+      message.error(msg);
     } finally { setPreviewing(false); }
   }
 
@@ -76,7 +80,9 @@ export default function ConsumptionRebuild() {
         `Committed: ${res.movementsChanged} movement(s) rebuilt, COGS delta ${money(res.delta)}`,
       );
     } catch (e: any) {
-      message.error(e?.response?.data?.message ?? "Apply failed");
+      const d = e?.response?.data;
+      const msg = d?.error ?? d?.message ?? d?.inner ?? e?.message ?? "Apply failed";
+      message.error(msg);
     } finally { setApplying(false); }
   }
 
