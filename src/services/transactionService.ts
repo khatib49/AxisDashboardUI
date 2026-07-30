@@ -363,6 +363,18 @@ export async function attachClientToTransaction(id: number, userId: number | nul
     return res;
 }
 
+// ADMIN-ONLY: replace ALL item lines on a transaction (any status, any
+// type). Backend diffs against current lines, syncs stock (item counters
+// + ingredient consumption), adjusts TotalPrice discount-aware, and
+// writes an AdminItemsEdit audit entry.
+export async function replaceTransactionItems(
+    id: number,
+    items: Array<{ itemId: number; quantity: number }>,
+) {
+    const res = await put(`/transactions/${id}/items`, { items });
+    return res;
+}
+
 // --- Game Sessions ---
 
 export async function getOpenPs5Sessions() {

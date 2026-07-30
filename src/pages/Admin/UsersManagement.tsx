@@ -465,7 +465,7 @@ export default function UsersManagement() {
                     <div>
                         <Label>Role</Label>
                         <Select
-                            options={[{ value: 'cashier', label: 'cashier' }, { value: 'admin', label: 'admin' }, { value: "gamecashier", label: "game cashier" }, { value: "admin_fnb", label: "admin f&b" }, { value: "chef", label: "chef" }, { value: "bartender", label: "bartender" }]}
+                            options={[{ value: 'cashier', label: 'cashier' }, { value: 'admin', label: 'admin' }, { value: "gamecashier", label: "game cashier" }, { value: "admin_fnb", label: "admin f&b" }, { value: "chef", label: "chef" }, { value: "bartender", label: "bartender" }, { value: "stock", label: "stock management" }]}
                             placeholder="Select a role"
                             defaultValue={roleName}
                             onChange={(v: string | number) => setRoleName(String(v))}

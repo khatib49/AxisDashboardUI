@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import {
   getGameTransactions, GameTransaction,
   updateTransaction, deleteTransaction, TransactionUpdateDto,
+  replaceTransactionItems,
 } from '../../services/transactionService';
 import { getStatusName, STATUS_ENABLED } from '../../services/statuses';
+import { getItems, ItemDto } from '../../services/itemService';
 
 export default function GameTransactions() {
     const [items, setItems] = useState<GameTransaction[]>([]);
@@ -26,6 +28,65 @@ export default function GameTransactions() {
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const [deleting, setDeleting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Items-editor state (CR#1: admin can edit items on ANY transaction,
+    // open or closed). Draft maps itemId -> { name, price, quantity }.
+    const [itemsEditing, setItemsEditing] = useState<GameTransaction | null>(null);
+    const [itemsDraft, setItemsDraft] = useState<Array<{ itemId: number; name: string; price: number; quantity: number }>>([]);
+    const [itemsSaving, setItemsSaving] = useState(false);
+    const [pickerItems, setPickerItems] = useState<ItemDto[]>([]);
+    const [pickerSearch, setPickerSearch] = useState('');
+    const [pickerLoading, setPickerLoading] = useState(false);
+
+    const openItemsEditor = (t: GameTransaction) => {
+        setItemsEditing(t);
+        setItemsDraft(
+            (t.items ?? []).map((it) => ({
+                itemId: it.itemId,
+                name: it.itemName,
+                price: it.unitPrice,
+                quantity: it.quantity,
+            })),
+        );
+        setPickerSearch('');
+        setPickerItems([]);
+        setError(null);
+    };
+
+    // Debounced picker search against the items API.
+    useEffect(() => {
+        if (itemsEditing === null) return;
+        const q = pickerSearch.trim();
+        if (q.length < 2) { setPickerItems([]); return; }
+        let alive = true;
+        setPickerLoading(true);
+        const timer = setTimeout(() => {
+            getItems(1, 10, null, q)
+                .then((r) => { if (alive) setPickerItems(r.data ?? []); })
+                .catch(() => { if (alive) setPickerItems([]); })
+                .finally(() => { if (alive) setPickerLoading(false); });
+        }, 350);
+        return () => { alive = false; clearTimeout(timer); };
+    }, [pickerSearch, itemsEditing]);
+
+    const saveItems = async () => {
+        if (!itemsEditing?.transactionId) return;
+        setItemsSaving(true); setError(null);
+        try {
+            await replaceTransactionItems(
+                itemsEditing.transactionId,
+                itemsDraft.filter(d => d.quantity > 0).map(d => ({ itemId: d.itemId, quantity: d.quantity })),
+            );
+            setItemsEditing(null);
+            const res = await getGameTransactions({
+                Page: page, PageSize: pageSize, Search: debouncedSearch || undefined,
+            });
+            setItems(res.data || []);
+        } catch (e: any) {
+            const d = e?.response?.data;
+            setError(d?.message ?? d?.error ?? e?.message ?? 'Save failed');
+        } finally { setItemsSaving(false); }
+    };
 
     const openEdit = (t: GameTransaction) => {
         setEditing(t);
@@ -239,6 +300,13 @@ export default function GameTransactions() {
                                                     Edit
                                                 </button>
                                                 <button
+                                                    onClick={(e) => { e.stopPropagation(); openItemsEditor(t); }}
+                                                    className="px-2.5 py-1 text-xs bg-purple-50 text-purple-700 rounded border border-purple-200 hover:bg-purple-100"
+                                                    title="Edit items (works on open AND closed)"
+                                                >
+                                                    Items
+                                                </button>
+                                                <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         if (typeof t.transactionId === 'number') setDeletingId(t.transactionId);
@@ -378,6 +446,116 @@ export default function GameTransactions() {
                                 onClick={saveEdit}
                                 className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
                             >{saving ? 'Saving…' : 'Save'}</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Items editor (admin, any status) ────────────────────── */}
+            {itemsEditing && (
+                <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => !itemsSaving && setItemsEditing(null)}>
+                    <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+                        <div className="px-5 py-3 border-b border-gray-200">
+                            <h3 className="font-semibold text-gray-800">Edit Items — Transaction #{itemsEditing.transactionId}</h3>
+                            <p className="text-xs text-gray-500">
+                                Works on open and closed transactions. Stock and totals adjust automatically; every change is audited.
+                            </p>
+                        </div>
+
+                        <div className="p-5 space-y-4 overflow-y-auto">
+                            {/* Current lines */}
+                            {itemsDraft.length === 0 ? (
+                                <div className="text-sm text-gray-400 text-center py-4">No items on this transaction.</div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {itemsDraft.map((d, i) => (
+                                        <div key={d.itemId} className="flex items-center gap-2 border border-gray-200 rounded px-3 py-2">
+                                            <div className="flex-1">
+                                                <div className="text-sm font-medium text-gray-800">{d.name}</div>
+                                                <div className="text-xs text-gray-500">${d.price.toFixed(2)} each</div>
+                                            </div>
+                                            <input
+                                                type="number"
+                                                min={0}
+                                                value={d.quantity}
+                                                onChange={(e) => {
+                                                    const v = Math.max(0, Number(e.target.value || 0));
+                                                    setItemsDraft(arr => arr.map((x, xi) => xi === i ? { ...x, quantity: v } : x));
+                                                }}
+                                                className="w-20 border border-gray-300 rounded px-2 py-1 text-sm text-right"
+                                            />
+                                            <button
+                                                onClick={() => setItemsDraft(arr => arr.filter((_, xi) => xi !== i))}
+                                                className="px-2 py-1 text-xs bg-red-50 text-red-600 rounded border border-red-200 hover:bg-red-100"
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Add-item picker */}
+                            <div className="border-t border-gray-100 pt-3">
+                                <div className="text-xs font-semibold text-gray-600 mb-1">Add item</div>
+                                <input
+                                    type="text"
+                                    placeholder="Search items (2+ chars)…"
+                                    value={pickerSearch}
+                                    onChange={(e) => setPickerSearch(e.target.value)}
+                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                                />
+                                {pickerLoading && <div className="text-xs text-gray-400 mt-1">Searching…</div>}
+                                {pickerItems.length > 0 && (
+                                    <div className="mt-1 border border-gray-200 rounded max-h-40 overflow-auto">
+                                        {pickerItems.map((it) => {
+                                            const already = itemsDraft.some(d => d.itemId === Number(it.id));
+                                            return (
+                                                <button
+                                                    key={it.id}
+                                                    disabled={already}
+                                                    onClick={() => {
+                                                        setItemsDraft(arr => [...arr, {
+                                                            itemId: Number(it.id), name: it.name,
+                                                            price: it.price, quantity: 1,
+                                                        }]);
+                                                        setPickerSearch('');
+                                                        setPickerItems([]);
+                                                    }}
+                                                    className="w-full text-left px-3 py-2 text-sm hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed border-b border-gray-100 last:border-0"
+                                                >
+                                                    {it.name} <span className="text-xs text-gray-500">— ${it.price}</span>
+                                                    {already && <span className="text-xs text-gray-400"> (already added)</span>}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Live delta preview */}
+                            <div className="text-xs text-gray-500">
+                                New items subtotal:&nbsp;
+                                <b>${itemsDraft.reduce((s, d) => s + d.price * d.quantity, 0).toFixed(2)}</b>
+                                &nbsp;·&nbsp;Session/time charges stay untouched; discount still applies.
+                            </div>
+
+                            {error && (
+                                <div className="p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">{error}</div>
+                            )}
+                        </div>
+
+                        <div className="px-5 py-3 border-t border-gray-200 flex justify-end gap-2">
+                            <button
+                                disabled={itemsSaving}
+                                onClick={() => setItemsEditing(null)}
+                                className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 rounded"
+                            >Cancel</button>
+                            <button
+                                disabled={itemsSaving}
+                                onClick={saveItems}
+                                className="px-3 py-1.5 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
+                            >{itemsSaving ? 'Saving…' : 'Save items'}</button>
                         </div>
                     </div>
                 </div>

@@ -119,6 +119,14 @@ const GameInvoice: React.FC<GameInvoiceProps> = ({ transaction, onPrint }) => {
 
             {/* Session Details */}
             <div style={{ marginBottom: '2px' }}>
+                {/* Attached client — shows only when a client was linked to
+                    the session (via the cashier's "+ Add Client" button). */}
+                {transaction.userName && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
+                        <span>Customer:</span>
+                        <span style={{ fontWeight: 600 }}>{transaction.userName}</span>
+                    </div>
+                )}
                 {transaction.roomName && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
                         <span>Room:</span>

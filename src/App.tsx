@@ -123,14 +123,14 @@ const ChefRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => 
   return children;
 };
 
-// Chef OR admin (or admin_fnb) — used by the stock management pages,
-// since admins should also be able to inspect ingredients, recipes and
-// the movement audit.
+// Chef OR admin (or admin_fnb, or the dedicated stock role) — used by
+// the stock management pages. "stock" is a restricted account that can
+// ONLY see these pages (see RoleHome + sidebar).
 const ChefOrAdminRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { hasRole, loading, authenticated } = useAuth();
   if (loading) return <div className="p-6 text-center">Loading...</div>;
   if (!authenticated) return <Navigate to="/signin" replace />;
-  if (!(hasRole("chef") || hasRole("admin") || hasRole("admin_fnb"))) return <Navigate to="/" replace />;
+  if (!(hasRole("chef") || hasRole("admin") || hasRole("admin_fnb") || hasRole("stock"))) return <Navigate to="/" replace />;
   return children;
 };
 
@@ -159,6 +159,12 @@ export default function App() {
     
     if (hasRole("chef")) {
       return <Navigate to="/chef/kitchen-display" replace />;
+    }
+
+    // Stock-only account: lands directly on Ingredients — the rest of
+    // the stock pages are reachable from its dedicated sidebar section.
+    if (hasRole("stock")) {
+      return <Navigate to="/chef/ingredients" replace />;
     }
 
     if (hasRole("bartender")) {

@@ -24,6 +24,7 @@ import { printStationTickets } from "../../utils/autoPrint";
 import ChangeCalculator from "../../components/common/ChangeCalculator";
 import { getSets, SetDto } from '../../services/setService';
 import { getChannels, ChannelDto } from '../../services/channelService';
+import { getItemsWithoutRecipe } from '../../services/recipeService';
 
 
 export default function CashierItems() {
@@ -32,6 +33,14 @@ export default function CashierItems() {
     const [loadingSets, setLoadingSets] = useState(false);
 
     const [items, setItems] = useState<ItemDto[]>([]);
+    // Item IDs with NO recipe. Items WITH a recipe track stock via
+    // ingredients (backend skips the Item.Quantity check for them), so
+    // they must stay sellable even when the legacy quantity counter is 0.
+    // null = list not loaded (endpoint failed) → fall back to the legacy
+    // "quantity <= 0 means out of stock" for ALL items. This makes the
+    // fail-safe direction conservative: a network hiccup can never let
+    // genuinely out-of-stock non-recipe items be sold.
+    const [noRecipeIds, setNoRecipeIds] = useState<Set<number> | null>(null);
     // Cache of items by id to persist details across category/page switches
     const [itemLookup, setItemLookup] = useState<Record<string, ItemDto>>({});
     const [categories, setCategories] = useState<CategoryDto[]>([]);
@@ -109,6 +118,17 @@ export default function CashierItems() {
         const t = setTimeout(() => setNotification(null), 4000);
         return () => clearTimeout(t);
     }, [notification]);
+
+    // Load which items have NO recipe (once per mount). Failure is
+    // non-fatal — we fall back to treating all items as legacy (i.e.
+    // out-of-stock when quantity <= 0), same behavior as before.
+    useEffect(() => {
+        let mounted = true;
+        getItemsWithoutRecipe()
+            .then((ids) => { if (mounted) setNoRecipeIds(new Set(ids)); })
+            .catch(() => { /* non-fatal */ });
+        return () => { mounted = false; };
+    }, []);
 
     useEffect(() => {
         if (!isDrawerOpen) return;
@@ -411,7 +431,14 @@ export default function CashierItems() {
                 <div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                         {items.map(it => {
-                            const isOutOfStock = it.quantity <= 0;
+                            // Recipe items track stock on ingredients, not on
+                            // the legacy Item.Quantity counter — they stay
+                            // sellable at qty 0 (backend enforces ingredient
+                            // levels + warns on negatives). When the recipe
+                            // list failed to load (null) everyone falls back
+                            // to the old quantity check.
+                            const hasRecipe = noRecipeIds !== null && !noRecipeIds.has(it.id);
+                            const isOutOfStock = it.quantity <= 0 && !hasRecipe;
                             return (
                                 <div key={it.id} className={`border rounded p-3 bg-white shadow-sm ${isOutOfStock ? 'opacity-60 border-gray-200' : (selectedItems[it.id] || 0) > 0 ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-gray-200'}`}>
                                     <div className="flex items-center gap-3 mb-2">
@@ -426,7 +453,9 @@ export default function CashierItems() {
                                     <div className="text-sm text-gray-500">Category: {categories.find(c => c.id === it.categoryId)?.name ?? '-'}</div>
                                     <div className="text-sm text-gray-500">Price: ${it.price}</div>
                                     <div className={`text-sm ${isOutOfStock ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
-                                        Stock: {it.quantity} {isOutOfStock && '(Out of Stock)'}
+                                        {hasRecipe
+                                            ? <span className="text-teal-600">Stock: tracked by recipe</span>
+                                            : <>Stock: {it.quantity} {isOutOfStock && '(Out of Stock)'}</>}
                                     </div>
                                     <div className="mt-3 flex items-center gap-2">
                                         <button

@@ -280,6 +280,18 @@ const AppSidebar: React.FC = () => {
       ];
     }
 
+    // Stock: dedicated stock-management-only account. Sees the five
+    // stock pages and nothing else — no sales, no accounting, no admin.
+    if (hasRole("stock")) {
+      return [
+        { icon: <NavInventoryIcon />, name: "Ingredients", path: "/chef/ingredients" },
+        { icon: <NavInventoryIcon />, name: "Stock Movements", path: "/chef/stock-movements" },
+        { icon: <NavUsersIcon />, name: "Suppliers", path: "/chef/suppliers" },
+        { icon: <NavOrdersIcon />, name: "Purchases", path: "/chef/purchases" },
+        { icon: <NavTableIcon />, name: "Inventory Valuation", path: "/chef/inventory-valuation" },
+      ];
+    }
+
 
     if (hasRole("bartender")) {
       return [
@@ -291,8 +303,8 @@ const AppSidebar: React.FC = () => {
   }, [hasRole]);
 
   const computedOthersItems = useMemo(() => {
-    // Hide others section for admin, cashier, and chef
-    if (hasRole("admin") || hasRole("cashier") || hasRole("chef")) return [];
+    // Hide others section for admin, cashier, chef, and stock
+    if (hasRole("admin") || hasRole("cashier") || hasRole("chef") || hasRole("stock")) return [];
     return baseOthersItems;
   }, [hasRole]);
 
