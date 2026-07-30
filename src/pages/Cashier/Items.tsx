@@ -20,7 +20,6 @@ import Select from "../../components/form/Select";
 import ItemInvoice from "../../components/invoice/ItemInvoice";
 import { getDiscounts, DiscountDto } from "../../services/discountService";
 import { searchClientsByPhone, ClientUserDto } from "../../services/clientService";
-import { printStationTickets } from "../../utils/autoPrint";
 import ChangeCalculator from "../../components/common/ChangeCalculator";
 import { getSets, SetDto } from '../../services/setService';
 import { getChannels, ChannelDto } from '../../services/channelService';
@@ -776,22 +775,10 @@ export default function CashierItems() {
                                                             setCurrentInvoice(invoiceData);
                                                             setInvoiceModalOpen(true);
 
-                                                            // Auto-print station tickets (kitchen / bar)
-                                                            printStationTickets(
-                                                                response.data.id,
-                                                                response.data.items?.map((item: any) => ({
-                                                                    itemName: item.itemName,
-                                                                    quantity: item.quantity,
-                                                                    itemType: item.type || '',
-                                                                    categoryName: item.categoryName || '',
-                                                                })) || [],
-                                                                {
-                                                                    comment,
-                                                                    customerName: selectedClient ? `${selectedClient.firstName || ''} ${selectedClient.lastName || ''}`.trim() : undefined,
-                                                                    setName: sets.find(s => s.id === selectedSetId)?.name,
-                                                                    orderTime: response.data.createdOn,
-                                                                }
-                                                            );
+                                                            // Kitchen/bar tickets print server-side: the API
+                                                            // dispatches ESC/POS jobs over SignalR to the
+                                                            // printers configured in Admin -> Printers, via
+                                                            // the on-site print agent.
                                                         }
 
                                                         setSelectedItems({});
@@ -895,22 +882,10 @@ export default function CashierItems() {
                                                             setCurrentInvoice(invoiceData);
                                                             setInvoiceModalOpen(true);
 
-                                                            // Auto-print station tickets (kitchen / bar)
-                                                            printStationTickets(
-                                                                response.data.id,
-                                                                response.data.items?.map((item: any) => ({
-                                                                    itemName: item.itemName,
-                                                                    quantity: item.quantity,
-                                                                    itemType: item.type || '',
-                                                                    categoryName: item.categoryName || '',
-                                                                })) || [],
-                                                                {
-                                                                    comment,
-                                                                    customerName: selectedClient ? `${selectedClient.firstName || ''} ${selectedClient.lastName || ''}`.trim() : undefined,
-                                                                    setName: sets.find(s => s.id === selectedSetId)?.name,
-                                                                    orderTime: response.data.createdOn,
-                                                                }
-                                                            );
+                                                            // Kitchen/bar tickets print server-side: the API
+                                                            // dispatches ESC/POS jobs over SignalR to the
+                                                            // printers configured in Admin -> Printers, via
+                                                            // the on-site print agent.
                                                         }
 
                                                         setSelectedItems({});
