@@ -436,7 +436,7 @@ export default function CashierItems() {
                             // levels + warns on negatives). When the recipe
                             // list failed to load (null) everyone falls back
                             // to the old quantity check.
-                            const hasRecipe = noRecipeIds !== null && !noRecipeIds.has(it.id);
+                            const hasRecipe = noRecipeIds !== null && !noRecipeIds.has(Number(it.id));
                             const isOutOfStock = it.quantity <= 0 && !hasRecipe;
                             return (
                                 <div key={it.id} className={`border rounded p-3 bg-white shadow-sm ${isOutOfStock ? 'opacity-60 border-gray-200' : (selectedItems[it.id] || 0) > 0 ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-gray-200'}`}>
