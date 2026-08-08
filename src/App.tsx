@@ -65,6 +65,9 @@ import BarDisplay from "./pages/bartender/BarDisplay";
 import { AuditLogsPage } from "./pages/Admin/AuditLogsPage";
 import AiChatPage from "./pages/Ai/AiChatPage";
 import ConsumptionRebuild from "./pages/Admin/ConsumptionRebuild";
+import EventRegistrationPage from "./pages/Events/EventRegistrationPage";
+import EventRegistrations from "./pages/Admin/EventRegistrations";
+import EventsManager from "./pages/Admin/EventsManager";
 import IntegrationsPage from "./pages/Admin/Integrations";
 import ItemRevenueReport from "./pages/Accounting/ItemRevenueReport";
 import BooksAudit from "./pages/Accounting/BooksAudit";
@@ -183,6 +186,13 @@ export default function App() {
             {/* Public Menu Page - Standalone without layout */}
             <Route path="/menu" element={<Menu />} />
 
+            {/* Public event registration — anonymous, no app layout.
+                Fully data-driven: any event created under Admin → Events
+                is reachable at /events/<its-slug>. /paid is where the
+                payment gateways redirect after a successful charge. */}
+            <Route path="/events/:eventKey" element={<EventRegistrationPage />} />
+            <Route path="/events/:eventKey/paid" element={<EventRegistrationPage />} />
+
             {/* Dashboard Layout */}
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route index path="/" element={<RoleHome />} />
@@ -216,6 +226,8 @@ export default function App() {
               <Route path="/ai/chat" element={<AdminRoute><AiChatPage /></AdminRoute>} />
               <Route path="/admin/integrations" element={<AdminRoute><IntegrationsPage /></AdminRoute>} />
               <Route path="/admin/consumption-rebuild" element={<AdminRoute><ConsumptionRebuild /></AdminRoute>} />
+              <Route path="/admin/events" element={<AdminRoute><EventsManager /></AdminRoute>} />
+              <Route path="/admin/event-registrations" element={<AdminRoute><EventRegistrations /></AdminRoute>} />
               <Route path="/admin/items" element={<AdminRoute><Items /></AdminRoute>} />
               <Route path="/admin/orders" element={<AdminRoute><Orders /></AdminRoute>} />
               <Route path="/cashier/items" element={<CashierRoute><CashierItems /></CashierRoute>} />

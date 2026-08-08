@@ -173,6 +173,20 @@ const AppSidebar: React.FC = () => {
           ),
         },
         {
+          name: 'Events',
+          icon: (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="7" cy="7" r="3.2" />
+              <rect x="14" y="3.8" width="6.4" height="6.4" rx="1" />
+              <path d="M7 14.5 L11 21.5 L3 21.5 Z" />
+            </svg>
+          ),
+          subItems: [
+            { name: 'Manage Events', path: '/admin/events' },
+            { name: 'Registrations', path: '/admin/event-registrations' },
+          ],
+        },
+        {
           name: 'COGS Rebuild',
           path: '/admin/consumption-rebuild',
           icon: (
