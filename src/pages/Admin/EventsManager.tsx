@@ -263,7 +263,7 @@ export default function EventsManager() {
         width={720} destroyOnHidden
       >
         <Form form={form} layout="vertical" style={{ maxHeight: "68vh", overflowY: "auto", paddingRight: 8 }}>
-          <Divider orientation="left" plain>Basics</Divider>
+          <Divider orientation="start" plain>Basics</Divider>
 
           <Form.Item name="title" label="Title" rules={[{ required: true, message: "Title is required" }]}>
             <Input placeholder="SQUID GAME X AXIS" />
@@ -292,7 +292,7 @@ export default function EventsManager() {
             </Form.Item>
           </Space>
 
-          <Divider orientation="left" plain>Pricing & capacity</Divider>
+          <Divider orientation="start" plain>Pricing & capacity</Divider>
           <Space size="middle" style={{ display: "flex" }}>
             <Form.Item name="price" label="Ticket price" style={{ flex: 1 }}>
               <InputNumber min={0} step={0.5} prefix="$" style={{ width: "100%" }} />
@@ -306,7 +306,7 @@ export default function EventsManager() {
             </Form.Item>
           </Space>
 
-          <Divider orientation="left" plain>Payment methods</Divider>
+          <Divider orientation="start" plain>Payment methods</Divider>
           <Paragraph type="secondary" style={{ fontSize: 12, marginTop: -8 }}>
             A method only appears on the public page if it's switched on here <i>and</i> its credentials
             are filled in under <b>Integrations</b>. Cash needs no credentials.
@@ -323,7 +323,7 @@ export default function EventsManager() {
             </Form.Item>
           </Space>
 
-          <Divider orientation="left" plain>Promo video</Divider>
+          <Divider orientation="start" plain>Promo video</Divider>
           {editing ? (
             <div style={{ marginBottom: 14 }}>
               {editing.videoPath ? (
@@ -353,10 +353,10 @@ export default function EventsManager() {
             <Input prefix={<LinkOutlined />} placeholder="https://youtube.com/watch?v=..." />
           </Form.Item>
 
-          <Divider orientation="left" plain>Feature cards</Divider>
+          <Divider orientation="start" plain>Feature cards</Divider>
           <FeatureEditor features={features} onChange={setFeatures} />
 
-          <Divider orientation="left" plain>WhatsApp confirmation</Divider>
+          <Divider orientation="start" plain>WhatsApp confirmation</Divider>
           <Form.Item name="whatsAppNumber" label="WhatsApp number"
             extra="Country code + number, digits only. e.g. 96170123456">
             <Input placeholder="96170123456" />
@@ -368,7 +368,7 @@ export default function EventsManager() {
             Placeholders: {PLACEHOLDERS.map(p => <Text code key={p} style={{ fontSize: 10 }}>{`{{${p}}}`}</Text>)}
           </Paragraph>
 
-          <Divider orientation="left" plain>Publication</Divider>
+          <Divider orientation="start" plain>Publication</Divider>
           <Space size="large">
             <Form.Item name="isPublished" label="Published (page is live)" valuePropName="checked">
               <Switch />
