@@ -17,6 +17,8 @@ export type RevenueBreakdownDto = {
   tcgGross?: number | null;
   totalGross?: number | null;
   discountsGiven?: number | null;
+  /** Paid event ticket sales (4300 Event Revenue). Included in `total`. */
+  events?: number | null;
 };
 
 export type ExpenseCategoryLineDto = {

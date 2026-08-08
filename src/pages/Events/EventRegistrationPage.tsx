@@ -153,13 +153,26 @@ export default function EventRegistrationPage() {
             <h2>You're Registered!</h2>
             <p>{result.message}</p>
             <div className="sg-reg-no">Registration #{result.registrationId}</div>
+
+            {/* Whish link mode: pay first, then confirm — so the pay button
+                comes before the WhatsApp one and is visually primary. */}
+            {result.payLinkUrl && (
+              <div className="sg-payrow">
+                <a href={result.payLinkUrl} target="_blank" rel="noreferrer" className="sg-btn sg-pay">
+                  📲 Pay {result.amount.toFixed(2)} {result.currency} with Whish
+                </a>
+              </div>
+            )}
+
             {result.whatsAppUrl && (
               <a href={result.whatsAppUrl} target="_blank" rel="noreferrer" className="sg-btn sg-wa">
                 💬 Send Confirmation on WhatsApp
               </a>
             )}
             <p className="sg-muted" style={{ marginTop: 14 }}>
-              Tap the button, then press <b>send</b> — your spot is held once we confirm payment.
+              {result.payLinkUrl
+                ? <>Pay through the Whish link, screenshot the receipt, then tap <b>Send Confirmation</b> — your spot is held once we confirm it.</>
+                : <>Tap the button, then press <b>send</b> — your spot is held once we confirm payment.</>}
             </p>
           </div>
         </section>
@@ -378,6 +391,10 @@ const CSS = `
 .sg-btn:hover:not(:disabled){transform:translateY(-3px) scale(1.03);box-shadow:0 0 34px rgba(139,92,246,.7);filter:brightness(1.1)}
 .sg-btn:disabled{opacity:.5;cursor:not-allowed}
 .sg-wa{background:linear-gradient(95deg,#16A34A,#22C55E);box-shadow:0 0 24px rgba(34,197,94,.45);margin-top:18px}
+/* Whish brand-ish red — the pay-first action in link mode. */
+.sg-pay{background:linear-gradient(95deg,#DC2626,#F43F5E);box-shadow:0 0 24px rgba(244,63,94,.45);margin-top:18px}
+/* Forces the pay CTA onto its own line above the WhatsApp button. */
+.sg-payrow{display:block}
 .sg-card{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--border);border-radius:18px;padding:30px 26px;box-shadow:0 10px 40px rgba(0,0,0,.5)}
 .sg-card h2{font-size:24px;font-weight:800;margin-bottom:4px;display:flex;align-items:center;gap:10px}
 .sg-sub{color:var(--muted);font-size:14px;margin-bottom:20px}

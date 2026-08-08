@@ -20,6 +20,7 @@ export type EventDto = {
   enableVisa: boolean;
   enableWhish: boolean;
   enableCash: boolean;
+  whishPaymentLink: string | null;
   whatsAppNumber: string | null;
   whatsAppTemplate: string | null;
   isPublished: boolean;
@@ -44,6 +45,7 @@ export type EventUpsert = {
   enableVisa: boolean;
   enableWhish: boolean;
   enableCash: boolean;
+  whishPaymentLink?: string | null;
   whatsAppNumber?: string | null;
   whatsAppTemplate?: string | null;
   isPublished: boolean;
@@ -99,6 +101,8 @@ export type EventRegisterResult = {
   redirectUrl: string | null;
   whatsAppUrl: string | null;
   message: string;
+  /** Manual Whish link — shown as a button; payment is confirmed by an admin. */
+  payLinkUrl?: string | null;
 };
 
 export type EventRegistration = {

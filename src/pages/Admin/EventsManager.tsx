@@ -101,6 +101,7 @@ export default function EventsManager() {
         enableVisa: !!v.enableVisa,
         enableWhish: !!v.enableWhish,
         enableCash: !!v.enableCash,
+        whishPaymentLink: v.whishPaymentLink?.trim() || null,
         whatsAppNumber: v.whatsAppNumber || null,
         whatsAppTemplate: v.whatsAppTemplate || null,
         isPublished: !!v.isPublished,
@@ -322,6 +323,14 @@ export default function EventsManager() {
               <Switch />
             </Form.Item>
           </Space>
+
+          <Form.Item
+            name="whishPaymentLink"
+            label="Whish payment link (no API needed)"
+            extra="Paste the payment link from your Whish app. Used only if the Whish merchant API isn't configured — the buyer pays through the link, confirms on WhatsApp, and you mark them Paid here. Leave empty if you have full API credentials."
+          >
+            <Input prefix={<LinkOutlined />} placeholder="https://whish.money/..." allowClear />
+          </Form.Item>
 
           <SectionLabel>Promo video</SectionLabel>
           {editing ? (

@@ -143,6 +143,9 @@ const AccountingDashboard: React.FC = () => {
   const grossProfit = dashboard?.grossProfit ?? 0;
   const netMargin = dashboard?.netMarginPercent ?? 0;
   const totalRevenue = revenue?.total ?? 0;
+  const eventsRevenue = revenue?.events ?? 0;
+  // Four revenue cards across a 24-col row when events are in play, three otherwise.
+  const revSpan = eventsRevenue > 0 ? 6 : 8;
 
   const postedCount = recentEntries.filter(e => e.isPosted).length;
   const draftCount = recentEntries.filter(e => !e.isPosted && !e.isVoided).length;
@@ -409,7 +412,7 @@ const AccountingDashboard: React.FC = () => {
           }
         >
           <Row gutter={16}>
-            <Col span={8}>
+            <Col span={revSpan}>
               <Card size="small" style={{ background: '#f6ffed', borderColor: '#b7eb8f' }}>
                 <Statistic
                   title="🎮 Gaming Revenue"
@@ -428,7 +431,7 @@ const AccountingDashboard: React.FC = () => {
                 )}
               </Card>
             </Col>
-            <Col span={8}>
+            <Col span={revSpan}>
               <Card size="small" style={{ background: '#fff7e6', borderColor: '#ffd591' }}>
                 <Statistic
                   title="🍔 F&B Revenue"
@@ -447,7 +450,7 @@ const AccountingDashboard: React.FC = () => {
                 )}
               </Card>
             </Col>
-            <Col span={8}>
+            <Col span={revSpan}>
               <Card size="small" style={{ background: '#e6f7ff', borderColor: '#91d5ff' }}>
                 <Statistic
                   title="🃏 TCG Retail Revenue"
@@ -466,6 +469,36 @@ const AccountingDashboard: React.FC = () => {
                 )}
               </Card>
             </Col>
+            {/* Only appears once events have actually sold, so the layout
+                doesn't shrink for a lounge that never runs them. */}
+            {eventsRevenue > 0 && (
+              <Col span={revSpan}>
+                <Card size="small" style={{ background: '#f9f0ff', borderColor: '#d3adf7' }}>
+                  <Statistic
+                    title={
+                      <Space>
+                        🎟️ Event Revenue
+                        <Tooltip title="Paid event registrations from Admin → Events, booked to 4300 Event Revenue. Counted on the date the payment was confirmed.">
+                          <InfoCircleOutlined style={{ color: '#999' }} />
+                        </Tooltip>
+                      </Space>
+                    }
+                    value={eventsRevenue}
+                    prefix="$"
+                    precision={2}
+                    valueStyle={{ color: '#722ed1' }}
+                  />
+                  {totalRevenue > 0 && (
+                    <Progress
+                      percent={Math.round((eventsRevenue / totalRevenue) * 100)}
+                      size="small"
+                      strokeColor="#722ed1"
+                      style={{ marginTop: 8 }}
+                    />
+                  )}
+                </Card>
+              </Col>
+            )}
           </Row>
         </Card>
 
