@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Card, Table, Tag, Button, Space, Modal, Form, Input, InputNumber,
-  Switch, DatePicker, message, Typography, Progress, Tooltip, Popconfirm, Divider,
+  Switch, DatePicker, message, Typography, Progress, Tooltip, Popconfirm,
 } from "antd";
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined,
@@ -263,7 +263,7 @@ export default function EventsManager() {
         width={720} destroyOnHidden
       >
         <Form form={form} layout="vertical" style={{ maxHeight: "68vh", overflowY: "auto", paddingRight: 8 }}>
-          <Divider orientation="start" plain>Basics</Divider>
+          <SectionLabel>Basics</SectionLabel>
 
           <Form.Item name="title" label="Title" rules={[{ required: true, message: "Title is required" }]}>
             <Input placeholder="SQUID GAME X AXIS" />
@@ -292,7 +292,7 @@ export default function EventsManager() {
             </Form.Item>
           </Space>
 
-          <Divider orientation="start" plain>Pricing & capacity</Divider>
+          <SectionLabel>Pricing & capacity</SectionLabel>
           <Space size="middle" style={{ display: "flex" }}>
             <Form.Item name="price" label="Ticket price" style={{ flex: 1 }}>
               <InputNumber min={0} step={0.5} prefix="$" style={{ width: "100%" }} />
@@ -306,7 +306,7 @@ export default function EventsManager() {
             </Form.Item>
           </Space>
 
-          <Divider orientation="start" plain>Payment methods</Divider>
+          <SectionLabel>Payment methods</SectionLabel>
           <Paragraph type="secondary" style={{ fontSize: 12, marginTop: -8 }}>
             A method only appears on the public page if it's switched on here <i>and</i> its credentials
             are filled in under <b>Integrations</b>. Cash needs no credentials.
@@ -323,7 +323,7 @@ export default function EventsManager() {
             </Form.Item>
           </Space>
 
-          <Divider orientation="start" plain>Promo video</Divider>
+          <SectionLabel>Promo video</SectionLabel>
           {editing ? (
             <div style={{ marginBottom: 14 }}>
               {editing.videoPath ? (
@@ -353,10 +353,10 @@ export default function EventsManager() {
             <Input prefix={<LinkOutlined />} placeholder="https://youtube.com/watch?v=..." />
           </Form.Item>
 
-          <Divider orientation="start" plain>Feature cards</Divider>
+          <SectionLabel>Feature cards</SectionLabel>
           <FeatureEditor features={features} onChange={setFeatures} />
 
-          <Divider orientation="start" plain>WhatsApp confirmation</Divider>
+          <SectionLabel>WhatsApp confirmation</SectionLabel>
           <Form.Item name="whatsAppNumber" label="WhatsApp number"
             extra="Country code + number, digits only. e.g. 96170123456">
             <Input placeholder="96170123456" />
@@ -368,7 +368,7 @@ export default function EventsManager() {
             Placeholders: {PLACEHOLDERS.map(p => <Text code key={p} style={{ fontSize: 10 }}>{`{{${p}}}`}</Text>)}
           </Paragraph>
 
-          <Divider orientation="start" plain>Publication</Divider>
+          <SectionLabel>Publication</SectionLabel>
           <Space size="large">
             <Form.Item name="isPublished" label="Published (page is live)" valuePropName="checked">
               <Switch />
@@ -379,6 +379,26 @@ export default function EventsManager() {
           </Space>
         </Form>
       </Modal>
+    </div>
+  );
+}
+
+/**
+ * Left-aligned section heading inside the event form.
+ *
+ * Rolled by hand rather than using antd's <Divider orientation="left">
+ * because that prop's accepted values changed between antd majors
+ * (left/right → start/end → horizontal/vertical), which broke the build
+ * on every upgrade. Plain markup has no such moving target.
+ */
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "22px 0 14px" }}>
+      <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: .6,
+                     textTransform: "uppercase", color: "#6B7280", whiteSpace: "nowrap" }}>
+        {children}
+      </span>
+      <span style={{ flex: 1, height: 1, background: "rgba(0,0,0,.08)" }} />
     </div>
   );
 }
