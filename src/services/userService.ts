@@ -15,9 +15,18 @@ export type UserListResponse = {
 
 export const getUsers = async (
   page = 1,
-  pageSize = 10
+  pageSize = 10,
+  search?: string
 ): Promise<UserListResponse> => {
-  const res = await api.get(`/users?Page=${page}&PageSize=${pageSize}`);
+  // The server searches across email, username, display name, first/last name
+  // and phone — and does it BEFORE paging, so totalCount reflects the matches.
+  const res = await api.get(`/users`, {
+    params: {
+      Page: page,
+      PageSize: pageSize,
+      search: search?.trim() || undefined,
+    },
+  });
   return res.data as UserListResponse;
 };
 

@@ -54,24 +54,67 @@ type ModalKind = "add" | "edit" | "stock-in" | "waste" | "adjust" | null;
 
 const fmtQty = (n: number, unit: string) => `${n.toLocaleString("en-US", { maximumFractionDigits: 3 })} ${unit}`;
 
+/**
+ * How healthy one ingredient's stock is. Evaluated in severity order — an
+ * ingredient that is both negative and below its reorder level reports the
+ * worse of the two.
+ *
+ * "no-threshold" isn't a stock problem, it's a setup gap: with no reorder
+ * level the ingredient can never trigger a low-stock warning, so it would
+ * quietly run out. Worth surfacing, but ranked last.
+ */
+type Health = "negative" | "out" | "low" | "no-threshold" | "ok";
+
+const health = (r: IngredientDto): Health => {
+  if (r.isNegative || r.quantityOnHand < 0) return "negative";
+  if (r.quantityOnHand === 0) return "out";
+  if (r.isBelowReorderLevel) return "low";
+  if (r.reorderLevel == null) return "no-threshold";
+  return "ok";
+};
+
+const HEALTH_META: Record<Health, { label: string; color: string; icon?: React.ReactNode }> = {
+  negative:       { label: "Negative",        color: "red" },
+  out:            { label: "Out of stock",    color: "volcano" },
+  low:            { label: "Low",             color: "orange" },
+  "no-threshold": { label: "No reorder level", color: "gold" },
+  ok:             { label: "OK",              color: "green" },
+};
+
+type StatusFilter = "all" | "attention" | Health;
+
 export default function Ingredients() {
   const [rows, setRows] = useState<IngredientDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [includeHidden, setIncludeHidden] = useState(false);
   const [search, setSearch] = useState("");
+  const [status, setStatus] = useState<StatusFilter>("all");
 
-  // Client-side filter on the loaded list — matches name / unit / notes.
-  // Filtering after low-stock count keeps the badge accurate to the
-  // underlying inventory, not to whatever the user is currently searching.
+  // Counts are computed from the FULL list, never from the filtered view, so
+  // the numbers on the chips don't shift as you type in the search box.
+  const counts = useMemo(() => {
+    const c: Record<Health, number> = { negative: 0, out: 0, low: 0, "no-threshold": 0, ok: 0 };
+    for (const r of rows) c[health(r)]++;
+    return { ...c, attention: rows.length - c.ok, all: rows.length };
+  }, [rows]);
+
+  // Client-side filter on the loaded list — status first, then a text match
+  // on name / unit / notes.
   const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter(r =>
-      r.name.toLowerCase().includes(q) ||
-      (r.unit ?? "").toLowerCase().includes(q) ||
-      (r.notes ?? "").toLowerCase().includes(q)
-    );
-  }, [rows, search]);
+    return rows.filter(r => {
+      if (status !== "all") {
+        const h = health(r);
+        if (status === "attention" ? h === "ok" : h !== status) return false;
+      }
+      if (!q) return true;
+      return (
+        r.name.toLowerCase().includes(q) ||
+        (r.unit ?? "").toLowerCase().includes(q) ||
+        (r.notes ?? "").toLowerCase().includes(q)
+      );
+    });
+  }, [rows, search, status]);
 
   const [modal, setModal] = useState<ModalKind>(null);
   const [active, setActive] = useState<IngredientDto | null>(null);
@@ -253,11 +296,20 @@ export default function Ingredients() {
     {
       title: "Status",
       key: "status",
-      width: 160,
+      width: 170,
       render: (_, r) => {
-        if (r.isNegative) return <Tag color="red" icon={<ExclamationCircleOutlined />}>Negative</Tag>;
-        if (r.isBelowReorderLevel) return <Tag color="orange" icon={<WarningOutlined />}>Low</Tag>;
-        return <Tag color="green">OK</Tag>;
+        const h = health(r);
+        const meta = HEALTH_META[h];
+        const icon =
+          h === "negative" ? <ExclamationCircleOutlined />
+          : h === "out" || h === "low" ? <WarningOutlined />
+          : undefined;
+
+        const tag = <Tag color={meta.color} icon={icon}>{meta.label}</Tag>;
+
+        return h === "no-threshold"
+          ? <Tooltip title="No reorder level is set, so this ingredient will never raise a low-stock warning. Edit it to add one.">{tag}</Tooltip>
+          : tag;
       },
     },
     {
@@ -304,7 +356,16 @@ export default function Ingredients() {
     },
   ], []);
 
-  const lowStockCount = rows.filter(r => r.isBelowReorderLevel || r.isNegative).length;
+  // One clickable chip per problem bucket. Only buckets that actually have
+  // rows are rendered, so a healthy kitchen shows a short, quiet row.
+  const chips = ([
+    { key: "attention",    label: "Needs attention", count: counts.attention,      color: "orange" },
+    { key: "negative",     label: "Negative",        count: counts.negative,       color: "red" },
+    { key: "out",          label: "Out of stock",    count: counts.out,            color: "volcano" },
+    { key: "low",          label: "Low",             count: counts.low,            color: "orange" },
+    { key: "no-threshold", label: "No reorder level", count: counts["no-threshold"], color: "gold" },
+  ] as { key: StatusFilter; label: string; count: number; color: string }[])
+    .filter(c => c.count > 0);
 
   return (
     <div className="p-6">
@@ -329,20 +390,62 @@ export default function Ingredients() {
             </Space>
           </Space>
 
-          {lowStockCount > 0 && (
-            <Tag color="orange" icon={<WarningOutlined />}>
-              {lowStockCount} ingredient(s) need attention
-            </Tag>
+          {/* Click a chip to filter the table down to that bucket; click the
+              active one again to clear. */}
+          {chips.length > 0 && (
+            <Space wrap size={6} align="center">
+              <Text type="secondary" style={{ fontSize: 12 }}>Filter:</Text>
+              {chips.map(c => {
+                const on = status === c.key;
+                return (
+                  <Tag
+                    key={c.key}
+                    color={on ? c.color : undefined}
+                    icon={c.key === "negative" ? <ExclamationCircleOutlined /> : <WarningOutlined />}
+                    onClick={() => setStatus(on ? "all" : c.key)}
+                    style={{
+                      cursor: "pointer",
+                      userSelect: "none",
+                      borderColor: on ? undefined : "#D9D9D9",
+                      fontWeight: on ? 600 : 400,
+                    }}
+                  >
+                    {c.label} · {c.count}
+                  </Tag>
+                );
+              })}
+              {status !== "all" && (
+                <Button size="small" type="link" onClick={() => setStatus("all")} style={{ paddingInline: 4 }}>
+                  Clear
+                </Button>
+              )}
+            </Space>
           )}
 
-          <Input
-            allowClear
-            prefix={<SearchOutlined />}
-            placeholder="Search by name, unit, or notes…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{ maxWidth: 360 }}
-          />
+          <Space wrap>
+            <Input
+              allowClear
+              prefix={<SearchOutlined />}
+              placeholder="Search by name, unit, or notes…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{ width: 360 }}
+            />
+            <Select
+              value={status}
+              onChange={setStatus}
+              style={{ width: 220 }}
+              options={[
+                { value: "all",           label: `All ingredients · ${counts.all}` },
+                { value: "attention",     label: `Needs attention · ${counts.attention}` },
+                { value: "negative",      label: `Negative · ${counts.negative}` },
+                { value: "out",           label: `Out of stock · ${counts.out}` },
+                { value: "low",           label: `Low · ${counts.low}` },
+                { value: "no-threshold",  label: `No reorder level · ${counts["no-threshold"]}` },
+                { value: "ok",            label: `OK · ${counts.ok}` },
+              ]}
+            />
+          </Space>
 
           <Table
             size="small"

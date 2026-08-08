@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Modal from "../../components/ui/Modal";
 import { useModal } from "../../hooks/useModal";
 import userService, { UserDto, RegisterRequest } from "../../services/userService";
@@ -105,6 +105,9 @@ export default function UsersManagement() {
     const [pageSize, setPageSize] = useState(10);
     const [totalCount, setTotalCount] = useState(0);
     const [search, setSearch] = useState("");
+    // What's actually been sent to the server. Kept separate from `search` so
+    // the input stays instant while requests are debounced.
+    const [appliedSearch, setAppliedSearch] = useState("");
 
     // form
     const [email, setEmail] = useState("");
@@ -124,7 +127,7 @@ export default function UsersManagement() {
     const loadUsers = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await userService.getUsers(page, pageSize);
+            const res = await userService.getUsers(page, pageSize, appliedSearch);
             setUsers(res.data);
             setTotalCount(res.totalCount ?? 0);
         } catch (e: unknown) {
@@ -136,22 +139,27 @@ export default function UsersManagement() {
         } finally {
             setLoading(false);
         }
-    }, [page, pageSize]);
+    }, [page, pageSize, appliedSearch]);
 
     useEffect(() => {
         loadUsers();
     }, [loadUsers]);
 
-    // Client-side search filter (server-side pagination is preserved).
-    const filteredUsers = useMemo(() => {
-        const q = search.trim().toLowerCase();
-        if (!q) return users;
-        return users.filter((u) =>
-            (u.email || "").toLowerCase().includes(q) ||
-            (u.displayName || "").toLowerCase().includes(q) ||
-            (u.roles || []).some((r) => r.toLowerCase().includes(q))
-        );
-    }, [users, search]);
+    // Debounce typing into a single request, and jump back to page 1 — staying
+    // on page 4 of the old result set would show an empty table.
+    useEffect(() => {
+        const t = setTimeout(() => {
+            // Both plain calls — a setState updater must stay pure, so the
+            // page reset can't live inside one. React batches these into a
+            // single re-render, hence a single fetch.
+            setAppliedSearch(search.trim());
+            setPage(1);
+        }, 350);
+        return () => clearTimeout(t);
+    }, [search]);
+
+    // The server already filtered; this is just the rows it sent back.
+    const filteredUsers = users;
 
     const handleOpen = () => {
         setEmail('');
@@ -249,7 +257,9 @@ export default function UsersManagement() {
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Users Management</h1>
                     <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        {totalCount.toLocaleString()} total users · invite, edit and manage roles.
+                        {appliedSearch
+                            ? "Invite, edit and manage roles."
+                            : `${totalCount.toLocaleString()} total users · invite, edit and manage roles.`}
                     </p>
                 </div>
                 <Button variant="gradient" size="md" startIcon={<PlusIconSm />} onClick={handleOpen}>
@@ -267,7 +277,7 @@ export default function UsersManagement() {
                         <input
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Search email, name, or role…"
+                            placeholder="Search name, email, username or phone…"
                             className="h-11 w-full rounded-xl border border-gray-200 bg-white/70 pl-10 pr-4 text-sm text-gray-900 placeholder:text-gray-400 transition-all focus:border-brand-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-500/15 dark:border-white/10 dark:bg-white/[0.03] dark:text-white"
                         />
                         {search && (
@@ -282,11 +292,11 @@ export default function UsersManagement() {
                         )}
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                        <span className="hidden sm:inline">Showing</span>
                         <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-semibold text-brand-700 dark:bg-brand-500/15 dark:text-brand-300">
-                            {filteredUsers.length}
+                            {totalCount}
                         </span>
-                        <span>of {users.length} on this page</span>
+                        <span>{appliedSearch ? "match" : "user"}{totalCount === 1 ? "" : "s"}</span>
+                        {appliedSearch && <span className="hidden sm:inline">for “{appliedSearch}”</span>}
                     </div>
                 </div>
 
@@ -315,8 +325,14 @@ export default function UsersManagement() {
                                                     <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100 dark:bg-white/5">
                                                         <SearchIcon />
                                                     </div>
-                                                    <p className="font-semibold text-gray-700 dark:text-gray-200">No users match your search</p>
-                                                    <p className="text-sm text-gray-500 dark:text-gray-400">Try a different name, email or role.</p>
+                                                    <p className="font-semibold text-gray-700 dark:text-gray-200">
+                                                        {appliedSearch ? "No users match your search" : "No users yet"}
+                                                    </p>
+                                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                        {appliedSearch
+                                                            ? "Try a different name, email, username or phone number."
+                                                            : "Add your first user to get started."}
+                                                    </p>
                                                 </div>
                                             </td>
                                         </tr>

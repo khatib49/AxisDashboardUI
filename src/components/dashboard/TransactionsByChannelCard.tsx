@@ -151,6 +151,8 @@ export default function TransactionsByChannelCard() {
             allowClear={false}
           />
           <Select
+            showSearch
+            optionFilterProp="label"
             value={channelId}
             onChange={(v) => {
               setChannelId(v);
