@@ -36,6 +36,10 @@ const GameSession: React.FC = () => {
     const [starting, setStarting] = useState(false);
     const [toast, setToast] = useState<{ variant: 'success' | 'error' | 'info', title: string, message: string } | null>(null);
 
+    // Quick find over the loaded page — matches game names AND setting names,
+    // so typing "draft" surfaces MTG even though the game is called "Magic".
+    const [gameSearch, setGameSearch] = useState('');
+
     // Room and set selection
     const [rooms, setRooms] = useState<RoomDto[]>([]);
     const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
@@ -243,17 +247,36 @@ const GameSession: React.FC = () => {
 
     return (
         <div className="p-6">
-            <div className="flex items-center justify-between mb-4">
-                <h1 className="text-2xl font-semibold">Game Sessions</h1>
-                <button
-                    onClick={() => setCalculatorOpen(true)}
-                    className="px-4 py-2 bg-green-600 text-white rounded shadow hover:bg-green-700 transition flex items-center gap-2"
-                >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                    Calculator
-                </button>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight text-gray-900">Game Sessions</h1>
+                    <p className="text-sm text-gray-500 mt-0.5">Pick a game, choose a setting, hit Start.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                    {/* Quick find — filters the loaded games as you type. */}
+                    <div className="relative">
+                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" strokeLinecap="round" />
+                            </svg>
+                        </span>
+                        <input
+                            value={gameSearch}
+                            onChange={(e) => setGameSearch(e.target.value)}
+                            placeholder="Find a game or setting…"
+                            className="h-10 w-64 rounded-xl border border-gray-200 bg-white pl-9 pr-3 text-sm shadow-sm placeholder:text-gray-400 focus:border-indigo-400 focus:outline-none focus:ring-4 focus:ring-indigo-500/10"
+                        />
+                    </div>
+                    <button
+                        onClick={() => setCalculatorOpen(true)}
+                        className="h-10 px-4 bg-green-600 text-white rounded-xl shadow-sm hover:bg-green-700 hover:shadow transition flex items-center gap-2 text-sm font-medium"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        Calculator
+                    </button>
+                </div>
             </div>
 
             {loading && (
@@ -266,51 +289,66 @@ const GameSession: React.FC = () => {
                 <div className="text-red-600 bg-red-50 p-3 rounded mb-4">{error}</div>
             )}
 
-            {!loading && !error && (
-                <>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {games.map((g) => (
-                            <div key={g.id} className="border rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition">
-                                <div className="flex items-start justify-between">
-                                    <div>
-                                        <div className="text-lg font-semibold">{g.name}</div>
-                                        <div className="text-sm text-gray-500">{g.categoryName ?? '—'}</div>
-                                    </div>
-                                    <div className="text-sm">
-                                        {(() => {
-                                            // coerce to number for reliable comparisons (API may return strings)
-                                            const statusIdNum = g.statusId === null || g.statusId === undefined ? null : Number(g.statusId);
-                                            const name = getStatusName(statusIdNum) ?? (g.statusId ?? '-');
-                                            if (statusIdNum === STATUS_ENABLED || statusIdNum === STATUS_PROCESSED_PAID) {
-                                                return <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">{name}</span>;
-                                            }
-                                            if (statusIdNum === STATUS_DISABLED) {
-                                                return <span className="inline-flex items-center px-2 py-1 rounded-full bg-red-100 text-red-800 text-xs font-medium">{name}</span>;
-                                            }
-                                            // default neutral badge
-                                            return <span className="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 text-gray-800 text-xs">{name}</span>;
-                                        })()}
-                                    </div>
-                                </div>
+            {!loading && !error && (() => {
+                // Category → consistent accent color, so PS5 always looks like
+                // PS5 and TCG like TCG across visits.
+                const accentFor = (cat?: string | null) => {
+                    const c = (cat || '').toLowerCase();
+                    if (c.includes('tcg')) return { bar: 'from-violet-500 to-purple-400', chip: 'bg-violet-50 text-violet-700', avatar: 'bg-violet-100 text-violet-700' };
+                    if (c.includes('ps5') || c.includes('play')) return { bar: 'from-blue-500 to-sky-400', chip: 'bg-blue-50 text-blue-700', avatar: 'bg-blue-100 text-blue-700' };
+                    if (c.includes('board')) return { bar: 'from-amber-500 to-orange-400', chip: 'bg-amber-50 text-amber-700', avatar: 'bg-amber-100 text-amber-700' };
+                    return { bar: 'from-emerald-500 to-teal-400', chip: 'bg-emerald-50 text-emerald-700', avatar: 'bg-emerald-100 text-emerald-700' };
+                };
 
-                                <div className="mt-3">
-                                    <div className="text-sm font-medium mb-2">Settings</div>
-                                    <div className="space-y-2">
+                const q = gameSearch.trim().toLowerCase();
+                const visibleGames = !q ? games : games.filter((g) =>
+                    g.name.toLowerCase().includes(q) ||
+                    (g.categoryName ?? '').toLowerCase().includes(q) ||
+                    (settingsByGame.get(g.id) || []).some((s) => s.name.toLowerCase().includes(q)));
+
+                return (
+                <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                        {visibleGames.map((g) => {
+                            const accent = accentFor(g.categoryName);
+                            const statusIdNum = g.statusId === null || g.statusId === undefined ? null : Number(g.statusId);
+                            const enabled = statusIdNum === STATUS_ENABLED || statusIdNum === STATUS_PROCESSED_PAID;
+                            return (
+                            <div key={g.id} className="group rounded-2xl bg-white shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 overflow-hidden border border-gray-100">
+                                {/* Category accent strip */}
+                                <div className={`h-1.5 bg-gradient-to-r ${accent.bar}`} />
+
+                                <div className="p-4">
+                                    <div className="flex items-start gap-3">
+                                        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-base font-bold ${accent.avatar}`}>
+                                            {g.name.slice(0, 2).toUpperCase()}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="text-[15px] font-semibold text-gray-900 leading-snug truncate" title={g.name}>{g.name}</div>
+                                            <span className={`mt-1 inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${accent.chip}`}>
+                                                {g.categoryName ?? '—'}
+                                            </span>
+                                        </div>
+                                        <span className={`mt-0.5 inline-flex items-center gap-1.5 text-[11px] font-medium ${enabled ? 'text-green-600' : 'text-red-500'}`}>
+                                            <span className={`h-1.5 w-1.5 rounded-full ${enabled ? 'bg-green-500' : 'bg-red-400'}`} />
+                                            {getStatusName(statusIdNum) ?? (g.statusId ?? '-')}
+                                        </span>
+                                    </div>
+
+                                    <div className="mt-4 space-y-1.5">
                                         {(settingsByGame.get(g.id) || []).map((s) => (
-                                            <div key={s.id} className="flex items-center justify-between p-2 rounded bg-gray-50">
-                                                <div>
-                                                    <div className="text-sm font-medium flex items-center gap-1.5">
-                                                        {s.name}
+                                            <div key={s.id} className="flex items-center justify-between gap-2 rounded-xl px-3 py-2 bg-gray-50/80 hover:bg-indigo-50/60 transition-colors">
+                                                <div className="min-w-0">
+                                                    <div className="text-sm font-medium text-gray-800 flex items-center gap-1.5 truncate">
+                                                        <span className="truncate">{s.name}</span>
                                                         {s.isEvent && (
-                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-indigo-100 text-indigo-700">
-                                                                Event
+                                                            <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 text-indigo-700">
+                                                                🎟 Event
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <div className="text-xs text-gray-500">
-                                                        {s.hours === 0 ? 'Open Hour' : (s.hours ? `${s.hours} hrs` : '')}
-                                                        {((s.hours === 0 || s.hours) && s.price) ? ' • ' : ''}
-                                                        {s.price ? `$${s.price}` : ''}
+                                                    <div className="text-xs text-gray-500 mt-0.5">
+                                                        {s.hours === 0 ? '⏱ Open Hour' : (s.hours ? `⏱ ${s.hours} hrs` : '')}
                                                     </div>
                                                     {/* Bundle preview — the cashier sees exactly what to hand
                                                         over. Deducted from stock automatically at start. */}
@@ -320,40 +358,63 @@ const GameSession: React.FC = () => {
                                                         </div>
                                                     )}
                                                 </div>
-                                                <div className="text-right">
-                                                    <button className="px-2 py-1 bg-blue-600 text-white text-xs rounded" onClick={() => {
-                                                        setSelectedSetting(s);
-                                                        setStartHours(s.isDayPass ? 0 : (s.hours ?? 1));
-                                                        setNumberOfPersons(1);
-                                                        setSelectedRoomId(null);
-                                                        setSelectedSetId(null);
-                                                        setSetAvailability(null);
-                                                        setSelectedDiscountId(null);
-                                                        setStartModalOpen(true);
-                                                    }}>Start</button>
+                                                <div className="flex shrink-0 items-center gap-2.5">
+                                                    {s.price ? <span className="text-sm font-bold text-gray-900">${s.price}</span> : null}
+                                                    <button
+                                                        className="px-3.5 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow-sm hover:bg-indigo-700 hover:shadow active:scale-95 transition-all"
+                                                        onClick={() => {
+                                                            setSelectedSetting(s);
+                                                            setStartHours(s.isDayPass ? 0 : (s.hours ?? 1));
+                                                            setNumberOfPersons(1);
+                                                            setSelectedRoomId(null);
+                                                            setSelectedSetId(null);
+                                                            setSetAvailability(null);
+                                                            setSelectedDiscountId(null);
+                                                            setStartModalOpen(true);
+                                                        }}
+                                                    >
+                                                        Start ▸
+                                                    </button>
                                                 </div>
                                             </div>
                                         ))}
                                         {((settingsByGame.get(g.id) || []).length === 0) && (
-                                            <div className="text-sm text-gray-500">No settings available</div>
+                                            <div className="rounded-xl border border-dashed border-gray-200 px-3 py-4 text-center text-sm text-gray-400">
+                                                No settings available
+                                            </div>
                                         )}
                                     </div>
                                 </div>
                             </div>
-                        ))}
+                            );
+                        })}
                     </div>
+
+                    {q && visibleGames.length === 0 && (
+                        <div className="mt-8 text-center text-gray-500">
+                            <div className="text-3xl mb-2">🔍</div>
+                            No games match “{gameSearch}” on this page — try the next page or clear the search.
+                        </div>
+                    )}
 
                     {/* Pagination */}
                     <div className="mt-6 flex items-center justify-between">
-                        <div className="text-sm text-gray-600">{totalCount !== null ? `Showing ${games.length} of ${totalCount}` : ''}</div>
-                        <div className="flex items-center gap-2">
-                            <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>Prev</button>
-                            <div className="text-sm">Page {page}</div>
-                            <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setPage((p) => p + 1)} disabled={totalCount !== null && page * PAGE_SIZE >= (totalCount || 0)}>Next</button>
+                        <div className="text-sm text-gray-500">{totalCount !== null ? `Showing ${games.length} of ${totalCount}` : ''}</div>
+                        <div className="flex items-center gap-1">
+                            <button
+                                className="h-9 px-4 rounded-lg border border-gray-200 bg-white text-sm font-medium shadow-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                                onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}
+                            >← Prev</button>
+                            <span className="px-3 text-sm text-gray-600">Page {page}</span>
+                            <button
+                                className="h-9 px-4 rounded-lg border border-gray-200 bg-white text-sm font-medium shadow-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                                onClick={() => setPage((p) => p + 1)} disabled={totalCount !== null && page * PAGE_SIZE >= (totalCount || 0)}
+                            >Next →</button>
                         </div>
                     </div>
                 </>
-            )}
+                );
+            })()}
             {/* Start session modal */}
             <Modal isOpen={startModalOpen} onClose={() => { setStartModalOpen(false); setSelectedRoomId(null); setSelectedSetId(null); }} title={selectedSetting ? `Start: ${selectedSetting.name}` : 'Start session'}>
                 <div className="space-y-4">

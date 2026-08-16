@@ -368,59 +368,57 @@ export default function CashierItems() {
 
     return (
         <div className="p-6">
-            <h1 className="text-2xl font-semibold mb-4">Items (Cashier)</h1>
+            <div className="mb-5">
+                <h1 className="text-2xl font-bold tracking-tight text-gray-900">Items</h1>
+                <p className="text-sm text-gray-500 mt-0.5">Tap + to build the order, then review and send it.</p>
+            </div>
 
-            <div className="mb-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => setCalculatorOpen(true)}
-                        className="px-4 py-2 bg-green-600 text-white rounded shadow hover:bg-green-700 transition flex items-center gap-2"
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                        </svg>
-                        Calculator
-                    </button>
-                    <div className="flex items-center">
-                        <label className="text-sm text-gray-600 mr-2">Category</label>
-                        <div className="w-48">
-                            <Select
-                                options={[{ value: '', label: 'All' }, ...categories.map(c => ({ value: c.id, label: c.name }))]}
-                                defaultValue={selectedCategory ?? ''}
-                                onChange={(v: string | number) => { setPage(1); setSelectedCategory(v === '' ? null : Number(v)); }}
-                            />
-                        </div>
-                    </div>
-                    <div className="flex items-center">
-                        <label className="text-sm text-gray-600 mr-2">Search</label>
-                        <div className="w-56">
-                            <Input placeholder="Search items..." value={search} onChange={(e) => { setPage(1); setSearch(e.target.value); }} className="px-2 py-1" />
-                        </div>
-                    </div>
+            <div className="mb-5 flex flex-wrap items-center gap-3">
+                <button
+                    onClick={() => setCalculatorOpen(true)}
+                    className="h-11 px-4 bg-green-600 text-white rounded-xl shadow-sm hover:bg-green-700 hover:shadow transition flex items-center gap-2 text-sm font-medium"
+                >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    Calculator
+                </button>
+                <div className="w-48">
+                    <Select
+                        options={[{ value: '', label: 'All categories' }, ...categories.map(c => ({ value: c.id, label: c.name }))]}
+                        defaultValue={selectedCategory ?? ''}
+                        onChange={(v: string | number) => { setPage(1); setSelectedCategory(v === '' ? null : Number(v)); }}
+                    />
                 </div>
-
-                <div>
-                    {totalSelected > 0 && (
-                        <div className="flex items-center gap-2">
-                            <button
-                                className="px-4 py-2 bg-orange-600 text-white rounded shadow hover:bg-orange-700 transition flex items-center gap-2"
-                                onClick={() => setSelectedItems({})}
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                </svg>
-                                Reset
-                            </button>
-                            <button
-                                className="px-4 py-2 bg-indigo-600 text-white rounded shadow hover:bg-indigo-700 transition"
-                                onClick={() => { setOrderTimestamp(new Date()); setIsDrawerOpen(true); }}
-                            >
-                                View Order
-                            </button>
-                        </div>
-                    )}
+                <div className="w-64">
+                    {/* Icon lives in the placeholder rather than as an overlay —
+                        the shared Input sets its own horizontal padding, and an
+                        absolutely-positioned icon could collide with it. */}
+                    <Input placeholder="🔍  Search items…" value={search} onChange={(e) => { setPage(1); setSearch(e.target.value); }} />
                 </div>
             </div>
+
+            {/* Floating order bar — always in reach once something's picked,
+                no matter how far the cashier has scrolled. */}
+            {totalSelected > 0 && (
+                <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 rounded-2xl bg-gray-900 text-white pl-5 pr-2 py-2 shadow-2xl">
+                    <span className="text-sm font-medium">
+                        🛒 {totalSelected} item{totalSelected === 1 ? '' : 's'} selected
+                    </span>
+                    <button
+                        className="px-3 py-1.5 text-xs font-medium text-gray-300 hover:text-white transition"
+                        onClick={() => setSelectedItems({})}
+                    >
+                        Clear
+                    </button>
+                    <button
+                        className="px-4 py-2 bg-indigo-500 hover:bg-indigo-400 text-white text-sm font-semibold rounded-xl transition active:scale-95"
+                        onClick={() => { setOrderTimestamp(new Date()); setIsDrawerOpen(true); }}
+                    >
+                        View Order →
+                    </button>
+                </div>
+            )}
 
             {loading && <div className="text-gray-600">Loading items...</div>}
 
@@ -438,47 +436,84 @@ export default function CashierItems() {
                             // to the old quantity check.
                             const hasRecipe = noRecipeIds !== null && !noRecipeIds.has(Number(it.id));
                             const isOutOfStock = it.quantity <= 0 && !hasRecipe;
+                            const isLowStock = !hasRecipe && !isOutOfStock && it.quantity <= 5;
+                            const picked = selectedItems[String(it.id)] || 0;
                             return (
-                                <div key={it.id} className={`border rounded p-3 bg-white shadow-sm ${isOutOfStock ? 'opacity-60 border-gray-200' : (selectedItems[it.id] || 0) > 0 ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-gray-200'}`}>
-                                    <div className="flex items-center gap-3 mb-2">
+                                <div
+                                    key={it.id}
+                                    className={`group relative rounded-2xl bg-white overflow-hidden transition-all duration-200 border ${
+                                        isOutOfStock
+                                            ? 'opacity-55 border-gray-200 shadow-sm'
+                                            : picked > 0
+                                                ? 'border-indigo-400 ring-2 ring-indigo-200 shadow-md'
+                                                : 'border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-0.5'
+                                    }`}
+                                >
+                                    {/* Picked-count bubble */}
+                                    {picked > 0 && (
+                                        <span className="absolute top-2 right-2 z-10 flex h-6 min-w-6 items-center justify-center rounded-full bg-indigo-600 px-1.5 text-xs font-bold text-white shadow">
+                                            {picked}
+                                        </span>
+                                    )}
+
+                                    <div className="relative h-28 bg-gray-50">
                                         <img
                                             src={it.imagePath ? resolveImageUrl(it.imagePath) : '/images/image-placeholder.svg'}
                                             alt={it.name}
-                                            className="w-16 h-12 object-cover rounded"
+                                            className="h-full w-full object-cover"
                                             onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/images/image-placeholder.svg'; }}
                                         />
-                                        <div className="font-medium text-gray-800">{it.name}</div>
+                                        {/* Stock state, on the image where the eye lands first */}
+                                        <span className={`absolute bottom-2 left-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                                            isOutOfStock ? 'bg-red-600 text-white'
+                                            : hasRecipe ? 'bg-teal-600/90 text-white'
+                                            : isLowStock ? 'bg-amber-500/95 text-white'
+                                            : 'bg-black/50 text-white'
+                                        }`}>
+                                            {isOutOfStock ? 'Out of stock'
+                                                : hasRecipe ? 'Recipe stock'
+                                                : isLowStock ? `Only ${it.quantity} left`
+                                                : `${it.quantity} in stock`}
+                                        </span>
                                     </div>
-                                    <div className="text-sm text-gray-500">Category: {categories.find(c => c.id === it.categoryId)?.name ?? '-'}</div>
-                                    <div className="text-sm text-gray-500">Price: ${it.price}</div>
-                                    <div className={`text-sm ${isOutOfStock ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
-                                        {hasRecipe
-                                            ? <span className="text-teal-600">Stock: tracked by recipe</span>
-                                            : <>Stock: {it.quantity} {isOutOfStock && '(Out of Stock)'}</>}
-                                    </div>
-                                    <div className="mt-3 flex items-center gap-2">
-                                        <button
-                                            className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                                            disabled={isOutOfStock}
-                                            onClick={() => setSelectedItems(s => {
-                                                const key = String(it.id);
-                                                const cur = s[key] || 0;
-                                                const next = Math.max(0, cur - 1);
-                                                const copy = { ...s };
-                                                if (next === 0) delete copy[key]; else copy[key] = next;
-                                                return copy;
-                                            })}
-                                        >-</button>
-                                        <div className="px-3 py-1 border rounded">{selectedItems[String(it.id)] || 0}</div>
-                                        <button
-                                            className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                                            disabled={isOutOfStock}
-                                            onClick={() => setSelectedItems(s => {
-                                                const key = String(it.id);
-                                                const cur = s[key] || 0;
-                                                return { ...s, [key]: cur + 1 };
-                                            })}
-                                        >+</button>
+
+                                    <div className="p-3">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="min-w-0">
+                                                <div className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2" title={it.name}>{it.name}</div>
+                                                <div className="text-[11px] text-gray-400 mt-0.5">
+                                                    {categories.find(c => c.id === it.categoryId)?.name ?? '—'}
+                                                </div>
+                                            </div>
+                                            <div className="shrink-0 text-base font-bold text-gray-900">${it.price}</div>
+                                        </div>
+
+                                        <div className="mt-3 flex items-center justify-center gap-0 rounded-xl border border-gray-200 overflow-hidden">
+                                            <button
+                                                className="h-9 flex-1 bg-gray-50 text-lg font-medium text-gray-600 hover:bg-gray-100 active:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                                                disabled={isOutOfStock || picked === 0}
+                                                onClick={() => setSelectedItems(s => {
+                                                    const key = String(it.id);
+                                                    const cur = s[key] || 0;
+                                                    const next = Math.max(0, cur - 1);
+                                                    const copy = { ...s };
+                                                    if (next === 0) delete copy[key]; else copy[key] = next;
+                                                    return copy;
+                                                })}
+                                            >−</button>
+                                            <div className={`h-9 w-12 flex items-center justify-center text-sm font-bold border-x border-gray-200 ${picked > 0 ? 'text-indigo-700 bg-indigo-50' : 'text-gray-500 bg-white'}`}>
+                                                {picked}
+                                            </div>
+                                            <button
+                                                className="h-9 flex-1 bg-indigo-600 text-lg font-medium text-white hover:bg-indigo-700 active:bg-indigo-800 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                                                disabled={isOutOfStock}
+                                                onClick={() => setSelectedItems(s => {
+                                                    const key = String(it.id);
+                                                    const cur = s[key] || 0;
+                                                    return { ...s, [key]: cur + 1 };
+                                                })}
+                                            >+</button>
+                                        </div>
                                     </div>
                                 </div>
                             );
@@ -487,10 +522,10 @@ export default function CashierItems() {
 
                     <div className="mt-4 flex items-start justify-between">
                         <div>
-                            <div className="text-sm text-gray-600">Showing page {page} — {total} items</div>
-                            <div className="mt-2 space-x-2">
-                                <button className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>Prev</button>
-                                <button className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50" disabled={page >= Math.max(1, Math.ceil(total / pageSize))} onClick={() => setPage(p => p + 1)}>Next</button>
+                            <div className="text-sm text-gray-500">Page {page} · {total} items</div>
+                            <div className="mt-2 flex items-center gap-1">
+                                <button className="h-9 px-4 rounded-lg border border-gray-200 bg-white text-sm font-medium shadow-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>← Prev</button>
+                                <button className="h-9 px-4 rounded-lg border border-gray-200 bg-white text-sm font-medium shadow-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed" disabled={page >= Math.max(1, Math.ceil(total / pageSize))} onClick={() => setPage(p => p + 1)}>Next →</button>
                             </div>
                         </div>
 
