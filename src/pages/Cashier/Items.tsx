@@ -442,10 +442,10 @@ export default function CashierItems() {
                                 <div
                                     key={it.id}
                                     className={`group relative rounded-2xl bg-white overflow-hidden transition-all duration-200 border ${
-                                        isOutOfStock
-                                            ? 'opacity-55 border-gray-200 shadow-sm'
-                                            : picked > 0
-                                                ? 'border-indigo-400 ring-2 ring-indigo-200 shadow-md'
+                                        picked > 0
+                                            ? 'border-indigo-400 ring-2 ring-indigo-200 shadow-md'
+                                            : isOutOfStock
+                                                ? 'border-red-200 shadow-sm hover:shadow-lg hover:-translate-y-0.5'
                                                 : 'border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-0.5'
                                     }`}
                                 >
@@ -489,9 +489,11 @@ export default function CashierItems() {
                                         </div>
 
                                         <div className="mt-3 flex items-center justify-center gap-0 rounded-xl border border-gray-200 overflow-hidden">
+                                            {/* Out-of-stock no longer blocks ordering — the badge warns,
+                                                the counter goes negative, the sale goes through. */}
                                             <button
                                                 className="h-9 flex-1 bg-gray-50 text-lg font-medium text-gray-600 hover:bg-gray-100 active:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition"
-                                                disabled={isOutOfStock || picked === 0}
+                                                disabled={picked === 0}
                                                 onClick={() => setSelectedItems(s => {
                                                     const key = String(it.id);
                                                     const cur = s[key] || 0;
@@ -505,8 +507,7 @@ export default function CashierItems() {
                                                 {picked}
                                             </div>
                                             <button
-                                                className="h-9 flex-1 bg-indigo-600 text-lg font-medium text-white hover:bg-indigo-700 active:bg-indigo-800 disabled:opacity-40 disabled:cursor-not-allowed transition"
-                                                disabled={isOutOfStock}
+                                                className="h-9 flex-1 bg-indigo-600 text-lg font-medium text-white hover:bg-indigo-700 active:bg-indigo-800 transition"
                                                 onClick={() => setSelectedItems(s => {
                                                     const key = String(it.id);
                                                     const cur = s[key] || 0;

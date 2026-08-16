@@ -890,10 +890,10 @@ const handleCloseInvoice = async (invoiceId: number) => {
                                         <div
                                             key={item.id}
                                             className={`border rounded p-3 bg-white ${
-                                                isOutOfStock
-                                                    ? 'opacity-60 border-gray-200'
-                                                    : selected > 0
+                                                selected > 0
                                                     ? 'border-blue-500 ring-2 ring-blue-100'
+                                                    : isOutOfStock
+                                                    ? 'border-red-200'
                                                     : 'border-gray-200'
                                             }`}
                                         >
@@ -930,10 +930,12 @@ const handleCloseInvoice = async (invoiceId: number) => {
                                                 Stock: {item.quantity}{' '}
                                                 {isOutOfStock && '(Out)'}
                                             </div>
+                                            {/* Out-of-stock no longer blocks — the red badge warns, the
+                                                counter goes negative, the sale goes through. */}
                                             <div className="flex items-center gap-1">
                                                 <button
                                                     className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                                                    disabled={isOutOfStock}
+                                                    disabled={selected === 0}
                                                     onClick={() =>
                                                         setSelectedItems((s) => {
                                                             const key = String(item.id);
@@ -952,8 +954,7 @@ const handleCloseInvoice = async (invoiceId: number) => {
                                                     {selected}
                                                 </div>
                                                 <button
-                                                    className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                                                    disabled={isOutOfStock}
+                                                    className="px-2 py-1 bg-gray-200 rounded text-sm"
                                                     onClick={() =>
                                                         setSelectedItems((s) => {
                                                             const key = String(item.id);

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { getGames, GameDto } from '../../services/gameService';
 import { getSettings, GameSettingDto } from '../../services/gameSettingsService';
-import { getStatusName, STATUS_DISABLED, STATUS_ENABLED, STATUS_PROCESSED_PAID } from '../../services/statuses';
+import { getStatusName, STATUS_ENABLED, STATUS_PROCESSED_PAID } from '../../services/statuses';
 import Loader from '../../components/ui/Loader';
 import Modal from '../../components/ui/Modal';
 import Label from '../../components/form/Label';
