@@ -14,14 +14,25 @@ import Input from '../../components/form/input/InputField';
 import Select from '../../components/form/Select';
 import Alert from '../../components/ui/alert/Alert';
 import ItemInvoice from '../../components/invoice/ItemInvoice';
-import { updateOpenInvoiceSet } from '../../services/transactionService';
+import { updateOpenInvoiceSet, setTransactionDiscount } from '../../services/transactionService';
 import { getSets, SetDto } from '../../services/setService';
+import { getDiscounts, DiscountDto } from '../../services/discountService';
+import AttachClientModal from '../GameCashier/AttachClientModal';
 
 const OpenInvoices: React.FC = () => {
     const [editingSetInvoiceId, setEditingSetInvoiceId] = useState<number | null>(null);
 const [editSetValue, setEditSetValue] = useState<number | null>(null);
 const [sets, setSets] = useState<SetDto[]>([]);
 const [, setLoadingSets] = useState(false);
+
+    // Discounts the cashier can apply to a still-open invoice. The server
+    // recomputes the total, so we just re-read the list afterwards.
+    const [discounts, setDiscounts] = useState<DiscountDto[]>([]);
+    const [editingDiscountInvoiceId, setEditingDiscountInvoiceId] = useState<number | null>(null);
+    const [savingDiscountId, setSavingDiscountId] = useState<number | null>(null);
+
+    // Reuses the game cashier's attach-client modal — same narrow endpoint.
+    const [clientModalInvoice, setClientModalInvoice] = useState<OpenInvoiceDto | null>(null);
 
     // Open invoices state
     const [openInvoices, setOpenInvoices] = useState<OpenInvoiceDto[]>([]);
@@ -108,6 +119,52 @@ const [, setLoadingSets] = useState(false);
         });
     return () => { mounted = false; };
 }, []);
+
+// Active discounts only — an inactive one contributes 0% server-side, so
+// offering it would just confuse the cashier.
+useEffect(() => {
+    let mounted = true;
+    getDiscounts(1, 200)
+        .then((res) => {
+            if (!mounted) return;
+            setDiscounts((res.data || []).filter((d) => d.isActive));
+        })
+        .catch(() => { /* non-fatal: the picker just stays empty */ });
+    return () => { mounted = false; };
+}, []);
+
+const handleApplyDiscount = async (invoiceId: number, discountId: number | null) => {
+    setSavingDiscountId(invoiceId);
+    try {
+        const res = await setTransactionDiscount(invoiceId, discountId);
+        if (res?.success) {
+            setNotification({
+                variant: 'success',
+                title: 'Discount updated',
+                message: discountId
+                    ? 'Discount applied and the total recalculated.'
+                    : 'Discount removed and the total recalculated.',
+            });
+            setEditingDiscountInvoiceId(null);
+            await loadOpenInvoices();
+        } else {
+            setNotification({
+                variant: 'error',
+                title: 'Could not apply discount',
+                message: res?.error || res?.message || 'Please try again.',
+            });
+        }
+    } catch (err: unknown) {
+        const e = err as { response?: { data?: { error?: string; message?: string } } };
+        setNotification({
+            variant: 'error',
+            title: 'Could not apply discount',
+            message: e?.response?.data?.error || e?.response?.data?.message || 'Please try again.',
+        });
+    } finally {
+        setSavingDiscountId(null);
+    }
+};
 
 // Add handler for updating set
 const handleUpdateSet = async (invoiceId: number, setId: number | null) => {
@@ -499,15 +556,28 @@ const handleCloseInvoice = async (invoiceId: number) => {
                         </span>
                     </div>
 
-                    {/* CLIENT NAME - NEW */}
-                    {invoice.userName && (
-                        <div className="flex items-center justify-between text-sm bg-blue-50 p-2 rounded">
-                            <span className="text-blue-600 font-medium">Client:</span>
-                            <span className="font-semibold text-blue-900 truncate max-w-[150px]" title={invoice.userName}>
-                                {invoice.userName}
-                            </span>
-                        </div>
-                    )}
+                    {/* Client — always visible so a missing one can be attached
+                        right here, not only at order creation. */}
+                    <div className="flex items-center justify-between text-sm bg-blue-50 p-2 rounded">
+                        <span className="text-blue-600 font-medium">Client:</span>
+                        <button
+                            type="button"
+                            onClick={() => setClientModalInvoice(invoice)}
+                            className="group inline-flex items-center gap-1.5"
+                            title={invoice.userName || 'Attach a client'}
+                        >
+                            {invoice.userName ? (
+                                <span className="font-semibold text-blue-900 truncate max-w-[150px]">
+                                    {invoice.userName}
+                                </span>
+                            ) : (
+                                <span className="text-blue-400 group-hover:text-blue-600">+ Add client</span>
+                            )}
+                            <svg className="w-3.5 h-3.5 text-blue-400 group-hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                        </button>
+                    </div>
 
                     <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-600">Items:</span>
@@ -569,14 +639,54 @@ const handleCloseInvoice = async (invoiceId: number) => {
     )}
 </div>
 
-                    {invoice.discountName && (
-                        <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-600">Discount:</span>
-                            <span className="font-medium text-green-600">
-                                {invoice.discountName}
-                            </span>
-                        </div>
-                    )}
+                    {/* Discount — editable while the invoice is still open.
+                        The server recalculates the total, so we just reload. */}
+                    <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">Discount:</span>
+                        {editingDiscountInvoiceId === invoice.id ? (
+                            <div className="flex items-center gap-2">
+                                <Select
+                                    options={[
+                                        { value: '', label: 'No discount' },
+                                        ...discounts.map((d) => ({
+                                            value: d.id,
+                                            label: `${d.name} — ${d.percentage}%`,
+                                        })),
+                                    ]}
+                                    defaultValue={invoice.discountId ?? ''}
+                                    isPlaceHolderDisabled={false}
+                                    placeholder="No discount"
+                                    className="w-48"
+                                    onChange={(v) =>
+                                        handleApplyDiscount(invoice.id, v === '' ? null : Number(v))
+                                    }
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setEditingDiscountInvoiceId(null)}
+                                    className="text-xs text-gray-500 hover:text-gray-700"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => setEditingDiscountInvoiceId(invoice.id)}
+                                disabled={savingDiscountId === invoice.id}
+                                className="group inline-flex items-center gap-1.5 font-medium text-green-600 hover:text-green-700 disabled:opacity-50"
+                            >
+                                {savingDiscountId === invoice.id
+                                    ? 'Saving…'
+                                    : invoice.discountName
+                                        ? `${invoice.discountName}${invoice.discountPercentage ? ` (${invoice.discountPercentage}%)` : ''}`
+                                        : <span className="text-gray-400 group-hover:text-gray-600">Add discount</span>}
+                                <svg className="w-3.5 h-3.5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </button>
+                        )}
+                    </div>
 
                     {/* Items Preview */}
                     <div className="border-t border-gray-200 pt-3">
@@ -931,6 +1041,26 @@ const handleCloseInvoice = async (invoiceId: number) => {
                     {currentInvoice && <ItemInvoice transaction={currentInvoice} />}
                 </div>
             </Modal>
+
+            {/* Attach / change client on an open invoice */}
+            {clientModalInvoice && (
+                <AttachClientModal
+                    open
+                    transactionId={clientModalInvoice.id}
+                    currentUserId={clientModalInvoice.userId ?? null}
+                    currentUserName={clientModalInvoice.userName ?? null}
+                    onCancel={() => setClientModalInvoice(null)}
+                    onSaved={(userId, userName) => {
+                        // Patch in place — no full refetch needed for a name.
+                        setOpenInvoices((list) =>
+                            list.map((inv) =>
+                                inv.id === clientModalInvoice.id
+                                    ? { ...inv, userId: userId ?? undefined, userName: userName ?? undefined }
+                                    : inv));
+                        setClientModalInvoice(null);
+                    }}
+                />
+            )}
 
             {/* Toast Notifications */}
             <div className="fixed bottom-6 right-6 z-50">

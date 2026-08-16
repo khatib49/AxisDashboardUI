@@ -145,6 +145,7 @@ export interface ItemTransaction {
     setId?: number;
     setName?: string;
     totalPrice: number;
+    numberOfPersons?: number;
     items: Array<{
         itemId: number;
         itemName: string;
@@ -154,11 +155,16 @@ export interface ItemTransaction {
         categoryName?: string;
         itemType?: string;
         imagePath?: string;
+        /** Bundled with an event setting — handed over, but not charged. */
+        isIncluded?: boolean;
     }>;
     discount?: SimpleDiscount | null;
     comment?: string;
     userId?: number;
     userName?: string;
+    channelId?: number;
+    channelName?: string;
+    modifiedOn?: string;
 }
 
 // ============ GAME TRANSACTION TYPES ============
@@ -196,6 +202,10 @@ export interface GameTransaction {
     userId?: number;
     userName?: string;
     comment?: string;
+    channelId?: number;
+    channelName?: string;
+    expectedEndOn?: string;
+    modifiedOn?: string;
     items?: Array<{
         itemId: number;
         itemName: string;
@@ -361,6 +371,15 @@ export async function deleteTransaction(id: number) {
 export async function attachClientToTransaction(id: number, userId: number | null) {
     const res = await put(`/transactions/${id}/client`, { userId });
     return res;
+}
+
+// Same narrow shape for discounts: PUT /transactions/{id}/discount, open to
+// cashier + gamecashier + admin_fnb + admin. The server recomputes the total
+// and returns the refreshed transaction, so the caller should trust the
+// response rather than doing its own math. Pass null (or 0) to remove.
+export async function setTransactionDiscount(id: number, discountId: number | null) {
+    const res = await put(`/transactions/${id}/discount`, { discountId });
+    return res as { success: boolean; error?: string; message?: string; data?: GameTransaction };
 }
 
 // ADMIN-ONLY: replace ALL item lines on a transaction (any status, any

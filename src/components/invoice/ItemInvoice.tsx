@@ -117,12 +117,18 @@ const ItemInvoice: React.FC<ItemInvoiceProps> = ({ transaction, onPrint }) => {
             <hr style={{ border: 'none', borderTop: '1px dashed #000', margin: '4px 0' }} />
 
             {/* Customer & Set Info */}
-            {(transaction.userName || transaction.setName) && (
+            {(transaction.userName || transaction.setName || (transaction.numberOfPersons ?? 0) > 0) && (
                 <>
                     {transaction.userName && (
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
                             <span style={{ fontWeight: 700 }}>Customer:</span>
                             <span>{transaction.userName}</span>
+                        </div>
+                    )}
+                    {(transaction.numberOfPersons ?? 0) > 0 && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
+                            <span style={{ fontWeight: 700 }}>Persons:</span>
+                            <span>{transaction.numberOfPersons}</span>
                         </div>
                     )}
                     {transaction.setName && (

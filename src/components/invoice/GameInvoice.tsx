@@ -7,6 +7,18 @@ interface GameInvoiceProps {
 }
 
 const GameInvoice: React.FC<GameInvoiceProps> = ({ transaction, onPrint }) => {
+    // Two different payload shapes reach this component and they use
+    // different field names for the same thing:
+    //   • the cashier screens cast a raw TransactionDto  → room / set / game / id
+    //   • the admin report DTO                           → roomName / setName / gameName / transactionId
+    // Reading only one set meant these rows silently rendered blank on
+    // whichever caller didn't match. Resolve both, everywhere.
+    const receiptNo = transaction.transactionId ?? transaction.id;
+    const roomName = transaction.roomName || transaction.room;
+    const setName = transaction.setName || transaction.set;
+    const gameName = transaction.gameName || transaction.game;
+    const persons = transaction.numberOfPersons ?? 0;
+
     const handlePrint = () => {
         if (onPrint) onPrint();
 
@@ -21,7 +33,7 @@ const GameInvoice: React.FC<GameInvoiceProps> = ({ transaction, onPrint }) => {
       <html>
         <head>
           <meta charSet="utf-8" />
-          <title>Receipt #${transaction.transactionId}</title>
+          <title>Receipt #${receiptNo}</title>
           <style>
             @page {
               size: 58mm auto;
@@ -112,7 +124,7 @@ const GameInvoice: React.FC<GameInvoiceProps> = ({ transaction, onPrint }) => {
             {/* Date & Receipt */}
             <div style={{ textAlign: 'center', paddingBottom: '2px' }}>
                 <div style={{ fontSize: '10px' }}>{formattedDate}</div>
-                <div style={{ fontSize: '10px' }}>Receipt #{transaction.transactionId}</div>
+                <div style={{ fontSize: '10px' }}>Receipt #{receiptNo}</div>
                 <div style={{ fontSize: '11px', fontWeight: 700 }}>GAME SESSION</div>
             </div>
             <hr style={{ border: 'none', borderTop: '1px dashed #000', margin: '4px 0' }} />
@@ -127,28 +139,30 @@ const GameInvoice: React.FC<GameInvoiceProps> = ({ transaction, onPrint }) => {
                         <span style={{ fontWeight: 600 }}>{transaction.userName}</span>
                     </div>
                 )}
-                {transaction.roomName && (
+                {roomName && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
                         <span>Room:</span>
-                        <span style={{ fontWeight: 600 }}>{transaction.roomName}</span>
+                        <span style={{ fontWeight: 600 }}>{roomName}</span>
                     </div>
                 )}
-                {transaction.setName && (
+                {/* Headcount drives the price (price x persons), so it always
+                    prints when we have one — never gated on an unrelated field. */}
+                {persons > 0 && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
                         <span>Persons:</span>
-                        <span style={{ fontWeight: 600 }}>{transaction.numberOfPersons}</span>
+                        <span style={{ fontWeight: 600 }}>{persons}</span>
                     </div>
                 )}
-                {transaction.setName && (
+                {setName && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
                         <span>Set:</span>
-                        <span style={{ fontWeight: 600 }}>{transaction.setName}</span>
+                        <span style={{ fontWeight: 600 }}>{setName}</span>
                     </div>
                 )}
-                {transaction.gameName && (
+                {gameName && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
                         <span>Game:</span>
-                        <span style={{ fontWeight: 600 }}>{transaction.gameName}</span>
+                        <span style={{ fontWeight: 600 }}>{gameName}</span>
                     </div>
                 )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>

@@ -299,12 +299,26 @@ const GameSession: React.FC = () => {
                                         {(settingsByGame.get(g.id) || []).map((s) => (
                                             <div key={s.id} className="flex items-center justify-between p-2 rounded bg-gray-50">
                                                 <div>
-                                                    <div className="text-sm font-medium">{s.name}</div>
+                                                    <div className="text-sm font-medium flex items-center gap-1.5">
+                                                        {s.name}
+                                                        {s.isEvent && (
+                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-indigo-100 text-indigo-700">
+                                                                Event
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                     <div className="text-xs text-gray-500">
                                                         {s.hours === 0 ? 'Open Hour' : (s.hours ? `${s.hours} hrs` : '')}
                                                         {((s.hours === 0 || s.hours) && s.price) ? ' • ' : ''}
                                                         {s.price ? `$${s.price}` : ''}
                                                     </div>
+                                                    {/* Bundle preview — the cashier sees exactly what to hand
+                                                        over. Deducted from stock automatically at start. */}
+                                                    {s.isEvent && (s.items?.length ?? 0) > 0 && (
+                                                        <div className="text-[11px] text-indigo-600 mt-0.5">
+                                                            Includes {s.items!.map(i => `${i.quantityPerPerson}x ${i.itemName}`).join(', ')} / person
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <div className="text-right">
                                                     <button className="px-2 py-1 bg-blue-600 text-white text-xs rounded" onClick={() => {
@@ -444,6 +458,25 @@ const GameSession: React.FC = () => {
                             />
                             <div className="text-xs text-gray-500 mt-1">Total will be calculated per person.</div>
                         </div>
+
+                        {/* Event bundle preview — concrete quantities for THIS
+                            headcount, so the cashier knows what to hand over. */}
+                        {selectedSetting?.isEvent && (selectedSetting.items?.length ?? 0) > 0 && (
+                            <div className="rounded-lg bg-indigo-50 border border-indigo-200 p-3 text-sm">
+                                <div className="font-medium text-indigo-800 mb-1">Hand out with this event:</div>
+                                <ul className="space-y-0.5 text-indigo-700">
+                                    {selectedSetting.items!.map((i) => (
+                                        <li key={i.itemId}>
+                                            {i.quantityPerPerson * numberOfPersons}x {i.itemName}
+                                            <span className="text-indigo-400"> ({i.quantityPerPerson} / person)</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                                <div className="text-[11px] text-indigo-500 mt-1.5">
+                                    Deducted from stock automatically — included in the event price, not billed separately.
+                                </div>
+                            </div>
+                        )}
 
                         {/* Discount Selection */}
                         <div>

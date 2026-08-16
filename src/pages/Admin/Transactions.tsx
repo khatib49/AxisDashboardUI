@@ -233,6 +233,38 @@ export default function Transactions() {
                                                         <div className="text-sm text-gray-900">{t.setName}</div>
                                                     </div>
                                                 )}
+                                                {/* Previously not even fetched — the report DTO dropped
+                                                    headcount, client, discount and channel. */}
+                                                <div>
+                                                    <div className="text-xs text-gray-500">Persons</div>
+                                                    <div className="text-sm font-medium text-gray-900">{t.numberOfPersons ?? 1}</div>
+                                                </div>
+                                                {t.userName && (
+                                                    <div>
+                                                        <div className="text-xs text-gray-500">Customer</div>
+                                                        <div className="text-sm font-medium text-gray-900">{t.userName}</div>
+                                                    </div>
+                                                )}
+                                                {t.discount && (
+                                                    <div>
+                                                        <div className="text-xs text-gray-500">Discount</div>
+                                                        <div className="text-sm font-medium text-green-700">
+                                                            {t.discount.name} ({t.discount.percentage}%)
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {t.channelName && (
+                                                    <div>
+                                                        <div className="text-xs text-gray-500">Channel</div>
+                                                        <div className="text-sm text-gray-900">{t.channelName}</div>
+                                                    </div>
+                                                )}
+                                                {t.comment && (
+                                                    <div className="col-span-2">
+                                                        <div className="text-xs text-gray-500">Comment</div>
+                                                        <div className="text-sm text-gray-900">{t.comment}</div>
+                                                    </div>
+                                                )}
                                                 <div>
                                                     <div className="text-xs text-gray-500">Status</div>
                                                     <span

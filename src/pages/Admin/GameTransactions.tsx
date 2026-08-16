@@ -276,6 +276,52 @@ export default function GameTransactions() {
                                                         <div className="text-sm text-gray-900">{t.hours}</div>
                                                     </div>
                                                 )}
+                                                {/* Everything below reaches the panel now — it was on the
+                                                    record all along but never projected into the report DTO. */}
+                                                <div>
+                                                    <div className="text-xs text-gray-500">Persons</div>
+                                                    <div className="text-sm font-medium text-gray-900">{t.numberOfPersons ?? 1}</div>
+                                                </div>
+                                                {t.userName && (
+                                                    <div>
+                                                        <div className="text-xs text-gray-500">Customer</div>
+                                                        <div className="text-sm font-medium text-gray-900">{t.userName}</div>
+                                                    </div>
+                                                )}
+                                                {t.discount && (
+                                                    <div>
+                                                        <div className="text-xs text-gray-500">Discount</div>
+                                                        <div className="text-sm font-medium text-green-700">
+                                                            {t.discount.name} ({t.discount.percentage}%)
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {t.channelName && (
+                                                    <div>
+                                                        <div className="text-xs text-gray-500">Channel</div>
+                                                        <div className="text-sm text-gray-900">{t.channelName}</div>
+                                                    </div>
+                                                )}
+                                                {t.isDayPass && (
+                                                    <div>
+                                                        <div className="text-xs text-gray-500">Day Pass</div>
+                                                        <div className="text-sm font-medium text-indigo-700">Yes</div>
+                                                    </div>
+                                                )}
+                                                {t.modifiedOn && (
+                                                    <div>
+                                                        <div className="text-xs text-gray-500">Modified</div>
+                                                        <div className="text-sm text-gray-900">
+                                                            {new Date(t.modifiedOn).toLocaleString()}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {t.comment && (
+                                                    <div className="col-span-2">
+                                                        <div className="text-xs text-gray-500">Comment</div>
+                                                        <div className="text-sm text-gray-900">{t.comment}</div>
+                                                    </div>
+                                                )}
                                                 <div>
                                                     <div className="text-xs text-gray-500">Status</div>
                                                     <span

@@ -31,9 +31,20 @@ interface AuthState {
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [token, setToken] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [claims, setClaims] = useState<UserClaims | null>(null);
+    // Token is read from localStorage SYNCHRONOUSLY, in the very first render.
+    //
+    // It used to load in an effect, which meant one full render where the
+    // user looked authenticated but had no roles yet — and every role guard
+    // (<AdminRoute> etc.) fired its <Navigate to="/" replace> during exactly
+    // that render. That's why refreshing any page dumped people back on the
+    // main page. With a lazy initializer there is no such render.
+    const [token, setToken] = useState<string | null>(() => {
+        try {
+            return isAuthenticated() ? localStorage.getItem('access_token') : null;
+        } catch { return null; }
+    });
+    // Nothing async remains in init, so auth is never "loading".
+    const [loading] = useState(false);
 
     // Base64URL decode helper
     function decodeSegment(seg: string): string {
@@ -97,28 +108,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     }, []);
 
-    useEffect(() => {
-        const init = () => {
-            if (isAuthenticated()) {
-                try {
-                    const stored = localStorage.getItem('access_token');
-                    setToken(stored);
-                } catch { /* ignore */ }
-            }
-            setLoading(false);
-        };
-        init();
-    }, []);
-
-    // derive claims when token changes
-    useEffect(() => {
-        if (token) {
-            const c = decodeJwt(token);
-            setClaims(c);
-        } else {
-            setClaims(null);
-        }
-    }, [token, decodeJwt]);
+    // Claims are DERIVED from the token in the same render, never a step
+    // behind it. Deriving (useMemo) instead of mirroring into state is what
+    // guarantees hasRole() is correct on the first authenticated render.
+    const claims = useMemo<UserClaims | null>(
+        () => (token ? decodeJwt(token) : null),
+        [token, decodeJwt]);
 
     const login = useCallback(async (req: LoginRequest) => {
         try {

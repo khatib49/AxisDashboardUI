@@ -7,6 +7,16 @@ export type SettingAttribute = {
   settingsId: string;
 };
 
+/** One item handed out with an event setting. Quantity is PER PERSON. */
+export type SettingItemDto = {
+  id: number;
+  itemId: number;
+  itemName: string;
+  itemPrice: number;
+  categoryName?: string | null;
+  quantityPerPerson: number;
+};
+
 export type GameSettingDto = {
   id: string;
   name: string;
@@ -25,6 +35,9 @@ export type GameSettingDto = {
   // false = soft-hidden. Backend filters these out by default; admin UI can
   // request them via includeHidden=true to restore.
   isActive?: boolean;
+  /** Event settings (Pre Release, Draft…) can bundle stock items. */
+  isEvent?: boolean;
+  items?: SettingItemDto[];
 };
 
 export type PagedSettingsResponse = {
@@ -58,6 +71,12 @@ export type CreateSettingRequest = {
   isDayPass?: boolean;
   // Only sent from the admin edit modal; the create flow never sets it.
   isActive?: boolean;
+  isEvent?: boolean;
+  /**
+   * Full replacement list — whatever is sent becomes the setting's bundle.
+   * Omit or send [] to clear it.
+   */
+  items?: Array<{ itemId: number; quantityPerPerson: number }>;
 };
 
 export async function createSetting(body: CreateSettingRequest) {
