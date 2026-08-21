@@ -13,6 +13,7 @@ import Modal from "../../components/ui/Modal";
 import Input from "../../components/form/input/InputField";
 import Loader from "../../components/ui/Loader";
 import Alert from "../../components/ui/alert/Alert";
+import PaymentChoiceModal from '../../components/wallet/PaymentChoiceModal';
 import { getCategoriesByType, CategoryDto } from "../../services/categoryService";
 import StatusToggle from '../../components/ui/StatusToggle';
 import { STATUS_ENABLED, getStatusName, STATUS_PROCESSED_PAID } from '../../services/statuses';
@@ -89,6 +90,8 @@ export default function CashierItems() {
     const [discounts, setDiscounts] = useState<DiscountDto[]>([]);
     const [loadingDiscounts, setLoadingDiscounts] = useState(false);
     const [selectedDiscountId, setSelectedDiscountId] = useState<number | null>(null);
+    // Payment picker for Pay Now when a client is attached (wallet option).
+    const [payNowChoiceOpen, setPayNowChoiceOpen] = useState(false);
 
     // Client search states
     const [clientPhone, setClientPhone] = useState('');
@@ -365,6 +368,126 @@ export default function CashierItems() {
             setSearchingClient(false);
         }
     }
+
+    // Pay-now submit, extracted so the payment picker can pass a wallet
+    // amount. walletAmount = 0 is a plain cash sale.
+    const submitPayNow = async (walletAmount = 0) => {
+                                                    const orderItems = Object.entries(selectedItems)
+                                                        .filter(([, q]) => q > 0)
+                                                        .map(([itemId, q]) => ({ itemId: parseInt(itemId), quantity: q }));
+
+                                                    if (orderItems.length === 0) return;
+
+                                                    setOrderSubmitting(true);
+                                                    try {
+                                                        const response = await createCoffeeShopOrder(
+                                                            orderItems,
+                                                            selectedDiscountId,
+                                                            selectedClient?.id,
+                                                            comment,
+                                                            false,
+                                                            selectedSetId,   // Close invoice immediately
+                                                            selectedChannelId,
+                                                            walletAmount
+                                                        );
+
+                                                        if (response && response.success === false) {
+                                                            setOrderSubmitting(false);
+                                                            setNotification({
+                                                                variant: 'error',
+                                                                title: 'Order failed',
+                                                                message: response.message || response.error || 'Failed to create order'
+                                                            });
+                                                            return;
+                                                        }
+
+                                                        // Convert response to ItemTransaction
+                                                        if (response.success && response.data) {
+                                                            // Stock-management warnings — if any ingredient
+                                                            // went negative as a result of this sale, the
+                                                            // backend returns them on data.stockWarnings.
+                                                            // Show a yellow toast naming them; the sale
+                                                            // still went through.
+                                                            const warnings = response.data.stockWarnings as
+                                                                | Array<{ ingredientName: string; quantityAfter: number; unit: string }>
+                                                                | undefined;
+                                                            if (warnings && warnings.length > 0) {
+                                                                const list = warnings
+                                                                    .map(w => `${w.ingredientName} (${w.quantityAfter} ${w.unit})`)
+                                                                    .join(', ');
+                                                                setNotification({
+                                                                    variant: 'warning',
+                                                                    title: 'Stock alert',
+                                                                    message: `Sale went through, but these went negative: ${list}`
+                                                                });
+                                                            }
+                                                            const invoiceData: ItemTransaction = {
+                                                                transactionId: response.data.id,
+                                                                createdOn: response.data.createdOn,
+                                                                statusId: response.data.statusId,
+                                                                createdBy: response.data.createdBy,
+                                                                totalPrice: response.data.totalPrice,
+                                                                roomId: response.data.roomId,
+                                                                roomName: response.data.room,
+                                                                setId: response.data.setId,
+                                                                setName: response.data.set,
+                                                                userId: response.data.userId,
+                                                                userName: response.data.userName,
+                                                                comment: response.data.comment,
+                                                                discount: response.data.discountId ? {
+                                                                    name: response.data.discountName || '',
+                                                                    percentage: response.data.discountPercentage || 0
+                                                                } : null,
+                                                                items: response.data.items?.map((item: any) => ({
+                                                                    itemId: item.itemId,
+                                                                    itemName: item.itemName,
+                                                                    quantity: item.quantity,
+                                                                    unitPrice: item.price,
+                                                                    lineTotal: item.price * item.quantity,
+                                                                    categoryName: '',
+                                                                    itemType: item.type || '',
+                                                                })) || []
+                                                            };
+
+                                                            setCurrentInvoice(invoiceData);
+                                                            setInvoiceModalOpen(true);
+
+                                                            // Kitchen/bar tickets print server-side: the API
+                                                            // dispatches ESC/POS jobs over SignalR to the
+                                                            // printers configured in Admin -> Printers, via
+                                                            // the on-site print agent.
+                                                        }
+
+                                                        setSelectedItems({});
+                                                        setSelectedDiscountId(null);
+                                                        setSelectedClient(null);
+                                                        setClientResults([]);
+                                                        setClientPhone('');
+                                                        setComment('');
+                                                        setSelectedChannelId(null);
+                                                        setIsDrawerOpen(false);
+                                                        setItemsReloadToken(t => t + 1);
+                                                        setNotification({
+                                                            variant: 'success',
+                                                            title: 'Order Created',
+                                                            message: response?.message || 'Order submitted successfully'
+                                                        });
+
+                                                        if (showInvoicesSection) {
+                                                            setShowInvoicesSection(false);
+                                                            setTimeout(() => setShowInvoicesSection(true), 100);
+                                                        }
+                                                    } catch (err) {
+                                                        let message = 'Failed to create order';
+                                                        if (err && typeof err === 'object') {
+                                                            const maybe = err as { message?: unknown };
+                                                            if (typeof maybe.message === 'string') message = maybe.message;
+                                                        }
+                                                        setNotification({ variant: 'error', title: 'Order failed', message });
+                                                    } finally {
+                                                        setOrderSubmitting(false);
+                                                    }
+    };
 
     return (
         <div className="p-6">
@@ -731,121 +854,11 @@ export default function CashierItems() {
                                             <button
                                                 className="px-3 py-2 bg-green-600 text-white rounded w-full flex items-center justify-center disabled:opacity-60"
                                                 disabled={orderSubmitting}
-                                                onClick={async () => {
-                                                    const orderItems = Object.entries(selectedItems)
-                                                        .filter(([, q]) => q > 0)
-                                                        .map(([itemId, q]) => ({ itemId: parseInt(itemId), quantity: q }));
-
-                                                    if (orderItems.length === 0) return;
-
-                                                    setOrderSubmitting(true);
-                                                    try {
-                                                        const response = await createCoffeeShopOrder(
-                                                            orderItems,
-                                                            selectedDiscountId,
-                                                            selectedClient?.id,
-                                                            comment,
-                                                            false,
-                                                            selectedSetId,   // Close invoice immediately
-                                                            selectedChannelId
-                                                        );
-
-                                                        if (response && response.success === false) {
-                                                            setOrderSubmitting(false);
-                                                            setNotification({
-                                                                variant: 'error',
-                                                                title: 'Order failed',
-                                                                message: response.message || response.error || 'Failed to create order'
-                                                            });
-                                                            return;
-                                                        }
-
-                                                        // Convert response to ItemTransaction
-                                                        if (response.success && response.data) {
-                                                            // Stock-management warnings — if any ingredient
-                                                            // went negative as a result of this sale, the
-                                                            // backend returns them on data.stockWarnings.
-                                                            // Show a yellow toast naming them; the sale
-                                                            // still went through.
-                                                            const warnings = response.data.stockWarnings as
-                                                                | Array<{ ingredientName: string; quantityAfter: number; unit: string }>
-                                                                | undefined;
-                                                            if (warnings && warnings.length > 0) {
-                                                                const list = warnings
-                                                                    .map(w => `${w.ingredientName} (${w.quantityAfter} ${w.unit})`)
-                                                                    .join(', ');
-                                                                setNotification({
-                                                                    variant: 'warning',
-                                                                    title: 'Stock alert',
-                                                                    message: `Sale went through, but these went negative: ${list}`
-                                                                });
-                                                            }
-                                                            const invoiceData: ItemTransaction = {
-                                                                transactionId: response.data.id,
-                                                                createdOn: response.data.createdOn,
-                                                                statusId: response.data.statusId,
-                                                                createdBy: response.data.createdBy,
-                                                                totalPrice: response.data.totalPrice,
-                                                                roomId: response.data.roomId,
-                                                                roomName: response.data.room,
-                                                                setId: response.data.setId,
-                                                                setName: response.data.set,
-                                                                userId: response.data.userId,
-                                                                userName: response.data.userName,
-                                                                comment: response.data.comment,
-                                                                discount: response.data.discountId ? {
-                                                                    name: response.data.discountName || '',
-                                                                    percentage: response.data.discountPercentage || 0
-                                                                } : null,
-                                                                items: response.data.items?.map((item: any) => ({
-                                                                    itemId: item.itemId,
-                                                                    itemName: item.itemName,
-                                                                    quantity: item.quantity,
-                                                                    unitPrice: item.price,
-                                                                    lineTotal: item.price * item.quantity,
-                                                                    categoryName: '',
-                                                                    itemType: item.type || '',
-                                                                })) || []
-                                                            };
-
-                                                            setCurrentInvoice(invoiceData);
-                                                            setInvoiceModalOpen(true);
-
-                                                            // Kitchen/bar tickets print server-side: the API
-                                                            // dispatches ESC/POS jobs over SignalR to the
-                                                            // printers configured in Admin -> Printers, via
-                                                            // the on-site print agent.
-                                                        }
-
-                                                        setSelectedItems({});
-                                                        setSelectedDiscountId(null);
-                                                        setSelectedClient(null);
-                                                        setClientResults([]);
-                                                        setClientPhone('');
-                                                        setComment('');
-                                                        setSelectedChannelId(null);
-                                                        setIsDrawerOpen(false);
-                                                        setItemsReloadToken(t => t + 1);
-                                                        setNotification({
-                                                            variant: 'success',
-                                                            title: 'Order Created',
-                                                            message: response?.message || 'Order submitted successfully'
-                                                        });
-
-                                                        if (showInvoicesSection) {
-                                                            setShowInvoicesSection(false);
-                                                            setTimeout(() => setShowInvoicesSection(true), 100);
-                                                        }
-                                                    } catch (err) {
-                                                        let message = 'Failed to create order';
-                                                        if (err && typeof err === 'object') {
-                                                            const maybe = err as { message?: unknown };
-                                                            if (typeof maybe.message === 'string') message = maybe.message;
-                                                        }
-                                                        setNotification({ variant: 'error', title: 'Order failed', message });
-                                                    } finally {
-                                                        setOrderSubmitting(false);
-                                                    }
+                                                onClick={() => {
+                                                    // Wallet option only exists with an attached client;
+                                                    // plain cash keeps the fast path fast.
+                                                    if (selectedClient?.id) setPayNowChoiceOpen(true);
+                                                    else void submitPayNow(0);
                                                 }}
                                             >
                                                 {orderSubmitting ? <Loader size={16} /> : 'Pay Now & Close'}
@@ -1168,6 +1181,21 @@ export default function CashierItems() {
                 isOpen={calculatorOpen}
                 onClose={() => setCalculatorOpen(false)}
                 totalAmount={orderTotal}
+            />
+
+            {/* Payment picker — cash / wallet / mixed, shown for Pay Now when
+                a client is attached */}
+            <PaymentChoiceModal
+                open={payNowChoiceOpen}
+                total={orderTotal}
+                userId={selectedClient?.id}
+                userName={selectedClient ? `${selectedClient.firstName || ''} ${selectedClient.lastName || ''}`.trim() || selectedClient.phoneNumber : null}
+                busy={orderSubmitting}
+                onCancel={() => setPayNowChoiceOpen(false)}
+                onConfirm={async (walletAmount) => {
+                    setPayNowChoiceOpen(false);
+                    await submitPayNow(walletAmount);
+                }}
             />
 
             {/* Toast container bottom-right */}

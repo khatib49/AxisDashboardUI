@@ -410,12 +410,12 @@ export async function getOpenBoardGameSessions() {
     return res;
 }
 
-export async function closeGameSession(invoiceId: number) {
-    console.log("Closing session with invoiceId:", invoiceId);
-    const url = `/transactions/sessions/${invoiceId}/close`;
-    console.log("POST URL:", url);
+export async function closeGameSession(invoiceId: number, walletAmount = 0) {
+    // walletAmount > 0 settles that much from the client's wallet (server
+    // clamps to the final time-based total); the rest is cash.
+    const q = walletAmount > 0 ? `?walletAmount=${walletAmount}` : "";
+    const url = `/transactions/sessions/${invoiceId}/close${q}`;
     const res = await post<ApiResponse>(url, null);
-    console.log("Close session response:", res);
     return res;
 }
 
@@ -500,7 +500,9 @@ export async function createCoffeeShopOrder(
     setId: number | null = null,
     // Optional sales channel (e.g. Toters). Trailing param so existing
     // callers don't break; the cashier UI will start passing it.
-    channelId: number | null = null
+    channelId: number | null = null,
+    // Portion paid from the attached client's wallet (pay-now orders only).
+    walletAmount = 0
 ): Promise<{ success: boolean; data?: any; message?: string; error?: string }> {
     const body: any = {
         userId,
@@ -512,6 +514,7 @@ export async function createCoffeeShopOrder(
 
     if (comment) body.comment = comment;
     if (channelId != null) body.channelId = channelId;
+    if (walletAmount > 0) body.walletAmount = walletAmount;
 
     const res = await post<{ success: boolean; data?: any; message?: string; error?: string }>(
         "/transactions/CreateCoffeeShopOrder",
@@ -538,9 +541,10 @@ export async function addItemsToOpenInvoice(
     return res;
 }
 
-export async function closeOpenInvoice(invoiceId: number): Promise<SingleInvoiceResponse> {
+export async function closeOpenInvoice(invoiceId: number, walletAmount = 0): Promise<SingleInvoiceResponse> {
+    const q = walletAmount > 0 ? `?walletAmount=${walletAmount}` : "";
     const res = await post<SingleInvoiceResponse>(
-        `/transactions/CloseOpenInvoice/${invoiceId}`,
+        `/transactions/CloseOpenInvoice/${invoiceId}${q}`,
         {}
     );
     return res;

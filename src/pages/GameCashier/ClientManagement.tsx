@@ -20,6 +20,8 @@ import {
     TableHeader,
     TableRow,
 } from "../../components/ui/table";
+import WalletModal from "../../components/wallet/WalletModal";
+import { getWalletBalances } from "../../services/walletService";
 
 const CLIENT_ROLE_ID = 6;
 
@@ -35,6 +37,10 @@ export default function ClientManagement() {
 
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editing, setEditing] = useState<ClientUserDto | null>(null);
+
+    // Wallet balances for the rows on screen, plus which client's wallet is open.
+    const [balances, setBalances] = useState<Record<number, number>>({});
+    const [walletClient, setWalletClient] = useState<ClientUserDto | null>(null);
     const [form, setForm] = useState<ClientUserCreateRequest>({
         phoneNumber: "",
         firstName: "",
@@ -68,6 +74,13 @@ export default function ClientManagement() {
             const response = await getUsersByRoleId(CLIENT_ROLE_ID, page, pageSize);
             setClients(response.data || []);
             setTotalPages(response.totalPages || Math.ceil(response.totalCount / pageSize));
+
+            // One batched call for the visible rows' wallet balances.
+            // Failure is non-fatal — the column just shows a dash.
+            try {
+                const ids = (response.data || []).map((c: ClientUserDto) => c.id);
+                if (ids.length > 0) setBalances(await getWalletBalances(ids));
+            } catch { /* ignore */ }
         } catch (err: unknown) {
             let message = "Failed to load clients";
             if (err && typeof err === "object") {
@@ -298,6 +311,12 @@ export default function ClientManagement() {
                                         isHeader
                                         className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                                     >
+                                        Wallet
+                                    </TableCell>
+                                    <TableCell
+                                        isHeader
+                                        className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                                    >
                                         Actions
                                     </TableCell>
                                 </TableRow>
@@ -306,7 +325,7 @@ export default function ClientManagement() {
                             <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                                 {clients.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={4} className="px-5 py-10 text-center text-gray-500">
+                                        <TableCell colSpan={5} className="px-5 py-10 text-center text-gray-500">
                                             <div>No clients found</div>
                                         </TableCell>
                                     </TableRow>
@@ -324,13 +343,36 @@ export default function ClientManagement() {
                                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                                             {client.email || "-"}
                                         </TableCell>
-                                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                                        <TableCell className="px-4 py-3 text-start text-theme-sm">
+                                            {/* Balance chip doubles as the wallet button */}
                                             <button
-                                                className="text-sm px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition"
-                                                onClick={() => openEdit(client)}
+                                                type="button"
+                                                onClick={() => setWalletClient(client)}
+                                                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition ${
+                                                    (balances[client.id] ?? 0) > 0
+                                                        ? "bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
+                                                        : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                                                }`}
+                                                title="Open wallet"
                                             >
-                                                Edit
+                                                💰 {balances[client.id] !== undefined ? `$${balances[client.id].toFixed(2)}` : "$0.00"}
                                             </button>
+                                        </TableCell>
+                                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    className="text-sm px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+                                                    onClick={() => openEdit(client)}
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    className="text-sm px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition"
+                                                    onClick={() => setWalletClient(client)}
+                                                >
+                                                    Top up
+                                                </button>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -438,6 +480,18 @@ export default function ClientManagement() {
                     </div>
                 )}
             </div>
+
+            {/* Wallet panel — balance, top-up with bonus preview, history */}
+            {walletClient && (
+                <WalletModal
+                    open
+                    userId={walletClient.id}
+                    userName={`${walletClient.firstName || ""} ${walletClient.lastName || ""}`.trim() || walletClient.phoneNumber}
+                    onClose={() => setWalletClient(null)}
+                    onBalanceChange={(userId, newBalance) =>
+                        setBalances((b) => ({ ...b, [userId]: newBalance }))}
+                />
+            )}
         </div>
     );
 }

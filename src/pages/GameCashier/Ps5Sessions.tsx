@@ -5,6 +5,7 @@ import Modal from '../../components/ui/Modal';
 import GameInvoice from '../../components/invoice/GameInvoice';
 import { GameTransaction } from '../../services/transactionService';
 import AttachClientModal from './AttachClientModal';
+import PaymentChoiceModal from '../../components/wallet/PaymentChoiceModal';
 
 const Ps5Sessions: React.FC = () => {
     const [sessions, setSessions] = useState<OpenSessionDto[]>([]);
@@ -16,6 +17,9 @@ const Ps5Sessions: React.FC = () => {
     const [toast, setToast] = useState<{ variant: 'success' | 'error', title: string, message: string } | null>(null);
     // Attach-client modal state — one modal reused across all cards.
     const [attachingSession, setAttachingSession] = useState<OpenSessionDto | null>(null);
+
+    // Payment picker (cash / wallet / mix) shown before closing a session.
+    const [payingSession, setPayingSession] = useState<OpenSessionDto | null>(null);
 
     const loadSessions = async () => {
         setLoading(true);
@@ -43,10 +47,10 @@ const Ps5Sessions: React.FC = () => {
         loadSessions();
     }, []);
 
-    const handleCloseSession = async (sessionId: number) => {
+    const handleCloseSession = async (sessionId: number, walletAmount = 0) => {
         setClosingSessionId(sessionId);
         try {
-            const response = await closeGameSession(sessionId);
+            const response = await closeGameSession(sessionId, walletAmount);
             if (response.success) {
                 setToast({
                     variant: 'success',
@@ -221,7 +225,7 @@ const Ps5Sessions: React.FC = () => {
                                 </div>
 
                                 <button
-                                    onClick={() => handleCloseSession(session.id)}
+                                    onClick={() => setPayingSession(session)}
                                     disabled={closingSessionId === session.id}
                                     className="w-full mt-4 px-4 py-3 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
                                 >
@@ -260,6 +264,24 @@ const Ps5Sessions: React.FC = () => {
             </Modal>
 
             {/* Attach / change client */}
+            {/* Payment picker — session price is computed at close, so the
+                wallet option means "cover as much as the balance allows". */}
+            {payingSession && (
+                <PaymentChoiceModal
+                    open
+                    total={null}
+                    userId={payingSession.userId}
+                    userName={payingSession.userName}
+                    busy={closingSessionId === payingSession.id}
+                    onCancel={() => setPayingSession(null)}
+                    onConfirm={async (walletAmount) => {
+                        const id = payingSession.id;
+                        setPayingSession(null);
+                        await handleCloseSession(id, walletAmount);
+                    }}
+                />
+            )}
+
             {attachingSession && (
                 <AttachClientModal
                     open={!!attachingSession}

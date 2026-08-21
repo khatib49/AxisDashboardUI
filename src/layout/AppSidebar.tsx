@@ -230,6 +230,7 @@ const AppSidebar: React.FC = () => {
           { name: "Customer Lookup", path: "/admin/loyalty/customers" },
           { name: "Leaderboard", path: "/admin/loyalty/leaderboard" },
           { name: "Conduct Draws", path: "/admin/loyalty/draws" },
+          { name: "Wallets", path: "/admin/wallets" },
         ],
       },
       {

@@ -53,6 +53,7 @@ import OverallProfit from './pages/Admin/OverallProfit';
 import KitchenStats from './pages/Chef/KitchenStats';
 import LoyaltyCheck from './pages/Cashier/LoyaltyCheck';
 import LoyaltyCustomers from './pages/Admin/LoyaltyCustomers';
+import Wallets from './pages/Admin/Wallets';
 import LoyaltyLeaderboard from './pages/Admin/LoyaltyLeaderboard';
 import LoyaltyDraws from './pages/Admin/LoyaltyDraws';
 import OpenInvoices from './pages/Cashier/OpenInvoices';
@@ -247,6 +248,7 @@ export default function App() {
               <Route path="/admin/printers" element={<AdminRoute><Printers /></AdminRoute>} />
               <Route path="/admin/expenses" element={<AdminRoute><Expenses /></AdminRoute>} />
               <Route path="/admin/expense-categories" element={<AdminRoute><ExpenseCategories /></AdminRoute>} />
+              <Route path="/admin/wallets" element={<AdminRoute><Wallets /></AdminRoute>} />
               <Route path="/admin/loyalty/customers" element={<ProtectedRoute><LoyaltyCustomers /></ProtectedRoute>} />
               <Route path="/admin/loyalty/leaderboard" element={<ProtectedRoute><LoyaltyLeaderboard /></ProtectedRoute>} />
               <Route path="/admin/loyalty/draws" element={<ProtectedRoute><LoyaltyDraws /></ProtectedRoute>} />

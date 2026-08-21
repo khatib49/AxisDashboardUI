@@ -18,6 +18,7 @@ import { updateOpenInvoiceSet, setTransactionDiscount } from '../../services/tra
 import { getSets, SetDto } from '../../services/setService';
 import { getDiscounts, DiscountDto } from '../../services/discountService';
 import AttachClientModal from '../GameCashier/AttachClientModal';
+import PaymentChoiceModal from '../../components/wallet/PaymentChoiceModal';
 
 const OpenInvoices: React.FC = () => {
     const [editingSetInvoiceId, setEditingSetInvoiceId] = useState<number | null>(null);
@@ -33,6 +34,9 @@ const [, setLoadingSets] = useState(false);
 
     // Reuses the game cashier's attach-client modal — same narrow endpoint.
     const [clientModalInvoice, setClientModalInvoice] = useState<OpenInvoiceDto | null>(null);
+
+    // Payment picker (cash / wallet / mix) shown when the cashier hits Pay.
+    const [payingInvoice, setPayingInvoice] = useState<OpenInvoiceDto | null>(null);
 
     // Open invoices state
     const [openInvoices, setOpenInvoices] = useState<OpenInvoiceDto[]>([]);
@@ -297,12 +301,10 @@ const handlePrintInvoice = (invoice: OpenInvoiceDto) => {
 };
 
     // Handle close invoice - UPDATED WITH CORRECT PROPERTY NAMES
-const handleCloseInvoice = async (invoiceId: number) => {
-    if (!confirm(`Close invoice #${invoiceId} and mark as paid?`)) return;
-
+const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
     setClosingInvoiceId(invoiceId);
     try {
-        const response = await closeOpenInvoice(invoiceId);
+        const response = await closeOpenInvoice(invoiceId, walletAmount);
         if (response.success) {
             setNotification({
                 variant: 'success',
@@ -766,7 +768,7 @@ const handleCloseInvoice = async (invoiceId: number) => {
 
                         {/* Close & Pay Button */}
                         <button
-                            onClick={() => handleCloseInvoice(invoice.id)}
+                            onClick={() => setPayingInvoice(invoice)}
                             disabled={closingInvoiceId === invoice.id}
                             className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg text-sm"
                         >
@@ -1042,6 +1044,23 @@ const handleCloseInvoice = async (invoiceId: number) => {
                     {currentInvoice && <ItemInvoice transaction={currentInvoice} />}
                 </div>
             </Modal>
+
+            {/* Payment picker — cash / wallet / mixed */}
+            {payingInvoice && (
+                <PaymentChoiceModal
+                    open
+                    total={payingInvoice.totalPrice}
+                    userId={payingInvoice.userId}
+                    userName={payingInvoice.userName}
+                    busy={closingInvoiceId === payingInvoice.id}
+                    onCancel={() => setPayingInvoice(null)}
+                    onConfirm={async (walletAmount) => {
+                        const id = payingInvoice.id;
+                        setPayingInvoice(null);
+                        await handleCloseInvoice(id, walletAmount);
+                    }}
+                />
+            )}
 
             {/* Attach / change client on an open invoice */}
             {clientModalInvoice && (
