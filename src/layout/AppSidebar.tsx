@@ -296,6 +296,8 @@ const AppSidebar: React.FC = () => {
       return [
         { icon: <NavItemsIcon />, name: "Items", path: "/cashier/items" },
         { icon: <NavOrdersIcon />, name: "Orders", path: "/cashier/orders" },
+        // Wallets are topped up from here, so the F&B till needs it too.
+        { icon: <NavUsersIcon />, name: "Clients", path: "/gamecashier/clients" },
         { icon: <NavRewardsIcon />, name: "AXIS PLUS Check", path: "/cashier/loyalty-check" },
       ];
     }

@@ -69,6 +69,12 @@ export default function EventRegistrationPage() {
     if (!formRef.current?.reportValidity()) return;
     if (!method) { setError("Please choose a payment method."); return; }
 
+    // Open the tab NOW, inside the click gesture. Browsers (mobile Safari
+    // especially) block window.open once an await has broken the user-gesture
+    // chain, so we grab the tab first and point it at WhatsApp when the API
+    // answers. If the registration fails we just close it again.
+    const waTab = window.open("", "_blank");
+
     setSubmitting(true); setError(null);
     try {
       const res = await registerForEvent({
@@ -76,10 +82,31 @@ export default function EventRegistrationPage() {
         phone: phone.trim(), email: email.trim() || null,
         paymentMethod: method, eventKey,
       });
-      if (res.redirectUrl) { window.location.href = res.redirectUrl; return; }
+
+      // Card/Whish redirect wins — payment first, WhatsApp after they return.
+      if (res.redirectUrl) {
+        waTab?.close();
+        window.location.href = res.redirectUrl;
+        return;
+      }
+
       setResult(res);
       window.scrollTo({ top: 0, behavior: "smooth" });
+
+      // Registered — send them straight to WhatsApp.
+      if (res.whatsAppUrl) {
+        if (waTab && !waTab.closed) {
+          waTab.location.href = res.whatsAppUrl;
+        } else {
+          // Popup was blocked; a same-tab navigation is never blocked. The
+          // success panel is already rendered behind it, so Back returns to it.
+          window.location.href = res.whatsAppUrl;
+        }
+      } else {
+        waTab?.close();
+      }
     } catch (err: any) {
+      waTab?.close();
       setError(err?.response?.data?.message ?? "Registration failed. Please try again.");
     } finally { setSubmitting(false); }
   };
@@ -164,15 +191,17 @@ export default function EventRegistrationPage() {
               </div>
             )}
 
+            {/* WhatsApp already opened automatically on submit — this stays
+                as the fallback for a blocked popup or a closed tab. */}
             {result.whatsAppUrl && (
               <a href={result.whatsAppUrl} target="_blank" rel="noreferrer" className="sg-btn sg-wa">
-                💬 Send Confirmation on WhatsApp
+                💬 Open WhatsApp again
               </a>
             )}
             <p className="sg-muted" style={{ marginTop: 14 }}>
               {result.payLinkUrl
-                ? <>Pay through the Whish link, screenshot the receipt, then tap <b>Send Confirmation</b> — your spot is held once we confirm it.</>
-                : <>Tap the button, then press <b>send</b> — your spot is held once we confirm payment.</>}
+                ? <>Pay through the Whish link, screenshot the receipt, then send us the WhatsApp message — your spot is held once we confirm it.</>
+                : <>We opened WhatsApp for you — just press <b>send</b>. Your spot is held once we confirm payment.</>}
             </p>
           </div>
         </section>

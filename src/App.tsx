@@ -104,6 +104,18 @@ const CashierRoute: React.FC<{ children: React.ReactElement }> = ({ children }) 
   return children;
 };
 
+// Any till role. Used for screens every counter needs — e.g. Clients, where
+// wallets are topped up. The backend authorizes top-ups for exactly this set,
+// so the UI must not be narrower than the API.
+const TillRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
+  const { hasAnyRole, loading, authenticated } = useAuth();
+  if (loading) return <div className="p-6 text-center">Loading...</div>;
+  if (!authenticated) return <Navigate to="/signin" replace />;
+  if (!hasAnyRole("admin", "cashier", "gamecashier", "GameCashier", "game_cashier", "cashiergame", "admin_fnb"))
+    return <Navigate to="/" replace />;
+  return children;
+};
+
 const GameCashieRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { hasRole, loading, authenticated } = useAuth();
   if (loading) return <div className="p-6 text-center">Loading...</div>;
@@ -304,7 +316,8 @@ export default function App() {
             
               {/* Make Cashier Items also available to game cashier roles */}
               <Route path="/gamecashier/items" element={<GameCashieRoute><CashierItems /></GameCashieRoute>} />
-              <Route path="/gamecashier/clients" element={<GameCashieRoute><ClientManagement /></GameCashieRoute>} />
+              {/* Every till needs this — it's where wallets get topped up. */}
+              <Route path="/gamecashier/clients" element={<TillRoute><ClientManagement /></TillRoute>} />
             </Route>
 
             {/* Auth Layout */}
