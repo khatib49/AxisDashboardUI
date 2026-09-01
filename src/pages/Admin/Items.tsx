@@ -15,6 +15,7 @@ import Loader from "../../components/ui/Loader";
 import Alert from "../../components/ui/alert/Alert";
 import DeleteIconButton from "../../components/ui/DeleteIconButton";
 import { getCategoriesByType, CategoryDto } from "../../services/categoryService";
+import { getItemAddOns, setItemAddOns } from "../../services/itemService";
 import { getStatusName, STATUS_ENABLED, STATUS_DISABLED } from '../../services/statuses';
 import StatusToggle from '../../components/ui/StatusToggle';
 import RecipeEditorModal from '../../components/stock/RecipeEditorModal';
@@ -125,8 +126,13 @@ export default function Items() {
         return () => { mounted = false; };
     }, []);
 
+    // ── Add-ons editor rows (paid extras like "Oat Milk +$1") ──────────
+    const [addOnRows, setAddOnRows] = useState<Array<{ id?: number; name: string; price: number | ''; isActive: boolean }>>([]);
+    const [addOnsLoading, setAddOnsLoading] = useState(false);
+
     function openCreate() {
         setEditing(null);
+        setAddOnRows([]);
         setForm({ name: "", quantity: 0, price: 0, type: "", categoryId: null, buyPrice: null, gameId: null, statusId: STATUS_ENABLED });
         // clear any previous selected image
         if (imagePreview) { try { URL.revokeObjectURL(imagePreview); } catch (e) { void e; } }
@@ -148,6 +154,25 @@ export default function Items() {
         }
         setImageFile(null);
         setIsFormOpen(true);
+
+        // Load ALL add-ons (inactive included) for the editor.
+        setAddOnsLoading(true);
+        getItemAddOns(item.id)
+            .then((list) => setAddOnRows(list.map(a => ({ id: a.id, name: a.name, price: a.price, isActive: a.isActive }))))
+            .catch(() => setAddOnRows([]))
+            .finally(() => setAddOnsLoading(false));
+    }
+
+    async function saveAddOns(itemId: string | number) {
+        // Replace-all sync. Incomplete rows are dropped rather than sent.
+        const payload = addOnRows
+            .filter(r => r.name.trim() !== '' && r.price !== '' && Number(r.price) >= 0)
+            .map(r => ({ id: r.id ?? null, name: r.name.trim(), price: Number(r.price), isActive: r.isActive }));
+        try {
+            await setItemAddOns(itemId, payload);
+        } catch {
+            setNotification({ variant: "error", title: "Add-ons", message: "Item saved, but add-ons failed to save. Reopen and try again." });
+        }
     }
 
     async function submitForm() {
@@ -164,6 +189,7 @@ export default function Items() {
                     // fallback: merge local form
                     setItems((s) => s.map((it) => (it.id === editing.id ? { ...it, ...form } : it)));
                 }
+                await saveAddOns(editing.id);
                 setNotification({ variant: "success", title: "Updated", message: "Item updated" });
             } else {
                 const created = await createItem({ ...form, image: imageFile });
@@ -172,6 +198,7 @@ export default function Items() {
                 try {
                     createdFull = await getItem(created.id);
                 } catch (e) { void e; }
+                await saveAddOns(created.id);
                 setItems((s) => [createdFull, ...s]);
                 setNotification({ variant: "success", title: "Created", message: `Item '${createdFull.name}' created` });
             }
@@ -404,6 +431,70 @@ export default function Items() {
                     <Select options={[{ value: '', label: '-- Select category --' }, ...categories.map((c) => ({ value: c.id, label: c.name }))]} defaultValue={form.categoryId ?? ''} onChange={(v: string | number) => setForm((f) => ({ ...f, categoryId: v === '' ? null : Number(v) }))} />
                     <label className="text-sm text-gray-600">Status</label>
                     <StatusToggle value={form.statusId} onChange={(id) => setForm((f) => ({ ...f, statusId: id }))} />
+
+                    {/* ── Add-ons (paid extras) ─────────────────────────── */}
+                    <div className="mt-2 rounded-lg border border-gray-200 p-3">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <div className="text-sm font-semibold text-gray-800">Add-ons</div>
+                                <div className="text-xs text-gray-500">
+                                    Paid extras the cashier can offer with this item — e.g. Oat Milk +$1.00.
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setAddOnRows((r) => [...r, { name: '', price: '', isActive: true }])}
+                                className="text-sm px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200"
+                            >
+                                + Add
+                            </button>
+                        </div>
+
+                        {addOnsLoading ? (
+                            <div className="py-3 text-sm text-gray-400">Loading…</div>
+                        ) : addOnRows.length === 0 ? (
+                            <div className="py-3 text-sm text-gray-400">No add-ons — this item sells as-is.</div>
+                        ) : (
+                            <div className="mt-2 space-y-2">
+                                {addOnRows.map((row, idx) => (
+                                    <div key={row.id ?? `new-${idx}`} className={`flex items-center gap-2 ${row.isActive ? '' : 'opacity-50'}`}>
+                                        <div className="flex-1">
+                                            <Input
+                                                placeholder="Name (e.g. Oat Milk)"
+                                                value={row.name}
+                                                onChange={(e) => setAddOnRows((r) => r.map((x, i) => i === idx ? { ...x, name: e.target.value } : x))}
+                                            />
+                                        </div>
+                                        <div className="w-28">
+                                            <Input
+                                                type="number"
+                                                step={0.25}
+                                                min="0"
+                                                placeholder="Price"
+                                                value={row.price === '' ? '' : String(row.price)}
+                                                onChange={(e) => setAddOnRows((r) => r.map((x, i) => i === idx ? { ...x, price: e.target.value === '' ? '' : Number(e.target.value) } : x))}
+                                            />
+                                        </div>
+                                        <button
+                                            type="button"
+                                            title={row.isActive ? 'Disable (kept for history)' : 'Enable'}
+                                            onClick={() => setAddOnRows((r) => r.map((x, i) => i === idx ? { ...x, isActive: !x.isActive } : x))}
+                                            className={`px-2.5 py-1.5 rounded-lg text-xs border ${row.isActive ? 'border-green-300 text-green-700 bg-green-50' : 'border-gray-200 text-gray-500'}`}
+                                        >
+                                            {row.isActive ? 'On' : 'Off'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setAddOnRows((r) => r.filter((_, i) => i !== idx))}
+                                            className="px-2.5 py-1.5 rounded-lg text-xs text-red-600 border border-red-200 hover:bg-red-50"
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </Modal>
 

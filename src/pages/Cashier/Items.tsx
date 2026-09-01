@@ -20,7 +20,7 @@ import { STATUS_ENABLED, getStatusName, STATUS_PROCESSED_PAID } from '../../serv
 import Select from "../../components/form/Select";
 import ItemInvoice from "../../components/invoice/ItemInvoice";
 import { getDiscounts, DiscountDto } from "../../services/discountService";
-import { searchClientsByPhone, ClientUserDto } from "../../services/clientService";
+import { searchClientsByPhone, createClient, ClientUserDto } from "../../services/clientService";
 import ChangeCalculator from "../../components/common/ChangeCalculator";
 import { getSets, SetDto } from '../../services/setService';
 import { getChannels, ChannelDto } from '../../services/channelService';
@@ -43,6 +43,10 @@ export default function CashierItems() {
     const [noRecipeIds, setNoRecipeIds] = useState<Set<number> | null>(null);
     // Cache of items by id to persist details across category/page switches
     const [itemLookup, setItemLookup] = useState<Record<string, ItemDto>>({});
+    // Chosen paid extras per item: itemId -> addOnId -> qty. Rides the order
+    // request and shows as sublines on the receipt.
+    const [selectedAddOns, setSelectedAddOns] = useState<Record<string, Record<number, number>>>({});
+    const [customizeItem, setCustomizeItem] = useState<ItemDto | null>(null);
     const [categories, setCategories] = useState<CategoryDto[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -98,6 +102,46 @@ export default function CashierItems() {
     const [searchingClient, setSearchingClient] = useState(false);
     const [clientResults, setClientResults] = useState<ClientUserDto[]>([]);
     const [selectedClient, setSelectedClient] = useState<ClientUserDto | null>(null);
+    // Quick-create when the phone search finds nobody.
+    const [clientNotFound, setClientNotFound] = useState(false);
+    const [showCreateClient, setShowCreateClient] = useState(false);
+    const [newClientFirst, setNewClientFirst] = useState('');
+    const [newClientLast, setNewClientLast] = useState('');
+    const [creatingClient, setCreatingClient] = useState(false);
+
+    async function quickCreateClient() {
+        if (!newClientFirst.trim()) {
+            setNotification({ variant: 'warning', title: 'Missing name', message: 'First name is required.' });
+            return;
+        }
+        setCreatingClient(true);
+        try {
+            const res = await createClient({
+                phoneNumber: clientPhone.trim(),
+                firstName: newClientFirst.trim(),
+                lastName: newClientLast.trim(),
+                email: '',
+            });
+            const created = {
+                id: res.id,
+                phoneNumber: res.phoneNumber,
+                firstName: res.firstName ?? newClientFirst.trim(),
+                lastName: res.lastName ?? newClientLast.trim(),
+                email: null,
+            } as unknown as ClientUserDto;
+            setClientResults([created]);
+            setSelectedClient(created);          // selected immediately
+            setClientNotFound(false);
+            setShowCreateClient(false);
+            setNewClientFirst(''); setNewClientLast('');
+            setNotification({ variant: 'success', title: 'Client created', message: 'Created and attached to this order.' });
+        } catch (err: unknown) {
+            const e = err as { response?: { data?: { message?: string } } };
+            setNotification({ variant: 'error', title: 'Create failed', message: e?.response?.data?.message || 'Could not create the client.' });
+        } finally {
+            setCreatingClient(false);
+        }
+    }
 
     // Comment state
     const [comment, setComment] = useState('');
@@ -303,7 +347,24 @@ export default function CashierItems() {
             return { itemId, name, qty, unit, lineTotal, image };
         });
 
-    const orderSubtotal = orderLines.reduce((s, l) => s + l.lineTotal, 0);
+    // Add-on sublines per order line (looked up from the item's catalog).
+    const addOnLinesFor = (itemId: string) => {
+        const picks = selectedAddOns[itemId];
+        const item = itemLookup[itemId];
+        if (!picks || !item?.addOns) return [] as Array<{ addOnId: number; name: string; qty: number; unit: number; total: number }>;
+        return Object.entries(picks)
+            .map(([addOnId, qty]) => {
+                const def = item.addOns!.find(a => a.id === Number(addOnId));
+                if (!def || qty <= 0) return null;
+                return { addOnId: def.id, name: def.name, qty, unit: def.price, total: def.price * qty };
+            })
+            .filter((x): x is { addOnId: number; name: string; qty: number; unit: number; total: number } => x !== null);
+    };
+
+    const addOnsSubtotal = orderLines.reduce(
+        (s, l) => s + addOnLinesFor(String(l.itemId)).reduce((a, x) => a + x.total, 0), 0);
+
+    const orderSubtotal = orderLines.reduce((s, l) => s + l.lineTotal, 0) + addOnsSubtotal;
 
     // Calculate discount amount
     const selectedDiscount = discounts.find(d => d.id === selectedDiscountId);
@@ -350,13 +411,7 @@ export default function CashierItems() {
         try {
             const results = await searchClientsByPhone(clientPhone);
             setClientResults(results || []);
-            if (results.length === 0) {
-                setNotification({
-                    variant: "info",
-                    title: "No Results",
-                    message: "No clients found with that phone number"
-                });
-            }
+            setClientNotFound((results || []).length === 0);
         } catch (err: unknown) {
             let message = "Failed to search clients";
             if (err && typeof err === "object") {
@@ -374,7 +429,14 @@ export default function CashierItems() {
     const submitPayNow = async (walletAmount = 0) => {
                                                     const orderItems = Object.entries(selectedItems)
                                                         .filter(([, q]) => q > 0)
-                                                        .map(([itemId, q]) => ({ itemId: parseInt(itemId), quantity: q }));
+                                                        .map(([itemId, q]) => ({
+                                                            itemId: parseInt(itemId), quantity: q,
+                                                            addOns: selectedAddOns[itemId]
+                                                                ? Object.entries(selectedAddOns[itemId])
+                                                                    .filter(([, aq]) => aq > 0)
+                                                                    .map(([addOnId, aq]) => ({ addOnId: Number(addOnId), quantity: aq }))
+                                                                : undefined,
+                                                        }));
 
                                                     if (orderItems.length === 0) return;
 
@@ -446,6 +508,8 @@ export default function CashierItems() {
                                                                     lineTotal: item.price * item.quantity,
                                                                     categoryName: '',
                                                                     itemType: item.type || '',
+                                                                    isIncluded: !!item.isIncluded,
+                                                                    addOns: item.addOns || [],
                                                                 })) || []
                                                             };
 
@@ -458,7 +522,7 @@ export default function CashierItems() {
                                                             // the on-site print agent.
                                                         }
 
-                                                        setSelectedItems({});
+                                                        setSelectedItems({}); setSelectedAddOns({});
                                                         setSelectedDiscountId(null);
                                                         setSelectedClient(null);
                                                         setClientResults([]);
@@ -530,7 +594,7 @@ export default function CashierItems() {
                     </span>
                     <button
                         className="px-3 py-1.5 text-xs font-medium text-gray-300 hover:text-white transition"
-                        onClick={() => setSelectedItems({})}
+                        onClick={() => { setSelectedItems({}); setSelectedAddOns({}); }}
                     >
                         Clear
                     </button>
@@ -617,14 +681,23 @@ export default function CashierItems() {
                                             <button
                                                 className="h-9 flex-1 bg-gray-50 text-lg font-medium text-gray-600 hover:bg-gray-100 active:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition"
                                                 disabled={picked === 0}
-                                                onClick={() => setSelectedItems(s => {
+                                                onClick={() => {
                                                     const key = String(it.id);
-                                                    const cur = s[key] || 0;
-                                                    const next = Math.max(0, cur - 1);
-                                                    const copy = { ...s };
-                                                    if (next === 0) delete copy[key]; else copy[key] = next;
-                                                    return copy;
-                                                })}
+                                                    setSelectedItems(s => {
+                                                        const cur = s[key] || 0;
+                                                        const next = Math.max(0, cur - 1);
+                                                        const copy = { ...s };
+                                                        if (next === 0) delete copy[key]; else copy[key] = next;
+                                                        return copy;
+                                                    });
+                                                    // No item, no extras.
+                                                    setSelectedAddOns(a => {
+                                                        if ((selectedItems[key] || 0) > 1) return a;
+                                                        const copy = { ...a };
+                                                        delete copy[key];
+                                                        return copy;
+                                                    });
+                                                }}
                                             >−</button>
                                             <div className={`h-9 w-12 flex items-center justify-center text-sm font-bold border-x border-gray-200 ${picked > 0 ? 'text-indigo-700 bg-indigo-50' : 'text-gray-500 bg-white'}`}>
                                                 {picked}
@@ -638,6 +711,23 @@ export default function CashierItems() {
                                                 })}
                                             >+</button>
                                         </div>
+
+                                        {/* Customize — only items that offer add-ons */}
+                                        {(it.addOns?.length ?? 0) > 0 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setCustomizeItem(it)}
+                                                className={`mt-2 w-full text-xs font-medium rounded-lg py-1.5 transition ${
+                                                    Object.values(selectedAddOns[String(it.id)] ?? {}).some(q => q > 0)
+                                                        ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                                                        : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+                                                }`}
+                                            >
+                                                {Object.values(selectedAddOns[String(it.id)] ?? {}).some(q => q > 0)
+                                                    ? `⚙ Customized (${Object.values(selectedAddOns[String(it.id)] ?? {}).reduce((a, b) => a + b, 0)})`
+                                                    : '⚙ Customize'}
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             );
@@ -744,6 +834,49 @@ export default function CashierItems() {
                                                     className="mt-2"
                                                 />
                                             )}
+
+                                            {/* Nobody found → create them here, phone prefilled */}
+                                            {clientNotFound && !searchingClient && clientPhone.trim() !== '' && (
+                                                <div className="mt-2 rounded-lg border border-dashed border-gray-300 p-2.5">
+                                                    {!showCreateClient ? (
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-xs text-gray-500">No client with "{clientPhone.trim()}".</span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setShowCreateClient(true)}
+                                                                className="text-xs px-2.5 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
+                                                            >
+                                                                + Create client
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="space-y-2">
+                                                            <div className="text-xs text-gray-500">New client — phone <b>{clientPhone.trim()}</b></div>
+                                                            <div className="flex gap-2">
+                                                                <Input placeholder="First name" value={newClientFirst} onChange={(e) => setNewClientFirst(e.target.value)} />
+                                                                <Input placeholder="Last name" value={newClientLast} onChange={(e) => setNewClientLast(e.target.value)} />
+                                                            </div>
+                                                            <div className="flex gap-2">
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={creatingClient}
+                                                                    onClick={quickCreateClient}
+                                                                    className="text-xs px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+                                                                >
+                                                                    {creatingClient ? 'Creating…' : 'Create & attach'}
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setShowCreateClient(false)}
+                                                                    className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
+                                                                >
+                                                                    Cancel
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
                                             {selectedClient && (
                                                 <div className="mt-2 text-xs bg-blue-50 text-blue-700 p-2 rounded flex items-center justify-between">
                                                     <span>Selected: {(() => {
@@ -833,6 +966,13 @@ export default function CashierItems() {
                                                         <div className="ml-2 w-24 text-right font-medium">${l.lineTotal.toFixed(2)}</div>
                                                     </div>
                                                 ))}
+                                                {/* Add-on sublines, indented under their items */}
+                                                {orderLines.flatMap((l) => addOnLinesFor(String(l.itemId)).map((a) => (
+                                                    <div key={`${l.itemId}-a${a.addOnId}`} className="flex items-center justify-between text-xs text-indigo-700 pl-14">
+                                                        <div>+ {a.qty}x {a.name}</div>
+                                                        <div className="w-24 text-right">${a.total.toFixed(2)}</div>
+                                                    </div>
+                                                )))}
                                             </div>
 
                                             <div className="border-t mt-3 pt-3 text-sm">
@@ -872,7 +1012,14 @@ export default function CashierItems() {
                                                 onClick={async () => {
                                                     const orderItems = Object.entries(selectedItems)
                                                         .filter(([, q]) => q > 0)
-                                                        .map(([itemId, q]) => ({ itemId: parseInt(itemId), quantity: q }));
+                                                        .map(([itemId, q]) => ({
+                                                            itemId: parseInt(itemId), quantity: q,
+                                                            addOns: selectedAddOns[itemId]
+                                                                ? Object.entries(selectedAddOns[itemId])
+                                                                    .filter(([, aq]) => aq > 0)
+                                                                    .map(([addOnId, aq]) => ({ addOnId: Number(addOnId), quantity: aq }))
+                                                                : undefined,
+                                                        }));
 
                                                     if (orderItems.length === 0) return;
 
@@ -925,6 +1072,8 @@ export default function CashierItems() {
                                                                     lineTotal: item.price * item.quantity,
                                                                     categoryName: '',
                                                                     itemType: item.type || '',
+                                                                    isIncluded: !!item.isIncluded,
+                                                                    addOns: item.addOns || [],
                                                                 })) || []
                                                             };
 
@@ -937,7 +1086,7 @@ export default function CashierItems() {
                                                             // the on-site print agent.
                                                         }
 
-                                                        setSelectedItems({});
+                                                        setSelectedItems({}); setSelectedAddOns({});
                                                         setSelectedDiscountId(null);
                                                         setSelectedClient(null);
                                                         setClientResults([]);
@@ -1182,6 +1331,56 @@ export default function CashierItems() {
                 onClose={() => setCalculatorOpen(false)}
                 totalAmount={orderTotal}
             />
+
+            {/* Customize sheet — pick paid extras for one item */}
+            {customizeItem && (
+                <Modal isOpen onClose={() => setCustomizeItem(null)} title={`Customize — ${customizeItem.name}`}>
+                    <div className="space-y-2">
+                        <p className="text-xs text-gray-500">
+                            Extras are charged <b>as picked</b> — e.g. 2 lattes with 1x Oat Milk
+                            adds one Oat Milk to the bill. Pick 2 if both drinks need it.
+                        </p>
+                        {(customizeItem.addOns ?? []).map((a) => {
+                            const key = String(customizeItem.id);
+                            const qty = selectedAddOns[key]?.[a.id] ?? 0;
+                            const setQty = (next: number) => setSelectedAddOns((prev) => {
+                                const perItem = { ...(prev[key] ?? {}) };
+                                if (next <= 0) delete perItem[a.id]; else perItem[a.id] = next;
+                                const copy = { ...prev };
+                                if (Object.keys(perItem).length === 0) delete copy[key]; else copy[key] = perItem;
+                                return copy;
+                            });
+                            return (
+                                <div key={a.id} className={`flex items-center justify-between rounded-xl border px-3 py-2.5 ${qty > 0 ? 'border-indigo-300 bg-indigo-50/50' : 'border-gray-200'}`}>
+                                    <div>
+                                        <div className="text-sm font-medium text-gray-900">{a.name}</div>
+                                        <div className="text-xs text-gray-500">+${a.price.toFixed(2)}</div>
+                                    </div>
+                                    <div className="flex items-center rounded-lg border border-gray-200 overflow-hidden">
+                                        <button type="button" className="h-8 w-9 bg-gray-50 text-gray-600 hover:bg-gray-100 disabled:opacity-40" disabled={qty === 0} onClick={() => setQty(qty - 1)}>−</button>
+                                        <div className={`h-8 w-9 flex items-center justify-center text-sm font-bold ${qty > 0 ? 'text-indigo-700 bg-indigo-50' : 'text-gray-400'}`}>{qty}</div>
+                                        <button type="button" className="h-8 w-9 bg-indigo-600 text-white hover:bg-indigo-700" onClick={() => setQty(qty + 1)}>+</button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        <button
+                            type="button"
+                            onClick={() => {
+                                // Customizing implies they want the item — add one if none picked yet.
+                                const key = String(customizeItem.id);
+                                if (!(selectedItems[key] > 0) && Object.values(selectedAddOns[key] ?? {}).some(q => q > 0)) {
+                                    setSelectedItems(s => ({ ...s, [key]: 1 }));
+                                }
+                                setCustomizeItem(null);
+                            }}
+                            className="w-full h-10 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition"
+                        >
+                            Done
+                        </button>
+                    </div>
+                </Modal>
+            )}
 
             {/* Payment picker — cash / wallet / mixed, shown for Pay Now when
                 a client is attached */}

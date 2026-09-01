@@ -1,5 +1,14 @@
 import api from "../services/api";
 
+/** A paid extra an item offers ("Oat Milk +$1.00"). */
+export type ItemAddOnDto = {
+  id: number;
+  name: string;
+  price: number;
+  isActive: boolean;
+  sortOrder: number;
+};
+
 export type ItemDto = {
   id: string;
   name: string;
@@ -10,10 +19,27 @@ export type ItemDto = {
   gameId: string | null;
   statusId?: number | null;
   imagePath?: string | null;
-  buyPrice?: number | null;  
+  buyPrice?: number | null;
+  /** Active add-ons, present on the cashier list. */
+  addOns?: ItemAddOnDto[] | null;
 };
 
 const basePath = "/item";
+
+/** Admin: all add-ons of an item, inactive included. */
+export async function getItemAddOns(itemId: string | number): Promise<ItemAddOnDto[]> {
+  const res = await api.get<ItemAddOnDto[]>(`${basePath}/${itemId}/addons`);
+  return res.data;
+}
+
+/** Admin: replace-all sync of an item's add-ons. Returns the saved list. */
+export async function setItemAddOns(
+  itemId: string | number,
+  addOns: Array<{ id?: number | null; name: string; price: number; isActive?: boolean }>
+): Promise<ItemAddOnDto[]> {
+  const res = await api.put<ItemAddOnDto[]>(`${basePath}/${itemId}/addons`, addOns);
+  return res.data;
+}
 
 export type ItemListResponse = {
   totalCount: number;

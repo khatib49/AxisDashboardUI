@@ -40,6 +40,9 @@ const [, setLoadingSets] = useState(false);
 
     // Open invoices state
     const [openInvoices, setOpenInvoices] = useState<OpenInvoiceDto[]>([]);
+    // Quick find — client name, invoice #, item, set. All invoices are
+    // loaded at once (no server paging here), so filtering locally is exact.
+    const [invoiceSearch, setInvoiceSearch] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -121,6 +124,7 @@ const [, setLoadingSets] = useState(false);
         .finally(() => {
             if (mounted) setLoadingSets(false);
         });
+
     return () => { mounted = false; };
 }, []);
 
@@ -291,6 +295,8 @@ const handlePrintInvoice = (invoice: OpenInvoiceDto) => {
             quantity: item.quantity,
             unitPrice: item.price,
             lineTotal: item.price * item.quantity,
+            isIncluded: !!item.isIncluded,
+            addOns: item.addOns || [],
             categoryName: '',
             itemType: item.type || '',
         })) || []
@@ -339,6 +345,8 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                         lineTotal: item.price * item.quantity,
                         categoryName: '',      // Not needed for receipt
                         itemType: item.type || '',
+                        isIncluded: !!item.isIncluded,
+                        addOns: item.addOns || [],
                     })) || []
                 };
 
@@ -465,10 +473,48 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
         0
     );
 
+
+    // Case-insensitive match against everything a cashier might remember.
+    const visibleInvoices = (() => {
+        const q = invoiceSearch.trim().toLowerCase();
+        if (!q) return openInvoices;
+        return openInvoices.filter((inv) =>
+            (inv.userName ?? '').toLowerCase().includes(q) ||
+            String(inv.id).includes(q) ||
+            (inv.set ?? '').toLowerCase().includes(q) ||
+            (inv.createdBy ?? '').toLowerCase().includes(q) ||
+            (inv.items ?? []).some((it) => it.itemName.toLowerCase().includes(q))
+        );
+    })();
+
     return (
         <div className="p-6">
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-semibold">Open Invoices</h1>
+                <div className="flex items-center gap-2">
+                <div className="relative">
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" strokeLinecap="round" />
+                        </svg>
+                    </span>
+                    <input
+                        value={invoiceSearch}
+                        onChange={(e) => setInvoiceSearch(e.target.value)}
+                        placeholder="Client, invoice #, item…"
+                        className="h-10 w-64 rounded-lg border border-gray-200 bg-white pl-9 pr-8 text-sm shadow-sm placeholder:text-gray-400 focus:border-orange-400 focus:outline-none focus:ring-4 focus:ring-orange-500/10"
+                    />
+                    {invoiceSearch && (
+                        <button
+                            type="button"
+                            onClick={() => setInvoiceSearch('')}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+                            aria-label="Clear search"
+                        >
+                            ×
+                        </button>
+                    )}
+                </div>
                 <button
                     onClick={loadOpenInvoices}
                     className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition flex items-center gap-2"
@@ -483,6 +529,7 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                     </svg>
                     Refresh
                 </button>
+                </div>
             </div>
 
             {loading && (
@@ -517,9 +564,17 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                 </div>
             )}
 
-            {!loading && !error && openInvoices.length > 0 && (
+            {!loading && !error && openInvoices.length > 0 && visibleInvoices.length === 0 && (
+                <div className="text-center py-16 text-gray-500">
+                    <div className="text-3xl mb-2">🔍</div>
+                    <p className="text-lg font-medium">No invoice matches “{invoiceSearch}”</p>
+                    <p className="text-sm mt-1">Try the client's name, the invoice number, or an item on it.</p>
+                </div>
+            )}
+
+            {!loading && !error && visibleInvoices.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {openInvoices.map((invoice) => (
+                    {visibleInvoices.map((invoice) => (
                      <div
                 key={invoice.id}
                 className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-orange-200 hover:border-orange-400"
@@ -697,16 +752,21 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                         </p>
                         <div className="space-y-1 max-h-32 overflow-y-auto">
                             {invoice.items?.map((item) => (
-                                <div
-                                    key={item.itemId}
-                                    className="flex justify-between text-xs"
-                                >
-                                    <span className="text-gray-700 truncate max-w-[150px]">
-                                        {item.itemName}
-                                    </span>
-                                    <span className="text-gray-600">
-                                        {item.quantity} × ${item.price.toFixed(2)}
-                                    </span>
+                                <div key={item.itemId}>
+                                    <div className="flex justify-between text-xs">
+                                        <span className="text-gray-700 truncate max-w-[150px]">
+                                            {item.itemName}{item.isIncluded ? ' 🎟' : ''}
+                                        </span>
+                                        <span className="text-gray-600">
+                                            {item.quantity} × ${item.price.toFixed(2)}
+                                        </span>
+                                    </div>
+                                    {(item.addOns ?? []).map((a) => (
+                                        <div key={a.addOnId} className="flex justify-between text-[11px] text-indigo-600 pl-3">
+                                            <span>+ {a.quantity}x {a.name}</span>
+                                            <span>${a.lineTotal.toFixed(2)}</span>
+                                        </div>
+                                    ))}
                                 </div>
                             ))}
                         </div>

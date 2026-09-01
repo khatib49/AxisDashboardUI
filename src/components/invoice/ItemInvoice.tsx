@@ -147,11 +147,20 @@ const ItemInvoice: React.FC<ItemInvoiceProps> = ({ transaction, onPrint }) => {
                 {transaction.items && transaction.items.length > 0 ? (
                     transaction.items.map((item, idx) => (
                         <div key={idx} style={{ marginBottom: '4px' }}>
-                            <div style={{ fontSize: '11px', fontWeight: 600 }}>{item.itemName}</div>
+                            <div style={{ fontSize: '11px', fontWeight: 600 }}>
+                                {item.itemName}{item.isIncluded ? ' (included)' : ''}
+                            </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px' }}>
                                 <span>&nbsp;x{item.quantity} @ ${item.unitPrice.toFixed(2)}</span>
                                 <span style={{ fontWeight: 700 }}>${item.lineTotal.toFixed(2)}</span>
                             </div>
+                            {/* Paid extras, indented under the item */}
+                            {(item.addOns ?? []).map((a, ai) => (
+                                <div key={ai} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', paddingLeft: '8px' }}>
+                                    <span>+ {a.quantity}x {a.name}</span>
+                                    <span>${a.lineTotal.toFixed(2)}</span>
+                                </div>
+                            ))}
                         </div>
                     ))
                 ) : (
@@ -163,7 +172,10 @@ const ItemInvoice: React.FC<ItemInvoiceProps> = ({ transaction, onPrint }) => {
             {/* Totals */}
             <div style={{ marginBottom: '2px' }}>
                 {transaction.discount && transaction.discount.percentage > 0 && (() => {
-                    const itemsSubtotal = transaction.items.reduce((sum, item) => sum + item.lineTotal, 0);
+                    const itemsSubtotal = transaction.items.reduce(
+                        (sum, item) => sum + item.lineTotal
+                            + (item.addOns ?? []).reduce((a, x) => a + x.lineTotal, 0),
+                        0);
                     const discountRate = transaction.discount.percentage > 1
                         ? transaction.discount.percentage / 100
                         : transaction.discount.percentage;

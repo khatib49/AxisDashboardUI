@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Card, Table, Tag, Button, Space, Modal, Form, Input, InputNumber,
   Switch, DatePicker, message, Typography, Progress, Tooltip, Popconfirm,
+  Segmented, Select,
 } from "antd";
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined,
@@ -29,6 +30,25 @@ const PLACEHOLDERS = [
   "phone", "email", "paymentMethod", "amount", "currency", "eventDate", "location",
 ];
 
+// Chip colors on the calendar, keyed by event type. Types are free text
+// server-side; anything unknown falls back to "Other".
+export const EVENT_TYPES = [
+  "PS5 Session", "Board Games", "Billiards", "TCG Event",
+  "Social Event", "Tournament", "Other",
+] as const;
+
+const TYPE_COLORS: Record<string, { dot: string; bg: string; text: string }> = {
+  "PS5 Session":  { dot: "#7C5CFC", bg: "#F1EDFF", text: "#5B3FD4" },
+  "Board Games":  { dot: "#F0A202", bg: "#FFF6E0", text: "#B07600" },
+  "Billiards":    { dot: "#16A34A", bg: "#E8F8EE", text: "#0E7A37" },
+  "TCG Event":    { dot: "#9333EA", bg: "#F6EDFF", text: "#7A22C9" },
+  "Social Event": { dot: "#EC4899", bg: "#FDEDF5", text: "#C2266F" },
+  "Tournament":   { dot: "#2563EB", bg: "#EAF1FF", text: "#1D4FBF" },
+  "Other":        { dot: "#9CA3AF", bg: "#F3F4F6", text: "#4B5563" },
+};
+
+const typeColor = (t?: string | null) => TYPE_COLORS[t ?? "Other"] ?? TYPE_COLORS["Other"];
+
 const DEFAULT_TEMPLATE =
   `{{eventTitle}} — Registration #{{registrationId}}
 
@@ -38,6 +58,167 @@ Payment: {{paymentMethod}}
 Amount: {{amount}} {{currency}}
 
 I'd like to confirm my payment.`;
+
+// ── Month calendar of events (the mock's "Calendar" tab) ──────────────────
+function EventsCalendar({ rows, onEdit }: { rows: EventDto[]; onEdit: (e: EventDto) => void }) {
+  const [month, setMonth] = useState(() => dayjs().startOf("month"));
+  const [selected, setSelected] = useState(() => dayjs());
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+
+  const dated = rows.filter(r => r.eventDate
+    && (typeFilter === "all" || (r.type ?? "Other") === typeFilter));
+  const undatedCount = rows.filter(r => !r.eventDate).length;
+
+  const byDay = new Map<string, EventDto[]>();
+  for (const r of dated) {
+    const k = dayjs(r.eventDate!).format("YYYY-MM-DD");
+    if (!byDay.has(k)) byDay.set(k, []);
+    byDay.get(k)!.push(r);
+  }
+  byDay.forEach(list => list.sort((a, b) => dayjs(a.eventDate!).valueOf() - dayjs(b.eventDate!).valueOf()));
+
+  // 6 fixed weeks so the grid never jumps height between months.
+  const gridStart = month.startOf("week");
+  const cells = Array.from({ length: 42 }, (_, i) => gridStart.add(i, "day"));
+  const selectedKey = selected.format("YYYY-MM-DD");
+  const dayEvents = byDay.get(selectedKey) ?? [];
+
+  return (
+    <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
+      {/* ── Month grid ── */}
+      <Card size="small" style={{ flex: "1 1 620px", minWidth: 560 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+          <Space>
+            <Button size="small" onClick={() => setMonth(m => m.subtract(1, "month"))}>‹</Button>
+            <Button size="small" onClick={() => setMonth(m => m.add(1, "month"))}>›</Button>
+            <Button size="small" onClick={() => { setMonth(dayjs().startOf("month")); setSelected(dayjs()); }}>
+              Today
+            </Button>
+          </Space>
+          <Text strong style={{ fontSize: 16 }}>{month.format("MMMM YYYY")}</Text>
+          <Select
+            size="small" value={typeFilter} onChange={setTypeFilter} style={{ width: 150 }}
+            options={[{ value: "all", label: "All types" },
+              ...EVENT_TYPES.map(t => ({ value: t, label: t }))]}
+          />
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
+            <div key={d} style={{ textAlign: "center", fontSize: 11, fontWeight: 600, color: "#9CA3AF", padding: "2px 0" }}>
+              {d}
+            </div>
+          ))}
+          {cells.map(day => {
+            const key = day.format("YYYY-MM-DD");
+            const inMonth = day.isSame(month, "month");
+            const isToday = day.isSame(dayjs(), "day");
+            const isSelected = key === selectedKey;
+            const events = byDay.get(key) ?? [];
+            return (
+              <div
+                key={key}
+                onClick={() => setSelected(day)}
+                style={{
+                  minHeight: 74, borderRadius: 10, padding: "4px 5px", cursor: "pointer",
+                  border: isSelected ? "2px solid #6D5BF6" : "1px solid #F0F0F2",
+                  background: inMonth ? "#fff" : "#FAFAFB",
+                  opacity: inMonth ? 1 : 0.55,
+                }}
+              >
+                <div style={{
+                  fontSize: 12, fontWeight: 600, width: 22, height: 22, lineHeight: "22px",
+                  textAlign: "center", borderRadius: "50%",
+                  background: isToday ? "#6D5BF6" : "transparent",
+                  color: isToday ? "#fff" : inMonth ? "#374151" : "#9CA3AF",
+                }}>
+                  {day.date()}
+                </div>
+                {events.slice(0, 2).map(ev => {
+                  const c = typeColor(ev.type);
+                  return (
+                    <div
+                      key={ev.id}
+                      onClick={(e) => { e.stopPropagation(); onEdit(ev); }}
+                      title={`${ev.title} — ${dayjs(ev.eventDate!).format("HH:mm")}`}
+                      style={{
+                        marginTop: 3, padding: "1px 5px", borderRadius: 5, fontSize: 10,
+                        background: c.bg, color: c.text, whiteSpace: "nowrap",
+                        overflow: "hidden", textOverflow: "ellipsis",
+                      }}
+                    >
+                      <span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: c.dot, marginRight: 4, verticalAlign: "middle" }} />
+                      {ev.title}
+                    </div>
+                  );
+                })}
+                {events.length > 2 && (
+                  <div style={{ fontSize: 9.5, color: "#6D5BF6", marginTop: 2, fontWeight: 600 }}>
+                    +{events.length - 2} more
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Legend */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 10, paddingTop: 8, borderTop: "1px solid #F0F0F2" }}>
+          {EVENT_TYPES.map(t => (
+            <span key={t} style={{ fontSize: 11, color: "#6B7280" }}>
+              <span style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: typeColor(t).dot, marginRight: 5 }} />
+              {t}
+            </span>
+          ))}
+          {undatedCount > 0 && (
+            <Text type="secondary" style={{ fontSize: 11, marginLeft: "auto" }}>
+              {undatedCount} event(s) without a date — visible in the List view
+            </Text>
+          )}
+        </div>
+      </Card>
+
+      {/* ── Selected day panel ── */}
+      <Card size="small" style={{ flex: "0 1 300px", minWidth: 270 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+          <Text strong>Events on {selected.format("ddd, D MMM")}</Text>
+          <Tag color="purple">{dayEvents.length}</Tag>
+        </div>
+
+        {dayEvents.length === 0 ? (
+          <div style={{ textAlign: "center", color: "#9CA3AF", padding: "26px 0", fontSize: 13 }}>
+            Nothing scheduled this day.
+          </div>
+        ) : dayEvents.map(ev => {
+          const c = typeColor(ev.type);
+          return (
+            <div
+              key={ev.id}
+              onClick={() => onEdit(ev)}
+              style={{
+                border: "1px solid #F0F0F2", borderRadius: 10, padding: "10px 12px",
+                marginBottom: 8, cursor: "pointer", background: "#FDFDFE",
+              }}
+            >
+              <div style={{ fontWeight: 600, fontSize: 13 }}>
+                <span style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: c.dot, marginRight: 6 }} />
+                {ev.title}
+              </div>
+              <div style={{ fontSize: 12, color: "#6B7280", marginTop: 3 }}>
+                {dayjs(ev.eventDate!).format("h:mm A")}
+                {ev.location ? <> · {ev.location}</> : null}
+              </div>
+              <div style={{ fontSize: 12, marginTop: 5, color: "#6D5BF6", fontWeight: 600 }}>
+                🎟 {ev.paidCount}{ev.capacity ? ` / ${ev.capacity}` : ""} tickets sold
+                {!ev.isPublished && <Tag style={{ marginLeft: 6 }} color="orange">Draft</Tag>}
+              </div>
+            </div>
+          );
+        })}
+      </Card>
+    </div>
+  );
+}
 
 export default function EventsManager() {
   const [rows, setRows] = useState<EventDto[]>([]);
@@ -49,6 +230,8 @@ export default function EventsManager() {
   const [uploadPct, setUploadPct] = useState<number | null>(null);
   const [form] = Form.useForm();
   const fileRef = useRef<HTMLInputElement>(null);
+  // List for management, Calendar for the month-at-a-glance view.
+  const [view, setView] = useState<"List" | "Calendar">("List");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -68,6 +251,7 @@ export default function EventsManager() {
       enableVisa: true, enableWhish: true, enableCash: true,
       isPublished: false, isActive: true,
       whatsAppTemplate: DEFAULT_TEMPLATE,
+      type: "Other",
     });
   };
 
@@ -104,6 +288,7 @@ export default function EventsManager() {
         whishPaymentLink: v.whishPaymentLink?.trim() || null,
         whatsAppNumber: v.whatsAppNumber || null,
         whatsAppTemplate: v.whatsAppTemplate || null,
+        type: v.type || "Other",
         isPublished: !!v.isPublished,
         isActive: !!v.isActive,
         capacity: v.capacity ? Number(v.capacity) : null,
@@ -242,16 +427,25 @@ export default function EventsManager() {
           </Text>
         </div>
         <Space>
+          <Segmented
+            options={["List", "Calendar"]}
+            value={view}
+            onChange={(v) => setView(v as "List" | "Calendar")}
+          />
           <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>Refresh</Button>
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>New Event</Button>
         </Space>
       </div>
 
-      <Card size="small">
-        <Table size="small" rowKey="id" loading={loading}
-          columns={columns} dataSource={rows} scroll={{ x: 1000 }}
-          pagination={{ pageSize: 20 }} />
-      </Card>
+      {view === "List" ? (
+        <Card size="small">
+          <Table size="small" rowKey="id" loading={loading}
+            columns={columns} dataSource={rows} scroll={{ x: 1000 }}
+            pagination={{ pageSize: 20 }} />
+        </Card>
+      ) : (
+        <EventsCalendar rows={rows} onEdit={openEdit} />
+      )}
 
       {/* hidden file input drives the video upload */}
       <input ref={fileRef} type="file" accept="video/mp4,video/webm,video/quicktime"
@@ -285,6 +479,10 @@ export default function EventsManager() {
           </Form.Item>
 
           <Space size="middle" style={{ display: "flex" }}>
+            <Form.Item name="type" label="Type" style={{ width: 180 }}
+              extra="Colors the chip on the calendar.">
+              <Select options={EVENT_TYPES.map(t => ({ value: t, label: t }))} />
+            </Form.Item>
             <Form.Item name="eventDate" label="Date & time" style={{ flex: 1 }}>
               <DatePicker showTime style={{ width: "100%" }} />
             </Form.Item>

@@ -29,6 +29,8 @@ export type EventDto = {
   createdOn: string;
   registrationCount: number;
   paidCount: number;
+  /** Calendar chip category: PS5 Session, Board Games, Billiards, TCG Event, Social, Tournament, Other. */
+  type?: string;
 };
 
 export type EventUpsert = {
@@ -51,6 +53,7 @@ export type EventUpsert = {
   isPublished: boolean;
   isActive: boolean;
   capacity?: number | null;
+  type?: string | null;
 };
 
 // What the public page renders — fully data-driven.

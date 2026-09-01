@@ -4,7 +4,9 @@ import api, { get, post, put, del } from "./api";
 
 export type OrderItemRequest = { 
     itemId: number; 
-    quantity: number 
+    quantity: number;
+    /** Paid extras picked in the customize sheet. */
+    addOns?: Array<{ addOnId: number; quantity: number }>;
 };
 
 export type ApiResponse<T = unknown> = {
@@ -157,6 +159,8 @@ export interface ItemTransaction {
         imagePath?: string;
         /** Bundled with an event setting — handed over, but not charged. */
         isIncluded?: boolean;
+        /** Paid extras chosen for this line (snapshotted at sale time). */
+        addOns?: Array<{ addOnId: number; name: string; quantity: number; unitPrice: number; lineTotal: number }>;
     }>;
     discount?: SimpleDiscount | null;
     comment?: string;
@@ -243,6 +247,8 @@ export interface OpenInvoiceDto {
         quantity: number;
         price: number;
         type: string;
+        isIncluded?: boolean;
+        addOns?: Array<{ addOnId: number; name: string; quantity: number; unitPrice: number; lineTotal: number }>;
     }>;
 }
 

@@ -12,7 +12,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Modal, Input, Select, message, Button, Space, Tag } from "antd";
 import { UserOutlined, SearchOutlined } from "@ant-design/icons";
 import {
-  ClientUserDto, searchClientsByPhone, getUsersByRoleId,
+  ClientUserDto, searchClientsByPhone, getUsersByRoleId, createClient,
 } from "../../services/clientService";
 import { attachClientToTransaction } from "../../services/transactionService";
 
@@ -50,12 +50,46 @@ export default function AttachClientModal({
   const [selectedId, setSelectedId] = useState<number | null>(currentUserId);
   const [saving, setSaving] = useState(false);
 
+  // Quick-create when the phone search finds nobody — the cashier shouldn't
+  // have to leave the modal to register a walk-in.
+  const [showCreate, setShowCreate] = useState(false);
+  const [newFirst, setNewFirst] = useState("");
+  const [newLast, setNewLast] = useState("");
+  const [creating, setCreating] = useState(false);
+
+  const quickCreate = async () => {
+    if (!newFirst.trim()) { message.warning("First name is required."); return; }
+    setCreating(true);
+    try {
+      const res = await createClient({
+        phoneNumber: phoneQuery.trim(),
+        firstName: newFirst.trim(),
+        lastName: newLast.trim(),
+        email: "",
+      });
+      const created: ClientUserDto = {
+        id: res.id,
+        phoneNumber: res.phoneNumber,
+        firstName: res.firstName ?? newFirst.trim(),
+        lastName: res.lastName ?? newLast.trim(),
+        email: null,
+      } as unknown as ClientUserDto;
+      setPhoneResults([created]);
+      setSelectedId(res.id);          // pre-selected — one Save away
+      setShowCreate(false);
+      message.success(res.isNewlyCreated === false ? "Client already existed — selected." : "Client created and selected.");
+    } catch (e: any) {
+      message.error(e?.response?.data?.message ?? "Could not create the client.");
+    } finally { setCreating(false); }
+  };
+
   // Reset on open so the modal doesn't remember the previous card's state.
   useEffect(() => {
     if (open) {
       setPhoneQuery("");
       setPhoneResults([]);
       setSelectedId(currentUserId ?? null);
+      setShowCreate(false); setNewFirst(""); setNewLast("");
     }
   }, [open, currentUserId]);
 
@@ -180,6 +214,38 @@ export default function AttachClientModal({
                   {clientLabel(c)}
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Nobody found → create them right here, phone prefilled */}
+          {!phoneSearching && phoneQuery.trim().length >= 3 && phoneResults.length === 0 && (
+            <div style={{ marginTop: 8, border: "1px dashed #D1D5DB", borderRadius: 8, padding: "10px 12px" }}>
+              {!showCreate ? (
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 12, color: "#6B7280" }}>
+                    No client with “{phoneQuery.trim()}”.
+                  </span>
+                  <Button size="small" type="primary" ghost onClick={() => setShowCreate(true)}>
+                    + Create client
+                  </Button>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ fontSize: 12, color: "#6B7280" }}>
+                    New client — phone <b>{phoneQuery.trim()}</b>
+                  </div>
+                  <Space.Compact style={{ width: "100%" }}>
+                    <Input placeholder="First name" value={newFirst} onChange={(e) => setNewFirst(e.target.value)} />
+                    <Input placeholder="Last name" value={newLast} onChange={(e) => setNewLast(e.target.value)} />
+                  </Space.Compact>
+                  <Space>
+                    <Button size="small" type="primary" loading={creating} onClick={quickCreate}>
+                      Create & select
+                    </Button>
+                    <Button size="small" onClick={() => setShowCreate(false)}>Cancel</Button>
+                  </Space>
+                </div>
+              )}
             </div>
           )}
         </div>
