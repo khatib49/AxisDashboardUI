@@ -21,6 +21,9 @@ const BoardGameSessions: React.FC = () => {
     // Payment picker (cash / wallet / mix) shown before closing a session.
     const [payingSession, setPayingSession] = useState<OpenSessionDto | null>(null);
 
+    // Quick find — client name, session #, set, room.
+    const [sessionSearch, setSessionSearch] = useState('');
+
     const loadSessions = async () => {
         setLoading(true);
         setError(null);
@@ -103,10 +106,42 @@ const BoardGameSessions: React.FC = () => {
         return `${diffMinutes}m`;
     };
 
+
+    const visibleSessions = (() => {
+        const q = sessionSearch.trim().toLowerCase();
+        if (!q) return sessions;
+        return sessions.filter((s) =>
+            (s.userName ?? '').toLowerCase().includes(q) ||
+            String(s.id).includes(q) ||
+            (s.set ?? '').toLowerCase().includes(q) ||
+            (s.room ?? '').toLowerCase().includes(q) ||
+            (s.createdBy ?? '').toLowerCase().includes(q)
+        );
+    })();
+
     return (
         <div className="p-6">
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-semibold">Open Board Game Sessions</h1>
+                <div className="flex items-center gap-2">
+                <div className="relative">
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" strokeLinecap="round" />
+                        </svg>
+                    </span>
+                    <input
+                        value={sessionSearch}
+                        onChange={(e) => setSessionSearch(e.target.value)}
+                        placeholder="Client, session #, set…"
+                        className="h-10 w-60 rounded-lg border border-gray-200 bg-white pl-9 pr-8 text-sm shadow-sm placeholder:text-gray-400 focus:border-indigo-400 focus:outline-none focus:ring-4 focus:ring-indigo-500/10"
+                    />
+                    {sessionSearch && (
+                        <button type="button" onClick={() => setSessionSearch('')} aria-label="Clear search"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100">×</button>
+                    )}
+                </div>
+                </div>
                 <button
                     onClick={loadSessions}
                     className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2"
@@ -149,7 +184,7 @@ const BoardGameSessions: React.FC = () => {
 
             {!loading && !error && sessions.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {sessions.map((session) => (
+                    {visibleSessions.map((session) => (
                         <div
                             key={session.id}
                             className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-200 hover:border-green-300"

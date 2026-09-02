@@ -154,6 +154,26 @@ export async function getPublicEvent(eventKey: string): Promise<EventPublic> {
   return data;
 }
 
+// ── Till (cashier) ────────────────────────────────────────────────────
+/** Active dated events for the cashier boards — drafts included. */
+export async function getUpcomingEvents(days = 21): Promise<EventDto[]> {
+  const { data } = await api.get(`/events/upcoming`, { params: { days } });
+  return data;
+}
+
+/** Cashier quick-create. Lands unpublished; admin publishes to the website. */
+export async function quickCreateEvent(body: {
+  title: string;
+  type?: string;
+  eventDate?: string | null;
+  location?: string | null;
+  price?: number;
+  capacity?: number | null;
+}): Promise<EventDto> {
+  const { data } = await api.post(`/events/quick`, body);
+  return data;
+}
+
 // ── Admin CMS ─────────────────────────────────────────────────────────
 export async function listEvents(): Promise<EventDto[]> {
   const { data } = await api.get(`/admin/events`);

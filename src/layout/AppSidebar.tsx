@@ -287,6 +287,7 @@ const AppSidebar: React.FC = () => {
         { icon: <NavOrdersIcon />, name: "Open Items Invoice", path: "/cashier/open-invoices" },
         { icon: <NavRoomsIcon />, name: "Rooms", path: "/gamecashier/rooms" },
         { icon: <NavUsersIcon />, name: "Clients", path: "/gamecashier/clients" },
+        { icon: <NavGameIcon />, name: "Events", path: "/cashier/events" },
         { icon: <NavRewardsIcon />, name: "AXIS PLUS Check", path: "/cashier/loyalty-check" },
       ];
     }
@@ -298,6 +299,7 @@ const AppSidebar: React.FC = () => {
         { icon: <NavOrdersIcon />, name: "Orders", path: "/cashier/orders" },
         // Wallets are topped up from here, so the F&B till needs it too.
         { icon: <NavUsersIcon />, name: "Clients", path: "/gamecashier/clients" },
+        { icon: <NavGameIcon />, name: "Events", path: "/cashier/events" },
         { icon: <NavRewardsIcon />, name: "AXIS PLUS Check", path: "/cashier/loyalty-check" },
       ];
     }

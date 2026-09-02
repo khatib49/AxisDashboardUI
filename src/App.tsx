@@ -54,6 +54,7 @@ import KitchenStats from './pages/Chef/KitchenStats';
 import LoyaltyCheck from './pages/Cashier/LoyaltyCheck';
 import LoyaltyCustomers from './pages/Admin/LoyaltyCustomers';
 import Wallets from './pages/Admin/Wallets';
+import EventsBoard from './pages/Cashier/EventsBoard';
 import LoyaltyLeaderboard from './pages/Admin/LoyaltyLeaderboard';
 import LoyaltyDraws from './pages/Admin/LoyaltyDraws';
 import OpenInvoices from './pages/Cashier/OpenInvoices';
@@ -318,6 +319,8 @@ export default function App() {
               <Route path="/gamecashier/items" element={<GameCashieRoute><CashierItems /></GameCashieRoute>} />
               {/* Every till needs this — it's where wallets get topped up. */}
               <Route path="/gamecashier/clients" element={<TillRoute><ClientManagement /></TillRoute>} />
+              {/* Today's + upcoming events, and cashier quick-create. */}
+              <Route path="/cashier/events" element={<TillRoute><EventsBoard /></TillRoute>} />
             </Route>
 
             {/* Auth Layout */}

@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { getGames, GameDto } from '../../services/gameService';
 import { getSettings, GameSettingDto } from '../../services/gameSettingsService';
 import { getStatusName, STATUS_ENABLED, STATUS_PROCESSED_PAID } from '../../services/statuses';
+import { getUpcomingEvents, EventDto } from '../../services/eventService';
+import { Link } from 'react-router';
 import Loader from '../../components/ui/Loader';
 import Modal from '../../components/ui/Modal';
 import Label from '../../components/form/Label';
@@ -39,6 +41,25 @@ const GameSession: React.FC = () => {
     // Quick find over the loaded page — matches game names AND setting names,
     // so typing "draft" surfaces MTG even though the game is called "Magic".
     const [gameSearch, setGameSearch] = useState('');
+
+    // Today's events — the cashier must not discover tonight's tournament
+    // from a customer. Non-fatal if the call fails.
+    const [todayEvents, setTodayEvents] = useState<EventDto[]>([]);
+    useEffect(() => {
+        let mounted = true;
+        getUpcomingEvents(1)
+            .then((list) => {
+                if (!mounted) return;
+                const now = new Date();
+                setTodayEvents(list.filter((e) => {
+                    if (!e.eventDate) return false;
+                    const d = new Date(e.eventDate);
+                    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+                }));
+            })
+            .catch(() => { /* banner just stays hidden */ });
+        return () => { mounted = false; };
+    }, []);
 
     // Room and set selection
     const [rooms, setRooms] = useState<RoomDto[]>([]);
@@ -278,6 +299,24 @@ const GameSession: React.FC = () => {
                     </button>
                 </div>
             </div>
+
+            {/* Today's events — impossible to miss at the till */}
+            {todayEvents.length > 0 && (
+                <Link to="/cashier/events" className="block mb-5">
+                    <div className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-500 text-white px-4 py-3 shadow-md hover:shadow-lg transition flex items-center gap-3 flex-wrap">
+                        <span className="text-lg">🎟</span>
+                        <span className="text-sm font-bold uppercase tracking-wide">Today:</span>
+                        {todayEvents.map((e) => (
+                            <span key={e.id} className="text-sm font-medium bg-white/15 rounded-full px-3 py-1">
+                                {e.title}
+                                {e.eventDate ? ` — ${new Date(e.eventDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}
+                                {e.capacity ? ` · ${e.paidCount}/${e.capacity} sold` : ` · ${e.paidCount} sold`}
+                            </span>
+                        ))}
+                        <span className="ml-auto text-xs text-indigo-100">View all →</span>
+                    </div>
+                </Link>
+            )}
 
             {loading && (
                 <div className="flex items-center justify-center py-20">
