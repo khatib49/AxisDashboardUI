@@ -10,6 +10,7 @@ import Input from "../../components/form/input/InputField";
 import Label from "../../components/form/Label";
 import Loader from "../../components/ui/Loader";
 import WalletModal from "../../components/wallet/WalletModal";
+import WalletMovements from "../../components/wallet/WalletMovements";
 import {
     WalletBonusTier, getBonusTiers, createBonusTier, updateBonusTier, deleteBonusTier,
 } from "../../services/walletService";
@@ -191,6 +192,16 @@ export default function Wallets() {
                         )}
                     </div>
                 </div>
+            </div>
+
+            {/* ── Money feed — filter by day/type/method, totals on top ── */}
+            <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
+                <h2 className="font-semibold text-gray-900">Wallet money movements</h2>
+                <p className="text-xs text-gray-500 mt-0.5 mb-4">
+                    Every top-up, spend and refund across all wallets. "Cash in box" is what physically
+                    entered the drawer in the selected period.
+                </p>
+                <WalletMovements />
             </div>
 
             {walletClient && (

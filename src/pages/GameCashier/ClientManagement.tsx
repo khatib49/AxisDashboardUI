@@ -21,6 +21,7 @@ import {
     TableRow,
 } from "../../components/ui/table";
 import WalletModal from "../../components/wallet/WalletModal";
+import WalletMovements from "../../components/wallet/WalletMovements";
 import { getWalletBalances } from "../../services/walletService";
 
 const CLIENT_ROLE_ID = 6;
@@ -41,6 +42,8 @@ export default function ClientManagement() {
     // Wallet balances for the rows on screen, plus which client's wallet is open.
     const [balances, setBalances] = useState<Record<number, number>>({});
     const [walletClient, setWalletClient] = useState<ClientUserDto | null>(null);
+    // Cash-box feed — collapsed by default so the table stays the hero.
+    const [showMovements, setShowMovements] = useState(false);
     const [form, setForm] = useState<ClientUserCreateRequest>({
         phoneNumber: "",
         firstName: "",
@@ -477,6 +480,27 @@ export default function ClientManagement() {
                             title={notification.title}
                             message={notification.message}
                         />
+                    </div>
+                )}
+            </div>
+
+            {/* Cash-box: every wallet top-up/spend as a filterable feed, so
+                the cashier can reconcile the drawer at a glance. */}
+            <div className="mt-6 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-white/[0.05] dark:bg-white/[0.03]">
+                <button
+                    type="button"
+                    onClick={() => setShowMovements(v => !v)}
+                    className="w-full flex items-center justify-between"
+                >
+                    <div className="text-left">
+                        <div className="font-semibold text-gray-900 dark:text-white">💰 Wallet money — cash box</div>
+                        <div className="text-xs text-gray-500">Today's top-ups and spends, with exact cash totals for the drawer.</div>
+                    </div>
+                    <span className="text-gray-400 text-lg">{showMovements ? "▾" : "▸"}</span>
+                </button>
+                {showMovements && (
+                    <div className="mt-4">
+                        <WalletMovements compact />
                     </div>
                 )}
             </div>

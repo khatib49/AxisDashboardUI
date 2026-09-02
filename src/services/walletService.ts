@@ -66,6 +66,58 @@ export async function getWalletHistory(userId: number, page = 1, pageSize = 50) 
   return res.data;
 }
 
+// ── Cross-wallet money feed (cash-box view) ──────────────────────────────
+
+export type WalletMovement = {
+  id: number;
+  createdOn: string;
+  type: string;
+  amount: number;
+  method?: string | null;
+  userId: number;
+  userName?: string | null;
+  createdBy: string;
+  notes?: string | null;
+  transactionRecordId?: number | null;
+  balanceAfter: number;
+};
+
+export type WalletMovementsSummary = {
+  cashIn: number;
+  whishIn: number;
+  cardIn: number;
+  totalTopUps: number;
+  bonusGiven: number;
+  spent: number;
+  refundedCashOut: number;
+  netCashImpact: number;
+  topUpCount: number;
+};
+
+export type WalletMovementsPage = {
+  summary: WalletMovementsSummary;
+  totalCount: number;
+  rows: WalletMovement[];
+  page: number;
+  pageSize: number;
+};
+
+export async function getWalletMovements(opts: {
+  from?: Date; to?: Date; type?: string; method?: string; page?: number; pageSize?: number;
+} = {}): Promise<WalletMovementsPage> {
+  const res = await api.get<WalletMovementsPage>(`/wallets/movements`, {
+    params: {
+      from: opts.from?.toISOString(),
+      to: opts.to?.toISOString(),
+      type: opts.type || undefined,
+      method: opts.method || undefined,
+      page: opts.page ?? 1,
+      pageSize: opts.pageSize ?? 50,
+    },
+  });
+  return res.data;
+}
+
 // ── Money movement ───────────────────────────────────────────────────────
 
 export async function topUpWallet(userId: number, amount: number, method: string, notes?: string) {
