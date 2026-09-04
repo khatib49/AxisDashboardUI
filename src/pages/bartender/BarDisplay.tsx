@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Card, Badge, Button, Row, Col, Typography, Space, notification, Spin } from 'antd';
+import { Card, Badge, Button, Row, Col, Typography, Space, notification, Spin, Pagination } from 'antd';
 import { 
   CheckOutlined, 
   PrinterOutlined,
@@ -70,6 +70,13 @@ interface KitchenBarOrder {
 
 const BarDisplay: React.FC = () => {
   const [orders, setOrders] = useState<KitchenBarOrder[]>([]);
+  // Pending orders can pile up into the hundreds; the display shows one page
+  // at a time (oldest first) so it stays fast.
+  const PAGE_SIZE = 12;
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const pageRef = useRef(1);
+  pageRef.current = page;
   const [loading, setLoading] = useState(true);
   const [connection, setConnection] = useState<signalR.HubConnection | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -85,16 +92,14 @@ const BarDisplay: React.FC = () => {
       console.log('🍹 Fetching bar orders from:', '/kitchenbarorder/bar/pending');
       
       // Use get helper which unwraps the response
-      const orders = await get<KitchenBarOrder[]>('/kitchenbarorder/bar/pending');
-      
-      console.log('✅ Bar orders response:', orders);
-      
-      if (Array.isArray(orders)) {
-        setOrders(orders);
-      } else {
-        console.error('Expected array but got:', orders);
-        setOrders([]);
-      }
+      const body = await get<{ totalCount: number; data: KitchenBarOrder[] }>(
+        `/kitchenbarorder/bar/pending?page=${pageRef.current}&pageSize=${PAGE_SIZE}`
+      );
+      const orders = Array.isArray(body?.data) ? body.data : [];
+      setOrders(orders);
+      setTotal(typeof body?.totalCount === 'number' ? body.totalCount : orders.length);
+      // Last order on the last page was finished — step back a page.
+      if (orders.length === 0 && pageRef.current > 1) setPage(pageRef.current - 1);
       
       setLoading(false);
     } catch (error: any) {
@@ -257,7 +262,8 @@ const BarDisplay: React.FC = () => {
     fetchPendingOrders();
     const interval = setInterval(fetchPendingOrders, 30000);
     return () => clearInterval(interval);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
   const getTimeElapsed = (orderedAt: string): string => {
     const now = new Date();
@@ -298,7 +304,7 @@ const BarDisplay: React.FC = () => {
         </Col>
         <Col span={12} style={{ textAlign: 'right' }}>
           <Space>
-            <Badge count={orders.length} showZero>
+            <Badge count={total} showZero overflowCount={999}>
               <Button 
                 icon={<SyncOutlined />} 
                 onClick={fetchPendingOrders}
@@ -406,6 +412,19 @@ const BarDisplay: React.FC = () => {
             </Col>
           ))}
         </Row>
+      )}
+
+      {total > PAGE_SIZE && (
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 20 }}>
+          <Pagination
+            current={page}
+            pageSize={PAGE_SIZE}
+            total={total}
+            onChange={setPage}
+            showSizeChanger={false}
+            showTotal={(t, range) => `${range[0]}–${range[1]} of ${t} pending`}
+          />
+        </div>
       )}
     </div>
   );

@@ -6,7 +6,7 @@
 // the unsaved draft is read from localStorage instead of the API and
 // refreshed on every change, so edits show up as they're typed.
 import { createContext, useContext, useEffect, useState } from "react";
-import { getSiteContent, mergeSiteContent } from "../../services/siteContentService";
+import { mergeSiteContent, readCachedSiteContent, revalidateSiteContent } from "../../services/siteContentService";
 import { DEFAULT_SITE_CONTENT, IMAGES, SiteContent } from "./siteContent";
 
 const PREVIEW_STORAGE_KEY = "axis-site-preview";
@@ -49,9 +49,16 @@ export function SiteContentProvider({ children }: { children: React.ReactNode })
     if (draft) {
       setState({ content: draft, preview: true });
     } else {
-      getSiteContent()
-        .then((c) => alive && setState((prev) => (prev?.preview ? prev : { content: c, preview: false })))
-        .catch(() => alive && setState((prev) => (prev?.preview ? prev : { content: DEFAULT_SITE_CONTENT, preview: false })));
+      // Render the cached copy immediately, then ask the API whether it changed.
+      const cached = readCachedSiteContent();
+      if (cached) setState({ content: cached.content, preview: false });
+      revalidateSiteContent(cached?.etag ?? null)
+        .then((fresh) => {
+          if (!alive) return;
+          if (fresh) setState((prev) => (prev?.preview ? prev : { content: fresh.content, preview: false }));
+          else if (!cached) setState({ content: DEFAULT_SITE_CONTENT, preview: false });
+        })
+        .catch(() => alive && setState((prev) => prev ?? { content: cached?.content ?? DEFAULT_SITE_CONTENT, preview: false }));
     }
 
     return () => {

@@ -41,6 +41,42 @@ export async function getSiteContent(): Promise<SiteContent> {
   return mergeSiteContent(data);
 }
 
+// ── Visitor cache ──────────────────────────────────────────────────────
+// The site keeps the last document in localStorage with its ETag. On the
+// next visit it renders from that copy at once and asks the API "changed
+// since <etag>?" — a 304 with no body unless an admin published something.
+const CACHE_KEY = "axis-site-content";
+
+type CachedSite = { etag: string; data: unknown };
+
+export function readCachedSiteContent(): { content: SiteContent; etag: string } | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CachedSite;
+    if (!parsed || typeof parsed.etag !== "string") return null;
+    return { content: mergeSiteContent(parsed.data), etag: parsed.etag };
+  } catch {
+    return null;
+  }
+}
+
+/** Fetch the content, sending the cached ETag so an unchanged site costs no body. */
+export async function revalidateSiteContent(etag: string | null): Promise<{ content: SiteContent; changed: boolean } | null> {
+  const res = await api.get<unknown>("/site-content", {
+    headers: etag ? { "If-None-Match": etag } : {},
+    validateStatus: (s) => s === 200 || s === 304,
+  });
+  if (res.status === 304) return null;
+  const newEtag = (res.headers?.etag as string | undefined) || "";
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ etag: newEtag, data: res.data } satisfies CachedSite));
+  } catch {
+    /* private mode — fine */
+  }
+  return { content: mergeSiteContent(res.data), changed: true };
+}
+
 /** Admin: replace the stored document. */
 export async function saveSiteContent(content: SiteContent): Promise<void> {
   await api.put("/admin/site-content", content);
