@@ -37,7 +37,13 @@ import CategoryManagement from "./pages/Admin/CategoryManagement";
 import CashierItems from './pages/Cashier/Items';
 import CashierOrders from './pages/Cashier/Orders';
 import GameSession from "./pages/Cashier/GameSession";
-import Menu from "./pages/Menu";
+import SiteLayout from "./pages/Site/SiteLayout";
+import SiteHome from "./pages/Site/SiteHome";
+import SiteMenu from "./pages/Site/SiteMenu";
+import SiteServices from "./pages/Site/SiteServices";
+import SiteEvents from "./pages/Site/SiteEvents";
+import SiteContact from "./pages/Site/SiteContact";
+import WebsiteContent from "./pages/Admin/WebsiteContent";
 import AdminFnBDashboard from './pages/AdminFnB/Dashboard';
 import AdminFnBItems from './pages/AdminFnB/Items';
 import AdminFnBOrders from './pages/AdminFnB/Orders';
@@ -191,14 +197,38 @@ export default function App() {
 
     return <Home />;
   };
+
+  // "/" is two things: the public AXIS website for visitors, and the
+  // dashboard (role-based home) for signed-in staff. Staff reach the site
+  // home at /home; every other site page is public at its own path.
+  const RootLayout: React.FC = () => {
+    const { authenticated } = useAuth();
+    return authenticated ? <AppLayout /> : <SiteLayout />;
+  };
+  const RootIndex: React.FC = () => {
+    const { authenticated } = useAuth();
+    return authenticated ? <RoleHome /> : <SiteHome />;
+  };
+
   return (
     <>
       <Router>
         <ScrollToTop />
         <AuthProvider>
           <Routes>
-            {/* Public Menu Page - Standalone without layout */}
-            <Route path="/menu" element={<Menu />} />
+            {/* Website home for visitors / dashboard home for staff */}
+            <Route path="/" element={<RootLayout />}>
+              <Route index element={<RootIndex />} />
+            </Route>
+
+            {/* Public AXIS website — no sign-in needed */}
+            <Route element={<SiteLayout />}>
+              <Route path="/home" element={<SiteHome />} />
+              <Route path="/menu" element={<SiteMenu />} />
+              <Route path="/services" element={<SiteServices />} />
+              <Route path="/events" element={<SiteEvents />} />
+              <Route path="/contact" element={<SiteContact />} />
+            </Route>
 
             {/* Public event registration — anonymous, no app layout.
                 Fully data-driven: any event created under Admin → Events
@@ -209,8 +239,6 @@ export default function App() {
 
             {/* Dashboard Layout */}
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-              <Route index path="/" element={<RoleHome />} />
-
               {/* Others Page */}
               <Route path="/profile" element={<UserProfiles />} />
               <Route path="/calendar" element={<Calendar />} />
@@ -242,6 +270,7 @@ export default function App() {
               <Route path="/admin/consumption-rebuild" element={<AdminRoute><ConsumptionRebuild /></AdminRoute>} />
               <Route path="/admin/events" element={<AdminRoute><EventsManager /></AdminRoute>} />
               <Route path="/admin/event-registrations" element={<AdminRoute><EventRegistrations /></AdminRoute>} />
+              <Route path="/admin/website" element={<AdminRoute><WebsiteContent /></AdminRoute>} />
               <Route path="/admin/items" element={<AdminRoute><Items /></AdminRoute>} />
               <Route path="/admin/orders" element={<AdminRoute><Orders /></AdminRoute>} />
               <Route path="/cashier/items" element={<CashierRoute><CashierItems /></CashierRoute>} />

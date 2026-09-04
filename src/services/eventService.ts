@@ -142,7 +142,28 @@ export type PaginatedRegistrations = {
   pageSize: number;
 };
 
+/** Card-sized view of a published event for the website's /events listing. */
+export type EventPublicSummary = {
+  key: string;
+  title: string;
+  subtitle: string | null;
+  eventDate: string | null;
+  location: string | null;
+  type: string;
+  price: number;
+  currency: string;
+  heroImageUrl: string | null;
+  capacity: number | null;
+  isSoldOut: boolean;
+};
+
 // ── Public (anonymous) ────────────────────────────────────────────────
+/** Published + active events, soonest first. Anonymous. */
+export async function getPublishedEvents(): Promise<EventPublicSummary[]> {
+  const { data } = await api.get<EventPublicSummary[]>(`/events`);
+  return Array.isArray(data) ? data : [];
+}
+
 export async function getEventConfig(eventKey: string): Promise<EventPublicConfig> {
   const { data } = await api.get(`/events/${eventKey}/config`);
   return data;

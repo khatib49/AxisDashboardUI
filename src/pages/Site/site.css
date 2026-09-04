@@ -1,0 +1,157 @@
+/* Public AXIS website — brand typeface fallbacks (Cygre is the brand face;
+   these are the closest geometric Google fonts, same as the original site). */
+@import url("https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Manrope:wght@300;400;500;600&display=swap");
+
+.axis-site {
+  color-scheme: dark;
+  --axis-brand: #87b2dd;
+  --axis-brand-strong: #6a99cb;
+  --axis-brand-soft: #b9d3ee;
+  background-color: #050507;
+  font-family: Sora, "Space Grotesk", Manrope, ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The dashboard theme paints purple focus rings / selection; the site is blue. */
+.axis-site *:focus-visible {
+  outline: 2px solid var(--axis-brand);
+  outline-offset: 2px;
+}
+.axis-site ::selection {
+  background-color: rgba(135, 178, 221, 0.35);
+  color: inherit;
+}
+
+/* Dashboard CSS forces `padding-block` on .py-12 / .py-16 — the site never
+   uses those classes, but keep any accidental use harmless here. */
+.axis-site .py-12 {
+  padding-block: 3rem !important;
+}
+.axis-site .py-16 {
+  padding-block: 4rem !important;
+}
+
+@keyframes axisFadeUp {
+  0% {
+    opacity: 0.85;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes axisWheel {
+  0% {
+    opacity: 0;
+    transform: translateY(1px);
+  }
+  40% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* Scroll reveal — classes are attached by SiteLayout's IntersectionObserver. */
+.axis-reveal-item,
+.axis-reveal-image {
+  opacity: 0;
+  will-change: transform, opacity, filter;
+}
+.axis-reveal-item {
+  transform: translateY(18px);
+  filter: blur(10px);
+  transition:
+    opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.axis-reveal-image {
+  transform: scale(1.035);
+  filter: blur(12px) saturate(0.85);
+  transition:
+    opacity 1s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 1s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.axis-reveal-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0) saturate(1);
+}
+
+.axis-page > div > section,
+.axis-page > div > div {
+  animation: axisFadeUp 0.7s ease forwards;
+}
+.axis-page > div > :nth-child(1) {
+  animation-delay: 0.05s;
+}
+.axis-page > div > :nth-child(2) {
+  animation-delay: 0.12s;
+}
+.axis-page > div > :nth-child(3) {
+  animation-delay: 0.18s;
+}
+.axis-page > div > :nth-child(4) {
+  animation-delay: 0.24s;
+}
+.axis-page > div > :nth-child(5) {
+  animation-delay: 0.3s;
+}
+.axis-page > div > :nth-child(6) {
+  animation-delay: 0.36s;
+}
+.axis-page a,
+.axis-page button {
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    background-color 0.25s ease,
+    color 0.25s ease;
+}
+.axis-page figure img,
+.axis-page article img,
+.axis-page section img {
+  transition: transform 0.6s ease;
+}
+.axis-page figure:hover img,
+.axis-page article:hover img {
+  transform: scale(1.04);
+}
+
+/* "Scroll down" mouse cue */
+.axis-mouse {
+  height: 28px;
+  width: 18px;
+  border: 2px solid rgba(135, 178, 221, 0.8);
+  border-radius: 999px;
+  display: grid;
+  place-items: start center;
+  padding-top: 4px;
+}
+.axis-mouse-wheel {
+  width: 3px;
+  height: 6px;
+  border-radius: 999px;
+  background: #87b2dde6;
+  animation: axisWheel 1.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .axis-page > div > section,
+  .axis-page > div > div,
+  .axis-reveal-item,
+  .axis-reveal-image,
+  .axis-mouse-wheel {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}

@@ -577,7 +577,7 @@ export default function EventsManager() {
 
           <SectionLabel>Publication</SectionLabel>
           <Space size="large">
-            <Form.Item name="isPublished" label="Published (page is live)" valuePropName="checked">
+            <Form.Item name="isPublished" label="Show on website (published)" valuePropName="checked">
               <Switch />
             </Form.Item>
             <Form.Item name="isActive" label="Active" valuePropName="checked">
