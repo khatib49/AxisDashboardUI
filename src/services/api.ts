@@ -83,6 +83,19 @@ api.interceptors.response.use(
       return Promise.reject(apiError);
     }
 
+    // A 401 from the login call itself is a wrong password / locked / inactive
+    // account, not an expired session: surface the server's reason as-is.
+    const reqUrl = String(error.config?.url || "");
+    if (status === 401 && /\/auth\/login$/i.test(reqUrl)) {
+      const body = error.response?.data as { error?: unknown; message?: unknown } | undefined;
+      const reason =
+        (typeof body?.error === "string" && body.error) ||
+        (typeof body?.message === "string" && body.message) ||
+        "Invalid email or password.";
+      const loginError: ApiError = { status, message: reason, code: "LOGIN_FAILED", details: body };
+      return Promise.reject(loginError);
+    }
+
     // On 401/403: logout by clearing token and redirecting to signin (if not already there)
     if (status === 401 || status === 403) {
       try {
