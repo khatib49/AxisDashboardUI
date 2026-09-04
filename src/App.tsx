@@ -44,6 +44,8 @@ import SiteServices from "./pages/Site/SiteServices";
 import SiteEvents from "./pages/Site/SiteEvents";
 import SiteContact from "./pages/Site/SiteContact";
 import WebsiteContent from "./pages/Admin/WebsiteContent";
+import RolesManagement from "./pages/Admin/RolesManagement";
+import { LANDING_ORDER, PAGE_BY_KEY } from "./config/pages";
 import AdminFnBDashboard from './pages/AdminFnB/Dashboard';
 import AdminFnBItems from './pages/AdminFnB/Items';
 import AdminFnBOrders from './pages/AdminFnB/Orders';
@@ -95,82 +97,22 @@ const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }
   return children;
 };
 
-const AdminRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
-  const { hasRole, loading, authenticated } = useAuth();
+// Page-level guard. A page is open to admins, to the built-in roles that
+// always had it, and to any role granted it under Admin → Roles & Permissions.
+const PageRoute: React.FC<{ page: string; children: React.ReactElement }> = ({ page, children }) => {
+  const { authenticated, loading, canAccess, pagesReady } = useAuth();
   if (loading) return <div className="p-6 text-center">Loading...</div>;
   if (!authenticated) return <Navigate to="/signin" replace />;
-  if (!hasRole("admin")) return <Navigate to="/" replace />;
-  return children;
+  if (canAccess(page)) return children;
+  if (!pagesReady) return <div className="p-6 text-center">Loading...</div>;
+  return <Navigate to="/dashboard" replace />;
 };
 
-const CashierRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
-  const { hasRole, loading, authenticated } = useAuth();
-  if (loading) return <div className="p-6 text-center">Loading...</div>;
-  if (!authenticated) return <Navigate to="/signin" replace />;
-  if (!hasRole("cashier")) return <Navigate to="/" replace />;
-  return children;
-};
-
-// Any till role. Used for screens every counter needs — e.g. Clients, where
-// wallets are topped up. The backend authorizes top-ups for exactly this set,
-// so the UI must not be narrower than the API.
-const TillRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
-  const { hasAnyRole, loading, authenticated } = useAuth();
-  if (loading) return <div className="p-6 text-center">Loading...</div>;
-  if (!authenticated) return <Navigate to="/signin" replace />;
-  if (!hasAnyRole("admin", "cashier", "gamecashier", "GameCashier", "game_cashier", "cashiergame", "admin_fnb"))
-    return <Navigate to="/" replace />;
-  return children;
-};
-
-const GameCashieRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
-  const { hasRole, loading, authenticated } = useAuth();
-  if (loading) return <div className="p-6 text-center">Loading...</div>;
-  if (!authenticated) return <Navigate to="/signin" replace />;
-  if (!(hasRole("GameCashier") || hasRole("gamecashier") || hasRole("game_cashier") || hasRole("cashiergame"))) return <Navigate to="/" replace />;
-  return children;
-};
-
-const AdminFnBRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
-  const { hasRole, loading, authenticated } = useAuth();
-  if (loading) return <div className="p-6 text-center">Loading...</div>;
-  if (!authenticated) return <Navigate to="/signin" replace />;
-  if (!hasRole("admin_fnb")) return <Navigate to="/" replace />;
-  return children;
-};
-
-const ChefRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
-  const { hasRole, loading, authenticated } = useAuth();
-  if (loading) return <div className="p-6 text-center">Loading...</div>;
-  if (!authenticated) return <Navigate to="/signin" replace />;
-  if (!hasRole("chef")) return <Navigate to="/" replace />;
-  return children;
-};
-
-// Chef OR admin (or admin_fnb, or the dedicated stock role) — used by
-// the stock management pages. "stock" is a restricted account that can
-// ONLY see these pages (see RoleHome + sidebar).
-const ChefOrAdminRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
-  const { hasRole, loading, authenticated } = useAuth();
-  if (loading) return <div className="p-6 text-center">Loading...</div>;
-  if (!authenticated) return <Navigate to="/signin" replace />;
-  if (!(hasRole("chef") || hasRole("admin") || hasRole("admin_fnb") || hasRole("stock"))) return <Navigate to="/" replace />;
-  return children;
-};
-
-
-const BarTenderRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
-  const { hasRole, loading, authenticated } = useAuth();
-  if (loading) return <div className="p-6 text-center">Loading...</div>;
-  if (!authenticated) return <Navigate to="/signin" replace />;
-  if (!hasRole("bartender")) return <Navigate to="/bartender/bar-display" replace />;
-  return children;
-};
 
 export default function App() {
   // Role-based home element: redirect non-admin operational roles away from dashboard
   const RoleHome: React.FC = () => {
-    const { hasRole } = useAuth();
+    const { hasRole, canAccess, pagesReady } = useAuth();
     if (hasRole("cashier")) {
       return <Navigate to="/cashier/items" replace />;
     }
@@ -195,19 +137,18 @@ export default function App() {
       return <Navigate to="/bartender/bar-display" replace />;
     }
 
-    return <Home />;
-  };
+    if (hasRole("admin")) return <Home />;
 
-  // "/" is two things: the public AXIS website for visitors, and the
-  // dashboard (role-based home) for signed-in staff. Staff reach the site
-  // home at /home; every other site page is public at its own path.
-  const RootLayout: React.FC = () => {
-    const { authenticated } = useAuth();
-    return authenticated ? <AppLayout /> : <SiteLayout />;
-  };
-  const RootIndex: React.FC = () => {
-    const { authenticated } = useAuth();
-    return authenticated ? <RoleHome /> : <SiteHome />;
+    // Custom role (Admin → Roles & Permissions): land on its first page.
+    if (!pagesReady) return <div className="p-6 text-center">Loading...</div>;
+    const first = LANDING_ORDER.find((k) => k !== "dashboard" && canAccess(k));
+    if (first) return <Navigate to={PAGE_BY_KEY[first].path} replace />;
+    if (canAccess("dashboard")) return <Home />;
+    return (
+      <div className="p-10 text-center text-gray-500">
+        No pages have been assigned to your role yet. Ask an administrator to grant access under Roles &amp; Permissions.
+      </div>
+    );
   };
 
   return (
@@ -216,14 +157,11 @@ export default function App() {
         <ScrollToTop />
         <AuthProvider>
           <Routes>
-            {/* Website home for visitors / dashboard home for staff */}
-            <Route path="/" element={<RootLayout />}>
-              <Route index element={<RootIndex />} />
-            </Route>
-
-            {/* Public AXIS website — no sign-in needed */}
+            {/* Public AXIS website — the root of the domain, no sign-in needed.
+                Staff land on their dashboard at /dashboard. */}
             <Route element={<SiteLayout />}>
-              <Route path="/home" element={<SiteHome />} />
+              <Route path="/" element={<SiteHome />} />
+              <Route path="/home" element={<Navigate to="/" replace />} />
               <Route path="/menu" element={<SiteMenu />} />
               <Route path="/services" element={<SiteServices />} />
               <Route path="/events" element={<SiteEvents />} />
@@ -239,6 +177,9 @@ export default function App() {
 
             {/* Dashboard Layout */}
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+              {/* Dashboard home — role-based landing for signed-in staff */}
+              <Route path="/dashboard" element={<RoleHome />} />
+
               {/* Others Page */}
               <Route path="/profile" element={<UserProfiles />} />
               <Route path="/calendar" element={<Calendar />} />
@@ -263,79 +204,79 @@ export default function App() {
               <Route path="/bar-chart" element={<BarChart />} />
 
               {/* Admin (guard inside element) */}
-              <Route path="/admin/users" element={<AdminRoute><UsersManagement /></AdminRoute>} />
-              <Route path="/admin/audit-logs" element={<AdminRoute><AuditLogsPage /></AdminRoute>} />
-              <Route path="/ai/chat" element={<AdminRoute><AiChatPage /></AdminRoute>} />
-              <Route path="/admin/integrations" element={<AdminRoute><IntegrationsPage /></AdminRoute>} />
-              <Route path="/admin/consumption-rebuild" element={<AdminRoute><ConsumptionRebuild /></AdminRoute>} />
-              <Route path="/admin/events" element={<AdminRoute><EventsManager /></AdminRoute>} />
-              <Route path="/admin/event-registrations" element={<AdminRoute><EventRegistrations /></AdminRoute>} />
-              <Route path="/admin/website" element={<AdminRoute><WebsiteContent /></AdminRoute>} />
-              <Route path="/admin/items" element={<AdminRoute><Items /></AdminRoute>} />
-              <Route path="/admin/orders" element={<AdminRoute><Orders /></AdminRoute>} />
-              <Route path="/cashier/items" element={<CashierRoute><CashierItems /></CashierRoute>} />
-              <Route path="/cashier/orders" element={<CashierRoute><CashierOrders /></CashierRoute>} />
-              <Route path="/admin/cards" element={<AdminRoute><Cards /></AdminRoute>} />
-              <Route path="/admin/card-types" element={<AdminRoute><CardTypes /></AdminRoute>} />
-              <Route path="/admin/game" element={<AdminRoute><Game /></AdminRoute>} />
-              <Route path="/admin/game-settings" element={<AdminRoute><GameSettings /></AdminRoute>} />
-              <Route path="/admin/game-sessions" element={<AdminRoute><GameSessions /></AdminRoute>} />
-              <Route path="/admin/transactions" element={<AdminRoute><Transactions /></AdminRoute>} />
-              <Route path="/admin/game-transactions" element={<AdminRoute><GameTransactions /></AdminRoute>} />
-              <Route path="/admin/rooms" element={<AdminRoute><Rooms /></AdminRoute>} />
-              <Route path="/admin/categories" element={<AdminRoute><CategoryManagement /></AdminRoute>} />
-              <Route path="/admin/qr-generator" element={<AdminRoute><QRCodeGenerator /></AdminRoute>} />
-              <Route path="/admin/discounts" element={<AdminRoute><DiscountManagement /></AdminRoute>} />
-              <Route path="/admin/channels" element={<AdminRoute><Channels /></AdminRoute>} />
-              <Route path="/admin/printers" element={<AdminRoute><Printers /></AdminRoute>} />
-              <Route path="/admin/expenses" element={<AdminRoute><Expenses /></AdminRoute>} />
-              <Route path="/admin/expense-categories" element={<AdminRoute><ExpenseCategories /></AdminRoute>} />
-              <Route path="/admin/wallets" element={<AdminRoute><Wallets /></AdminRoute>} />
+              <Route path="/admin/users" element={<PageRoute page="users"><UsersManagement /></PageRoute>} />
+              <Route path="/admin/audit-logs" element={<PageRoute page="audit-logs"><AuditLogsPage /></PageRoute>} />
+              <Route path="/ai/chat" element={<PageRoute page="ai-assistant"><AiChatPage /></PageRoute>} />
+              <Route path="/admin/integrations" element={<PageRoute page="integrations"><IntegrationsPage /></PageRoute>} />
+              <Route path="/admin/consumption-rebuild" element={<PageRoute page="cogs-rebuild"><ConsumptionRebuild /></PageRoute>} />
+              <Route path="/admin/events" element={<PageRoute page="events"><EventsManager /></PageRoute>} />
+              <Route path="/admin/event-registrations" element={<PageRoute page="event-registrations"><EventRegistrations /></PageRoute>} />
+              <Route path="/admin/website" element={<PageRoute page="website"><WebsiteContent /></PageRoute>} />
+              <Route path="/admin/roles" element={<PageRoute page="roles"><RolesManagement /></PageRoute>} />
+              <Route path="/admin/items" element={<PageRoute page="items"><Items /></PageRoute>} />
+              <Route path="/admin/orders" element={<PageRoute page="orders"><Orders /></PageRoute>} />
+              <Route path="/cashier/items" element={<PageRoute page="cashier-items"><CashierItems /></PageRoute>} />
+              <Route path="/cashier/orders" element={<PageRoute page="cashier-orders"><CashierOrders /></PageRoute>} />
+              <Route path="/admin/cards" element={<PageRoute page="loyalty-customers"><Cards /></PageRoute>} />
+              <Route path="/admin/card-types" element={<PageRoute page="loyalty-customers"><CardTypes /></PageRoute>} />
+              <Route path="/admin/game" element={<PageRoute page="game-overview"><Game /></PageRoute>} />
+              <Route path="/admin/game-settings" element={<PageRoute page="game-settings"><GameSettings /></PageRoute>} />
+              <Route path="/admin/game-sessions" element={<PageRoute page="transactions-game"><GameSessions /></PageRoute>} />
+              <Route path="/admin/transactions" element={<PageRoute page="transactions-items"><Transactions /></PageRoute>} />
+              <Route path="/admin/game-transactions" element={<PageRoute page="transactions-game"><GameTransactions /></PageRoute>} />
+              <Route path="/admin/rooms" element={<PageRoute page="rooms"><Rooms /></PageRoute>} />
+              <Route path="/admin/categories" element={<PageRoute page="categories"><CategoryManagement /></PageRoute>} />
+              <Route path="/admin/qr-generator" element={<PageRoute page="qr-generator"><QRCodeGenerator /></PageRoute>} />
+              <Route path="/admin/discounts" element={<PageRoute page="discounts"><DiscountManagement /></PageRoute>} />
+              <Route path="/admin/channels" element={<PageRoute page="channels"><Channels /></PageRoute>} />
+              <Route path="/admin/printers" element={<PageRoute page="printers"><Printers /></PageRoute>} />
+              <Route path="/admin/expenses" element={<PageRoute page="expenses"><Expenses /></PageRoute>} />
+              <Route path="/admin/expense-categories" element={<PageRoute page="expense-categories"><ExpenseCategories /></PageRoute>} />
+              <Route path="/admin/wallets" element={<PageRoute page="wallets"><Wallets /></PageRoute>} />
               <Route path="/admin/loyalty/customers" element={<ProtectedRoute><LoyaltyCustomers /></ProtectedRoute>} />
               <Route path="/admin/loyalty/leaderboard" element={<ProtectedRoute><LoyaltyLeaderboard /></ProtectedRoute>} />
               <Route path="/admin/loyalty/draws" element={<ProtectedRoute><LoyaltyDraws /></ProtectedRoute>} />
 
               {/* Admin Profit routes */}
-              <Route path="/admin/profit/gaming" element={<AdminRoute><GamingProfit /></AdminRoute>} />
-              <Route path="/admin/profit/tcg" element={<AdminRoute><TcgProfit /></AdminRoute>} />
-              <Route path="/admin/profit/fnb" element={<AdminRoute><FnbProfit /></AdminRoute>} />
-              <Route path="/admin/profit/overall" element={<AdminRoute><OverallProfit /></AdminRoute>} />
+              <Route path="/admin/profit/gaming" element={<PageRoute page="dashboard"><GamingProfit /></PageRoute>} />
+              <Route path="/admin/profit/tcg" element={<PageRoute page="dashboard"><TcgProfit /></PageRoute>} />
+              <Route path="/admin/profit/fnb" element={<PageRoute page="dashboard"><FnbProfit /></PageRoute>} />
+              <Route path="/admin/profit/overall" element={<PageRoute page="dashboard"><OverallProfit /></PageRoute>} />
 
               {/* Admin F&B routes */}
-              <Route path="/admin-fnb/dashboard" element={<AdminFnBRoute><AdminFnBDashboard /></AdminFnBRoute>} />
-              <Route path="/admin-fnb/profit" element={<AdminFnBRoute><FnbProfit /></AdminFnBRoute>} />
-              <Route path="/admin-fnb/items" element={<AdminFnBRoute><AdminFnBItems /></AdminFnBRoute>} />
-              <Route path="/admin-fnb/orders" element={<AdminFnBRoute><AdminFnBOrders /></AdminFnBRoute>} />
+              <Route path="/admin-fnb/dashboard" element={<PageRoute page="fnb-dashboard"><AdminFnBDashboard /></PageRoute>} />
+              <Route path="/admin-fnb/profit" element={<PageRoute page="fnb-profit"><FnbProfit /></PageRoute>} />
+              <Route path="/admin-fnb/items" element={<PageRoute page="fnb-items"><AdminFnBItems /></PageRoute>} />
+              <Route path="/admin-fnb/orders" element={<PageRoute page="fnb-orders"><AdminFnBOrders /></PageRoute>} />
 
               {/* Chef routes */}
-              {/* <Route path="/chef/orders" element={<ChefRoute><KitchenOrders /></ChefRoute>} /> */}
-              <Route path="/chef/stats" element={<ChefRoute><KitchenStats /></ChefRoute>} />
-              <Route path="/chef/kitchen-display" element={<ChefRoute><KitchenDisplay /></ChefRoute>} />
+              <Route path="/chef/stats" element={<PageRoute page="kitchen-stats"><KitchenStats /></PageRoute>} />
+              <Route path="/chef/kitchen-display" element={<PageRoute page="kitchen-display"><KitchenDisplay /></PageRoute>} />
               {/* Stock management — chef + admin + admin_fnb */}
-              <Route path="/chef/ingredients" element={<ChefOrAdminRoute><Ingredients /></ChefOrAdminRoute>} />
-              <Route path="/chef/stock-movements" element={<ChefOrAdminRoute><StockMovements /></ChefOrAdminRoute>} />
-              <Route path="/chef/suppliers" element={<ChefOrAdminRoute><Suppliers /></ChefOrAdminRoute>} />
-              <Route path="/chef/purchases" element={<ChefOrAdminRoute><Purchases /></ChefOrAdminRoute>} />
-              <Route path="/chef/inventory-valuation" element={<ChefOrAdminRoute><InventoryValuation /></ChefOrAdminRoute>} />
+              <Route path="/chef/ingredients" element={<PageRoute page="stock-ingredients"><Ingredients /></PageRoute>} />
+              <Route path="/chef/stock-movements" element={<PageRoute page="stock-movements"><StockMovements /></PageRoute>} />
+              <Route path="/chef/suppliers" element={<PageRoute page="stock-suppliers"><Suppliers /></PageRoute>} />
+              <Route path="/chef/purchases" element={<PageRoute page="stock-purchases"><Purchases /></PageRoute>} />
+              <Route path="/chef/inventory-valuation" element={<PageRoute page="stock-valuation"><InventoryValuation /></PageRoute>} />
 
               {/* Accounting routes */}
-              <Route path="/accounting" element={<AdminRoute><AccountingDashboard /></AdminRoute>} />
-              <Route path="/accounting/item-revenue" element={<AdminRoute><ItemRevenueReport /></AdminRoute>} />
-              <Route path="/accounting/accounts" element={<AdminRoute><ChartOfAccounts /></AdminRoute>} />
-              <Route path="/accounting/trial-balance" element={<AdminRoute><TrialBalance /></AdminRoute>} />
-              <Route path="/accounting/general-ledger" element={<AdminRoute><GeneralLedger /></AdminRoute>} />
-              <Route path="/accounting/audit" element={<AdminRoute><BooksAudit /></AdminRoute>} />
-              <Route path="/accounting/hierarchy-audit" element={<AdminRoute><HierarchyAudit /></AdminRoute>} />
+              <Route path="/accounting" element={<PageRoute page="accounting"><AccountingDashboard /></PageRoute>} />
+              <Route path="/accounting/item-revenue" element={<PageRoute page="accounting-item-revenue"><ItemRevenueReport /></PageRoute>} />
+              <Route path="/accounting/accounts" element={<PageRoute page="accounting-accounts"><ChartOfAccounts /></PageRoute>} />
+              <Route path="/accounting/trial-balance" element={<PageRoute page="accounting-trial-balance"><TrialBalance /></PageRoute>} />
+              <Route path="/accounting/general-ledger" element={<PageRoute page="accounting-ledger"><GeneralLedger /></PageRoute>} />
+              <Route path="/accounting/audit" element={<PageRoute page="accounting-audit"><BooksAudit /></PageRoute>} />
+              <Route path="/accounting/hierarchy-audit" element={<PageRoute page="accounting-hierarchy"><HierarchyAudit /></PageRoute>} />
 
               {/* BarTender routes */}
-              <Route path="/bartender/bar-display" element={<BarTenderRoute><BarDisplay /></BarTenderRoute>} />
+              <Route path="/bartender/bar-display" element={<PageRoute page="bar-display"><BarDisplay /></PageRoute>} />
 
 
               {/* GameCashie routes (non-admin paths) */}
-              <Route path="/game/sessions" element={<GameCashieRoute><GameSession /></GameCashieRoute>} />
-              <Route path="/gamecashier/rooms" element={<GameCashieRoute><GameCashierRooms /></GameCashieRoute>} />
-              <Route path="/gamecashier/ps5-sessions" element={<GameCashieRoute><Ps5Sessions /></GameCashieRoute>} />
-              <Route path="/gamecashier/board-sessions" element={<GameCashieRoute><BoardGameSessions /></GameCashieRoute>} />
+              <Route path="/game/sessions" element={<PageRoute page="game-sessions"><GameSession /></PageRoute>} />
+              <Route path="/gamecashier/rooms" element={<PageRoute page="gamecashier-rooms"><GameCashierRooms /></PageRoute>} />
+              <Route path="/gamecashier/ps5-sessions" element={<PageRoute page="ps5-sessions"><Ps5Sessions /></PageRoute>} />
+              <Route path="/gamecashier/board-sessions" element={<PageRoute page="board-sessions"><BoardGameSessions /></PageRoute>} />
               <Route path="/cashier/loyalty-check" element={<ProtectedRoute>
      <LoyaltyCheck />
         </ProtectedRoute>
@@ -345,11 +286,11 @@ export default function App() {
             <Route path="/cashier/open-invoices" element={<ProtectedRoute><OpenInvoices /></ProtectedRoute>} />
             
               {/* Make Cashier Items also available to game cashier roles */}
-              <Route path="/gamecashier/items" element={<GameCashieRoute><CashierItems /></GameCashieRoute>} />
+              <Route path="/gamecashier/items" element={<PageRoute page="gamecashier-items"><CashierItems /></PageRoute>} />
               {/* Every till needs this — it's where wallets get topped up. */}
-              <Route path="/gamecashier/clients" element={<TillRoute><ClientManagement /></TillRoute>} />
+              <Route path="/gamecashier/clients" element={<PageRoute page="clients"><ClientManagement /></PageRoute>} />
               {/* Today's + upcoming events, and cashier quick-create. */}
-              <Route path="/cashier/events" element={<TillRoute><EventsBoard /></TillRoute>} />
+              <Route path="/cashier/events" element={<PageRoute page="cashier-events"><EventsBoard /></PageRoute>} />
             </Route>
 
             {/* Auth Layout */}

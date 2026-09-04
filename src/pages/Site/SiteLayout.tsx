@@ -6,7 +6,6 @@
 // content document (Admin → Website).
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router";
-import { useAuth } from "../../context/AuthContext";
 import { NAV_LINKS } from "./siteContent";
 import { SiteContentProvider, useSiteContent, useSitePreview } from "./SiteContentContext";
 import { SiteLogo } from "./SiteUi";
@@ -119,11 +118,6 @@ function AnnouncementBar() {
   );
 }
 
-const PILL_BRAND =
-  "rounded-full border border-[#87b2dd]/45 px-4 py-2 text-sm font-semibold text-[#b9d3ee] transition-colors hover:bg-[#87b2dd]/10";
-const PILL_MUTED =
-  "rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-white/80 transition-colors hover:bg-white/10";
-
 export default function SiteLayout() {
   return (
     <SiteContentProvider>
@@ -135,14 +129,12 @@ export default function SiteLayout() {
 function SiteShell() {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
-  const { authenticated, logout } = useAuth();
   const { contact } = useSiteContent();
   const preview = useSitePreview();
   useScrollReveal(location.pathname);
 
-  // "/" is the dashboard for signed-in staff, so their site Home lives at /home.
-  const homeHref = authenticated ? "/home" : "/";
-  const links = NAV_LINKS.map((l) => (l.id === "nav-home" ? { ...l, href: homeHref } : l));
+  const homeHref = "/";
+  const links = NAV_LINKS;
   const closeMenu = () => setMenuOpen(false);
 
   return (
@@ -164,7 +156,7 @@ function SiteShell() {
               <NavLink
                 key={l.id}
                 to={l.href}
-                end={l.href === "/" || l.href === "/home"}
+                end={l.href === "/"}
                 className={({ isActive }) =>
                   `text-sm font-semibold transition-colors ${isActive ? "text-white" : "text-white/60 hover:text-white"}`
                 }
@@ -172,20 +164,6 @@ function SiteShell() {
                 {l.label}
               </NavLink>
             ))}
-            {authenticated ? (
-              <>
-                <Link to="/" className={PILL_BRAND}>
-                  Dashboard
-                </Link>
-                <button type="button" onClick={() => logout()} className={PILL_MUTED}>
-                  Logout
-                </button>
-              </>
-            ) : (
-              <Link to="/signin" className={PILL_BRAND}>
-                Sign In
-              </Link>
-            )}
           </div>
 
           {/* Mobile toggle */}
@@ -207,7 +185,7 @@ function SiteShell() {
                 <NavLink
                   key={l.id}
                   to={l.href}
-                  end={l.href === "/" || l.href === "/home"}
+                  end={l.href === "/"}
                   onClick={closeMenu}
                   className={({ isActive }) =>
                     `py-3 text-base font-semibold ${isActive ? "text-white" : "text-white/70"}`
@@ -216,27 +194,6 @@ function SiteShell() {
                   {l.label}
                 </NavLink>
               ))}
-              {authenticated ? (
-                <>
-                  <Link to="/" onClick={closeMenu} className="py-3 text-base font-semibold text-[#b9d3ee]">
-                    Dashboard
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      logout();
-                      closeMenu();
-                    }}
-                    className="py-3 text-left text-base font-semibold text-white/70"
-                  >
-                    Logout
-                  </button>
-                </>
-              ) : (
-                <NavLink to="/signin" onClick={closeMenu} className="py-3 text-base font-semibold text-[#b9d3ee]">
-                  Sign In
-                </NavLink>
-              )}
             </div>
           </div>
         )}

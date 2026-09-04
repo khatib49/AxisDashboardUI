@@ -11,7 +11,7 @@ export type SectionProps = {
   patch: (fn: (draft: SiteContent) => void) => void;
 };
 
-const TWO_COL = "grid gap-4 md:grid-cols-2";
+const TWO_COL = "grid gap-4 @xl:grid-cols-2";
 
 // ── General & contact ──────────────────────────────────────────────────
 export function GeneralSection({ c, patch }: SectionProps) {
@@ -55,7 +55,7 @@ export function GeneralSection({ c, patch }: SectionProps) {
           <TextField label="Address (short)" value={c.contact.address} onChange={(v) => patch((d) => { d.contact.address = v; })} />
           <TextField label="Address (under the map)" value={c.contact.addressLong} onChange={(v) => patch((d) => { d.contact.addressLong = v; })} />
           <TextField
-            className="md:col-span-2"
+            className="@xl:col-span-2"
             label="Google Maps embed link"
             hint="Google Maps → Share → Embed a map → copy the src=… link. Leave empty to hide the map."
             value={c.contact.mapEmbed}
@@ -73,7 +73,7 @@ export function GeneralSection({ c, patch }: SectionProps) {
           onMove={(i, dir) => patch((d) => moveItem(d.contact.hours, i, dir))}
           onRemove={(i) => patch((d) => { d.contact.hours.splice(i, 1); })}
           renderRow={(h, i) => (
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-2 @md:grid-cols-2">
               <Input value={h.day} placeholder="Mon - Thu" onChange={(e) => patch((d) => { d.contact.hours[i].day = e.target.value; })} />
               <Input value={h.time} placeholder="12 pm - 10 pm" onChange={(e) => patch((d) => { d.contact.hours[i].time = e.target.value; })} />
             </div>
@@ -98,7 +98,7 @@ export function HomeSection({ c, patch }: SectionProps) {
   return (
     <div className="space-y-5">
       <Section title="Hero" desc="The full-screen opening of the home page.">
-        <div className="grid gap-5 lg:grid-cols-[1.1fr_1fr]">
+        <div className="grid gap-5 @4xl:grid-cols-[1.1fr_1fr]">
           <div className="space-y-4">
             <ImageField label="Background photo" value={hero.image} onChange={(v) => patch((d) => { d.home.hero.image = v; })} />
             <TextField label="Small line above the title" value={hero.eyebrow} onChange={(v) => patch((d) => { d.home.hero.eyebrow = v; })} />
@@ -133,7 +133,7 @@ export function HomeSection({ c, patch }: SectionProps) {
       </Section>
 
       <Section title="Overview" desc="The story of AXIS, right under the hero.">
-        <div className="grid gap-4 md:grid-cols-[1fr_2fr]">
+        <div className="grid gap-4 @2xl:grid-cols-[1fr_2fr]">
           <TextField label="Small line above the title" value={overview.eyebrow} onChange={(v) => patch((d) => { d.home.overview.eyebrow = v; })} />
           <TextField label="Title" value={overview.title} onChange={(v) => patch((d) => { d.home.overview.title = v; })} />
         </div>
@@ -153,7 +153,7 @@ export function HomeSection({ c, patch }: SectionProps) {
       </Section>
 
       <Section title="Gallery" desc="Four photos look best; any number works.">
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 @3xl:grid-cols-3">
           <TextField label="Small line above the title" value={gallery.eyebrow} onChange={(v) => patch((d) => { d.home.gallery.eyebrow = v; })} />
           <TextField label="Title" value={gallery.title} onChange={(v) => patch((d) => { d.home.gallery.title = v; })} />
           <TextField label="Description" value={gallery.description} onChange={(v) => patch((d) => { d.home.gallery.description = v; })} />
@@ -166,7 +166,7 @@ export function HomeSection({ c, patch }: SectionProps) {
           onMove={(i, dir) => patch((d) => moveItem(d.home.gallery.items, i, dir))}
           onRemove={(i) => patch((d) => { d.home.gallery.items.splice(i, 1); })}
           renderRow={(g, i) => (
-            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+            <div className="grid gap-3 @2xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
               <ImageField label="Photo" value={g.image} aspect="aspect-[16/9]" onChange={(v) => patch((d) => { d.home.gallery.items[i].image = v; })} />
               <TextField label="Caption" value={g.caption} onChange={(v) => patch((d) => { d.home.gallery.items[i].caption = v; })} />
             </div>
@@ -174,7 +174,7 @@ export function HomeSection({ c, patch }: SectionProps) {
         />
       </Section>
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid gap-5 @4xl:grid-cols-2">
         <Section title="Highlights strip" desc="Short keywords in a row between the gallery and the closing message.">
           <Repeater
             items={c.home.tags}
@@ -212,7 +212,7 @@ export function MenuSection({ c, patch }: SectionProps) {
         message="Dishes, drinks and prices come from Inventory → Items. This page only controls the header of the menu."
       />
       <Section title="Menu page header">
-        <div className="grid gap-5 lg:grid-cols-[1.1fr_1fr]">
+        <div className="grid gap-5 @4xl:grid-cols-[1.1fr_1fr]">
           <div className="space-y-4">
             <ImageField label="Background photo" value={c.menu.image} onChange={(v) => patch((d) => { d.menu.image = v; })} />
             <TextField label="Small line above the title" value={c.menu.eyebrow} onChange={(v) => patch((d) => { d.menu.eyebrow = v; })} />
@@ -237,7 +237,7 @@ export function ServicesSection({ c, patch }: SectionProps) {
   return (
     <div className="space-y-5">
       <Section title="Page header">
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 @3xl:grid-cols-3">
           <TextField label="Small line above the title" value={s.eyebrow} onChange={(v) => patch((d) => { d.services.eyebrow = v; })} />
           <TextField label="Title" value={s.title} onChange={(v) => patch((d) => { d.services.title = v; })} />
           <TextField label="Description" value={s.description} onChange={(v) => patch((d) => { d.services.description = v; })} />
@@ -254,7 +254,7 @@ export function ServicesSection({ c, patch }: SectionProps) {
           onMove={(i, dir) => patch((d) => moveItem(d.services.items, i, dir))}
           onRemove={(i) => patch((d) => { d.services.items.splice(i, 1); })}
           renderRow={(item, i) => (
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+            <div className="grid gap-4 @3xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
               <div className="space-y-3">
                 <ImageField label="Photo" value={item.image} aspect="aspect-[16/9]" onChange={(v) => patch((d) => { d.services.items[i].image = v; })} />
                 <TextField label="Title" value={item.title} placeholder="Board Games" onChange={(v) => patch((d) => { d.services.items[i].title = v; })} />
@@ -274,7 +274,7 @@ export function ServicesSection({ c, patch }: SectionProps) {
                   onRemove={(j) => patch((d) => { d.services.items[i].passes.splice(j, 1); })}
                   rowClassName="!bg-white dark:!bg-white/[0.03]"
                   renderRow={(p, j) => (
-                    <div className="grid gap-2 sm:grid-cols-[1.2fr_5rem_1fr]">
+                    <div className="grid gap-2 @lg:grid-cols-[1.2fr_5rem_1fr]">
                       <Input value={p.label} placeholder="Hour pass" onChange={(e) => patch((d) => { d.services.items[i].passes[j].label = e.target.value; })} />
                       <Input value={p.price} placeholder="3$" onChange={(e) => patch((d) => { d.services.items[i].passes[j].price = e.target.value; })} />
                       <Input value={p.note ?? ""} placeholder="Note (optional)" onChange={(e) => patch((d) => { d.services.items[i].passes[j].note = e.target.value || undefined; })} />
@@ -316,7 +316,7 @@ export function EventsSection({ c, patch }: SectionProps) {
         }
       />
       <Section title="Page header">
-        <div className="grid gap-5 lg:grid-cols-[1.1fr_1fr]">
+        <div className="grid gap-5 @4xl:grid-cols-[1.1fr_1fr]">
           <div className="space-y-4">
             <ImageField label="Background photo" value={hero.image} onChange={(v) => patch((d) => { d.events.hero.image = v; })} />
             <TextField label="Small line above the title" value={hero.eyebrow} onChange={(v) => patch((d) => { d.events.hero.eyebrow = v; })} />
@@ -335,7 +335,7 @@ export function EventsSection({ c, patch }: SectionProps) {
           </div>
         </div>
       </Section>
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid gap-5 @4xl:grid-cols-2">
         <Section title="Event list">
           <TextField label="Small line above the title" value={listing.eyebrow} onChange={(v) => patch((d) => { d.events.listing.eyebrow = v; })} />
           <TextField label="Title" value={listing.title} onChange={(v) => patch((d) => { d.events.listing.title = v; })} />

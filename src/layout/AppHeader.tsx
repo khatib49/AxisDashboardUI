@@ -85,7 +85,7 @@ const AppHeader: React.FC = () => {
             {/* Cross Icon */}
           </button>
 
-          <Link to="/" className="lg:hidden">
+          <Link to="/dashboard" className="lg:hidden">
             <BrandLogo variant="icon" size={36} />
           </Link>
 

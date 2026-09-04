@@ -9,6 +9,7 @@ import Input from "../../components/form/input/InputField";
 import Select from "../../components/form/Select";
 import Button from "../../components/ui/button/Button";
 import { EyeCloseIcon, EyeIcon } from "../../icons";
+import { getRoles, roleLabel } from "../../services/roleService";
 
 const SearchIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -79,6 +80,12 @@ function StatusBadge({ statusId }: { statusId: number }) {
     return <span className="status-pill bg-gray-100 text-gray-700 dark:bg-white/5 dark:text-gray-300">Unknown</span>;
 }
 
+const DEFAULT_ROLE_OPTIONS = [
+    { value: 'cashier', label: 'Cashier' }, { value: 'admin', label: 'Admin' }, { value: 'gamecashier', label: 'Gamecashier' },
+    { value: 'admin_fnb', label: 'Admin fnb' }, { value: 'chef', label: 'Chef' }, { value: 'bartender', label: 'Bartender' },
+    { value: 'stock', label: 'Stock' }, { value: 'social_media', label: 'Social media' },
+];
+
 function RoleChip({ role }: { role: string }) {
     const map: Record<string, string> = {
         admin: "bg-brand-50 text-brand-700 ring-brand-200 dark:bg-brand-500/15 dark:text-brand-300 dark:ring-brand-500/20",
@@ -114,6 +121,13 @@ export default function UsersManagement() {
     const [password, setPassword] = useState("");
     const [displayName, setDisplayName] = useState("");
     const [roleName, setRoleName] = useState("cashier");
+    // Roles come from Admin → Roles & Permissions (built-in + custom).
+    const [roleOptions, setRoleOptions] = useState<{ value: string; label: string }[]>(DEFAULT_ROLE_OPTIONS);
+    useEffect(() => {
+        getRoles()
+            .then((rs) => setRoleOptions(rs.map((r) => ({ value: r.name, label: roleLabel(r.name) }))))
+            .catch(() => { /* keep the defaults */ });
+    }, []);
     const [statusId, setStatusId] = useState<number>(1);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
@@ -481,7 +495,7 @@ export default function UsersManagement() {
                     <div>
                         <Label>Role</Label>
                         <Select
-                            options={[{ value: 'cashier', label: 'cashier' }, { value: 'admin', label: 'admin' }, { value: "gamecashier", label: "game cashier" }, { value: "admin_fnb", label: "admin f&b" }, { value: "chef", label: "chef" }, { value: "bartender", label: "bartender" }, { value: "stock", label: "stock management" }]}
+                            options={roleOptions}
                             placeholder="Select a role"
                             defaultValue={roleName}
                             onChange={(v: string | number) => setRoleName(String(v))}

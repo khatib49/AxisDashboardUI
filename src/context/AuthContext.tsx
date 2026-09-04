@@ -1,5 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { loginUser, logout, isAuthenticated, LoginRequest } from '../services/authService';
+import { getMyPages } from '../services/roleService';
+import { PAGE_BY_KEY, legacyAllows } from '../config/pages';
 
 interface UserClaims {
     sub?: string;
@@ -26,6 +28,12 @@ interface AuthState {
     hasAllRoles: (...roles: string[]) => boolean;
     login: (req: LoginRequest) => Promise<{ success: boolean; error?: string }>;
     logout: () => void;
+    /** Page keys granted to the user's roles (Admin → Roles & Permissions); null until loaded. */
+    pages: string[] | null;
+    /** False while the page grants are still being fetched. */
+    pagesReady: boolean;
+    /** Can the user open this page? Admins always can; built-in roles keep their fixed pages. */
+    canAccess: (pageKey: string) => boolean;
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
@@ -156,6 +164,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, [doLogout]);
 
     const hasRole = useCallback((role: string) => !!claims?.roles.includes(role), [claims]);
+
+    // Dynamic page grants, fetched once per sign-in. Built-in roles work
+    // before this resolves (legacy rules); custom roles wait for it.
+    const [pages, setPages] = useState<string[] | null>(null);
+    const [pagesReady, setPagesReady] = useState(false);
+    const authenticatedNow = !!token && !(claims?.isExpired);
+    useEffect(() => {
+        let alive = true;
+        if (!authenticatedNow) { setPages(null); setPagesReady(true); return; }
+        setPagesReady(false);
+        getMyPages()
+            .then(p => { if (alive) setPages(p); })
+            .catch(() => { if (alive) setPages([]); })
+            .finally(() => { if (alive) setPagesReady(true); });
+        return () => { alive = false; };
+    }, [authenticatedNow, token]);
+
+    const canAccess = useCallback((pageKey: string) => {
+        if (hasRole('admin')) return true;
+        const page = PAGE_BY_KEY[pageKey];
+        if (page && legacyAllows(page, claims?.roles || [])) return true;
+        return !!pages?.includes(pageKey);
+    }, [hasRole, claims, pages]);
     const hasAnyRole = useCallback((...r: string[]) => r.some(x => hasRole(x)), [hasRole]);
     const hasAllRoles = useCallback((...r: string[]) => r.every(x => hasRole(x)), [hasRole]);
 
@@ -170,7 +201,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         hasAllRoles,
         login,
         logout: doLogout,
-    }), [loading, token, claims, hasRole, hasAnyRole, hasAllRoles, login, doLogout]);
+        pages,
+        pagesReady,
+        canAccess,
+    }), [loading, token, claims, hasRole, hasAnyRole, hasAllRoles, login, doLogout, pages, pagesReady, canAccess]);
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

@@ -24,7 +24,7 @@ export default function SignInForm() {
     const res = await login({ email, password });
     setSubmitting(false);
     if (res.success) {
-      navigate("/", { replace: true });
+      navigate("/dashboard", { replace: true });
     } else if (res.error) {
       setError(res.error);
     }

@@ -7,7 +7,7 @@
 // from Admin → Events ("Show on website").
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, Button, Dropdown, Modal, Tooltip, message } from "antd";
+import { Alert, Button, Drawer, Dropdown, Modal, Tooltip, message } from "antd";
 import {
   CalendarOutlined, CheckCircleFilled, CoffeeOutlined, EyeOutlined, HomeOutlined,
   MailOutlined, MoreOutlined, SaveOutlined, SettingOutlined, TagsOutlined, UndoOutlined,
@@ -15,7 +15,7 @@ import {
 import PageMeta from "../../components/common/PageMeta";
 import { DEFAULT_SITE_CONTENT, SiteContent } from "../Site/siteContent";
 import { getSiteContent, saveSiteContent } from "../../services/siteContentService";
-import { PreviewDrawer } from "./website/PreviewDrawer";
+import { PreviewPanel, usePreviewBridge } from "./website/PreviewPanel";
 import {
   ContactSection, EventsSection, GeneralSection, HomeSection, MenuSection, ServicesSection,
 } from "./website/sections";
@@ -40,6 +40,19 @@ function relativeTime(d: Date, now: number): string {
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
+/** True when the viewport matches the CSS media query (kept in sync). */
+function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(() => (typeof window !== "undefined" ? window.matchMedia(query).matches : false));
+  useEffect(() => {
+    const mql = window.matchMedia(query);
+    const onChange = () => setMatches(mql.matches);
+    onChange();
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, [query]);
+  return matches;
+}
+
 export default function WebsiteContent() {
   const [content, setContent] = useState<SiteContent | null>(null);
   const [baseline, setBaseline] = useState("");
@@ -49,6 +62,9 @@ export default function WebsiteContent() {
   const [section, setSection] = useState<SectionKey>("general");
   const [previewOpen, setPreviewOpen] = useState(false);
   const [now, setNow] = useState(Date.now());
+  // Side-by-side preview needs room; below this the preview opens over the form.
+  const wide = useMediaQuery("(min-width: 1280px)");
+  usePreviewBridge(previewOpen, content);
 
   const load = useCallback(async () => {
     try {
@@ -201,7 +217,7 @@ export default function WebsiteContent() {
             menu={{
               items: [
                 { key: "reload", label: "Reload from server", onClick: () => void load() },
-                { key: "site", label: "Open the live site", onClick: () => window.open("/home", "_blank", "noreferrer") },
+                { key: "site", label: "Open the live site", onClick: () => window.open("/", "_blank", "noreferrer") },
                 { type: "divider" },
                 {
                   key: "reset",
@@ -234,53 +250,76 @@ export default function WebsiteContent() {
         />
       )}
 
-      {/* Body: section nav + form */}
-      <div className="grid gap-5 xl:grid-cols-[260px_minmax(0,1fr)]">
-        <nav className="xl:sticky xl:top-24 xl:self-start" aria-label="Website sections">
-          <div className="flex gap-2 overflow-x-auto pb-1 xl:flex-col xl:overflow-visible xl:pb-0">
-            {SECTIONS.map((s) => {
-              const isActive = s.key === section;
-              return (
-                <button
-                  key={s.key}
-                  type="button"
-                  onClick={() => setSection(s.key)}
-                  className={`flex shrink-0 items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-all xl:w-full ${
-                    isActive
-                      ? "border-brand-200 bg-brand-50 text-brand-700 shadow-sm dark:border-brand-500/30 dark:bg-brand-500/15 dark:text-brand-300"
-                      : "border-transparent text-gray-600 hover:border-gray-200 hover:bg-white dark:text-gray-300 dark:hover:border-white/10 dark:hover:bg-white/5"
-                  }`}
-                >
-                  <span
-                    className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg text-base ${
-                      isActive ? "bg-white text-brand-600 dark:bg-brand-500/20 dark:text-brand-200" : "bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-gray-400"
+      {/* Body: section nav + form, with the live preview beside them on wide screens */}
+      <div className={`grid gap-5 ${previewOpen && wide ? "xl:grid-cols-[minmax(0,1fr)_minmax(400px,46%)]" : ""}`}>
+        <div className={`@container grid min-w-0 gap-5 ${previewOpen ? "" : "xl:grid-cols-[260px_minmax(0,1fr)]"}`}>
+          <nav className={previewOpen ? "" : "xl:sticky xl:top-24 xl:self-start"} aria-label="Website sections">
+            <div className={`flex gap-2 overflow-x-auto pb-1 ${previewOpen ? "" : "xl:flex-col xl:overflow-visible xl:pb-0"}`}>
+              {SECTIONS.map((s) => {
+                const isActive = s.key === section;
+                const vertical = !previewOpen;
+                return (
+                  <button
+                    key={s.key}
+                    type="button"
+                    onClick={() => setSection(s.key)}
+                    className={`flex shrink-0 items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-all ${vertical ? "xl:w-full" : ""} ${
+                      isActive
+                        ? "border-brand-200 bg-brand-50 text-brand-700 shadow-sm dark:border-brand-500/30 dark:bg-brand-500/15 dark:text-brand-300"
+                        : "border-transparent text-gray-600 hover:border-gray-200 hover:bg-white dark:text-gray-300 dark:hover:border-white/10 dark:hover:bg-white/5"
                     }`}
                   >
-                    {s.icon}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-sm font-semibold">{s.label}</span>
-                    <span className="hidden text-xs text-gray-500 xl:block dark:text-gray-400">{s.desc}</span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </nav>
-
-        <div className="min-w-0">
-          <div className="mb-4 flex items-center gap-3">
-            <span className="grid h-9 w-9 place-items-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300">
-              {active.icon}
-            </span>
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{active.label}</h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{active.desc}</p>
+                    <span
+                      className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg text-base ${
+                        isActive ? "bg-white text-brand-600 dark:bg-brand-500/20 dark:text-brand-200" : "bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-gray-400"
+                      }`}
+                    >
+                      {s.icon}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-semibold">{s.label}</span>
+                      {vertical && <span className="hidden text-xs text-gray-500 xl:block dark:text-gray-400">{s.desc}</span>}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
+          </nav>
+
+          <div className="min-w-0">
+            <div className="mb-4 flex items-center gap-3">
+              <span className="grid h-9 w-9 place-items-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300">
+                {active.icon}
+              </span>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{active.label}</h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{active.desc}</p>
+              </div>
+            </div>
+            {body}
           </div>
-          {body}
         </div>
+
+        {previewOpen && wide && (
+          <aside className="xl:sticky xl:top-20 xl:h-[calc(100vh-6.5rem)]">
+            <PreviewPanel onClose={() => setPreviewOpen(false)} />
+          </aside>
+        )}
       </div>
+
+      {/* Narrow screens: the preview opens over the form instead of beside it */}
+      {!wide && (
+        <Drawer
+          open={previewOpen}
+          onClose={() => setPreviewOpen(false)}
+          placement="bottom"
+          height="92vh"
+          closable={false}
+          styles={{ body: { padding: 12 }, header: { display: "none" } }}
+        >
+          <PreviewPanel onClose={() => setPreviewOpen(false)} className="h-[calc(92vh-24px)]" />
+        </Drawer>
+      )}
 
       {/* Floating save bar */}
       {dirty && (
@@ -298,7 +337,6 @@ export default function WebsiteContent() {
         </div>
       )}
 
-      <PreviewDrawer open={previewOpen} onClose={() => setPreviewOpen(false)} content={content} />
     </div>
   );
 }
