@@ -159,3 +159,28 @@ export const getRevenueCoverageAudit = async (
   );
   return res.data;
 };
+
+// ── Ingredient COGS diagnostic ──────────────────────────────────────────
+export type IngredientCogsLineDto = {
+  ingredientId: number; ingredientName: string; unit: string;
+  quantityConsumed: number; totalCost: number; avgUnitCost: number;
+  currentBuyPrice?: number | null; expectedAtCurrentPrice: number;
+  movementCount: number; flag?: string | null;
+};
+export type IngredientCogsMovementDto = {
+  id: number; createdOn: string; ingredientName: string; unit: string;
+  quantity: number; unitCost?: number | null; totalCost: number;
+  referenceType?: string | null; referenceId?: number | null;
+};
+export type IngredientCogsBreakdownDto = {
+  from?: string | null; to?: string | null; total: number; movementCount: number;
+  expectedAtCurrentPrices: number;
+  lines: IngredientCogsLineDto[]; topMovements: IngredientCogsMovementDto[];
+};
+export const getIngredientCogsBreakdown = async (from?: string, to?: string): Promise<IngredientCogsBreakdownDto> => {
+  const params = new URLSearchParams();
+  if (from) params.append("from", from);
+  if (to) params.append("to", to);
+  const res = await api.get<IngredientCogsBreakdownDto>(`/accounting/ingredient-cogs-breakdown?${params.toString()}`);
+  return res.data;
+};

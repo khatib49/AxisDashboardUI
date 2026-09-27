@@ -46,7 +46,7 @@ import {
 
 import type { JournalEntry } from '../../services/accounting';
 // Add this import at the top with the other service imports
-import { backfillTransactions, backfillExpenses, BackfillResultDto, CashOnHandDto } from '../../services/accountingService';
+import { backfillTransactions, backfillExpenses, BackfillResultDto, CashOnHandDto, getIngredientCogsBreakdown, IngredientCogsBreakdownDto } from '../../services/accountingService';
 
 // Extra data sources for the owner-summary grid at the top of the page:
 //   - Inventory Valuation is the F&B ingredient stock value
@@ -1024,6 +1024,91 @@ interface OwnerSummaryGridProps {
   tcgStockSell: number;
 }
 
+// Where does the Ingredient COGS number come from? Expandable per-ingredient
+// table with mismatch flags — the first place to look when F&B net goes red.
+const IngredientCogsPanel: React.FC<{ fromIso: string; toIso: string }> = ({ fromIso, toIso }) => {
+  const [open, setOpen] = useState(false);
+  const [d, setD] = useState<IngredientCogsBreakdownDto | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [showMoves, setShowMoves] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    setBusy(true);
+    getIngredientCogsBreakdown(fromIso, toIso).then(setD).catch(() => setD(null)).finally(() => setBusy(false));
+  }, [open, fromIso, toIso]);
+  const money = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const flagged = d?.lines.filter(l => l.flag) ?? [];
+  return (
+    <div style={{ border: '1px solid #fecaca', background: '#fff7f7', borderRadius: 8, padding: '8px 12px' }}>
+      <button type="button" onClick={() => setOpen(o => !o)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: '#991b1b', padding: 0 }}>
+        {open ? '▾' : '▸'} Where does the Ingredient COGS come from? (per-ingredient breakdown)
+      </button>
+      {open && (
+        <div style={{ marginTop: 8 }}>
+          {busy && <Spin size="small" />}
+          {!busy && d && (
+            <>
+              <div style={{ fontSize: 12, color: '#374151', marginBottom: 6 }}>
+                Booked <b>{money(d.total)}</b> over {d.movementCount} consumption movements.
+                At today's ingredient prices the same quantities would cost <b>{money(d.expectedAtCurrentPrices)}</b>.
+                {Math.abs(d.total - d.expectedAtCurrentPrices) > Math.max(50, d.expectedAtCurrentPrices * 0.2) && (
+                  <span style={{ color: '#b91c1c' }}> — big gap: booked costs don't match current prices (unit / price mismatch or a double rebuild).</span>
+                )}
+                {flagged.length > 0 && <span style={{ color: '#b91c1c' }}> {flagged.length} ingredient(s) flagged.</span>}
+              </div>
+              <div style={{ maxHeight: 320, overflow: 'auto' }}>
+                <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ textAlign: 'left', color: '#6b7280' }}>
+                      <th style={{ padding: 4 }}>Ingredient</th><th style={{ padding: 4, textAlign: 'right' }}>Qty used</th>
+                      <th style={{ padding: 4, textAlign: 'right' }}>Booked cost</th><th style={{ padding: 4, textAlign: 'right' }}>Avg unit cost</th>
+                      <th style={{ padding: 4, textAlign: 'right' }}>Current price</th><th style={{ padding: 4, textAlign: 'right' }}>At current price</th>
+                      <th style={{ padding: 4 }}>Flag</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {d.lines.map(l => (
+                      <tr key={l.ingredientId} style={{ borderTop: '1px solid #f3f4f6', background: l.flag ? '#fef2f2' : undefined }}>
+                        <td style={{ padding: 4 }}>{l.ingredientName} <span style={{ color: '#9ca3af' }}>({l.movementCount})</span></td>
+                        <td style={{ padding: 4, textAlign: 'right' }}>{l.quantityConsumed.toLocaleString()} {l.unit}</td>
+                        <td style={{ padding: 4, textAlign: 'right', fontWeight: 600 }}>{money(l.totalCost)}</td>
+                        <td style={{ padding: 4, textAlign: 'right' }}>{l.avgUnitCost.toFixed(4)}/{l.unit}</td>
+                        <td style={{ padding: 4, textAlign: 'right' }}>{l.currentBuyPrice == null ? '—' : `${l.currentBuyPrice.toFixed(4)}/${l.unit}`}</td>
+                        <td style={{ padding: 4, textAlign: 'right' }}>{money(l.expectedAtCurrentPrice)}</td>
+                        <td style={{ padding: 4, color: '#b91c1c' }}>{l.flag ?? ''}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <button type="button" onClick={() => setShowMoves(v => !v)} style={{ marginTop: 6, background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: '#4f46e5', padding: 0 }}>
+                {showMoves ? 'hide' : 'show'} the 25 biggest single movements
+              </button>
+              {showMoves && (
+                <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse', marginTop: 4 }}>
+                  <tbody>
+                    {d.topMovements.map(m => (
+                      <tr key={m.id} style={{ borderTop: '1px solid #f3f4f6' }}>
+                        <td style={{ padding: 3 }}>{new Date(m.createdOn).toLocaleString()}</td>
+                        <td style={{ padding: 3 }}>{m.ingredientName}</td>
+                        <td style={{ padding: 3, textAlign: 'right' }}>{m.quantity} {m.unit}</td>
+                        <td style={{ padding: 3, textAlign: 'right' }}>{m.unitCost == null ? '—' : m.unitCost.toFixed(4)}</td>
+                        <td style={{ padding: 3, textAlign: 'right', fontWeight: 600 }}>{money(m.totalCost)}</td>
+                        <td style={{ padding: 3, color: '#6b7280' }}>{m.referenceType} #{m.referenceId}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </>
+          )}
+          {!busy && !d && <div style={{ fontSize: 12, color: '#b91c1c' }}>Could not load the breakdown.</div>}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const OwnerSummaryGrid: React.FC<OwnerSummaryGridProps> = (p) => {
   // Derived nets — kept here (not on the API) because they're pure
   // subtractions of numbers we already fetched. Cheaper than a second round-trip.
@@ -1085,6 +1170,8 @@ const OwnerSummaryGrid: React.FC<OwnerSummaryGridProps> = (p) => {
           <MetricTile palette="purple" label="10 · Inventory Valuation" value={money(p.inventoryValue)}
             tooltip="Current ingredient stock value at latest buy cost. Represents money sitting on shelves." />
         </div>
+
+        <IngredientCogsPanel fromIso={p.fromIso} toIso={p.toIso} />
 
         {/* Row 5 — TCG strip: Rev | COGS | Net | Stock Buy | Stock Sell */}
         <div style={gridStyle}>
