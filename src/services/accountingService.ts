@@ -172,10 +172,19 @@ export type IngredientCogsMovementDto = {
   quantity: number; unitCost?: number | null; totalCost: number;
   referenceType?: string | null; referenceId?: number | null;
 };
+export type RecipeConsumerDto = {
+  recipeLineId: number; ingredientId: number; ingredientName: string;
+  itemId: number; itemName: string; itemSellPrice: number;
+  recipeQty: number; recipeUnit?: string | null; ingredientUnit: string;
+  unitConverted: boolean; qtyPerPortionInIngredientUnit: number; costPerPortion: number;
+  unitsSoldInPeriod: number; costInPeriod: number; flag?: string | null;
+};
 export type IngredientCogsBreakdownDto = {
   from?: string | null; to?: string | null; total: number; movementCount: number;
   expectedAtCurrentPrices: number;
   lines: IngredientCogsLineDto[]; topMovements: IngredientCogsMovementDto[];
+  recipeProblems?: RecipeConsumerDto[] | null;
+  consumersByIngredient?: Record<number, RecipeConsumerDto[]> | null;
 };
 export const getIngredientCogsBreakdown = async (from?: string, to?: string): Promise<IngredientCogsBreakdownDto> => {
   const params = new URLSearchParams();

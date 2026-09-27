@@ -1113,6 +1113,7 @@ const IngredientCogsPanel: React.FC<{ fromIso: string; toIso: string; forceOpen?
   const [d, setD] = useState<IngredientCogsBreakdownDto | null>(null);
   const [busy, setBusy] = useState(false);
   const [showMoves, setShowMoves] = useState(false);
+  const [openIng, setOpenIng] = useState<number | null>(null);
   useEffect(() => {
     if (!open) return;
     setBusy(true);
@@ -1138,6 +1139,35 @@ const IngredientCogsPanel: React.FC<{ fromIso: string; toIso: string; forceOpen?
                 )}
                 {flagged.length > 0 && <span style={{ color: '#b91c1c' }}> {flagged.length} ingredient(s) flagged.</span>}
               </div>
+              {(d.recipeProblems?.length ?? 0) > 0 && (
+                <div style={{ marginBottom: 10, border: '1px solid #fca5a5', background: '#fff', borderRadius: 8, padding: 8 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#991b1b' }}>
+                    ⚠ {d.recipeProblems!.length} recipe line(s) look wrong — these are what inflate the COGS
+                  </div>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 6 }}>
+                    Fix the recipe (Inventory → Recipes: quantity / unit), then run Tools → COGS Rebuild for this period so history is re-costed.
+                  </div>
+                  <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse' }}>
+                    <thead><tr style={{ textAlign: 'left', color: '#6b7280' }}>
+                      <th style={{ padding: 3 }}>Item (id)</th><th style={{ padding: 3 }}>Ingredient (id)</th><th style={{ padding: 3 }}>Recipe line (line id)</th><th style={{ padding: 3, textAlign: 'right' }}>Cost / portion</th>
+                      <th style={{ padding: 3, textAlign: 'right' }}>Sold</th><th style={{ padding: 3, textAlign: 'right' }}>Cost in period</th><th style={{ padding: 3 }}>Why</th>
+                    </tr></thead>
+                    <tbody>
+                      {d.recipeProblems!.slice(0, 40).map((c, i) => (
+                        <tr key={i} style={{ borderTop: '1px solid #fee2e2' }}>
+                          <td style={{ padding: 3, fontWeight: 600 }}>{c.itemName} <span style={{ color: '#9ca3af', fontWeight: 400 }}>#{c.itemId} · ${c.itemSellPrice.toFixed(2)}</span></td>
+                          <td style={{ padding: 3 }}>{c.ingredientName} <span style={{ color: '#9ca3af' }}>#{c.ingredientId}</span></td>
+                          <td style={{ padding: 3 }}>{c.recipeQty} {c.recipeUnit ?? '(no unit)'} → {c.qtyPerPortionInIngredientUnit} {c.ingredientUnit} <span style={{ color: '#9ca3af' }}>(line #{c.recipeLineId})</span></td>
+                          <td style={{ padding: 3, textAlign: 'right' }}>{money(c.costPerPortion)}</td>
+                          <td style={{ padding: 3, textAlign: 'right' }}>{c.unitsSoldInPeriod}</td>
+                          <td style={{ padding: 3, textAlign: 'right', fontWeight: 600 }}>{money(c.costInPeriod)}</td>
+                          <td style={{ padding: 3, color: '#b91c1c' }}>{c.flag}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
               <div style={{ maxHeight: 320, overflow: 'auto' }}>
                 <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse' }}>
                   <thead>
@@ -1150,8 +1180,10 @@ const IngredientCogsPanel: React.FC<{ fromIso: string; toIso: string; forceOpen?
                   </thead>
                   <tbody>
                     {d.lines.map(l => (
-                      <tr key={l.ingredientId} style={{ borderTop: '1px solid #f3f4f6', background: l.flag ? '#fef2f2' : undefined }}>
-                        <td style={{ padding: 4 }}>{l.ingredientName} <span style={{ color: '#9ca3af' }}>({l.movementCount})</span></td>
+                      <React.Fragment key={l.ingredientId}>
+                      <tr style={{ borderTop: '1px solid #f3f4f6', background: l.flag ? '#fef2f2' : undefined, cursor: 'pointer' }}
+                          onClick={() => setOpenIng(openIng === l.ingredientId ? null : l.ingredientId)} title="Click to see which recipes use it">
+                        <td style={{ padding: 4 }}>{openIng === l.ingredientId ? '▾' : '▸'} {l.ingredientName} <span style={{ color: '#9ca3af' }}>({l.movementCount})</span></td>
                         <td style={{ padding: 4, textAlign: 'right' }}>{l.quantityConsumed.toLocaleString()} {l.unit}</td>
                         <td style={{ padding: 4, textAlign: 'right', fontWeight: 600 }}>{money(l.totalCost)}</td>
                         <td style={{ padding: 4, textAlign: 'right' }}>{l.avgUnitCost.toFixed(4)}/{l.unit}</td>
@@ -1159,6 +1191,32 @@ const IngredientCogsPanel: React.FC<{ fromIso: string; toIso: string; forceOpen?
                         <td style={{ padding: 4, textAlign: 'right' }}>{money(l.expectedAtCurrentPrice)}</td>
                         <td style={{ padding: 4, color: '#b91c1c' }}>{l.flag ?? ''}</td>
                       </tr>
+                      {openIng === l.ingredientId && (
+                        <tr><td colSpan={7} style={{ padding: '4px 4px 8px 18px', background: '#fafafa' }}>
+                          {(d.consumersByIngredient?.[l.ingredientId] ?? []).length === 0 ? (
+                            <span style={{ color: '#9ca3af' }}>No recipe uses this ingredient — consumption came from manual movements.</span>
+                          ) : (
+                            <table style={{ width: '100%', fontSize: 11 }}>
+                              <thead><tr style={{ color: '#6b7280', textAlign: 'left' }}>
+                                <th>Used by</th><th>Recipe line</th><th style={{ textAlign: 'right' }}>Cost / portion</th><th style={{ textAlign: 'right' }}>Sold</th><th style={{ textAlign: 'right' }}>Cost in period</th><th></th>
+                              </tr></thead>
+                              <tbody>
+                                {(d.consumersByIngredient?.[l.ingredientId] ?? []).map((c, i) => (
+                                  <tr key={i} style={{ color: c.flag ? '#b91c1c' : undefined }}>
+                                    <td>{c.itemName} <span style={{ color: '#9ca3af' }}>#{c.itemId} · ${c.itemSellPrice.toFixed(2)}</span></td>
+                                    <td>{c.recipeQty} {c.recipeUnit ?? '(no unit)'} → {c.qtyPerPortionInIngredientUnit} {c.ingredientUnit} <span style={{ color: '#9ca3af' }}>(line #{c.recipeLineId})</span></td>
+                                    <td style={{ textAlign: 'right' }}>{money(c.costPerPortion)}</td>
+                                    <td style={{ textAlign: 'right' }}>{c.unitsSoldInPeriod}</td>
+                                    <td style={{ textAlign: 'right', fontWeight: 600 }}>{money(c.costInPeriod)}</td>
+                                    <td>{c.flag ?? ''}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
+                        </td></tr>
+                      )}
+                      </React.Fragment>
                     ))}
                   </tbody>
                 </table>
