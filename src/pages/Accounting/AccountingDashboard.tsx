@@ -1035,8 +1035,10 @@ interface OwnerSummaryGridProps {
 const BreakdownModal: React.FC<{ metric: string | null; fromIso: string; toIso: string; onClose: () => void; onOpenCogs?: () => void }> = ({ metric, fromIso, toIso, onClose, onOpenCogs }) => {
   const [d, setD] = useState<MetricBreakdownDto | null>(null);
   const [busy, setBusy] = useState(false);
+  const [openRows, setOpenRows] = useState<Set<number>>(new Set());
+  const [q, setQ] = useState('');
   useEffect(() => {
-    if (!metric) { setD(null); return; }
+    if (!metric) { setD(null); setOpenRows(new Set()); setQ(''); return; }
     setBusy(true);
     getMetricBreakdown(metric, fromIso, toIso).then(setD).catch(() => setD(null)).finally(() => setBusy(false));
   }, [metric, fromIso, toIso]);
@@ -1044,7 +1046,7 @@ const BreakdownModal: React.FC<{ metric: string | null; fromIso: string; toIso: 
   const isPct = metric === 'foodcost';
   const denom = d ? d.rows.filter(r => r.amount > 0).reduce((s, r) => s + r.amount, 0) : 0;
   return (
-    <Modal open={!!metric} onCancel={onClose} footer={null} width={720} title={d?.title ?? 'Breakdown'} destroyOnHidden>
+    <Modal open={!!metric} onCancel={onClose} footer={null} width={860} title={d?.title ?? 'Breakdown'} destroyOnHidden>
       {busy && <div style={{ padding: 24, textAlign: 'center' }}><Spin /></div>}
       {!busy && d && (
         <div>
@@ -1053,6 +1055,28 @@ const BreakdownModal: React.FC<{ metric: string | null; fromIso: string; toIso: 
             <span style={{ fontSize: 12, color: '#6b7280' }}>{d.rows.length} line{d.rows.length === 1 ? '' : 's'}</span>
           </div>
           {d.note && <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 10 }}>{d.note}</div>}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+            {d.rows.some(r => r.children && r.children.length) && (
+              <>
+                <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search items…" style={{ flex: 1, height: 30, border: '1px solid #e5e7eb', borderRadius: 6, padding: '0 8px', fontSize: 12 }} />
+                <button onClick={() => setOpenRows(new Set(d.rows.map((_, i) => i)))} style={{ fontSize: 11, border: '1px solid #e5e7eb', borderRadius: 6, background: '#fff', padding: '0 8px', cursor: 'pointer' }}>Expand all</button>
+                <button onClick={() => setOpenRows(new Set())} style={{ fontSize: 11, border: '1px solid #e5e7eb', borderRadius: 6, background: '#fff', padding: '0 8px', cursor: 'pointer' }}>Collapse</button>
+              </>
+            )}
+            <button
+              onClick={() => {
+                const lines: string[][] = [['Category', 'Item', 'Count', 'Amount', 'Detail']];
+                d.rows.forEach(r => {
+                  lines.push([r.label, '', String(r.count ?? ''), r.amount.toFixed(2), r.detail ?? '']);
+                  (r.children ?? []).forEach(c => lines.push([r.label, c.label, String(c.count ?? ''), c.amount.toFixed(2), c.detail ?? '']));
+                });
+                const csv = lines.map(l => l.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+                a.download = `${d.metric}_breakdown.csv`; a.click(); URL.revokeObjectURL(a.href);
+              }}
+              style={{ fontSize: 11, border: '1px solid #e5e7eb', borderRadius: 6, background: '#fff', padding: '0 8px', cursor: 'pointer' }}>⬇ CSV</button>
+          </div>
           {metric === 'fnbnet' && onOpenCogs && (
             <button onClick={() => { onClose(); onOpenCogs(); }} style={{ marginBottom: 10, fontSize: 12, color: '#4f46e5', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
               → open the per-ingredient COGS breakdown
@@ -1071,10 +1095,16 @@ const BreakdownModal: React.FC<{ metric: string | null; fromIso: string; toIso: 
               <tbody>
                 {d.rows.map((r, i) => {
                   const share = !isPct && denom > 0 && r.amount > 0 ? (r.amount / denom) * 100 : null;
+                  const kids = (r.children ?? []).filter(c => !q || c.label.toLowerCase().includes(q.toLowerCase()));
+                  const hasKids = (r.children?.length ?? 0) > 0;
+                  const isOpen = openRows.has(i) || (!!q && kids.length > 0);
+                  if (q && hasKids && kids.length === 0) return null;
                   return (
-                    <tr key={i} style={{ borderTop: '1px solid #f3f4f6' }}>
+                    <React.Fragment key={i}>
+                    <tr style={{ borderTop: '1px solid #f3f4f6', cursor: hasKids ? 'pointer' : undefined }}
+                        onClick={() => { if (!hasKids) return; setOpenRows(prev => { const n = new Set(prev); if (n.has(i)) n.delete(i); else n.add(i); return n; }); }}>
                       <td style={{ padding: '6px' }}>
-                        <div style={{ fontWeight: 500 }}>{r.label}</div>
+                        <div style={{ fontWeight: 500 }}>{hasKids ? (isOpen ? '▾ ' : '▸ ') : ''}{r.label}{hasKids && <span style={{ color: '#9ca3af', fontWeight: 400 }}> · {r.children!.length} items</span>}</div>
                         {r.detail && <div style={{ fontSize: 11, color: '#9ca3af' }}>{r.detail}</div>}
                       </td>
                       {d.rows.some(x => x.count != null) && <td style={{ padding: '6px', textAlign: 'right', color: '#6b7280' }}>{r.count ?? ''}</td>}
@@ -1092,6 +1122,18 @@ const BreakdownModal: React.FC<{ metric: string | null; fromIso: string; toIso: 
                         </td>
                       )}
                     </tr>
+                    {isOpen && kids.map((c, j) => (
+                      <tr key={`${i}-${j}`} style={{ background: '#fafafa' }}>
+                        <td style={{ padding: '4px 6px 4px 22px' }}>
+                          <div style={{ fontSize: 12 }}>{c.label}</div>
+                          {c.detail && <div style={{ fontSize: 11, color: '#9ca3af' }}>{c.detail}</div>}
+                        </td>
+                        {d.rows.some(x => x.count != null) && <td style={{ padding: '4px 6px', textAlign: 'right', color: '#6b7280' }}>{c.count ?? ''}</td>}
+                        <td style={{ padding: '4px 6px', textAlign: 'right', fontWeight: 500 }}>{money(c.amount)}</td>
+                        {!isPct && <td style={{ padding: '4px 6px', fontSize: 11, color: '#9ca3af' }}>{r.amount > 0 && c.amount > 0 ? `${((c.amount / r.amount) * 100).toFixed(0)}% of ${r.label}` : ''}</td>}
+                      </tr>
+                    ))}
+                    </React.Fragment>
                   );
                 })}
                 {d.rows.length === 0 && <tr><td colSpan={4} style={{ padding: 16, textAlign: 'center', color: '#9ca3af' }}>Nothing in this period.</td></tr>}

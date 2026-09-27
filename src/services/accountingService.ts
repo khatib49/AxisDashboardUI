@@ -195,7 +195,7 @@ export const getIngredientCogsBreakdown = async (from?: string, to?: string): Pr
 };
 
 // ── Owner-summary tile drill-down ───────────────────────────────────────
-export type BreakdownRowDto = { label: string; amount: number; count?: number | null; detail?: string | null; secondary?: number | null };
+export type BreakdownRowDto = { label: string; amount: number; count?: number | null; detail?: string | null; secondary?: number | null; children?: BreakdownRowDto[] | null };
 export type MetricBreakdownDto = {
   metric: string; title: string; total: number; rows: BreakdownRowDto[];
   note?: string | null; secondaryLabel?: string | null; countLabel?: string | null;
