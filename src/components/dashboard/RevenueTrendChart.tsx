@@ -35,7 +35,7 @@ export default function RevenueTrendChart() {
     const grouped = (() => {
         if (groupBy === 'day') return data;
 
-        const buckets: Record<string, { items: number; games: number; grand: number }> = {};
+        const buckets: Record<string, { items: number; games: number; grand: number; tcg: number; events: number }> = {};
         data.forEach(d => {
             const date = new Date(d.date);
             let key: string;
@@ -46,10 +46,12 @@ export default function RevenueTrendChart() {
             } else {
                 key = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
             }
-            if (!buckets[key]) buckets[key] = { items: 0, games: 0, grand: 0 };
+            if (!buckets[key]) buckets[key] = { items: 0, games: 0, grand: 0, tcg: 0, events: 0 };
             buckets[key].items += d.itemsTotal;
             buckets[key].games += d.gamesTotal;
             buckets[key].grand += d.grandTotal;
+            buckets[key].tcg += d.tcgTotal ?? 0;
+            buckets[key].events += d.eventsTotal ?? 0;
         });
         return Object.entries(buckets)
             .sort(([a], [b]) => a.localeCompare(b))
@@ -58,6 +60,8 @@ export default function RevenueTrendChart() {
                 itemsTotal: v.items,
                 gamesTotal: v.games,
                 grandTotal: v.grand,
+                tcgTotal: v.tcg,
+                eventsTotal: v.events,
             }));
     })();
 
@@ -69,12 +73,15 @@ export default function RevenueTrendChart() {
 
     const chartSeries = (() => {
         if (series === 'gaming') return [{ name: 'Gaming', data: grouped.map(d => +d.gamesTotal.toFixed(2)) }];
-        if (series === 'fnb') return [{ name: 'F&B', data: grouped.map(d => +d.itemsTotal.toFixed(2)) }];
-        if (series === 'tcg') return [{ name: 'TCG', data: grouped.map(d => +(d.grandTotal - d.gamesTotal - d.itemsTotal).toFixed(2)) }];
+        // F&B = item sales minus the TCG/retail share; TCG comes from the server
+        // (Category.ItemType = Retail), not a residual.
+        if (series === 'fnb') return [{ name: 'F&B', data: grouped.map(d => +(d.itemsTotal - (d.tcgTotal ?? 0)).toFixed(2)) }];
+        if (series === 'tcg') return [{ name: 'TCG', data: grouped.map(d => +(d.tcgTotal ?? 0).toFixed(2)) }];
         return [
             { name: 'Total Revenue', data: grouped.map(d => +d.grandTotal.toFixed(2)) },
             { name: 'Gaming', data: grouped.map(d => +d.gamesTotal.toFixed(2)) },
-            { name: 'F&B', data: grouped.map(d => +d.itemsTotal.toFixed(2)) },
+            { name: 'F&B', data: grouped.map(d => +(d.itemsTotal - (d.tcgTotal ?? 0)).toFixed(2)) },
+            { name: 'TCG', data: grouped.map(d => +(d.tcgTotal ?? 0).toFixed(2)) },
         ];
     })();
 
@@ -86,7 +93,7 @@ export default function RevenueTrendChart() {
             zoom: { enabled: true },
             animations: { enabled: true, speed: 500 },
         },
-        colors: ['#6366f1', '#10b981', '#f59e0b'],
+        colors: series === 'gaming' ? ['#10b981'] : series === 'fnb' ? ['#f59e0b'] : series === 'tcg' ? ['#8b5cf6'] : ['#6366f1', '#10b981', '#f59e0b', '#8b5cf6'],
         stroke: { curve: 'smooth', width: 2 },
         fill: {
             type: 'gradient',
@@ -118,7 +125,8 @@ export default function RevenueTrendChart() {
 
     const totalRevenue = data.reduce((s, d) => s + d.grandTotal, 0);
     const totalGaming = data.reduce((s, d) => s + d.gamesTotal, 0);
-    const totalFnb = data.reduce((s, d) => s + d.itemsTotal, 0);
+    const totalTcg = data.reduce((s, d) => s + (d.tcgTotal ?? 0), 0);
+    const totalFnb = data.reduce((s, d) => s + d.itemsTotal, 0) - totalTcg;
 
     return (
         <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-5 md:p-6">
@@ -168,6 +176,10 @@ export default function RevenueTrendChart() {
                 <div className="text-center">
                     <p className="text-xs text-gray-400">🍔 F&B</p>
                     <p className="font-bold text-amber-600">${totalFnb.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                </div>
+                <div className="text-center">
+                    <p className="text-xs text-gray-400">🃏 TCG</p>
+                    <p className="font-bold text-violet-600">${totalTcg.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                 </div>
                 <div className="text-center">
                     <p className="text-xs text-gray-400">Days tracked</p>

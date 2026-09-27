@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { getItemSalesReport, ItemSalesReportDto } from "../../services/transactionService";
+import { isRetailCategory } from "../../utils/categoryUtils";
 import { getCategories, CategoryDto } from "../../services/categoryService";
 import Loader from "../ui/Loader";
 
 type DateFilter = 'today' | 'yesterday' | '7days' | '30days' | 'custom';
 
-export default function BestSellers() {
+// segment: 'all' (default) | 'fnb' (F&B dashboard — hide TCG/retail items) | 'tcg'
+export default function BestSellers({ segment = 'all' }: { segment?: 'all' | 'fnb' | 'tcg' } = {}) {
     const [items, setItems] = useState<ItemSalesReportDto[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<DateFilter>('30days');
@@ -24,7 +26,7 @@ export default function BestSellers() {
 
     useEffect(() => {
         fetchBestSellers();
-    }, [filter, selectedCategoryIds, appliedFrom, appliedTo, topN]);
+    }, [filter, selectedCategoryIds, appliedFrom, appliedTo, topN, segment, categories]);
 
     const fetchBestSellers = async () => {
         try {
@@ -62,7 +64,12 @@ export default function BestSellers() {
                 top: topN,
                 categoryIds: selectedCategoryIds.length > 0 ? selectedCategoryIds.join(',') : undefined,
             });
-            setItems(data);
+            const filtered = segment === 'all' ? data
+                : data.filter(d => {
+                    const tcg = d.isTcg ?? isRetailCategory(categories.find(c => c.id === d.categoryId));
+                    return segment === 'tcg' ? tcg : !tcg;
+                });
+            setItems(filtered);
         } catch (error) {
             console.error("Failed to fetch best sellers:", error);
         } finally {
@@ -209,7 +216,7 @@ export default function BestSellers() {
                 <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
                     {items.map((item, index) => {
                         const barWidth = Math.round((item.totalAmount / maxAmount) * 100);
-                        const isTcg = item.categoryName?.toLowerCase().includes('tcg') || item.categoryName?.toLowerCase().includes('retail');
+                        const isTcg = item.isTcg ?? isRetailCategory(categories.find(c => c.id === item.categoryId));
                         return (
                             <div key={item.itemId} className="relative p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition overflow-hidden">
                                 {/* Progress bar background */}

@@ -3,6 +3,7 @@ import { getTotalSales, PeriodTotalsDto } from '../../services/transactionServic
 import { getCategoriesByType } from '../../services/categoryService';
 import Loader from '../ui/Loader';
 import Input from '../form/input/InputField';
+import { isRetailCategory } from '../../utils/categoryUtils';
 
 type TotalSalesWidgetProps = {
     categoryType: 'game' | 'item' | 'all';
@@ -57,7 +58,9 @@ const TotalSalesWidget: React.FC<TotalSalesWidgetProps> = ({
 
                 // Apply item type filter if admin and filter is set
                 if (isAdmin && appliedItemType !== 'all') {
-                    filteredItemCategories = filteredItemCategories.filter(c => c.itemType === appliedItemType);
+                    // 'Retail' = TCG/retail; 'Food' = everything F&B (food, drinks, tobacco)
+                    filteredItemCategories = filteredItemCategories.filter(c =>
+                        appliedItemType === 'Retail' ? isRetailCategory(c) : !isRetailCategory(c));
                 }
 
                 const allCategoryIds = [
@@ -72,14 +75,20 @@ const TotalSalesWidget: React.FC<TotalSalesWidgetProps> = ({
                 if (isAdmin) {
                     // Admin: Apply item type filter if specified
                     if (appliedItemType !== 'all') {
-                        filteredCategories = filteredCategories.filter(c => c.itemType === appliedItemType);
+                        filteredCategories = filteredCategories.filter(c =>
+                            appliedItemType === 'Retail' ? isRetailCategory(c) : !isRetailCategory(c));
                     }
-                    // If 'all', include all item categories (both Food and Retail)
                 } else {
-                    // F&B Admin: Always filter to Food only
-                    filteredCategories = filteredCategories.filter(c => c.itemType === 'Food');
+                    // F&B Admin: everything that is not TCG/retail (food, drinks, tobacco)
+                    filteredCategories = filteredCategories.filter(c => !isRetailCategory(c));
                 }
 
+                // An empty id list means "no filter" on the API → would show ALL sales.
+                if (filteredCategories.length === 0) {
+                    setData({ totalAmount: 0, ordersCount: 0 });
+                    setLoading(false);
+                    return;
+                }
                 categoryIds = filteredCategories.map(c => c.id).join(',');
             } else {
                 // Fetch specific type categories

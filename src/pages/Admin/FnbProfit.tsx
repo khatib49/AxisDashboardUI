@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getFnbProfit, ProfitDto } from '../../services/profitService';
+import { isFnbCategory } from '../../utils/categoryUtils';
 import { getCategories, CategoryDto } from '../../services/categoryService';
 import PageMeta from '../../components/common/PageMeta';
 import Loader from '../../components/ui/Loader';
@@ -21,8 +22,8 @@ export default function FnbProfit() {
         const fetchCategories = async () => {
             try {
                 const res = await getCategories(1, 100);
-                // Filter only food categories (itemType = 'Food')
-                const foodCategories = res.data.filter(cat => cat.itemType === 'Food');
+                // F&B = every item category that is not TCG/retail (food, drinks, tobacco)
+                const foodCategories = res.data.filter(cat => isFnbCategory(cat));
                 setCategories(foodCategories);
             } catch (err) {
                 console.error('Failed to load categories:', err);

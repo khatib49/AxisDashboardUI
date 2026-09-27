@@ -30,7 +30,7 @@ const Dashboard: React.FC = () => {
 
                     {/* Best Sellers (Item Sales Report) - F&B Items */}
                     <div className="col-span-12">
-                        <BestSellers />
+                        <BestSellers segment="fnb" />
                     </div>
                 </div>
             </div>

@@ -184,3 +184,17 @@ export const getIngredientCogsBreakdown = async (from?: string, to?: string): Pr
   const res = await api.get<IngredientCogsBreakdownDto>(`/accounting/ingredient-cogs-breakdown?${params.toString()}`);
   return res.data;
 };
+
+// ── Owner-summary tile drill-down ───────────────────────────────────────
+export type BreakdownRowDto = { label: string; amount: number; count?: number | null; detail?: string | null; secondary?: number | null };
+export type MetricBreakdownDto = {
+  metric: string; title: string; total: number; rows: BreakdownRowDto[];
+  note?: string | null; secondaryLabel?: string | null; countLabel?: string | null;
+};
+export const getMetricBreakdown = async (metric: string, from?: string, to?: string): Promise<MetricBreakdownDto> => {
+  const params = new URLSearchParams({ metric });
+  if (from) params.append("from", from);
+  if (to) params.append("to", to);
+  const res = await api.get<MetricBreakdownDto>(`/accounting/metric-breakdown?${params.toString()}`);
+  return res.data;
+};

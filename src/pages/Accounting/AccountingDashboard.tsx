@@ -13,7 +13,8 @@ import {
   Progress,
   DatePicker,
   Divider,
-  Tooltip
+  Tooltip,
+  Modal
 } from 'antd';
 import {
   DollarOutlined,
@@ -46,7 +47,7 @@ import {
 
 import type { JournalEntry } from '../../services/accounting';
 // Add this import at the top with the other service imports
-import { backfillTransactions, backfillExpenses, BackfillResultDto, CashOnHandDto, getIngredientCogsBreakdown, IngredientCogsBreakdownDto } from '../../services/accountingService';
+import { backfillTransactions, backfillExpenses, BackfillResultDto, CashOnHandDto, getIngredientCogsBreakdown, IngredientCogsBreakdownDto, getMetricBreakdown, MetricBreakdownDto } from '../../services/accountingService';
 
 // Extra data sources for the owner-summary grid at the top of the page:
 //   - Inventory Valuation is the F&B ingredient stock value
@@ -964,6 +965,8 @@ interface MetricTileProps {
   palette: Palette;
   tooltip?: string;
   subtitle?: string;
+  /** When set, the tile is clickable and opens the breakdown modal. */
+  onClick?: () => void;
 }
 
 // Colour tokens — pastel bg + saturated fg for readability at a glance.
@@ -975,7 +978,7 @@ const TILE_STYLES: Record<Palette, { bg: string; fg: string; border: string }> =
   amber:  { bg: '#FEF3C7', fg: '#92400E', border: '#FCD34D' },
 };
 
-const MetricTile: React.FC<MetricTileProps> = ({ label, value, palette, tooltip, subtitle }) => {
+const MetricTile: React.FC<MetricTileProps> = ({ label, value, palette, tooltip, subtitle, onClick }) => {
   const s = TILE_STYLES[palette];
   const inner = (
     <div
@@ -989,9 +992,13 @@ const MetricTile: React.FC<MetricTileProps> = ({ label, value, palette, tooltip,
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        cursor: tooltip ? 'help' : 'default',
+        cursor: onClick ? 'pointer' : tooltip ? 'help' : 'default',
+        position: 'relative',
       }}
+      onClick={onClick}
+      title={onClick ? 'Click for breakdown' : undefined}
     >
+      {onClick && <span style={{ position: 'absolute', top: 6, right: 8, fontSize: 10, opacity: 0.55 }}>details ›</span>}
       <div style={{ fontSize: 11, fontWeight: 600, opacity: 0.85, display: 'flex', alignItems: 'center', gap: 4 }}>
         {label}
         {tooltip && <InfoCircleOutlined style={{ fontSize: 11, opacity: 0.6 }} />}
@@ -1024,10 +1031,85 @@ interface OwnerSummaryGridProps {
   tcgStockSell: number;
 }
 
+// Generic drill-down modal for any Owner Summary tile.
+const BreakdownModal: React.FC<{ metric: string | null; fromIso: string; toIso: string; onClose: () => void; onOpenCogs?: () => void }> = ({ metric, fromIso, toIso, onClose, onOpenCogs }) => {
+  const [d, setD] = useState<MetricBreakdownDto | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (!metric) { setD(null); return; }
+    setBusy(true);
+    getMetricBreakdown(metric, fromIso, toIso).then(setD).catch(() => setD(null)).finally(() => setBusy(false));
+  }, [metric, fromIso, toIso]);
+  const money = (n: number) => `${n < 0 ? '−' : ''}$${Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const isPct = metric === 'foodcost';
+  const denom = d ? d.rows.filter(r => r.amount > 0).reduce((s, r) => s + r.amount, 0) : 0;
+  return (
+    <Modal open={!!metric} onCancel={onClose} footer={null} width={720} title={d?.title ?? 'Breakdown'} destroyOnHidden>
+      {busy && <div style={{ padding: 24, textAlign: 'center' }}><Spin /></div>}
+      {!busy && d && (
+        <div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 6 }}>
+            <span style={{ fontSize: 26, fontWeight: 800 }}>{isPct ? `${d.total.toFixed(1)}%` : money(d.total)}</span>
+            <span style={{ fontSize: 12, color: '#6b7280' }}>{d.rows.length} line{d.rows.length === 1 ? '' : 's'}</span>
+          </div>
+          {d.note && <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 10 }}>{d.note}</div>}
+          {metric === 'fnbnet' && onOpenCogs && (
+            <button onClick={() => { onClose(); onOpenCogs(); }} style={{ marginBottom: 10, fontSize: 12, color: '#4f46e5', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+              → open the per-ingredient COGS breakdown
+            </button>
+          )}
+          <div style={{ maxHeight: 420, overflow: 'auto' }}>
+            <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ color: '#6b7280', textAlign: 'left' }}>
+                  <th style={{ padding: '4px 6px' }}>Line</th>
+                  {d.rows.some(r => r.count != null) && <th style={{ padding: '4px 6px', textAlign: 'right' }}>{d.countLabel ?? 'count'}</th>}
+                  <th style={{ padding: '4px 6px', textAlign: 'right' }}>Amount</th>
+                  {!isPct && <th style={{ padding: '4px 6px', width: 140 }}>Share</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {d.rows.map((r, i) => {
+                  const share = !isPct && denom > 0 && r.amount > 0 ? (r.amount / denom) * 100 : null;
+                  return (
+                    <tr key={i} style={{ borderTop: '1px solid #f3f4f6' }}>
+                      <td style={{ padding: '6px' }}>
+                        <div style={{ fontWeight: 500 }}>{r.label}</div>
+                        {r.detail && <div style={{ fontSize: 11, color: '#9ca3af' }}>{r.detail}</div>}
+                      </td>
+                      {d.rows.some(x => x.count != null) && <td style={{ padding: '6px', textAlign: 'right', color: '#6b7280' }}>{r.count ?? ''}</td>}
+                      <td style={{ padding: '6px', textAlign: 'right', fontWeight: 600, color: r.amount < 0 ? '#b91c1c' : undefined }}>{isPct ? money(r.amount) : money(r.amount)}</td>
+                      {!isPct && (
+                        <td style={{ padding: '6px' }}>
+                          {share != null && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <div style={{ flex: 1, height: 6, background: '#f3f4f6', borderRadius: 3 }}>
+                                <div style={{ width: `${Math.min(100, share)}%`, height: 6, background: '#6366f1', borderRadius: 3 }} />
+                              </div>
+                              <span style={{ fontSize: 11, color: '#6b7280', width: 38, textAlign: 'right' }}>{share.toFixed(0)}%</span>
+                            </div>
+                          )}
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
+                {d.rows.length === 0 && <tr><td colSpan={4} style={{ padding: 16, textAlign: 'center', color: '#9ca3af' }}>Nothing in this period.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+      {!busy && !d && metric && <div style={{ color: '#b91c1c', fontSize: 12 }}>Could not load the breakdown.</div>}
+    </Modal>
+  );
+};
+
 // Where does the Ingredient COGS number come from? Expandable per-ingredient
 // table with mismatch flags — the first place to look when F&B net goes red.
-const IngredientCogsPanel: React.FC<{ fromIso: string; toIso: string }> = ({ fromIso, toIso }) => {
+const IngredientCogsPanel: React.FC<{ fromIso: string; toIso: string; forceOpen?: number }> = ({ fromIso, toIso, forceOpen }) => {
   const [open, setOpen] = useState(false);
+  useEffect(() => { if (forceOpen) setOpen(true); }, [forceOpen]);
   const [d, setD] = useState<IngredientCogsBreakdownDto | null>(null);
   const [busy, setBusy] = useState(false);
   const [showMoves, setShowMoves] = useState(false);
@@ -1110,6 +1192,8 @@ const IngredientCogsPanel: React.FC<{ fromIso: string; toIso: string }> = ({ fro
 };
 
 const OwnerSummaryGrid: React.FC<OwnerSummaryGridProps> = (p) => {
+  const [bd, setBd] = useState<string | null>(null);
+  const [cogsOpen, setCogsOpen] = useState(0);
   // Derived nets — kept here (not on the API) because they're pure
   // subtractions of numbers we already fetched. Cheaper than a second round-trip.
   const fnbNet = p.fnbRevenue - p.ingredientCogs;
@@ -1137,51 +1221,57 @@ const OwnerSummaryGrid: React.FC<OwnerSummaryGridProps> = (p) => {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {/* Row 1 — Cash on Hand full width. Uses the shared CashOnHandCard
             component so the main app dashboard reads the same source. */}
-        <CashOnHandCard
-          fromIso={p.fromIso}
-          toIso={p.toIso}
-          mode="full"
-          cashOverride={p.cashOnHand}
-          onBaselineSaved={p.onBaselineSaved}
-        />
+        <div style={{ position: 'relative' }}>
+          <CashOnHandCard
+            fromIso={p.fromIso}
+            toIso={p.toIso}
+            mode="full"
+            cashOverride={p.cashOnHand}
+            onBaselineSaved={p.onBaselineSaved}
+          />
+          <button onClick={() => setBd('cash')} style={{ position: 'absolute', top: 8, right: 12, fontSize: 11, color: '#155E75', background: 'rgba(255,255,255,0.6)', border: '1px solid #67E8F9', borderRadius: 6, padding: '2px 8px', cursor: 'pointer' }}>
+            details ›
+          </button>
+        </div>
 
         {/* Row 2 — Total Revenue | Operating Expenses | Net Income */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
-          <MetricTile palette="green" label="2 · Total Revenue"       value={money(p.totalRevenue)} />
-          <MetricTile palette="red"   label="3 · Operating Expenses" value={money(p.operatingExpenses)} />
-          <MetricTile palette="cyan"  label="4 · Net Income"         value={money(netIncome)}
+          <MetricTile palette="green" onClick={() => setBd('revenue')} label="2 · Total Revenue"       value={money(p.totalRevenue)} />
+          <MetricTile palette="red"   onClick={() => setBd('opex')} label="3 · Operating Expenses" value={money(p.operatingExpenses)} />
+          <MetricTile palette="cyan"  onClick={() => setBd('net')} label="4 · Net Income"         value={money(netIncome)}
             tooltip="Total Revenue − Operating Expenses (does not include COGS — see F&B Net and TCG Net for those)."
             subtitle={p.totalRevenue > 0 ? `${((netIncome / p.totalRevenue) * 100).toFixed(1)}% margin` : undefined} />
         </div>
 
         {/* Row 3 — Gaming Revenue standalone (matches the mockup) */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 8 }}>
-          <MetricTile palette="green" label="5 · Gaming Revenue" value={money(p.gamingRevenue)} />
+          <MetricTile palette="green" onClick={() => setBd('gaming')} label="5 · Gaming Revenue" value={money(p.gamingRevenue)} />
         </div>
 
         {/* Row 4 — F&B strip: Rev | Ing COGS | Net | Food Cost % | Inventory Val */}
         <div style={gridStyle}>
-          <MetricTile palette="green"  label="6 · F&B Revenue"        value={money(p.fnbRevenue)} />
-          <MetricTile palette="red"    label="7 · Ingredients COGS"    value={money(p.ingredientCogs)} />
-          <MetricTile palette="cyan"   label="8 · F&B Net"             value={money(fnbNet)}
+          <MetricTile palette="green"  onClick={() => setBd('fnb')} label="6 · F&B Revenue"        value={money(p.fnbRevenue)} />
+          <MetricTile palette="red"    onClick={() => setCogsOpen(n => n + 1)} label="7 · Ingredients COGS"    value={money(p.ingredientCogs)} />
+          <MetricTile palette="cyan"   onClick={() => setBd('fnbnet')} label="8 · F&B Net"             value={money(fnbNet)}
             tooltip="F&B Revenue − Ingredient COGS" />
-          <MetricTile palette="amber"  label="9 · Food Cost %"         value={pct(p.foodCostPercent)}
+          <MetricTile palette="amber"  onClick={() => setBd('foodcost')} label="9 · Food Cost %"         value={pct(p.foodCostPercent)}
             tooltip="Ingredient COGS ÷ Total Revenue × 100. Target: 28–35% for full-service F&B." />
-          <MetricTile palette="purple" label="10 · Inventory Valuation" value={money(p.inventoryValue)}
+          <MetricTile palette="purple" onClick={() => setBd('inventory')} label="10 · Inventory Valuation" value={money(p.inventoryValue)}
             tooltip="Current ingredient stock value at latest buy cost. Represents money sitting on shelves." />
         </div>
 
-        <IngredientCogsPanel fromIso={p.fromIso} toIso={p.toIso} />
+        <IngredientCogsPanel fromIso={p.fromIso} toIso={p.toIso} forceOpen={cogsOpen} />
+        <BreakdownModal metric={bd} fromIso={p.fromIso} toIso={p.toIso} onClose={() => setBd(null)} onOpenCogs={() => setCogsOpen(n => n + 1)} />
 
         {/* Row 5 — TCG strip: Rev | COGS | Net | Stock Buy | Stock Sell */}
         <div style={gridStyle}>
-          <MetricTile palette="green"  label="11 · TCG Retail Revenue" value={money(p.tcgRevenue)} />
-          <MetricTile palette="red"    label="12 · TCG Cost of Goods Sold" value={money(p.tcgCogs)} />
-          <MetricTile palette="cyan"   label="13 · TCG Net"             value={money(tcgNet)}
+          <MetricTile palette="green"  onClick={() => setBd('tcg')} label="11 · TCG Retail Revenue" value={money(p.tcgRevenue)} />
+          <MetricTile palette="red"    onClick={() => setBd('tcgcogs')} label="12 · TCG Cost of Goods Sold" value={money(p.tcgCogs)} />
+          <MetricTile palette="cyan"   onClick={() => setBd('tcgnet')} label="13 · TCG Net"             value={money(tcgNet)}
             tooltip="TCG Retail Revenue − TCG COGS" />
-          <MetricTile palette="purple" label="14 · TCG Stock Buy"       value={money(p.tcgStockBuy)}
+          <MetricTile palette="purple" onClick={() => setBd('tcgstockbuy')} label="14 · TCG Stock Buy"       value={money(p.tcgStockBuy)}
             tooltip="What we paid for TCG stock currently on hand (cost basis)." />
-          <MetricTile palette="purple" label="15 · TCG Stock Sell"      value={money(p.tcgStockSell)}
+          <MetricTile palette="purple" onClick={() => setBd('tcgstocksell')} label="15 · TCG Stock Sell"      value={money(p.tcgStockSell)}
             tooltip="What TCG stock on hand would generate at retail price if fully sold." />
         </div>
       </div>

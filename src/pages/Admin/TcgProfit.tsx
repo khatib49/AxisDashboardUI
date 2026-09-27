@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getTcgRetailProfit, ProfitDto } from '../../services/profitService';
+import { isRetailCategory } from '../../utils/categoryUtils';
 import { getCategories, CategoryDto } from '../../services/categoryService';
 import PageMeta from '../../components/common/PageMeta';
 import Loader from '../../components/ui/Loader';
@@ -22,7 +23,7 @@ export default function TcgProfit() {
             try {
                 const res = await getCategories(1, 100);
                 // Filter only retail categories (itemType = 'Retail')
-                const retailCategories = res.data.filter(cat => cat.itemType === 'Retail');
+                const retailCategories = res.data.filter(cat => isRetailCategory(cat));
                 setCategories(retailCategories);
             } catch (err) {
                 console.error('Failed to load categories:', err);

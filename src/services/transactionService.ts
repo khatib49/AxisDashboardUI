@@ -294,6 +294,7 @@ export type DailySalesData = {
     gamesTotal: number;
     grandTotal: number;
     eventsTotal?: number;
+    tcgTotal?: number;
 };
 
 export type PeriodTotalsDto = {
@@ -322,6 +323,7 @@ export type ItemSalesReportDto = {
     itemName: string;
     categoryId: number;
     categoryName: string;
+    isTcg?: boolean;
     totalQuantity: number;
     totalAmount: number;
     imagePath?: string | null;
