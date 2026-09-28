@@ -36,6 +36,28 @@ const TotalSalesWidget: React.FC<TotalSalesWidgetProps> = ({
 
             let categoryIds: string | undefined;
 
+            // Server-side segments are exact and stable (discount-aware split
+            // by category type, items on game sessions included). Category id
+            // lists are only kept for the mixed admin case with no filter.
+            let segment: 'fnb' | 'tcg' | 'gaming' | 'items' | undefined;
+            if (categoryType === 'item' && !isAdmin) segment = 'fnb';
+            else if (categoryType === 'item' && isAdmin) segment = appliedItemType === 'Retail' ? 'tcg' : appliedItemType === 'Food' ? 'fnb' : 'items';
+            else if (categoryType === 'game') segment = 'gaming';
+            else if (categoryType === 'all' && isAdmin) {
+                if (appliedCategoryType === 'game') segment = 'gaming';
+                else if (appliedCategoryType === 'item') segment = appliedItemType === 'Retail' ? 'tcg' : appliedItemType === 'Food' ? 'fnb' : 'items';
+                else if (appliedItemType === 'Retail') segment = 'tcg';
+                else if (appliedItemType === 'Food') segment = 'fnb';
+            }
+
+            if (segment) {
+                const fromISO = appliedFromDate ? new Date(appliedFromDate).toISOString() : undefined;
+                const toISO = appliedToDate ? new Date(appliedToDate).toISOString() : undefined;
+                setData(await getTotalSales({ segment, from: fromISO, to: toISO }));
+                setLoading(false);
+                return;
+            }
+
             // Fetch categories based on type
             if (categoryType === 'all') {
                 // Fetch both game and item categories

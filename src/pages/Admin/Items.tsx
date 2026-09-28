@@ -15,7 +15,7 @@ import Loader from "../../components/ui/Loader";
 import Alert from "../../components/ui/alert/Alert";
 import DeleteIconButton from "../../components/ui/DeleteIconButton";
 import { getCategoriesByType, CategoryDto } from "../../services/categoryService";
-import { getItemAddOns, setItemAddOns } from "../../services/itemService";
+import { getItemAddOns, setItemAddOns, getItemVariants, setItemVariants } from "../../services/itemService";
 import { getStatusName, STATUS_ENABLED, STATUS_DISABLED } from '../../services/statuses';
 import StatusToggle from '../../components/ui/StatusToggle';
 import RecipeEditorModal from '../../components/stock/RecipeEditorModal';
@@ -129,10 +129,16 @@ export default function Items() {
     // ── Add-ons editor rows (paid extras like "Oat Milk +$1") ──────────
     const [addOnRows, setAddOnRows] = useState<Array<{ id?: number; name: string; price: number | ''; isActive: boolean }>>([]);
     const [addOnsLoading, setAddOnsLoading] = useState(false);
+    // ── Variants (colour / type with own stock) ────────────────────────
+    type VariantRow = { id?: number; name: string; color: string; priceDelta: number | ''; quantity: number | ''; isActive: boolean };
+    const [variantRows, setVariantRows] = useState<VariantRow[]>([]);
+    const [variantsLoading, setVariantsLoading] = useState(false);
+    const variantStockTotal = variantRows.filter(v => v.isActive).reduce((s, v) => s + (Number(v.quantity) || 0), 0);
 
     function openCreate() {
         setEditing(null);
         setAddOnRows([]);
+        setVariantRows([]);
         setForm({ name: "", quantity: 0, price: 0, type: "", categoryId: null, buyPrice: null, gameId: null, statusId: STATUS_ENABLED });
         // clear any previous selected image
         if (imagePreview) { try { URL.revokeObjectURL(imagePreview); } catch (e) { void e; } }
@@ -161,6 +167,25 @@ export default function Items() {
             .then((list) => setAddOnRows(list.map(a => ({ id: a.id, name: a.name, price: a.price, isActive: a.isActive }))))
             .catch(() => setAddOnRows([]))
             .finally(() => setAddOnsLoading(false));
+
+        setVariantsLoading(true);
+        getItemVariants(item.id)
+            .then((list) => setVariantRows(list.map(v => ({ id: v.id, name: v.name, color: v.color ?? '', priceDelta: v.priceDelta, quantity: v.quantity, isActive: v.isActive }))))
+            .catch(() => setVariantRows([]))
+            .finally(() => setVariantsLoading(false));
+    }
+
+    async function saveVariants(itemId: string | number) {
+        const payload = variantRows
+            .filter(r => r.name.trim() !== '')
+            .map(r => ({ id: r.id ?? null, name: r.name.trim(), color: r.color.trim() || null, priceDelta: Number(r.priceDelta) || 0, quantity: Number(r.quantity) || 0, isActive: r.isActive }));
+        if (payload.length === 0 && !editing) return;   // nothing to sync on a fresh item
+        try {
+            await setItemVariants(itemId, payload);
+        } catch (e: unknown) {
+            const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error;
+            setNotification({ variant: "error", title: "Options", message: msg ?? "Item saved, but colour/type options failed to save. Reopen and try again." });
+        }
     }
 
     async function saveAddOns(itemId: string | number) {
@@ -190,6 +215,8 @@ export default function Items() {
                     setItems((s) => s.map((it) => (it.id === editing.id ? { ...it, ...form } : it)));
                 }
                 await saveAddOns(editing.id);
+                await saveVariants(editing.id);
+                try { const again = await getItem(editing.id); setItems((s) => s.map((it) => (it.id === editing.id ? again : it))); } catch { /* keep */ }
                 setNotification({ variant: "success", title: "Updated", message: "Item updated" });
             } else {
                 const created = await createItem({ ...form, image: imageFile });
@@ -199,6 +226,7 @@ export default function Items() {
                     createdFull = await getItem(created.id);
                 } catch (e) { void e; }
                 await saveAddOns(created.id);
+                await saveVariants(created.id);
                 setItems((s) => [createdFull, ...s]);
                 setNotification({ variant: "success", title: "Created", message: `Item '${createdFull.name}' created` });
             }
@@ -433,6 +461,65 @@ export default function Items() {
                     <StatusToggle value={form.statusId} onChange={(id) => setForm((f) => ({ ...f, statusId: id }))} />
 
                     {/* ── Add-ons (paid extras) ─────────────────────────── */}
+                    <div className="mt-2 rounded-lg border border-indigo-200 bg-indigo-50/30 p-3">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <div className="text-sm font-semibold text-gray-800">Colour / type options</div>
+                                <div className="text-xs text-gray-500">
+                                    Each option has its own stock — e.g. Sleeves: Black 40, Green 12. The cashier and the website must pick one.
+                                    {variantRows.some(v => v.isActive) && <> Item stock becomes the sum: <b>{variantStockTotal}</b>.</>}
+                                </div>
+                            </div>
+                            <button type="button"
+                                onClick={() => setVariantRows((r) => [...r, { name: '', color: '', priceDelta: 0, quantity: 0, isActive: true }])}
+                                className="text-sm px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">
+                                + Option
+                            </button>
+                        </div>
+                        {variantsLoading ? (
+                            <div className="py-3 text-sm text-gray-400">Loading…</div>
+                        ) : variantRows.length === 0 ? (
+                            <div className="py-3 text-sm text-gray-400">No options — one stock number for the whole item.</div>
+                        ) : (
+                            <div className="mt-2 space-y-2">
+                                <div className="grid grid-cols-12 gap-2 text-[11px] text-gray-500 px-1">
+                                    <div className="col-span-4">Name</div><div className="col-span-2">Colour</div><div className="col-span-2">+/− price</div><div className="col-span-2">Stock</div>
+                                </div>
+                                {variantRows.map((row, idx) => (
+                                    <div key={row.id ?? `nv-${idx}`} className={`grid grid-cols-12 gap-2 items-center ${row.isActive ? '' : 'opacity-50'}`}>
+                                        <div className="col-span-4">
+                                            <Input placeholder="Black" value={row.name}
+                                                onChange={(e) => setVariantRows((r) => r.map((x, i) => i === idx ? { ...x, name: e.target.value } : x))} />
+                                        </div>
+                                        <div className="col-span-2 flex items-center gap-1">
+                                            <input type="color" value={/^#[0-9a-fA-F]{6}$/.test(row.color) ? row.color : '#888888'}
+                                                onChange={(e) => setVariantRows((r) => r.map((x, i) => i === idx ? { ...x, color: e.target.value } : x))}
+                                                className="h-9 w-9 rounded border border-gray-300 p-0.5" title="Swatch shown to cashier & website" />
+                                            <button type="button" onClick={() => setVariantRows((r) => r.map((x, i) => i === idx ? { ...x, color: '' } : x))} className="text-[10px] text-gray-400" title="No swatch">✕</button>
+                                        </div>
+                                        <div className="col-span-2">
+                                            <Input type="number" step={0.25} placeholder="0" value={row.priceDelta === '' ? '' : String(row.priceDelta)}
+                                                onChange={(e) => setVariantRows((r) => r.map((x, i) => i === idx ? { ...x, priceDelta: e.target.value === '' ? '' : Number(e.target.value) } : x))} />
+                                        </div>
+                                        <div className="col-span-2">
+                                            <Input type="number" step={1} min="0" placeholder="0" value={row.quantity === '' ? '' : String(row.quantity)}
+                                                onChange={(e) => setVariantRows((r) => r.map((x, i) => i === idx ? { ...x, quantity: e.target.value === '' ? '' : Number(e.target.value) } : x))} />
+                                        </div>
+                                        <div className="col-span-2 flex gap-1 justify-end">
+                                            <button type="button" title={row.isActive ? 'Disable (kept for history)' : 'Enable'}
+                                                onClick={() => setVariantRows((r) => r.map((x, i) => i === idx ? { ...x, isActive: !x.isActive } : x))}
+                                                className={`px-2 py-1.5 rounded-lg text-xs border ${row.isActive ? 'border-green-300 text-green-700 bg-green-50' : 'border-gray-200 text-gray-500'}`}>
+                                                {row.isActive ? 'On' : 'Off'}
+                                            </button>
+                                            <button type="button" onClick={() => setVariantRows((r) => r.filter((_, i) => i !== idx))}
+                                                className="px-2 py-1.5 rounded-lg text-xs text-red-600 border border-red-200 hover:bg-red-50">✕</button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
                     <div className="mt-2 rounded-lg border border-gray-200 p-3">
                         <div className="flex items-center justify-between">
                             <div>

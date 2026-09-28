@@ -9,6 +9,18 @@ export type ItemAddOnDto = {
   sortOrder: number;
 };
 
+/** A colour / type option with its own stock. */
+export type ItemVariantDto = {
+  id: number;
+  name: string;
+  color?: string | null;
+  sku?: string | null;
+  priceDelta: number;
+  quantity: number;
+  isActive: boolean;
+  sortOrder: number;
+};
+
 export type ItemDto = {
   id: string;
   name: string;
@@ -22,7 +34,21 @@ export type ItemDto = {
   buyPrice?: number | null;
   /** Active add-ons, present on the cashier list. */
   addOns?: ItemAddOnDto[] | null;
+  variants?: ItemVariantDto[] | null;
 };
+
+export async function getItemVariants(itemId: string | number): Promise<ItemVariantDto[]> {
+  const res = await api.get<ItemVariantDto[]>(`${basePath}/${itemId}/variants`);
+  return res.data;
+}
+
+export async function setItemVariants(
+  itemId: string | number,
+  variants: Array<{ id?: number | null; name: string; color?: string | null; sku?: string | null; priceDelta?: number; quantity?: number; isActive?: boolean }>
+): Promise<ItemVariantDto[]> {
+  const res = await api.put<ItemVariantDto[]>(`${basePath}/${itemId}/variants`, variants);
+  return res.data;
+}
 
 const basePath = "/item";
 

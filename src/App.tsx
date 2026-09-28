@@ -43,6 +43,11 @@ import SiteMenu from "./pages/Site/SiteMenu";
 import SiteServices from "./pages/Site/SiteServices";
 import SiteEvents from "./pages/Site/SiteEvents";
 import PayPage from "./pages/Pay/PayPage";
+import CartPage from "./pages/Shop/CartPage";
+import CheckoutPage from "./pages/Shop/CheckoutPage";
+import AccountPage from "./pages/Shop/AccountPage";
+import OrderPage from "./pages/Shop/OrderPage";
+import OnlineOrders from "./pages/Cashier/OnlineOrders";
 import OnlinePayments from "./pages/Admin/OnlinePayments";
 import SiteContact from "./pages/Site/SiteContact";
 import WebsiteContent from "./pages/Admin/WebsiteContent";
@@ -168,6 +173,11 @@ export default function App() {
               <Route path="/services" element={<SiteServices />} />
               <Route path="/events" element={<SiteEvents />} />
               <Route path="/contact" element={<SiteContact />} />
+              {/* Shop: cart → sign in → checkout → order tracking */}
+              <Route path="/cart" element={<CartPage />} />
+              <Route path="/checkout" element={<CheckoutPage />} />
+              <Route path="/account" element={<AccountPage />} />
+              <Route path="/orders/:code" element={<OrderPage />} />
             </Route>
 
             {/* Public event registration — anonymous, no app layout.
@@ -292,6 +302,7 @@ export default function App() {
 />
               
             <Route path="/cashier/open-invoices" element={<ProtectedRoute><OpenInvoices /></ProtectedRoute>} />
+            <Route path="/cashier/online-orders" element={<PageRoute page="online-orders"><OnlineOrders /></PageRoute>} />
             
               {/* Make Cashier Items also available to game cashier roles */}
               <Route path="/gamecashier/items" element={<PageRoute page="gamecashier-items"><CashierItems /></PageRoute>} />

@@ -154,6 +154,12 @@ const ItemInvoice: React.FC<ItemInvoiceProps> = ({ transaction, onPrint }) => {
                                 <span>&nbsp;x{item.quantity} @ ${item.unitPrice.toFixed(2)}</span>
                                 <span style={{ fontWeight: 700 }}>${item.lineTotal.toFixed(2)}</span>
                             </div>
+                            {/* Colour / type split, e.g. "2x Black, 1x Green" */}
+                            {(item.variants ?? []).length > 0 && (
+                                <div style={{ fontSize: '10px', paddingLeft: '8px' }}>
+                                    {(item.variants ?? []).map((v) => `${v.quantity}x ${v.name}${v.priceDelta ? ` (${v.priceDelta > 0 ? '+' : '-'}$${Math.abs(v.priceDelta).toFixed(2)})` : ''}`).join(', ')}
+                                </div>
+                            )}
                             {/* Paid extras, indented under the item */}
                             {(item.addOns ?? []).map((a, ai) => (
                                 <div key={ai} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', paddingLeft: '8px' }}>
@@ -174,7 +180,8 @@ const ItemInvoice: React.FC<ItemInvoiceProps> = ({ transaction, onPrint }) => {
                 {transaction.discount && transaction.discount.percentage > 0 && (() => {
                     const itemsSubtotal = transaction.items.reduce(
                         (sum, item) => sum + item.lineTotal
-                            + (item.addOns ?? []).reduce((a, x) => a + x.lineTotal, 0),
+                            + (item.addOns ?? []).reduce((a, x) => a + x.lineTotal, 0)
+                            + (item.variants ?? []).reduce((a, x) => a + x.priceDelta * x.quantity, 0),
                         0);
                     const discountRate = transaction.discount.percentage > 1
                         ? transaction.discount.percentage / 100

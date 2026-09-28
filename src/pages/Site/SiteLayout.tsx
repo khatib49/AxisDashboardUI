@@ -5,6 +5,7 @@
 // shortcut instead of "Sign In". All wording comes from the website
 // content document (Admin → Website).
 import { useEffect, useState } from "react";
+import { cartCount, loadCart, getStoredCustomer, type Customer } from "../../services/shopService";
 import { Link, NavLink, Outlet, useLocation } from "react-router";
 import { NAV_LINKS } from "./siteContent";
 import { SiteContentProvider, useSiteContent, useSitePreview } from "./SiteContentContext";
@@ -126,6 +127,35 @@ export default function SiteLayout() {
   );
 }
 
+/** Cart + account buttons for the header; live via storage events. */
+function ShopButtons({ onNavigate }: { onNavigate?: () => void }) {
+  const [count, setCount] = useState(() => cartCount(loadCart()));
+  const [customer, setCustomer] = useState<Customer | null>(() => getStoredCustomer());
+  useEffect(() => {
+    const onCart = () => setCount(cartCount(loadCart()));
+    const onCust = () => setCustomer(getStoredCustomer());
+    window.addEventListener("axis-cart-changed", onCart);
+    window.addEventListener("axis-customer-changed", onCust);
+    window.addEventListener("storage", onCart);
+    return () => { window.removeEventListener("axis-cart-changed", onCart); window.removeEventListener("axis-customer-changed", onCust); window.removeEventListener("storage", onCart); };
+  }, []);
+  return (
+    <div className="flex items-center gap-2">
+      <NavLink to="/account" onClick={onNavigate}
+        className="grid h-10 place-items-center rounded-lg border border-white/15 px-3 text-sm font-semibold text-white/80 hover:text-white">
+        {customer ? `👤 ${customer.firstName || "Account"}` : "Sign in"}
+      </NavLink>
+      <NavLink to="/cart" onClick={onNavigate} aria-label="Cart"
+        className="relative grid h-10 w-10 place-items-center rounded-lg border border-white/15 text-white">
+        🛒
+        {count > 0 && (
+          <span className="absolute -right-1.5 -top-1.5 min-w-5 rounded-full bg-[#87b2dd] px-1 text-[10px] font-bold text-[#071018] text-center leading-5">{count}</span>
+        )}
+      </NavLink>
+    </div>
+  );
+}
+
 function SiteShell() {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
@@ -166,16 +196,19 @@ function SiteShell() {
             ))}
           </div>
 
-          {/* Mobile toggle */}
-          <button
-            type="button"
-            aria-label="Toggle menu"
-            aria-expanded={menuOpen}
-            onClick={() => setMenuOpen((o) => !o)}
-            className="grid h-10 w-10 place-items-center rounded-lg border border-white/15 text-white md:hidden"
-          >
-            {menuOpen ? "✕" : "☰"}
-          </button>
+          <div className="flex items-center gap-2">
+            <ShopButtons />
+            {/* Mobile toggle */}
+            <button
+              type="button"
+              aria-label="Toggle menu"
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((o) => !o)}
+              className="grid h-10 w-10 place-items-center rounded-lg border border-white/15 text-white md:hidden"
+            >
+              {menuOpen ? "✕" : "☰"}
+            </button>
+          </div>
         </nav>
 
         {menuOpen && (

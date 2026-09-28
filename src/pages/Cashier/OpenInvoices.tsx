@@ -20,6 +20,7 @@ import { getDiscounts, DiscountDto } from '../../services/discountService';
 import AttachClientModal from '../GameCashier/AttachClientModal';
 import PaymentChoiceModal from '../../components/wallet/PaymentChoiceModal';
 import ItemAddOnsPanel, { addOnsTotal } from '../../components/items/ItemAddOnsPanel';
+import ItemVariantPicker, { variantPickTotal, variantDeltaTotal } from '../../components/items/ItemVariantPicker';
 
 const OpenInvoices: React.FC = () => {
     const [editingSetInvoiceId, setEditingSetInvoiceId] = useState<number | null>(null);
@@ -66,6 +67,12 @@ const [, setLoadingSets] = useState(false);
     const [selectedItems, setSelectedItems] = useState<Record<string, number>>({});
     // Paid extras per item: itemId -> addOnId -> qty. Sent with the add-items call.
     const [selectedAddOns, setSelectedAddOns] = useState<Record<string, Record<number, number>>>({});
+    const [selectedVariants, setSelectedVariants] = useState<Record<string, Record<number, number>>>({});
+    const setVariantPicks = (itemId: string, next: Record<number, number>) => {
+        setSelectedVariants(prev => { const c = { ...prev }; if (Object.keys(next).length === 0) delete c[itemId]; else c[itemId] = next; return c; });
+        const total = variantPickTotal(next);
+        setSelectedItems(s => { const c = { ...s }; if (total <= 0) delete c[itemId]; else c[itemId] = total; return c; });
+    };
 
     // Modal states
     const [isAddItemsModalOpen, setIsAddItemsModalOpen] = useState(false);
@@ -300,6 +307,7 @@ const handlePrintInvoice = (invoice: OpenInvoiceDto) => {
             lineTotal: item.price * item.quantity,
             isIncluded: !!item.isIncluded,
             addOns: item.addOns || [],
+            variants: item.variants || [],
             categoryName: '',
             itemType: item.type || '',
         })) || []
@@ -350,6 +358,7 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                         itemType: item.type || '',
                         isIncluded: !!item.isIncluded,
                         addOns: item.addOns || [],
+                        variants: item.variants || [],
                     })) || []
                 };
 
@@ -396,6 +405,11 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                         .filter(([, aq]) => aq > 0)
                         .map(([addOnId, aq]) => ({ addOnId: Number(addOnId), quantity: aq }))
                     : undefined,
+                variants: selectedVariants[itemId]
+                    ? Object.entries(selectedVariants[itemId])
+                        .filter(([, vq]) => vq > 0)
+                        .map(([variantId, vq]) => ({ variantId: Number(variantId), quantity: vq }))
+                    : undefined,
             }));
 
         if (orderItems.length === 0) {
@@ -422,7 +436,7 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                 });
 
                 // Reset and close modal
-                setSelectedItems({}); setSelectedAddOns({});
+                setSelectedItems({}); setSelectedAddOns({}); setSelectedVariants({});
                 setSelectedInvoice(null);
                 setIsAddItemsModalOpen(false);
                 setPage(1);
@@ -473,7 +487,7 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
         .reduce((sum, [itemId, qty]) => {
             const item = itemLookup[String(itemId)];
             if (!item) return sum;
-            return sum + item.price * qty + addOnsTotal(item.addOns, selectedAddOns[String(itemId)]);
+            return sum + item.price * qty + addOnsTotal(item.addOns, selectedAddOns[String(itemId)]) + variantDeltaTotal(item.variants, selectedVariants[String(itemId)]);
         }, 0);
 
     const selectedItemsCount = Object.values(selectedItems).reduce(
@@ -769,6 +783,11 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                                             {item.quantity} × ${item.price.toFixed(2)}
                                         </span>
                                     </div>
+                                    {(item.variants ?? []).length > 0 && (
+                                        <div className="text-[11px] text-indigo-600 pl-3">
+                                            {(item.variants ?? []).map(v => `${v.quantity}× ${v.name}`).join(', ')}
+                                        </div>
+                                    )}
                                     {(item.addOns ?? []).map((a) => (
                                         <div key={a.addOnId} className="flex justify-between text-[11px] text-indigo-600 pl-3">
                                             <span>+ {a.quantity}x {a.name}</span>
@@ -878,7 +897,7 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                 onClose={() => {
                     setIsAddItemsModalOpen(false);
                     setSelectedInvoice(null);
-                    setSelectedItems({}); setSelectedAddOns({});
+                    setSelectedItems({}); setSelectedAddOns({}); setSelectedVariants({});
                     setPage(1);
                     setSearch('');
                     setSelectedCategory(null);
@@ -928,7 +947,7 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                                     </p>
                                 </div>
                                 <button
-                                    onClick={() => { setSelectedItems({}); setSelectedAddOns({}); }}
+                                    onClick={() => { setSelectedItems({}); setSelectedAddOns({}); setSelectedVariants({}); }}
                                     className="text-sm text-blue-600 hover:text-blue-800"
                                 >
                                     Clear All
@@ -1002,6 +1021,14 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                                             </div>
                                             {/* Out-of-stock no longer blocks — the red badge warns, the
                                                 counter goes negative, the sale goes through. */}
+                                            {(item.variants?.filter(v => v.isActive !== false).length ?? 0) > 0 ? (
+                                                <ItemVariantPicker
+                                                    variants={item.variants!}
+                                                    picks={selectedVariants[String(item.id)] ?? {}}
+                                                    onChange={(next) => setVariantPicks(String(item.id), next)}
+                                                    dense
+                                                />
+                                            ) : (
                                             <div className="flex items-center gap-1">
                                                 <button
                                                     className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50 disabled:cursor-not-allowed text-sm"
@@ -1039,6 +1066,7 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                                                     +
                                                 </button>
                                             </div>
+                                            )}
                                             {(item.addOns?.length ?? 0) > 0 && (
                                                 <ItemAddOnsPanel
                                                     addOns={item.addOns!}
@@ -1092,7 +1120,7 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                             onClick={() => {
                                 setIsAddItemsModalOpen(false);
                                 setSelectedInvoice(null);
-                                setSelectedItems({}); setSelectedAddOns({});
+                                setSelectedItems({}); setSelectedAddOns({}); setSelectedVariants({});
                                 setPage(1);
                                 setSearch('');
                                 setSelectedCategory(null);

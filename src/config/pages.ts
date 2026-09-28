@@ -110,6 +110,7 @@ export const PAGES: PageDef[] = [
   { key: "cashier-items", label: "Items", group: "Till", path: "/cashier/items", legacyRoles: ["cashier"] },
   { key: "cashier-orders", label: "Orders", group: "Till", path: "/cashier/orders", legacyRoles: ["cashier"] },
   { key: "open-invoices", label: "Open Items Invoice", group: "Till", path: "/cashier/open-invoices", legacyRoles: ["cashier", "gamecashier"] },
+  { key: "online-orders", label: "Online Orders", group: "Till", path: "/cashier/online-orders", legacyRoles: ["cashier", "admin_fnb"] },
   { key: "clients", label: "Clients", group: "Till", path: "/gamecashier/clients", legacyRoles: ["cashier", "gamecashier", "admin_fnb"] },
   { key: "cashier-events", label: "Events", group: "Till", path: "/cashier/events", legacyRoles: ["cashier", "gamecashier", "admin_fnb"] },
   { key: "loyalty-check", label: "AXIS PLUS Check", group: "Till", path: "/cashier/loyalty-check", legacyRoles: ["cashier", "gamecashier"] },

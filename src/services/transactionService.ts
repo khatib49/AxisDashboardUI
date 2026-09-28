@@ -7,6 +7,8 @@ export type OrderItemRequest = {
     quantity: number;
     /** Paid extras picked in the customize sheet. */
     addOns?: Array<{ addOnId: number; quantity: number }>;
+    /** Colour / type split; quantities must add up to the line quantity. */
+    variants?: Array<{ variantId: number; quantity: number }>;
 };
 
 export type ApiResponse<T = unknown> = {
@@ -161,6 +163,7 @@ export interface ItemTransaction {
         isIncluded?: boolean;
         /** Paid extras chosen for this line (snapshotted at sale time). */
         addOns?: Array<{ addOnId: number; name: string; quantity: number; unitPrice: number; lineTotal: number }>;
+        variants?: Array<{ variantId: number; name: string; quantity: number; priceDelta: number }>;
     }>;
     discount?: SimpleDiscount | null;
     comment?: string;
@@ -249,6 +252,7 @@ export interface OpenInvoiceDto {
         type: string;
         isIncluded?: boolean;
         addOns?: Array<{ addOnId: number; name: string; quantity: number; unitPrice: number; lineTotal: number }>;
+        variants?: Array<{ variantId: number; name: string; quantity: number; priceDelta: number }>;
     }>;
 }
 
@@ -310,6 +314,8 @@ export type TotalSalesQuery = {
     from?: string;
     to?: string;
     categoryIds?: string;
+    /** Server-side segment (discount-aware, category-type based). Overrides categoryIds. */
+    segment?: 'fnb' | 'tcg' | 'gaming' | 'items';
 };
 
 export type OrdersCountQuery = {
@@ -640,6 +646,7 @@ export async function getTotalSales(query: TotalSalesQuery = {}) {
     if (query.from) params.from = query.from;
     if (query.to) params.to = query.to;
     if (query.categoryIds) params.categoryIds = query.categoryIds;
+    if (query.segment) params.segment = query.segment;
 
     const res = await get<PeriodTotalsDto>("/TransactionsReports/total-sales", {
         params,

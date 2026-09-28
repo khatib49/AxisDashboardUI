@@ -15,6 +15,7 @@ import Loader from "../../components/ui/Loader";
 import Alert from "../../components/ui/alert/Alert";
 import PaymentChoiceModal from '../../components/wallet/PaymentChoiceModal';
 import ItemAddOnsPanel from '../../components/items/ItemAddOnsPanel';
+import ItemVariantPicker, { variantPickTotal, variantDeltaTotal } from '../../components/items/ItemVariantPicker';
 import { getCategoriesByType, CategoryDto } from "../../services/categoryService";
 import StatusToggle from '../../components/ui/StatusToggle';
 import { STATUS_ENABLED, getStatusName, STATUS_PROCESSED_PAID } from '../../services/statuses';
@@ -47,6 +48,15 @@ export default function CashierItems() {
     // Chosen paid extras per item: itemId -> addOnId -> qty. Rides the order
     // request and shows as sublines on the receipt.
     const [selectedAddOns, setSelectedAddOns] = useState<Record<string, Record<number, number>>>({});
+    // Colour / type picks per item: itemId -> variantId -> qty. For items with
+    // options the line quantity IS the sum of these picks.
+    const [selectedVariants, setSelectedVariants] = useState<Record<string, Record<number, number>>>({});
+    const setVariantPicks = (itemId: string, next: Record<number, number>) => {
+        setSelectedVariants(prev => { const c = { ...prev }; if (Object.keys(next).length === 0) delete c[itemId]; else c[itemId] = next; return c; });
+        const total = variantPickTotal(next);
+        setSelectedItems(s => { const c = { ...s }; if (total <= 0) delete c[itemId]; else c[itemId] = total; return c; });
+        if (total <= 0) setSelectedAddOns(a => { const c = { ...a }; delete c[itemId]; return c; });
+    };
     const [categories, setCategories] = useState<CategoryDto[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -342,9 +352,13 @@ export default function CashierItems() {
             const qty = Number(q) || 0;
             const unit = item && item.price != null ? Number(item.price) : 0;
             const name = item ? item.name : String(itemId);
-            const lineTotal = unit * qty;
+            const variantDelta = variantDeltaTotal(item?.variants, selectedVariants[String(itemId)]);
+            const lineTotal = unit * qty + variantDelta;
             const image = item?.imagePath ? resolveImageUrl(item.imagePath) : '';
-            return { itemId, name, qty, unit, lineTotal, image };
+            const variantNote = Object.entries(selectedVariants[String(itemId)] ?? {})
+                .map(([vid, vq]) => { const def = item?.variants?.find(v => v.id === Number(vid)); return def && vq > 0 ? `${vq}× ${def.name}` : null; })
+                .filter(Boolean).join(', ');
+            return { itemId, name, qty, unit, lineTotal, image, variantNote };
         });
 
     // Add-on sublines per order line (looked up from the item's catalog).
@@ -436,6 +450,11 @@ export default function CashierItems() {
                                                                     .filter(([, aq]) => aq > 0)
                                                                     .map(([addOnId, aq]) => ({ addOnId: Number(addOnId), quantity: aq }))
                                                                 : undefined,
+                                                            variants: selectedVariants[itemId]
+                                                                ? Object.entries(selectedVariants[itemId])
+                                                                    .filter(([, vq]) => vq > 0)
+                                                                    .map(([variantId, vq]) => ({ variantId: Number(variantId), quantity: vq }))
+                                                                : undefined,
                                                         }));
 
                                                     if (orderItems.length === 0) return;
@@ -522,7 +541,7 @@ export default function CashierItems() {
                                                             // the on-site print agent.
                                                         }
 
-                                                        setSelectedItems({}); setSelectedAddOns({});
+                                                        setSelectedItems({}); setSelectedAddOns({}); setSelectedVariants({});
                                                         setSelectedDiscountId(null);
                                                         setSelectedClient(null);
                                                         setClientResults([]);
@@ -594,7 +613,7 @@ export default function CashierItems() {
                     </span>
                     <button
                         className="px-3 py-1.5 text-xs font-medium text-gray-300 hover:text-white transition"
-                        onClick={() => { setSelectedItems({}); setSelectedAddOns({}); }}
+                        onClick={() => { setSelectedItems({}); setSelectedAddOns({}); setSelectedVariants({}); }}
                     >
                         Clear
                     </button>
@@ -675,6 +694,15 @@ export default function CashierItems() {
                                             <div className="shrink-0 text-base font-bold text-gray-900">${it.price}</div>
                                         </div>
 
+                                        {(it.variants?.filter(v => v.isActive !== false).length ?? 0) > 0 ? (
+                                            /* Options with own stock: pick per colour; the item qty is the sum. */
+                                            <ItemVariantPicker
+                                                variants={it.variants!}
+                                                picks={selectedVariants[String(it.id)] ?? {}}
+                                                onChange={(next) => setVariantPicks(String(it.id), next)}
+                                                dense
+                                            />
+                                        ) : (
                                         <div className="mt-3 flex items-center justify-center gap-0 rounded-xl border border-gray-200 overflow-hidden">
                                             {/* Out-of-stock no longer blocks ordering — the badge warns,
                                                 the counter goes negative, the sale goes through. */}
@@ -711,6 +739,7 @@ export default function CashierItems() {
                                                 })}
                                             >+</button>
                                         </div>
+                                        )}
 
                                         {/* Add-ons live on the card — tap to expand, pick right here */}
                                         {(it.addOns?.length ?? 0) > 0 && (
@@ -962,7 +991,7 @@ export default function CashierItems() {
                                                             <img src={l.image || '/images/image-placeholder.svg'} alt={l.name} className="w-10 h-8 object-cover rounded" onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/images/image-placeholder.svg'; }} />
                                                             <div>
                                                                 <div className="font-medium">{l.name}</div>
-                                                                <div className="text-xs text-gray-500">{l.qty} × ${l.unit.toFixed(2)}</div>
+                                                                <div className="text-xs text-gray-500">{l.qty} × ${l.unit.toFixed(2)}{l.variantNote ? <span className="text-indigo-600"> · {l.variantNote}</span> : null}</div>
                                                             </div>
                                                         </div>
                                                         <div className="ml-2 w-24 text-right font-medium">${l.lineTotal.toFixed(2)}</div>
@@ -1020,6 +1049,11 @@ export default function CashierItems() {
                                                                 ? Object.entries(selectedAddOns[itemId])
                                                                     .filter(([, aq]) => aq > 0)
                                                                     .map(([addOnId, aq]) => ({ addOnId: Number(addOnId), quantity: aq }))
+                                                                : undefined,
+                                                            variants: selectedVariants[itemId]
+                                                                ? Object.entries(selectedVariants[itemId])
+                                                                    .filter(([, vq]) => vq > 0)
+                                                                    .map(([variantId, vq]) => ({ variantId: Number(variantId), quantity: vq }))
                                                                 : undefined,
                                                         }));
 
@@ -1088,7 +1122,7 @@ export default function CashierItems() {
                                                             // the on-site print agent.
                                                         }
 
-                                                        setSelectedItems({}); setSelectedAddOns({});
+                                                        setSelectedItems({}); setSelectedAddOns({}); setSelectedVariants({});
                                                         setSelectedDiscountId(null);
                                                         setSelectedClient(null);
                                                         setClientResults([]);
