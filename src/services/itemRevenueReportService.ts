@@ -11,6 +11,8 @@ export type ItemRevenueLineDto = {
     unitCost?: number | null;
     costSource: "buy" | "recipe" | "none";
     isRecipe: boolean;
+    /** Item status is "Deleted" — shown only because it sold in the period; stock counted as 0. */
+    isDeleted?: boolean;
     unitsSold: number;
     unitsGivenFree: number;
     grossRevenue: number;

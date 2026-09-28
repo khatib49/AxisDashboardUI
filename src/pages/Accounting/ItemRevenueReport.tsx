@@ -143,7 +143,10 @@ function ItemRow({ item }: { item: ItemRevenueLineDto }) {
                     ) : (
                         <div className="w-8 h-8 rounded-lg bg-gray-200 flex items-center justify-center text-gray-400 text-xs">📦</div>
                     )}
-                    <span className="text-sm font-medium text-gray-800">{item.itemName}</span>
+                    <span className={`text-sm font-medium ${item.isDeleted ? "text-gray-400 line-through" : "text-gray-800"}`}>{item.itemName}</span>
+                    {item.isDeleted && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-gray-200 text-gray-600" title="Item is deleted — shown because it sold in this period. Stock counted as 0.">deleted</span>
+                    )}
                 </div>
             </td>
             <td className="px-4 py-3 text-center"><span className="text-sm text-gray-500">{fmt(item.sellPrice)}</span></td>
@@ -170,6 +173,8 @@ function ItemRow({ item }: { item: ItemRevenueLineDto }) {
             <td className="px-4 py-3 text-center">
                 {item.isRecipe ? (
                     <span className="text-[10px] text-teal-600" title="Stock is tracked on ingredients">recipe</span>
+                ) : item.isDeleted ? (
+                    <span className="text-[10px] text-gray-400" title="Deleted item — no stock on the shelf">—</span>
                 ) : (
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                         item.stockOnHand <= 0 ? "bg-red-100 text-red-700"
