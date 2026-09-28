@@ -37,6 +37,8 @@ export default function Items() {
     const [totalCount, setTotalCount] = useState<number | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
     const [search, setSearch] = useState('');
+    // 1 Enabled (default), 2 Disabled, 3 Deleted, 0 all
+    const [statusFilter, setStatusFilter] = useState<number>(STATUS_ENABLED);
     const [debouncedSearch, setDebouncedSearch] = useState('');
 
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -87,7 +89,7 @@ export default function Items() {
     useEffect(() => {
         let mounted = true;
         setLoading(true);
-        getItems(page, pageSize, selectedCategory, debouncedSearch)
+        getItems(page, pageSize, selectedCategory, debouncedSearch, statusFilter)
             .then((data: ItemListResponse) => {
                 if (!mounted) return;
                 setItems(data.data || []);
@@ -105,7 +107,7 @@ export default function Items() {
         return () => {
             mounted = false;
         };
-    }, [page, pageSize, selectedCategory, debouncedSearch]);
+    }, [page, pageSize, selectedCategory, debouncedSearch, statusFilter]);
 
     // Debounce search input (300ms)
     useEffect(() => {
@@ -295,6 +297,21 @@ export default function Items() {
                                 options={[{ value: '', label: 'All' }, ...categories.map(c => ({ value: c.id, label: c.name }))]}
                                 defaultValue={selectedCategory ?? ''}
                                 onChange={(v: string | number) => { setPage(1); setSelectedCategory(v === '' ? null : Number(v)); }}
+                            />
+                        </div>
+                    </div>
+                    <div className="flex items-center">
+                        <label className="text-sm text-gray-600 mr-2">Status</label>
+                        <div className="w-36">
+                            <Select
+                                options={[
+                                    { value: STATUS_ENABLED, label: 'Enabled' },
+                                    { value: STATUS_DISABLED, label: 'Disabled' },
+                                    { value: 3, label: 'Deleted' },
+                                    { value: 0, label: 'All' },
+                                ]}
+                                defaultValue={statusFilter}
+                                onChange={(v: string | number) => { setPage(1); setStatusFilter(Number(v)); }}
                             />
                         </div>
                     </div>

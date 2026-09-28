@@ -76,12 +76,15 @@ export async function getItems(
   page = 1,
   pageSize = 10,
   categoryId?: number | null,
-  search?: string | null
+  search?: string | null,
+  /** 1 Enabled (default), 2 Disabled, 3 Deleted, 0 = all statuses */
+  statusId?: number | null
 ): Promise<ItemListResponse> {
   let url = `${basePath}?Page=${page}&PageSize=${pageSize}`;
   if (categoryId !== undefined && categoryId !== null)
     url += `&CategoryId=${encodeURIComponent(String(categoryId))}`;
   if (search) url += `&Search=${encodeURIComponent(search)}`;
+  if (statusId !== undefined && statusId !== null) url += `&StatusId=${statusId}`;
   const res = await api.get<ItemListResponse>(url);
   return res.data;
 }
