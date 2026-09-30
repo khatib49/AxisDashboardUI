@@ -286,7 +286,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
     formTitle: "Send us a message",
     formDescription: "Fill in the form and we'll get back to you.",
     phone: "78 729 282",
-    email: "axis.tcg.connect@gmail.com",
+    email: "Info@axislb.com",
     whatsapp: "+961 78 729 282",
     instagram: "https://instagram.com/axis_lb",
     address: "Street 60, Achrafieh, Beirut",
