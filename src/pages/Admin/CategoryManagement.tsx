@@ -33,7 +33,14 @@ export default function CategoryManagement() {
 
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editing, setEditing] = useState<CategoryDto | null>(null);
-    const [form, setForm] = useState<{ name: string; type: string; itemType: string }>({ name: "", type: "item", itemType: "" });
+    type CategoryForm = { name: string; type: string; itemType: string; showInShop: boolean; defaultWeightKg: string };
+    const emptyForm = (): CategoryForm => ({ name: "", type: "item", itemType: "", showInShop: false, defaultWeightKg: "" });
+    const [form, setForm] = useState<CategoryForm>(emptyForm());
+    const toInput = (f: CategoryForm) => ({
+        name: f.name, type: f.type, itemType: f.itemType,
+        showInShop: f.showInShop,
+        defaultWeightKg: f.defaultWeightKg.trim() === "" ? null : Number(f.defaultWeightKg),
+    });
     const [submitting, setSubmitting] = useState(false);
 
     const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -73,7 +80,7 @@ export default function CategoryManagement() {
 
     function openCreate() {
         setEditing(null);
-        setForm({ name: "", type: "item", itemType: "" });
+        setForm(emptyForm());
         setIsFormOpen(true);
     }
 
@@ -82,7 +89,11 @@ export default function CategoryManagement() {
         try {
             const dto = await getCategoryById(id);
             setEditing(dto);
-            setForm({ name: dto.name, type: dto.type ?? "item", itemType: dto.itemType ?? "" });
+            setForm({
+                name: dto.name, type: dto.type ?? "item", itemType: dto.itemType ?? "",
+                showInShop: dto.showInShop ?? false,
+                defaultWeightKg: dto.defaultWeightKg != null ? String(dto.defaultWeightKg) : "",
+            });
             setIsFormOpen(true);
         } catch (err: unknown) {
             let message = "Failed to load category";
@@ -99,12 +110,13 @@ export default function CategoryManagement() {
     async function submitForm() {
         setSubmitting(true);
         try {
+            const input = toInput(form);
             if (editing) {
-                await updateCategory(editing.id, form);
-                setCategories((s) => s.map((c) => (c.id === editing.id ? { ...c, ...form } : c)));
+                await updateCategory(editing.id, input);
+                setCategories((s) => s.map((c) => (c.id === editing.id ? { ...c, ...input } : c)));
                 setNotification({ variant: "success", title: "Updated", message: "Category updated" });
             } else {
-                const created = await createCategory(form);
+                const created = await createCategory(input);
                 setCategories((s) => [created, ...s]);
                 setNotification({ variant: "success", title: "Created", message: `Category '${created.name}' created` });
             }
@@ -146,6 +158,7 @@ export default function CategoryManagement() {
                                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Name</TableCell>
                                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Type</TableCell>
                                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Item Type</TableCell>
+                                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Online shop</TableCell>
                                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Actions</TableCell>
                                 </TableRow>
                             </TableHeader>
@@ -158,6 +171,12 @@ export default function CategoryManagement() {
                                         </TableCell>
                                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{c.type}</TableCell>
                                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{c.itemType || "-"}</TableCell>
+                                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                                            {c.showInShop
+                                                ? <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 text-xs font-medium">🛒 in shop</span>
+                                                : <span className="text-gray-400 text-xs">hidden</span>}
+                                            {c.defaultWeightKg != null && <span className="ml-2 text-xs text-gray-400">{c.defaultWeightKg} kg</span>}
+                                        </TableCell>
                                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                                             <div className="flex items-center gap-2">
                                                 <button className="text-sm px-2 py-1 bg-gray-200 rounded" onClick={() => openEdit(c.id)}>Edit</button>
@@ -208,6 +227,17 @@ export default function CategoryManagement() {
                         { value: "Tobacco", label: "Tobacco" },
                         { value: "Food", label: "Food" }
                     ]} defaultValue={form.itemType} onChange={(v: string | number) => setForm((f) => ({ ...f, itemType: v === "" ? "" : String(v) }))} />
+
+                    <div className="mt-1 rounded-lg border border-sky-200 bg-sky-50/40 p-3 flex flex-col gap-2">
+                        <label className="flex items-center gap-2 text-sm text-gray-800 cursor-pointer">
+                            <input type="checkbox" checked={form.showInShop} onChange={(e) => setForm((f) => ({ ...f, showInShop: e.target.checked }))} />
+                            Show in online shop
+                        </label>
+                        <div className="text-xs text-gray-500">Items in this category (marked "sell online") appear on the website shop and can be delivered.</div>
+                        <label className="text-sm text-gray-600">Default weight (kg)</label>
+                        <Input type="number" step={0.1} min="0" placeholder="e.g. 0.5 — used for items without their own weight" value={form.defaultWeightKg}
+                            onChange={(e) => setForm((f) => ({ ...f, defaultWeightKg: e.target.value }))} />
+                    </div>
                 </div>
             </Modal>
 

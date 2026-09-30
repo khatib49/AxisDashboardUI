@@ -10,6 +10,7 @@ import {
   IntegrationSetting, IntegrationTestResult,
   integrationSettingsService,
 } from "../../services/integrationSettingsService";
+import { testAramex, apiErrorMessage } from "../../services/shippingService";
 
 // Friendly grouping for the page
 const GROUPS: { title: string; subtitle: string; keys: string[] }[] = [
@@ -40,6 +41,17 @@ const GROUPS: { title: string; subtitle: string; keys: string[] }[] = [
     ],
   },
   {
+    title: "Aramex (delivery)",
+    subtitle: "Shipping API credentials from your Aramex account manager (ClientInfo). Sandbox and production side by side; the switch below picks the live one. Shop switches, zones and shipments live on Shipping & Aramex.",
+    keys: [
+      "Aramex.Environment",
+      "Aramex.Sandbox.UserName", "Aramex.Sandbox.Password", "Aramex.Sandbox.AccountNumber", "Aramex.Sandbox.AccountPin", "Aramex.Sandbox.AccountEntity",
+      "Aramex.Production.UserName", "Aramex.Production.Password", "Aramex.Production.AccountNumber", "Aramex.Production.AccountPin", "Aramex.Production.AccountEntity",
+      "Aramex.AccountCountryCode", "Aramex.Source", "Aramex.ProductGroup", "Aramex.ProductType", "Aramex.PaymentType", "Aramex.CodCurrency",
+      "Aramex.LabelReportId", "Aramex.DescriptionOfGoods", "Aramex.TrackingPollMinutes",
+    ],
+  },
+  {
     title: "Whish Collect (e-wallet)",
     subtitle: "Whish Money merchant credentials for event tickets.",
     keys: ["Whish.Channel", "Whish.Secret", "Whish.WebsiteUrl", "Whish.BaseUrl", "Event.PublicBaseUrl", "Event.WhatsAppNumber"],
@@ -60,6 +72,26 @@ const KNOWN_DESCRIPTIONS: Record<string, string> = {
   "MontyPay.SendNotificationUrl": "true = send our callback URL with every session; false = rely on the URL set in MontyPay's panel",
   "Payments.PublicBaseUrl": "Website base for pay links (falls back to Event.PublicBaseUrl)",
   "Payments.ApiBaseUrl": "Public API base for callbacks (auto-detected when empty)",
+  "Aramex.Environment": "sandbox or production — which Aramex credentials and host are live",
+  "Aramex.Sandbox.UserName": "Sandbox ClientInfo UserName (email)",
+  "Aramex.Sandbox.Password": "Sandbox ClientInfo Password",
+  "Aramex.Sandbox.AccountNumber": "Sandbox AccountNumber",
+  "Aramex.Sandbox.AccountPin": "Sandbox AccountPin",
+  "Aramex.Sandbox.AccountEntity": "Sandbox AccountEntity (e.g. BEY)",
+  "Aramex.Production.UserName": "Production ClientInfo UserName (email)",
+  "Aramex.Production.Password": "Production ClientInfo Password",
+  "Aramex.Production.AccountNumber": "Production AccountNumber",
+  "Aramex.Production.AccountPin": "Production AccountPin",
+  "Aramex.Production.AccountEntity": "Production AccountEntity (e.g. BEY)",
+  "Aramex.AccountCountryCode": "Account country ISO-2 (LB)",
+  "Aramex.Source": "ClientInfo Source (default 24)",
+  "Aramex.ProductGroup": "DOM (domestic) or EXP (express/international)",
+  "Aramex.ProductType": "Service type — OND for domestic on-demand, PPX/PDX for express",
+  "Aramex.PaymentType": "P = prepaid (shipper pays), C = collect",
+  "Aramex.CodCurrency": "Currency Aramex collects COD in (USD or LBP)",
+  "Aramex.LabelReportId": "Label report template id (default 9729)",
+  "Aramex.DescriptionOfGoods": "Text printed on the AWB (e.g. Retail goods)",
+  "Aramex.TrackingPollMinutes": "How often the background job polls tracking for open shipments (0 = off)",
 };
 
 function SettingRow({ s, onChange }: { s: IntegrationSetting; onChange: () => void }) {
@@ -150,15 +182,19 @@ export default function IntegrationsPage() {
   };
   useEffect(() => { reload(); }, []);
 
-  const runTest = async (which: "anthropic" | "whatsapp") => {
+  const runTest = async (which: "anthropic" | "whatsapp" | "aramex") => {
     setTests(t => ({ ...t, [which]: "running" }));
     try {
-      const res = which === "anthropic"
-        ? await integrationSettingsService.testAnthropic()
-        : await integrationSettingsService.testWhatsApp();
+      let res: IntegrationTestResult;
+      if (which === "anthropic") res = await integrationSettingsService.testAnthropic();
+      else if (which === "whatsapp") res = await integrationSettingsService.testWhatsApp();
+      else {
+        const r = await testAramex();
+        res = { ok: r.ok, message: r.ok && r.rateAmount != null ? `${r.message ?? "OK"} · sample rate ${r.rateAmount} ${r.rateCurrency ?? ""}`.trim() : r.message ?? null };
+      }
       setTests(t => ({ ...t, [which]: res }));
-    } catch (e: any) {
-      setTests(t => ({ ...t, [which]: { ok: false, message: e?.message ?? "failed" } }));
+    } catch (e: unknown) {
+      setTests(t => ({ ...t, [which]: { ok: false, message: apiErrorMessage(e, "failed") } }));
     }
   };
 
@@ -166,8 +202,17 @@ export default function IntegrationsPage() {
   // Placeholder row for a known key that has no DB row yet.
   const rowFor = (k: string): IntegrationSetting | undefined =>
     byKey.get(k) ?? (KNOWN_DESCRIPTIONS[k]
-      ? { id: 0, key: k, value: null, isSecret: /password|secret|key$/i.test(k) && !/MerchantKey/.test(k), isSet: false, description: KNOWN_DESCRIPTIONS[k], updatedBy: null, updatedOn: "" }
+      ? { id: 0, key: k, value: null, isSecret: /password|secret|key$|accountpin/i.test(k) && !/MerchantKey/.test(k), isSet: false, description: KNOWN_DESCRIPTIONS[k], updatedBy: null, updatedOn: "" }
       : undefined);
+
+  const aramexEnv = byKey.get("Aramex.Environment")?.value ?? "sandbox";
+  const [switchingAramex, setSwitchingAramex] = useState(false);
+  const switchAramexEnv = async (env: "sandbox" | "production") => {
+    if (env === "production" && !confirm("Switch Aramex to PRODUCTION? Real shipments will be created and billed to your Aramex account from now on.")) return;
+    setSwitchingAramex(true);
+    try { await integrationSettingsService.upsert("Aramex.Environment", env); await reload(); }
+    finally { setSwitchingAramex(false); }
+  };
 
   const montyEnv = byKey.get("MontyPay.Environment")?.value ?? "sandbox";
   const [switching, setSwitching] = useState(false);
@@ -183,7 +228,7 @@ export default function IntegrationsPage() {
       <div className="mb-5">
         <h1 className="text-2xl font-bold text-gray-900">Integrations</h1>
         <p className="text-sm text-gray-500 mt-1">
-          API keys for Claude AI, WhatsApp, MontyPay and Whish. Secrets are never returned in plaintext — only the last 4 chars are shown.
+          API keys for Claude AI, WhatsApp, MontyPay, Aramex and Whish. Secrets are never returned in plaintext — only the last 4 chars are shown.
         </p>
       </div>
 
@@ -208,10 +253,37 @@ export default function IntegrationsPage() {
                 className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
               >Test connection</button>
             )}
+            {g.title.startsWith("Aramex") && (
+              <button
+                onClick={() => runTest("aramex")}
+                className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+              >Test connection</button>
+            )}
           </header>
 
           {(g.title.startsWith("Anthropic") && tests.anthropic) && <TestResult t={tests.anthropic} />}
           {(g.title.startsWith("WhatsApp")  && tests.whatsapp)  && <TestResult t={tests.whatsapp} />}
+          {(g.title.startsWith("Aramex")    && tests.aramex)    && <TestResult t={tests.aramex} />}
+
+          {g.title.startsWith("Aramex") && (
+            <div className={`mx-5 mt-4 rounded-xl border p-4 flex items-center justify-between gap-4 flex-wrap ${aramexEnv === "production" ? "border-emerald-300 bg-emerald-50" : "border-amber-300 bg-amber-50"}`}>
+              <div>
+                <div className="text-sm font-semibold text-gray-900">
+                  Environment: <span className={aramexEnv === "production" ? "text-emerald-700" : "text-amber-700"}>{aramexEnv.toUpperCase()}</span>
+                </div>
+                <div className="text-xs text-gray-600 mt-0.5">
+                  Test host ws.dev.aramex.net / Live host ws.aramex.net.
+                  {" "}Zones, shipper profile and shipments are on <a href="/admin/shipments" className="text-indigo-600 underline">Shipping & Aramex</a>.
+                </div>
+              </div>
+              <div className="flex rounded-lg border border-gray-300 overflow-hidden bg-white">
+                <button disabled={switchingAramex} onClick={() => switchAramexEnv("sandbox")}
+                  className={`px-4 h-9 text-xs font-semibold ${aramexEnv !== "production" ? "bg-amber-500 text-white" : "text-gray-600 hover:bg-gray-50"}`}>Sandbox</button>
+                <button disabled={switchingAramex} onClick={() => switchAramexEnv("production")}
+                  className={`px-4 h-9 text-xs font-semibold ${aramexEnv === "production" ? "bg-emerald-600 text-white" : "text-gray-600 hover:bg-gray-50"}`}>Production</button>
+              </div>
+            </div>
+          )}
 
           {g.title.startsWith("MontyPay") && (
             <div className={`mx-5 mt-4 rounded-xl border p-4 flex items-center justify-between gap-4 flex-wrap ${montyEnv === "production" ? "border-emerald-300 bg-emerald-50" : "border-amber-300 bg-amber-50"}`}>

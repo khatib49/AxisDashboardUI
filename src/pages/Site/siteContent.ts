@@ -115,6 +115,7 @@ export const IMAGES = {
 export const NAV_LINKS = [
   { id: "nav-home", label: "Home", href: "/" },
   { id: "nav-menu", label: "Menu", href: "/menu" },
+  { id: "nav-shop", label: "Shop", href: "/shop" },
   { id: "nav-services", label: "Services", href: "/services" },
   { id: "nav-events", label: "Events", href: "/events" },
   { id: "nav-contact", label: "Contact", href: "/contact" },

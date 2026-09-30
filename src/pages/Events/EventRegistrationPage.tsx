@@ -6,13 +6,31 @@
 // Admin → Events. Nothing about a specific event is hardcoded here.
 
 import { useEffect, useRef, useState } from "react";
-import { useParams, useSearchParams, useLocation } from "react-router";
-import {
-  getPublicEvent, registerForEvent,
-  EventPublic, EventRegisterResult,
-} from "../../services/eventService";
+import { useParams, useSearchParams, useLocation, Link } from "react-router";
+import { getPublicEvent, registerForEvent } from "../../services/eventService";
+import type { EventPublic, EventRegisterResult } from "../../services/eventService";
+import { getStoredCustomer } from "../../services/shopService";
 
 type PayMethod = "Visa" | "Whish" | "Cash";
+
+/** Server error message from either an axios error or our normalized ApiError. */
+function errorMessage(err: unknown, fallback: string): string {
+  if (err && typeof err === "object") {
+    const o = err as { response?: { data?: { message?: unknown; error?: unknown } }; message?: unknown };
+    const data = o.response?.data;
+    if (typeof data?.message === "string" && data.message) return data.message;
+    if (typeof data?.error === "string" && data.error) return data.error;
+    if (typeof o.message === "string" && o.message && !o.response) return o.message;
+  }
+  return fallback;
+}
+
+/** In-app route to the ticket: prefer the code; fall back to the path of an absolute ticketUrl. */
+function ticketRoute(r: EventRegisterResult): string {
+  if (r.ticketCode) return `/tickets/${encodeURIComponent(r.ticketCode)}`;
+  const u = r.ticketUrl ?? "";
+  try { return new URL(u, window.location.origin).pathname; } catch { return u; }
+}
 
 export default function EventRegistrationPage() {
   const { eventKey = "" } = useParams();
@@ -21,15 +39,19 @@ export default function EventRegistrationPage() {
   const isPaidPage = location.pathname.endsWith("/paid");
   const paymentFailed = search.get("payment") === "failed";
   const wasCancelled = search.get("cancelled") === "1";
+  const paidTicketCode = search.get("ticket");
 
   const [ev, setEv] = useState<EventPublic | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName]   = useState("");
-  const [phone, setPhone]         = useState("");
-  const [email, setEmail]         = useState("");
+  // A signed-in website customer gets the form prefilled (and the ticket
+  // linked to their account — the bearer token rides on the register call).
+  const storedCustomer = useRef(getStoredCustomer()).current;
+  const [firstName, setFirstName] = useState(storedCustomer?.firstName ?? "");
+  const [lastName, setLastName]   = useState(storedCustomer?.lastName ?? "");
+  const [phone, setPhone]         = useState(storedCustomer?.phone ?? "");
+  const [email, setEmail]         = useState(storedCustomer?.email ?? "");
   const [method, setMethod]       = useState<PayMethod | "">("");
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult]       = useState<EventRegisterResult | null>(null);
@@ -105,9 +127,9 @@ export default function EventRegistrationPage() {
       } else {
         waTab?.close();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       waTab?.close();
-      setError(err?.response?.data?.message ?? "Registration failed. Please try again.");
+      setError(errorMessage(err, "Registration failed. Please try again."));
     } finally { setSubmitting(false); }
   };
 
@@ -167,6 +189,15 @@ export default function EventRegistrationPage() {
             <div className="sg-big">🎉</div>
             <h2>Payment Received</h2>
             <p>You're officially in. We've saved your spot — see you there.</p>
+            {paidTicketCode ? (
+              <Link to={`/tickets/${encodeURIComponent(paidTicketCode)}?paid=1`} className="sg-btn sg-ticket">
+                🎟 View your ticket →
+              </Link>
+            ) : (
+              <p className="sg-muted" style={{ marginTop: 12 }}>
+                Lost your ticket? Check <Link to="/account" className="sg-link">My account → My tickets</Link>.
+              </p>
+            )}
             <p className="sg-muted">Keep an eye on your phone; we'll message the final details before the event.</p>
           </div>
         </section>
@@ -179,7 +210,21 @@ export default function EventRegistrationPage() {
             <div className="sg-big">✅</div>
             <h2>You're Registered!</h2>
             <p>{result.message}</p>
-            <div className="sg-reg-no">Registration #{result.registrationId}</div>
+            <div className="sg-reg-no">
+              Registration #{result.registrationId}
+              {result.ticketCode && <> · Ticket {result.ticketCode}</>}
+            </div>
+
+            {/* The ticket — pending until payment is confirmed, but it's theirs
+                to keep, share and show at the door. */}
+            {(result.ticketUrl || result.ticketCode) && (
+              <div className="sg-payrow">
+                <Link to={ticketRoute(result)} className="sg-btn sg-ticket">
+                  🎟 View your ticket →
+                </Link>
+                <p className="sg-muted" style={{ marginTop: 8 }}>Your ticket is pending until we confirm payment.</p>
+              </div>
+            )}
 
             {/* Whish link mode: pay first, then confirm — so the pay button
                 comes before the WhatsApp one and is visually primary. */}
@@ -287,6 +332,13 @@ export default function EventRegistrationPage() {
                 <button type="submit" className="sg-btn" disabled={submitting}>
                   {submitting ? "Processing…" : "Secure My Spot ➜"}
                 </button>
+                <p style={{ marginTop: 12, fontSize: 12, opacity: 0.7 }}>
+                  By registering you agree to our{" "}
+                  <a href="/terms" target="_blank" rel="noreferrer" style={{ textDecoration: "underline" }}>Terms &amp; Conditions</a>,{" "}
+                  <a href="/refund-policy" target="_blank" rel="noreferrer" style={{ textDecoration: "underline" }}>Refund Policy</a> and{" "}
+                  <a href="/privacy" target="_blank" rel="noreferrer" style={{ textDecoration: "underline" }}>Privacy Policy</a>.
+                  Tickets are non-refundable unless the event is cancelled.
+                </p>
               </div>
             </form>
           )}
@@ -424,6 +476,9 @@ const CSS = `
 .sg-pay{background:linear-gradient(95deg,#DC2626,#F43F5E);box-shadow:0 0 24px rgba(244,63,94,.45);margin-top:18px}
 /* Forces the pay CTA onto its own line above the WhatsApp button. */
 .sg-payrow{display:block}
+/* The ticket CTA — brand blue, sits above pay/WhatsApp. */
+.sg-ticket{background:linear-gradient(95deg,#6a99cb,#87b2dd);color:#071018;box-shadow:0 0 24px rgba(135,178,221,.45);margin-top:18px}
+.sg-link{color:var(--purple2);text-decoration:underline}
 .sg-card{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--border);border-radius:18px;padding:30px 26px;box-shadow:0 10px 40px rgba(0,0,0,.5)}
 .sg-card h2{font-size:24px;font-weight:800;margin-bottom:4px;display:flex;align-items:center;gap:10px}
 .sg-sub{color:var(--muted);font-size:14px;margin-bottom:20px}

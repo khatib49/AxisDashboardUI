@@ -118,6 +118,9 @@ export type PublicPayment = {
   isExpired: boolean;
   paidOn?: string | null;
   referenceLabel?: string | null;
+  /** Where to go after paying — relative (e.g. /tickets/TK-XXXX, /orders/AX-XXXX). */
+  nextUrl?: string | null;
+  nextLabel?: string | null;
 };
 
 export type PublicPaymentStartResult = {

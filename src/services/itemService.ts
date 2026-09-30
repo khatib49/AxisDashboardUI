@@ -32,6 +32,10 @@ export type ItemDto = {
   statusId?: number | null;
   imagePath?: string | null;
   buyPrice?: number | null;
+  /** Listed on the online shop (default true). */
+  sellOnline?: boolean;
+  /** Shipping weight; null = category default / global default. */
+  weightKg?: number | null;
   /** Active add-ons, present on the cashier list. */
   addOns?: ItemAddOnDto[] | null;
   variants?: ItemVariantDto[] | null;
@@ -94,6 +98,13 @@ export async function getItem(id: string): Promise<ItemDto> {
   return res.data;
 }
 
+/** Online-shop fields shared by create/update (multipart). */
+function appendShopFields(form: FormData, body: Pick<ItemDto, "sellOnline" | "weightKg">) {
+  if (body.sellOnline !== undefined) form.append("sellOnline", body.sellOnline ? "true" : "false");
+  if (body.weightKg !== undefined && body.weightKg !== null && !Number.isNaN(body.weightKg))
+    form.append("weightKg", String(body.weightKg));
+}
+
 export async function createItem(
   body: Omit<ItemDto, "id"> & { image?: File | null }
 ): Promise<ItemDto> {
@@ -110,6 +121,7 @@ if (body.buyPrice !== undefined && body.buyPrice !== null) {
   if (body.statusId !== undefined && body.statusId !== null) {
     form.append("statusId", String(body.statusId));
   }
+  appendShopFields(form, body);
 
   // Only append image if a file is provided
   if (body.image) {
@@ -139,6 +151,7 @@ export async function updateItem(
 
   if (body.statusId !== undefined && body.statusId !== null)
     form.append("statusId", String(body.statusId));
+  appendShopFields(form, body);
   // Only append image if a file is provided; otherwise keep existing image on server
   if (body.image) {
     form.append("image", body.image);

@@ -2,7 +2,8 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
-import { CartLine, cartLineTotal, loadCart, setCartQty, clearCart, getStoredCustomer } from "../../services/shopService";
+import { cartLineTotal, loadCart, setCartQty, clearCart, getStoredCustomer } from "../../services/shopService";
+import type { CartLine } from "../../services/shopService";
 import { ShopPage, money, primaryBtn, ghostBtn } from "./ShopUi";
 
 export default function CartPage() {
@@ -18,13 +19,13 @@ export default function CartPage() {
   const signedIn = !!getStoredCustomer();
 
   return (
-    <ShopPage title="Your cart" subtitle={lines.length ? `${lines.reduce((s, l) => s + l.quantity, 0)} item(s) · pickup at AXIS` : undefined} back={{ to: "/menu", label: "Back to menu" }}>
+    <ShopPage title="Your cart" subtitle={lines.length ? `${lines.reduce((s, l) => s + l.quantity, 0)} item(s) · delivery or pickup at AXIS` : undefined} back={{ to: "/shop", label: "Continue shopping" }}>
       <PageMeta title="Cart — AXIS" description="Your AXIS order" />
       {lines.length === 0 ? (
         <div className="rounded-3xl border border-white/10 bg-white/5 p-10 text-center">
           <div className="text-4xl">🛒</div>
           <p className="mt-3 text-gray-300">Your cart is empty.</p>
-          <Link to="/menu" className="inline-block mt-5 h-11 leading-[44px] px-6 rounded-2xl font-bold text-[#071018] bg-gradient-to-r from-[#6a99cb] to-[#87b2dd]">Browse the menu</Link>
+          <Link to="/shop" className="inline-block mt-5 h-11 leading-[44px] px-6 rounded-2xl font-bold text-[#071018] bg-gradient-to-r from-[#6a99cb] to-[#87b2dd]">Browse the shop</Link>
         </div>
       ) : (
         <>
@@ -53,12 +54,12 @@ export default function CartPage() {
               <span className="text-gray-300">Total</span>
               <span className="text-2xl font-bold">{money(total)}</span>
             </div>
-            <p className="mt-1 text-[11px] text-gray-500">Pay at pickup or by card — you choose at checkout.</p>
+            <p className="mt-1 text-[11px] text-gray-500">Delivery or pickup, pay by card, cash on delivery or at the counter — you choose at checkout.</p>
             <button type="button" onClick={() => navigate(signedIn ? "/checkout" : "/account?next=/checkout")} className={`${primaryBtn} mt-4`}>
               {signedIn ? "Checkout →" : "Sign in to checkout →"}
             </button>
             <div className="mt-3 flex justify-between">
-              <Link to="/menu" className={ghostBtn + " leading-10"}>+ Add more</Link>
+              <Link to="/shop" className={ghostBtn + " leading-10"}>+ Continue shopping</Link>
               <button type="button" onClick={() => { if (confirm("Empty the cart?")) clearCart(); }} className="text-xs text-gray-500 hover:text-red-300">Empty cart</button>
             </div>
           </div>

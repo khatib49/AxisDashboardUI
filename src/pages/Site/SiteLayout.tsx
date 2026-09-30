@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { cartCount, loadCart, getStoredCustomer, type Customer } from "../../services/shopService";
 import { Link, NavLink, Outlet, useLocation } from "react-router";
 import { NAV_LINKS } from "./siteContent";
+import { POLICY_LINKS } from "./policies";
 import { SiteContentProvider, useSiteContent, useSitePreview } from "./SiteContentContext";
 import { SiteLogo } from "./SiteUi";
 import { phoneUrl, whatsappUrl } from "./siteHelpers";
@@ -322,6 +323,14 @@ function SiteFooter({ homeHref }: { homeHref: string }) {
               </Link>
             </li>
           </ul>
+          <h4 className="mt-8 text-sm font-bold uppercase tracking-widest text-white">Legal</h4>
+          <ul className="mt-4 space-y-3 text-sm text-white/60">
+            {POLICY_LINKS.map((l) => (
+              <li key={l.key}>
+                <Link className="hover:text-white" to={l.path}>{l.label}</Link>
+              </li>
+            ))}
+          </ul>
         </div>
 
         <div>
@@ -344,7 +353,12 @@ function SiteFooter({ homeHref }: { homeHref: string }) {
 
       <div className="border-t border-white/10">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-6 text-xs text-white/40 sm:flex-row sm:px-6 lg:px-8">
-          <p>© {new Date().getFullYear()} AXIS. All rights reserved.</p>
+          <p>
+            © {new Date().getFullYear()} AXIS. All rights reserved. ·{" "}
+            <Link className="hover:text-white" to="/terms">Terms</Link> ·{" "}
+            <Link className="hover:text-white" to="/privacy">Privacy</Link> ·{" "}
+            <Link className="hover:text-white" to="/refund-policy">Refunds</Link>
+          </p>
           <p className="uppercase tracking-[0.2em]">{footer.tagline}</p>
         </div>
       </div>

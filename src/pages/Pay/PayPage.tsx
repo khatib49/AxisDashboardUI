@@ -7,10 +7,20 @@
 // poll our own server for the real status (the callback is the truth).
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams, useSearchParams, Link } from "react-router";
+import { useParams, useSearchParams, Link, useNavigate } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import { SiteLogo } from "../Site/SiteUi";
-import { getPublicPayment, startPublicPayment, PublicPayment } from "../../services/onlinePaymentService";
+import { getPublicPayment, startPublicPayment } from "../../services/onlinePaymentService";
+import type { PublicPayment } from "../../services/onlinePaymentService";
+
+const isRelative = (u: string) => u.startsWith("/") && !u.startsWith("//");
+
+/** Primary / secondary "next step" link; router Link for in-app paths, <a> otherwise. */
+function NextLink({ to, className, children }: { to: string; className: string; children: React.ReactNode }) {
+  return isRelative(to)
+    ? <Link to={to} className={className}>{children}</Link>
+    : <a href={to} className={className}>{children}</a>;
+}
 
 const money = (n: number, c: string) => `${c === "USD" ? "$" : c + " "}${n.toFixed(2)}`;
 
@@ -32,6 +42,8 @@ export default function PayPage({ result = false }: { result?: boolean }) {
   const [startError, setStartError] = useState<string | null>(null);
   const [polls, setPolls] = useState(0);
   const pollTimer = useRef<number | null>(null);
+  const navigate = useNavigate();
+  const [redirectIn, setRedirectIn] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -81,6 +93,24 @@ export default function PayPage({ result = false }: { result?: boolean }) {
 
   const status = payment?.status;
   const waiting = result && !!payment && (status === "Redirected" || status === "Pending" || status === "Created") && polls < 20;
+  const nextUrl = payment?.nextUrl || null;
+  const nextLabel = payment?.nextLabel || (payment?.purpose === "EventTicket" ? "View your ticket" : "Continue");
+
+  // Event tickets: once paid, hand the customer straight to their ticket
+  // (3-second countdown so the "Payment received" screen still registers).
+  const autoRedirect = status === "Paid" && payment?.purpose === "EventTicket" && !!nextUrl && isRelative(nextUrl);
+  useEffect(() => {
+    if (!autoRedirect || !nextUrl) { setRedirectIn(null); return; }
+    setRedirectIn(3);
+    const tick = window.setInterval(() => {
+      setRedirectIn((n) => {
+        if (n === null) return null;
+        if (n <= 1) { window.clearInterval(tick); navigate(nextUrl, { replace: true }); return 0; }
+        return n - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(tick);
+  }, [autoRedirect, nextUrl, navigate]);
 
   return (
     <div
@@ -132,6 +162,15 @@ export default function PayPage({ result = false }: { result?: boolean }) {
                       Thank you! {payment.purpose === "EventTicket" ? "Your spot is confirmed." : payment.purpose === "WalletTopUp" ? "Your wallet has been credited." : "We've recorded your payment."}
                     </p>
                     {payment.paidOn && <p className="text-[11px] text-gray-500 mt-2">{new Date(payment.paidOn).toLocaleString()}</p>}
+                    {nextUrl && (
+                      <NextLink to={nextUrl}
+                        className="mt-5 w-full h-14 rounded-2xl font-bold text-lg text-[#071018] bg-gradient-to-r from-[#6a99cb] to-[#87b2dd] active:scale-[0.98] transition flex items-center justify-center">
+                        {nextLabel} →
+                      </NextLink>
+                    )}
+                    {redirectIn !== null && redirectIn > 0 && (
+                      <p className="text-[11px] text-gray-400 mt-2">Taking you there in {redirectIn}…</p>
+                    )}
                     <p className="text-[11px] text-gray-500 mt-4">Reference: {payment.code}</p>
                   </div>
                 )}
@@ -143,6 +182,9 @@ export default function PayPage({ result = false }: { result?: boolean }) {
                       {outcome === "cancel" ? "Checking your payment…" : "Confirming with the bank…"}
                     </div>
                     <p className="text-sm text-gray-400 mt-1">This usually takes a few seconds. Please don't close this page.</p>
+                    {nextUrl && payment.purpose === "EventTicket" && (
+                      <NextLink to={nextUrl} className="inline-block mt-4 text-xs text-[#b9d3ee] underline">Your ticket (pending)</NextLink>
+                    )}
                   </div>
                 )}
 
@@ -167,6 +209,13 @@ export default function PayPage({ result = false }: { result?: boolean }) {
                       </button>
                     )}
                     <button onClick={() => load()} className="mt-3 text-xs text-[#b9d3ee] underline">Refresh status</button>
+                    {nextUrl && payment.purpose === "EventTicket" && status !== "Failed" && status !== "Cancelled" && status !== "Expired" && (
+                      <div className="mt-3">
+                        <NextLink to={nextUrl} className="inline-block h-10 px-4 rounded-xl border border-white/15 text-sm text-gray-200 hover:bg-white/5 leading-10">
+                          Your ticket (pending)
+                        </NextLink>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -198,6 +247,12 @@ export default function PayPage({ result = false }: { result?: boolean }) {
               <div className="px-6 py-3 border-t border-white/10 flex items-center justify-between text-[11px] text-gray-500">
                 <span>🔒 Secured by {payment.provider}</span>
                 <span>AXIS Game Lounge · Beirut</span>
+              </div>
+              <div className="px-6 pb-3 text-center text-[11px] text-gray-500">
+                <a href="/terms" target="_blank" rel="noreferrer" className="hover:text-white underline">Terms</a> ·{" "}
+                <a href="/privacy" target="_blank" rel="noreferrer" className="hover:text-white underline">Privacy</a> ·{" "}
+                <a href="/refund-policy" target="_blank" rel="noreferrer" className="hover:text-white underline">Refunds</a> ·{" "}
+                <a href="/shipping-policy" target="_blank" rel="noreferrer" className="hover:text-white underline">Shipping</a>
               </div>
             </div>
           )}

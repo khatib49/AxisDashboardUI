@@ -1,4 +1,5 @@
 import api from "./api";
+import { shopApi } from "./shopService";
 
 // ── Admin CMS types ───────────────────────────────────────────────────
 export type EventFeature = { icon: string; title: string; desc: string };
@@ -106,6 +107,9 @@ export type EventRegisterResult = {
   message: string;
   /** Manual Whish link — shown as a button; payment is confirmed by an admin. */
   payLinkUrl?: string | null;
+  /** The ticket — /tickets/{ticketCode}. Pending until the payment is confirmed. */
+  ticketCode?: string | null;
+  ticketUrl?: string | null;
 };
 
 export type EventRegistration = {
@@ -244,8 +248,13 @@ export async function removeEventVideo(id: number): Promise<void> {
   await api.delete(`/admin/events/${id}/video`);
 }
 
+/**
+ * Public registration. Goes through the website's `shopApi` so a signed-in
+ * customer's bearer token rides along and the ticket lands on their account;
+ * anonymous visitors simply send no token.
+ */
 export async function registerForEvent(body: EventRegisterRequest): Promise<EventRegisterResult> {
-  const { data } = await api.post(`/events/register`, body);
+  const { data } = await shopApi.post<EventRegisterResult>(`/events/register`, body);
   return data;
 }
 

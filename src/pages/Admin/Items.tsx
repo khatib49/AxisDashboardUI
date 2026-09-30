@@ -51,6 +51,8 @@ export default function Items() {
         categoryId: null,
         gameId: null,
         statusId: STATUS_ENABLED,
+        sellOnline: true,
+        weightKg: null,
     });
     const [submitting, setSubmitting] = useState(false);
 
@@ -141,7 +143,7 @@ export default function Items() {
         setEditing(null);
         setAddOnRows([]);
         setVariantRows([]);
-        setForm({ name: "", quantity: 0, price: 0, type: "", categoryId: null, buyPrice: null, gameId: null, statusId: STATUS_ENABLED });
+        setForm({ name: "", quantity: 0, price: 0, type: "", categoryId: null, buyPrice: null, gameId: null, statusId: STATUS_ENABLED, sellOnline: true, weightKg: null });
         // clear any previous selected image
         if (imagePreview) { try { URL.revokeObjectURL(imagePreview); } catch (e) { void e; } }
         setImageFile(null);
@@ -152,7 +154,8 @@ export default function Items() {
     function openEdit(item: ItemDto) {
         setEditing(item);
         setForm({ name: item.name, quantity: item.quantity, price: item.price, type: item.type, categoryId: item.categoryId, buyPrice: item.buyPrice,
-             gameId: item.gameId, statusId: item.statusId ?? null });
+             gameId: item.gameId, statusId: item.statusId ?? null,
+             sellOnline: item.sellOnline ?? true, weightKg: item.weightKg ?? null });
         // prefill image preview if available
         if (item.imagePath) {
             const resolved = resolveImageUrl(item.imagePath);
@@ -358,7 +361,10 @@ export default function Items() {
                                             />
                                         </TableCell>
                                         <TableCell className="px-5 py-4 sm:px-6 text-start">
-                                            <div className="font-medium text-gray-800 dark:text-white/90">{it.name}</div>
+                                            <div className="font-medium text-gray-800 dark:text-white/90 flex items-center gap-2">
+                                                {it.name}
+                                                {it.sellOnline && <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-sky-100 text-sky-800 text-[10px] font-semibold" title={it.weightKg != null ? `Sold online · ${it.weightKg} kg` : "Sold online"}>online</span>}
+                                            </div>
                                         </TableCell>
                                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{it.quantity}</TableCell>
                                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
@@ -476,6 +482,25 @@ export default function Items() {
                     <Select options={[{ value: '', label: '-- Select category --' }, ...categories.map((c) => ({ value: c.id, label: c.name }))]} defaultValue={form.categoryId ?? ''} onChange={(v: string | number) => setForm((f) => ({ ...f, categoryId: v === '' ? null : Number(v) }))} />
                     <label className="text-sm text-gray-600">Status</label>
                     <StatusToggle value={form.statusId} onChange={(id) => setForm((f) => ({ ...f, statusId: id }))} />
+
+                    {/* ── Online shop ───────────────────────────────────── */}
+                    <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50/30 p-3">
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <div className="text-sm font-semibold text-gray-800">Online shop</div>
+                                <div className="text-xs text-gray-500">Shown on the website shop when its category is set to "show in shop". Weight is used for Aramex delivery quotes.</div>
+                            </div>
+                            <button type="button" role="switch" aria-checked={form.sellOnline ?? true}
+                                onClick={() => setForm((f) => ({ ...f, sellOnline: !(f.sellOnline ?? true) }))}
+                                className={`px-3 py-1.5 rounded-lg text-xs border ${(form.sellOnline ?? true) ? 'border-sky-300 text-sky-700 bg-sky-50' : 'border-gray-200 text-gray-500'}`}>
+                                {(form.sellOnline ?? true) ? 'Sell online: On' : 'Sell online: Off'}
+                            </button>
+                        </div>
+                        <label className="text-sm text-gray-600 mt-2 block">Weight (kg)</label>
+                        <Input type="number" step={0.1} min="0" placeholder="Leave empty to use the category default"
+                            value={form.weightKg ?? ''}
+                            onChange={(e) => setForm((f) => ({ ...f, weightKg: e.target.value === '' ? null : Number(e.target.value) }))} />
+                    </div>
 
                     {/* ── Add-ons (paid extras) ─────────────────────────── */}
                     <div className="mt-2 rounded-lg border border-indigo-200 bg-indigo-50/30 p-3">

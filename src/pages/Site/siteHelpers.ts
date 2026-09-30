@@ -47,6 +47,20 @@ export function resolveSiteImage(path: string | null | undefined, fallback: stri
   return base ? `${base}/${rel}` : `/${rel}`;
 }
 
+/**
+ * Where an inventory item image lives (menu / shop cards). Absolute URLs pass
+ * through; relative paths resolve against VITE_API_IMAGE_BASE_URL.
+ */
+export function resolveImageUrl(path?: string | null): string {
+  if (!path) return IMAGES.placeholder;
+  try {
+    return new URL(path).toString();
+  } catch {
+    const base = (import.meta.env.VITE_API_IMAGE_BASE_URL as string) || "";
+    return base ? `${base.replace(/\/$/, "")}/${path.replace(/^\//, "")}` : path;
+  }
+}
+
 /** True when at least one of the given strings has content. */
 export function hasText(...values: Array<string | null | undefined>): boolean {
   return values.some((v) => !!(v && v.trim()));

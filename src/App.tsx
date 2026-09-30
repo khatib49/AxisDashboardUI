@@ -40,6 +40,9 @@ import GameSession from "./pages/Cashier/GameSession";
 import SiteLayout from "./pages/Site/SiteLayout";
 import SiteHome from "./pages/Site/SiteHome";
 import SiteMenu from "./pages/Site/SiteMenu";
+import SiteShop from "./pages/Site/SiteShop";
+import SitePolicies from "./pages/Site/SitePolicies";
+import Shipments from "./pages/Admin/Shipments";
 import SiteServices from "./pages/Site/SiteServices";
 import SiteEvents from "./pages/Site/SiteEvents";
 import PayPage from "./pages/Pay/PayPage";
@@ -83,6 +86,7 @@ import { AuditLogsPage } from "./pages/Admin/AuditLogsPage";
 import AiChatPage from "./pages/Ai/AiChatPage";
 import ConsumptionRebuild from "./pages/Admin/ConsumptionRebuild";
 import EventRegistrationPage from "./pages/Events/EventRegistrationPage";
+import TicketPage from "./pages/Events/TicketPage";
 import EventRegistrations from "./pages/Admin/EventRegistrations";
 import EventsManager from "./pages/Admin/EventsManager";
 import IntegrationsPage from "./pages/Admin/Integrations";
@@ -170,9 +174,15 @@ export default function App() {
               <Route path="/" element={<SiteHome />} />
               <Route path="/home" element={<Navigate to="/" replace />} />
               <Route path="/menu" element={<SiteMenu />} />
+              <Route path="/shop" element={<SiteShop />} />
               <Route path="/services" element={<SiteServices />} />
               <Route path="/events" element={<SiteEvents />} />
               <Route path="/contact" element={<SiteContact />} />
+              {/* Legal pages required by the card acquirer (MontyPay) */}
+              <Route path="/terms" element={<SitePolicies policy="terms" />} />
+              <Route path="/privacy" element={<SitePolicies policy="privacy" />} />
+              <Route path="/shipping-policy" element={<SitePolicies policy="shipping" />} />
+              <Route path="/refund-policy" element={<SitePolicies policy="refunds" />} />
               {/* Shop: cart → sign in → checkout → order tracking */}
               <Route path="/cart" element={<CartPage />} />
               <Route path="/checkout" element={<CheckoutPage />} />
@@ -186,6 +196,8 @@ export default function App() {
                 payment gateways redirect after a successful charge. */}
             <Route path="/events/:eventKey" element={<EventRegistrationPage />} />
             <Route path="/events/:eventKey/paid" element={<EventRegistrationPage />} />
+            {/* Public ticket — the code in the URL is the secret. */}
+            <Route path="/tickets/:code" element={<TicketPage />} />
 
             {/* Public pay page — the link AXIS hands out for anything paid
                 online. /result is where the gateway sends the customer back. */}
@@ -251,6 +263,7 @@ export default function App() {
               <Route path="/admin/expense-categories" element={<PageRoute page="expense-categories"><ExpenseCategories /></PageRoute>} />
               <Route path="/admin/wallets" element={<PageRoute page="wallets"><Wallets /></PageRoute>} />
               <Route path="/admin/online-payments" element={<PageRoute page="online-payments"><OnlinePayments /></PageRoute>} />
+              <Route path="/admin/shipments" element={<PageRoute page="shipments"><Shipments /></PageRoute>} />
               <Route path="/admin/loyalty/customers" element={<ProtectedRoute><LoyaltyCustomers /></ProtectedRoute>} />
               <Route path="/admin/loyalty/leaderboard" element={<ProtectedRoute><LoyaltyLeaderboard /></ProtectedRoute>} />
               <Route path="/admin/loyalty/draws" element={<ProtectedRoute><LoyaltyDraws /></ProtectedRoute>} />

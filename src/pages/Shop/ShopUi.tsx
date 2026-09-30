@@ -30,6 +30,8 @@ export const STATUS_TEXT: Record<string, { label: string; tone: string; hint: st
   Paid:            { label: "Paid",              tone: "bg-green-500/20 text-green-200",   hint: "Payment received — being prepared." },
   Accepted:        { label: "Being prepared",    tone: "bg-indigo-500/20 text-indigo-200", hint: "The kitchen / bar is on it." },
   Ready:           { label: "Ready for pickup",  tone: "bg-green-500/20 text-green-200",   hint: "Come and grab it at the counter." },
+  Shipped:         { label: "Shipped",           tone: "bg-sky-500/20 text-sky-200",       hint: "Your parcel is with Aramex — track it below." },
+  Delivered:       { label: "Delivered",         tone: "bg-green-500/20 text-green-200",   hint: "Delivered — enjoy!" },
   Completed:       { label: "Completed",         tone: "bg-white/10 text-gray-300",        hint: "Enjoy!" },
   Cancelled:       { label: "Cancelled",         tone: "bg-red-500/20 text-red-200",       hint: "This order was cancelled." },
 };

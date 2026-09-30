@@ -5,6 +5,18 @@ export type CategoryDto = {
   name: string;
   type?: string;
   itemType?: string;
+  /** Listed on the public online shop. */
+  showInShop?: boolean;
+  /** Fallback shipping weight for items in this category without their own. */
+  defaultWeightKg?: number | null;
+};
+
+export type CategoryInput = {
+  name: string;
+  type: string;
+  itemType?: string;
+  showInShop?: boolean;
+  defaultWeightKg?: number | null;
 };
 
 export type PagedCategoryResponse = {
@@ -47,20 +59,21 @@ export async function getCategoryById(id: number): Promise<CategoryDto> {
   return res.data;
 }
 
-export async function createCategory(payload: {
-  name: string;
-  type: string;
-  itemType?: string;
-}): Promise<CategoryDto> {
-  const res = await api.post<CategoryDto>(`/category`, payload);
+const toPayload = (p: CategoryInput) => ({
+  name: p.name,
+  type: p.type,
+  itemType: p.itemType,
+  showInShop: p.showInShop ?? false,
+  defaultWeightKg: p.defaultWeightKg ?? null,
+});
+
+export async function createCategory(payload: CategoryInput): Promise<CategoryDto> {
+  const res = await api.post<CategoryDto>(`/category`, toPayload(payload));
   return res.data;
 }
 
-export async function updateCategory(
-  id: number,
-  payload: { name: string; type: string; itemType?: string }
-): Promise<void> {
-  await api.put(`/category/${id}`, payload);
+export async function updateCategory(id: number, payload: CategoryInput): Promise<void> {
+  await api.put(`/category/${id}`, toPayload(payload));
 }
 
 export async function deleteCategory(id: number): Promise<void> {
