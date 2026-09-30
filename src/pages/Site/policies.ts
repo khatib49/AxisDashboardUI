@@ -34,7 +34,7 @@ export function buildPolicies(c: PolicyContact): Record<PolicyKey, PolicyDoc> {
         ]},
         { heading: "2. Our products and services", paragraphs: [
           `Through the Services we sell trading-card game products and gaming accessories (the “Products”), café food and drinks for pickup at the lounge, tickets to tournaments and events, and gaming-session passes and wallet top-ups redeemable at the lounge.`,
-          `We do our best to describe and picture every item accurately, but packaging, card artwork, colours and availability can change without notice. Sealed trading-card products are sold as random-content sealed goods: we make no representation about the cards inside a pack or box. We may limit quantities per customer, correct listing errors and discontinue any item at any time.`,
+          `We do our best to describe and picture every item accurately, but colours and appearance may look different depending on your screen or device, and packaging, card artwork and availability can change without notice. Sealed trading-card products are sold as random-content sealed goods: we make no representation about the cards inside a pack or box. We may limit quantities per customer, correct listing errors and discontinue any item at any time.`,
         ]},
         { heading: "3. Orders", paragraphs: [
           `An online order is an offer to buy. It is accepted when our team confirms it (you will see the status change in “My orders”); for card payments, acceptance also requires that the payment has been received and processed. We may refuse or cancel any order — for example when an item sold out at the counter before your order was accepted, when the price shown was obviously wrong, or when we suspect fraud — and we will refund any amount already paid.`,
@@ -57,7 +57,7 @@ export function buildPolicies(c: PolicyContact): Record<PolicyKey, PolicyDoc> {
           `Payment (MontyPay), delivery (Aramex), maps and social platforms are provided by third parties under their own terms and privacy policies. We are not responsible for their availability or content, and any complaint about a third-party service should be addressed to that provider, although we will gladly help where we can.`,
         ]},
         { heading: "9. Privacy", paragraphs: [
-          `Personal information you give us is handled as described in our Privacy Policy. By using the Services you acknowledge that you have read and understood it.`,
+          `Personal information you give us is handled as described in our Privacy Policy. By using the Services you acknowledge that you have read and understood it. Where necessary to provide the Services, your data may be processed by our service providers (payment, delivery, hosting) and stored on cloud servers located outside Lebanon.`,
         ]},
         { heading: "10. Errors, inaccuracies and omissions", paragraphs: [
           `Occasionally the Services may contain typographical errors or inaccuracies in descriptions, prices, promotions, stock or delivery times. We reserve the right to correct them and to cancel affected orders — even after confirmation — with a full refund of any amount paid.`,
@@ -125,6 +125,7 @@ export function buildPolicies(c: PolicyContact): Record<PolicyKey, PolicyDoc> {
           "Service providers who help us operate — the payment processor (MontyPay), the courier (Aramex, who receives your name, phone and address to deliver your parcel), hosting and IT providers.",
           "Authorities where required by law.",
           "We do not sell your personal information.",
+          "Our website and database are hosted on a cloud platform whose servers may be located outside Lebanon; by using the Services you consent to this transfer, which is protected by the security measures described below.",
         ]},
         { heading: "5. Data security", paragraphs: [
           `We protect your information with appropriate technical and organisational measures: encrypted connections (HTTPS), hashed passwords, access limited to staff who need it, and hosting on a secured cloud platform. No transmission over the internet is completely secure, and ${c.domain} cannot guarantee absolute security.`,
