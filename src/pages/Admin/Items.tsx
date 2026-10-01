@@ -428,83 +428,115 @@ export default function Items() {
                 isOpen={isFormOpen}
                 onClose={() => setIsFormOpen(false)}
                 title={editing ? "Edit Item" : "Create Item"}
+                subtitle={editing ? form.name : "Fill the basics, then stock options and add-ons if the item needs them."}
                 footer={(
                     <>
-                        <button className="px-3 py-1 bg-green-600 text-white rounded flex items-center gap-2" onClick={submitForm}>
-                            {submitting ? <Loader size={16} /> : (editing ? 'Save' : 'Create')}
+                        <button className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm" onClick={() => setIsFormOpen(false)}>Cancel</button>
+                        <button className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium flex items-center gap-2 disabled:opacity-60" onClick={submitForm} disabled={submitting}>
+                            {submitting ? <Loader size={16} /> : (editing ? 'Save changes' : 'Create item')}
                         </button>
-                        <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setIsFormOpen(false)}>Cancel</button>
                     </>
                 )}
             >
-                <div className="flex flex-col gap-3">
-                    <Input placeholder="Name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
-                    {/* Image upload area */}
-                    <div
-                        className="border border-dashed border-gray-300 rounded p-3 flex flex-col items-center justify-center text-center text-sm text-gray-500"
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={(e) => {
-                            e.preventDefault();
-                            const f = e.dataTransfer?.files?.[0];
-                            if (f) handleFileSelected(f);
-                        }}
-                    >
-                        {imagePreview ? (
-                            <div className="flex items-center gap-3">
-                                <img src={imagePreview} alt="preview" className="w-24 h-16 object-cover rounded" />
-                                <div className="flex flex-col">
-                                    <button type="button" className="px-2 py-1 bg-gray-200 rounded mb-2" onClick={() => handleFileSelected(null)}>Remove</button>
-                                    <label className="px-2 py-1 bg-gray-100 rounded cursor-pointer">
-                                        Replace
+                <div className="flex flex-col gap-4">
+                    {/* ── Basics: image + name/category/status ───────────── */}
+                    <div className="grid gap-4 sm:grid-cols-[180px_1fr]">
+                        <div
+                            className="rounded-xl border border-dashed border-gray-300 bg-gray-50/60 p-3 flex flex-col items-center justify-center text-center text-xs text-gray-500 min-h-[150px]"
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={(e) => {
+                                e.preventDefault();
+                                const f = e.dataTransfer?.files?.[0];
+                                if (f) handleFileSelected(f);
+                            }}
+                        >
+                            {imagePreview ? (
+                                <div className="flex flex-col items-center gap-2 w-full">
+                                    <img src={imagePreview} alt="preview" className="w-full h-24 object-cover rounded-lg border border-gray-200" />
+                                    <div className="flex gap-1.5">
+                                        <label className="px-2.5 py-1 bg-white border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50">
+                                            Replace
+                                            <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileSelected(e.target.files?.[0] ?? null)} />
+                                        </label>
+                                        <button type="button" className="px-2.5 py-1 text-red-600 border border-red-200 rounded-md hover:bg-red-50" onClick={() => handleFileSelected(null)}>Remove</button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center gap-2">
+                                    <div className="text-2xl">🖼️</div>
+                                    <div>Drag &amp; drop an image, or</div>
+                                    <label className="px-3 py-1 bg-white border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50">
+                                        Choose file
                                         <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileSelected(e.target.files?.[0] ?? null)} />
                                     </label>
                                 </div>
+                            )}
+                        </div>
+
+                        <div className="grid gap-3 sm:grid-cols-2 content-start">
+                            <div className="sm:col-span-2">
+                                <label className="text-xs font-medium text-gray-600">Name</label>
+                                <Input placeholder="e.g. Penne Arrabbiata" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
                             </div>
-                        ) : (
-                            <div className="flex flex-col items-center gap-2">
-                                <div>Drag & drop an image here, or</div>
-                                <label className="px-3 py-1 bg-gray-200 rounded cursor-pointer">
-                                    Click to select
-                                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileSelected(e.target.files?.[0] ?? null)} />
-                                </label>
+                            <div>
+                                <label className="text-xs font-medium text-gray-600">Category</label>
+                                <Select options={[{ value: '', label: '-- Select category --' }, ...categories.map((c) => ({ value: c.id, label: c.name }))]} defaultValue={form.categoryId ?? ''} onChange={(v: string | number) => setForm((f) => ({ ...f, categoryId: v === '' ? null : Number(v) }))} />
                             </div>
-                        )}
+                            <div>
+                                <label className="text-xs font-medium text-gray-600">Status</label>
+                                <div className="mt-1"><StatusToggle value={form.statusId} onChange={(id) => setForm((f) => ({ ...f, statusId: id }))} /></div>
+                            </div>
+                            <div className="sm:col-span-2">
+                                <label className="text-xs font-medium text-gray-600">Description / type</label>
+                                <Input placeholder="Shown to customers — e.g. Penne pasta, tomato sauce, parmesan" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))} />
+                            </div>
+                        </div>
                     </div>
-                    <label className="text-sm text-gray-600">Quantity</label>
-                    <Input type="number" placeholder="Quantity" value={form.quantity} onChange={(e) => setForm((f) => ({ ...f, quantity: Number(e.target.value) }))} />
-                    <label className="text-sm text-gray-600">Price (usd)</label>
-                    <Input type="number" step={0.01} placeholder="Price" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: Number(e.target.value) }))} />
-                    <label className="text-sm text-gray-600">Buy Price (usd)</label>
-                    <Input type="number" step={0.01} placeholder="Buy Price" value={form.buyPrice ?? ''} onChange={(e) => setForm((f) => ({ ...f, buyPrice: e.target.value ? Number(e.target.value) : null }))} />
-                    <label className="text-sm text-gray-600">Type</label>
-                    <Input placeholder="Type" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))} />
-                    <label className="text-sm text-gray-600">Category</label>
-                    <Select options={[{ value: '', label: '-- Select category --' }, ...categories.map((c) => ({ value: c.id, label: c.name }))]} defaultValue={form.categoryId ?? ''} onChange={(v: string | number) => setForm((f) => ({ ...f, categoryId: v === '' ? null : Number(v) }))} />
-                    <label className="text-sm text-gray-600">Status</label>
-                    <StatusToggle value={form.statusId} onChange={(id) => setForm((f) => ({ ...f, statusId: id }))} />
+
+                    {/* ── Pricing & stock ────────────────────────────────── */}
+                    <div className="rounded-xl border border-gray-200 p-3 sm:p-4">
+                        <div className="text-sm font-semibold text-gray-800 mb-2">Pricing &amp; stock</div>
+                        <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
+                            <div>
+                                <label className="text-xs font-medium text-gray-600">Sell price (USD)</label>
+                                <Input type="number" step={0.01} placeholder="0.00" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: Number(e.target.value) }))} />
+                            </div>
+                            <div>
+                                <label className="text-xs font-medium text-gray-600">Buy price (USD)</label>
+                                <Input type="number" step={0.01} placeholder="Cost per unit" value={form.buyPrice ?? ''} onChange={(e) => setForm((f) => ({ ...f, buyPrice: e.target.value ? Number(e.target.value) : null }))} />
+                            </div>
+                            <div>
+                                <label className="text-xs font-medium text-gray-600">Quantity in stock</label>
+                                <Input type="number" placeholder="0" value={form.quantity} onChange={(e) => setForm((f) => ({ ...f, quantity: Number(e.target.value) }))} />
+                                {variantRows.some(v => v.isActive) && <div className="text-[11px] text-gray-400 mt-1">Overridden by the options below (sum = {variantStockTotal}).</div>}
+                            </div>
+                        </div>
+                    </div>
 
                     {/* ── Online shop ───────────────────────────────────── */}
-                    <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50/30 p-3">
-                        <div className="flex items-center justify-between gap-3">
+                    <div className="rounded-xl border border-sky-200 bg-sky-50/40 p-3 sm:p-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div>
                                 <div className="text-sm font-semibold text-gray-800">Online shop</div>
                                 <div className="text-xs text-gray-500">Shown on the website shop when its category is set to "show in shop". Weight is used for Aramex delivery quotes.</div>
                             </div>
                             <button type="button" role="switch" aria-checked={form.sellOnline ?? true}
                                 onClick={() => setForm((f) => ({ ...f, sellOnline: !(f.sellOnline ?? true) }))}
-                                className={`px-3 py-1.5 rounded-lg text-xs border ${(form.sellOnline ?? true) ? 'border-sky-300 text-sky-700 bg-sky-50' : 'border-gray-200 text-gray-500'}`}>
-                                {(form.sellOnline ?? true) ? 'Sell online: On' : 'Sell online: Off'}
+                                className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium border ${(form.sellOnline ?? true) ? 'border-sky-300 text-sky-700 bg-white' : 'border-gray-200 text-gray-500 bg-white'}`}>
+                                {(form.sellOnline ?? true) ? '🛒 Sell online: On' : 'Sell online: Off'}
                             </button>
                         </div>
-                        <label className="text-sm text-gray-600 mt-2 block">Weight (kg)</label>
-                        <Input type="number" step={0.1} min="0" placeholder="Leave empty to use the category default"
-                            value={form.weightKg ?? ''}
-                            onChange={(e) => setForm((f) => ({ ...f, weightKg: e.target.value === '' ? null : Number(e.target.value) }))} />
+                        <div className="mt-3 sm:max-w-xs">
+                            <label className="text-xs font-medium text-gray-600">Weight (kg)</label>
+                            <Input type="number" step={0.1} min="0" placeholder="Empty = category default"
+                                value={form.weightKg ?? ''}
+                                onChange={(e) => setForm((f) => ({ ...f, weightKg: e.target.value === '' ? null : Number(e.target.value) }))} />
+                        </div>
                     </div>
 
-                    {/* ── Add-ons (paid extras) ─────────────────────────── */}
-                    <div className="mt-2 rounded-lg border border-indigo-200 bg-indigo-50/30 p-3">
-                        <div className="flex items-center justify-between">
+                    {/* ── Colour / type options (own stock) ─────────────── */}
+                    <div className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-3 sm:p-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div>
                                 <div className="text-sm font-semibold text-gray-800">Colour / type options</div>
                                 <div className="text-xs text-gray-500">
@@ -514,7 +546,7 @@ export default function Items() {
                             </div>
                             <button type="button"
                                 onClick={() => setVariantRows((r) => [...r, { name: '', color: '', priceDelta: 0, quantity: 0, isActive: true }])}
-                                className="text-sm px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">
+                                className="shrink-0 text-sm px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">
                                 + Option
                             </button>
                         </div>
@@ -523,31 +555,37 @@ export default function Items() {
                         ) : variantRows.length === 0 ? (
                             <div className="py-3 text-sm text-gray-400">No options — one stock number for the whole item.</div>
                         ) : (
-                            <div className="mt-2 space-y-2">
-                                <div className="grid grid-cols-12 gap-2 text-[11px] text-gray-500 px-1">
+                            <div className="mt-3 space-y-2">
+                                <div className="hidden sm:grid grid-cols-12 gap-2 text-[11px] text-gray-500 px-1">
                                     <div className="col-span-4">Name</div><div className="col-span-2">Colour</div><div className="col-span-2">+/− price</div><div className="col-span-2">Stock</div>
                                 </div>
                                 {variantRows.map((row, idx) => (
-                                    <div key={row.id ?? `nv-${idx}`} className={`grid grid-cols-12 gap-2 items-center ${row.isActive ? '' : 'opacity-50'}`}>
-                                        <div className="col-span-4">
+                                    <div key={row.id ?? `nv-${idx}`} className={`grid grid-cols-2 sm:grid-cols-12 gap-2 items-center rounded-lg bg-white/70 sm:bg-transparent p-2 sm:p-0 border sm:border-0 border-indigo-100 ${row.isActive ? '' : 'opacity-50'}`}>
+                                        <div className="col-span-2 sm:col-span-4">
+                                            <label className="sm:hidden text-[11px] text-gray-500">Name</label>
                                             <Input placeholder="Black" value={row.name}
                                                 onChange={(e) => setVariantRows((r) => r.map((x, i) => i === idx ? { ...x, name: e.target.value } : x))} />
                                         </div>
-                                        <div className="col-span-2 flex items-center gap-1">
-                                            <input type="color" value={/^#[0-9a-fA-F]{6}$/.test(row.color) ? row.color : '#888888'}
-                                                onChange={(e) => setVariantRows((r) => r.map((x, i) => i === idx ? { ...x, color: e.target.value } : x))}
-                                                className="h-9 w-9 rounded border border-gray-300 p-0.5" title="Swatch shown to cashier & website" />
-                                            <button type="button" onClick={() => setVariantRows((r) => r.map((x, i) => i === idx ? { ...x, color: '' } : x))} className="text-[10px] text-gray-400" title="No swatch">✕</button>
+                                        <div className="col-span-1 sm:col-span-2 flex items-end gap-1">
+                                            <div>
+                                                <label className="sm:hidden text-[11px] text-gray-500 block">Colour</label>
+                                                <input type="color" value={/^#[0-9a-fA-F]{6}$/.test(row.color) ? row.color : '#888888'}
+                                                    onChange={(e) => setVariantRows((r) => r.map((x, i) => i === idx ? { ...x, color: e.target.value } : x))}
+                                                    className="h-10 w-10 rounded-lg border border-gray-300 p-0.5 bg-white" title="Swatch shown to cashier & website" />
+                                            </div>
+                                            <button type="button" onClick={() => setVariantRows((r) => r.map((x, i) => i === idx ? { ...x, color: '' } : x))} className="h-10 text-[10px] text-gray-400" title="No swatch">✕</button>
                                         </div>
-                                        <div className="col-span-2">
+                                        <div className="col-span-1 sm:col-span-2">
+                                            <label className="sm:hidden text-[11px] text-gray-500">+/− price</label>
                                             <Input type="number" step={0.25} placeholder="0" value={row.priceDelta === '' ? '' : String(row.priceDelta)}
                                                 onChange={(e) => setVariantRows((r) => r.map((x, i) => i === idx ? { ...x, priceDelta: e.target.value === '' ? '' : Number(e.target.value) } : x))} />
                                         </div>
-                                        <div className="col-span-2">
+                                        <div className="col-span-1 sm:col-span-2">
+                                            <label className="sm:hidden text-[11px] text-gray-500">Stock</label>
                                             <Input type="number" step={1} min="0" placeholder="0" value={row.quantity === '' ? '' : String(row.quantity)}
                                                 onChange={(e) => setVariantRows((r) => r.map((x, i) => i === idx ? { ...x, quantity: e.target.value === '' ? '' : Number(e.target.value) } : x))} />
                                         </div>
-                                        <div className="col-span-2 flex gap-1 justify-end">
+                                        <div className="col-span-1 sm:col-span-2 flex gap-1 justify-end items-end">
                                             <button type="button" title={row.isActive ? 'Disable (kept for history)' : 'Enable'}
                                                 onClick={() => setVariantRows((r) => r.map((x, i) => i === idx ? { ...x, isActive: !x.isActive } : x))}
                                                 className={`px-2 py-1.5 rounded-lg text-xs border ${row.isActive ? 'border-green-300 text-green-700 bg-green-50' : 'border-gray-200 text-gray-500'}`}>
@@ -562,8 +600,8 @@ export default function Items() {
                         )}
                     </div>
 
-                    <div className="mt-2 rounded-lg border border-gray-200 p-3">
-                        <div className="flex items-center justify-between">
+                    <div className="rounded-xl border border-gray-200 p-3 sm:p-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div>
                                 <div className="text-sm font-semibold text-gray-800">Add-ons</div>
                                 <div className="text-xs text-gray-500">
@@ -573,7 +611,7 @@ export default function Items() {
                             <button
                                 type="button"
                                 onClick={() => setAddOnRows((r) => [...r, { name: '', price: '', isActive: true }])}
-                                className="text-sm px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200"
+                                className="shrink-0 text-sm px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200"
                             >
                                 + Add
                             </button>
@@ -584,17 +622,17 @@ export default function Items() {
                         ) : addOnRows.length === 0 ? (
                             <div className="py-3 text-sm text-gray-400">No add-ons — this item sells as-is.</div>
                         ) : (
-                            <div className="mt-2 space-y-2">
+                            <div className="mt-3 space-y-2">
                                 {addOnRows.map((row, idx) => (
-                                    <div key={row.id ?? `new-${idx}`} className={`flex items-center gap-2 ${row.isActive ? '' : 'opacity-50'}`}>
-                                        <div className="flex-1">
+                                    <div key={row.id ?? `new-${idx}`} className={`flex flex-wrap items-center gap-2 ${row.isActive ? '' : 'opacity-50'}`}>
+                                        <div className="flex-1 min-w-[160px]">
                                             <Input
                                                 placeholder="Name (e.g. Oat Milk)"
                                                 value={row.name}
                                                 onChange={(e) => setAddOnRows((r) => r.map((x, i) => i === idx ? { ...x, name: e.target.value } : x))}
                                             />
                                         </div>
-                                        <div className="w-28">
+                                        <div className="w-24 sm:w-28">
                                             <Input
                                                 type="number"
                                                 step={0.25}
