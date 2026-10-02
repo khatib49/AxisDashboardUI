@@ -183,6 +183,12 @@ export async function getPublicPayment(code: string): Promise<PublicPayment> {
   return res.data;
 }
 
+/** Result-page poll: the server asks the gateway itself if no callback has landed yet (throttled server-side). */
+export async function checkPublicPayment(code: string): Promise<PublicPayment> {
+  const res = await api.post<PublicPayment>(`/payments/public/${encodeURIComponent(code)}/check`);
+  return res.data;
+}
+
 export async function startPublicPayment(code: string): Promise<PublicPaymentStartResult> {
   const res = await api.post<PublicPaymentStartResult>(`/payments/public/${encodeURIComponent(code)}/start`);
   return res.data;

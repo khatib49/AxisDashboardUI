@@ -4,13 +4,15 @@
 // wallet top-up, an open invoice, a custom amount). Anonymous. Shows what
 // the payment is for, then sends the customer to the gateway's hosted
 // page; the gateway comes back here with ?outcome=success|cancel and we
-// poll our own server for the real status (the callback is the truth).
+// poll our own server for the real status. On the result page the poll is
+// a "check": if no callback has landed, the server asks the gateway's
+// status API itself — the browser's outcome param is never trusted.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams, Link, useNavigate } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import { SiteLogo } from "../Site/SiteUi";
-import { getPublicPayment, startPublicPayment } from "../../services/onlinePaymentService";
+import { checkPublicPayment, getPublicPayment, startPublicPayment } from "../../services/onlinePaymentService";
 import type { PublicPayment } from "../../services/onlinePaymentService";
 
 const isRelative = (u: string) => u.startsWith("/") && !u.startsWith("//");
@@ -21,6 +23,9 @@ function NextLink({ to, className, children }: { to: string; className: string; 
     ? <Link to={to} className={className}>{children}</Link>
     : <a href={to} className={className}>{children}</a>;
 }
+
+// 3 s apart → ~2 minutes of checking before "Not confirmed yet".
+const MAX_POLLS = 40;
 
 const money = (n: number, c: string) => `${c === "USD" ? "$" : c + " "}${n.toFixed(2)}`;
 
@@ -47,7 +52,7 @@ export default function PayPage({ result = false }: { result?: boolean }) {
 
   const load = useCallback(async () => {
     try {
-      const p = await getPublicPayment(code);
+      const p = result ? await checkPublicPayment(code) : await getPublicPayment(code);
       setPayment(p);
       setError(null);
       return p;
@@ -56,16 +61,18 @@ export default function PayPage({ result = false }: { result?: boolean }) {
       setError(msg ?? "This payment link does not exist.");
       return null;
     }
-  }, [code]);
+  }, [code, result]);
 
   useEffect(() => { load(); }, [load]);
 
   // After the gateway sends the customer back, the callback may land a
   // second or two later — poll for up to ~1 minute until the status is final.
+  // Each poll is a server-side check, so a missing callback no longer strands
+  // the customer here (the server throttles gateway calls to one per 8 s).
   useEffect(() => {
     if (!result) return;
     const final = (s?: string) => s === "Paid" || s === "Failed" || s === "Cancelled" || s === "Expired" || s === "Refunded";
-    if (final(payment?.status) || polls >= 20) return;
+    if (final(payment?.status) || polls >= MAX_POLLS) return;
     pollTimer.current = window.setTimeout(async () => {
       await load();
       setPolls((n) => n + 1);
@@ -92,7 +99,7 @@ export default function PayPage({ result = false }: { result?: boolean }) {
   };
 
   const status = payment?.status;
-  const waiting = result && !!payment && (status === "Redirected" || status === "Pending" || status === "Created") && polls < 20;
+  const waiting = result && !!payment && (status === "Redirected" || status === "Pending" || status === "Created") && polls < MAX_POLLS;
   const nextUrl = payment?.nextUrl || null;
   const nextLabel = payment?.nextLabel || (payment?.purpose === "EventTicket" ? "View your ticket" : "Continue");
 
