@@ -24,8 +24,11 @@ function NextLink({ to, className, children }: { to: string; className: string; 
     : <a href={to} className={className}>{children}</a>;
 }
 
-// 3 s apart → ~2 minutes of checking before "Not confirmed yet".
+// 3 s apart → ~2 minutes of checking before "Not confirmed yet". A customer
+// who pressed Close on the gateway page gets ~18 s (two server-side checks)
+// before "Payment not completed / Try again" — no point spinning for minutes.
 const MAX_POLLS = 40;
+const MAX_POLLS_AFTER_CANCEL = 6;
 
 const money = (n: number, c: string) => `${c === "USD" ? "$" : c + " "}${n.toFixed(2)}`;
 
@@ -40,6 +43,7 @@ export default function PayPage({ result = false }: { result?: boolean }) {
   const { code = "" } = useParams();
   const [params] = useSearchParams();
   const outcome = params.get("outcome");
+  const maxPolls = outcome === "cancel" ? MAX_POLLS_AFTER_CANCEL : MAX_POLLS;
 
   const [payment, setPayment] = useState<PublicPayment | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -72,13 +76,13 @@ export default function PayPage({ result = false }: { result?: boolean }) {
   useEffect(() => {
     if (!result) return;
     const final = (s?: string) => s === "Paid" || s === "Failed" || s === "Cancelled" || s === "Expired" || s === "Refunded";
-    if (final(payment?.status) || polls >= MAX_POLLS) return;
+    if (final(payment?.status) || polls >= maxPolls) return;
     pollTimer.current = window.setTimeout(async () => {
       await load();
       setPolls((n) => n + 1);
     }, 3000);
     return () => { if (pollTimer.current) window.clearTimeout(pollTimer.current); };
-  }, [result, payment?.status, polls, load]);
+  }, [result, payment?.status, polls, load, maxPolls]);
 
   const pay = async () => {
     setStarting(true);
@@ -99,7 +103,7 @@ export default function PayPage({ result = false }: { result?: boolean }) {
   };
 
   const status = payment?.status;
-  const waiting = result && !!payment && (status === "Redirected" || status === "Pending" || status === "Created") && polls < MAX_POLLS;
+  const waiting = result && !!payment && (status === "Redirected" || status === "Pending" || status === "Created") && polls < maxPolls;
   const nextUrl = payment?.nextUrl || null;
   const nextLabel = payment?.nextLabel || (payment?.purpose === "EventTicket" ? "View your ticket" : "Continue");
 
@@ -201,12 +205,13 @@ export default function PayPage({ result = false }: { result?: boolean }) {
                       {status === "Failed" ? "✕" : "⏳"}
                     </div>
                     <div className="mt-3 text-xl font-bold">
-                      {status === "Failed" ? "Payment not completed" : status === "Expired" ? "Link expired" : status === "Cancelled" ? "Payment cancelled" : "Not confirmed yet"}
+                      {status === "Failed" ? "Payment not completed" : status === "Expired" ? "Link expired" : status === "Cancelled" ? "Payment cancelled" : outcome === "cancel" ? "Payment not completed" : "Not confirmed yet"}
                     </div>
                     <p className="text-sm text-gray-300 mt-1">
                       {status === "Failed" ? "Your bank declined or the payment was cancelled. No money was taken." :
                        status === "Expired" ? "Ask AXIS for a new link." :
                        status === "Cancelled" ? "This link was cancelled by AXIS." :
+                       outcome === "cancel" ? "The payment wasn't completed. You can try again below." :
                        "We haven't received the bank's confirmation yet. If you completed the payment, it will show up shortly — you can refresh this page."}
                     </p>
                     {payment.canPay && (
