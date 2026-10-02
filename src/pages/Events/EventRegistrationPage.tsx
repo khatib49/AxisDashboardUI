@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams, useLocation, Link } from "react-router";
 import { getPublicEvent, registerForEvent } from "../../services/eventService";
 import type { EventPublic, EventRegisterResult } from "../../services/eventService";
-import { getStoredCustomer } from "../../services/shopService";
+import { getStoredCustomer, clearCustomerSession } from "../../services/shopService";
 
 type PayMethod = "Visa" | "Whish" | "Cash";
 
@@ -48,6 +48,11 @@ export default function EventRegistrationPage() {
   // A signed-in website customer gets the form prefilled (and the ticket
   // linked to their account — the bearer token rides on the register call).
   const storedCustomer = useRef(getStoredCustomer()).current;
+  // Registration needs a website account: the ticket lives under "My tickets"
+  // (the API refuses anonymous registrations too). A stale token that the
+  // server rejects flips this back to the sign-in panel.
+  const [signedIn, setSignedIn] = useState(!!storedCustomer);
+  const signInUrl = `/account?next=${encodeURIComponent(`/events/${eventKey}`)}`;
   const [firstName, setFirstName] = useState(storedCustomer?.firstName ?? "");
   const [lastName, setLastName]   = useState(storedCustomer?.lastName ?? "");
   const [phone, setPhone]         = useState(storedCustomer?.phone ?? "");
@@ -129,6 +134,11 @@ export default function EventRegistrationPage() {
       }
     } catch (err: unknown) {
       waTab?.close();
+      if ((err as { response?: { status?: number } })?.response?.status === 401) {
+        clearCustomerSession();
+        setSignedIn(false);
+        return;
+      }
       setError(errorMessage(err, "Registration failed. Please try again."));
     } finally { setSubmitting(false); }
   };
@@ -271,6 +281,13 @@ export default function EventRegistrationPage() {
                 ? "Every spot is taken. Follow us for the next one."
                 : "Registration isn't open right now. Check back soon."}</p>
             </div>
+          ) : !signedIn ? (
+            <div className="sg-card sg-success sg-reveal">
+              <div className="sg-big">🎟</div>
+              <h2>Sign in to get your ticket</h2>
+              <p>Your ticket is saved to your AXIS account, so you can always find it under "My tickets" and show its QR at the door.</p>
+              <Link to={signInUrl} className="sg-btn" style={{ marginTop: 18 }}>Sign in or create an account</Link>
+            </div>
           ) : (
             <form ref={formRef} className="sg-card sg-reveal" onSubmit={submit} noValidate>
               <div className="sg-accent" />
@@ -314,7 +331,7 @@ export default function EventRegistrationPage() {
                       checked={method === "Cash"} onSelect={setMethod} />
                   )}
                 </div>
-                {ev.cashAvailable && (
+                {ev.cashAvailable && (method === "Cash" || !anyOnline) && (
                   <div className="sg-note">
                     💡 You can complete your payment in cash directly at the AXIS store before the event.
                   </div>
