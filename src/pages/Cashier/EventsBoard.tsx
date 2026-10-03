@@ -444,6 +444,7 @@ function DoorDrawer({ event, onClose, notify }: {
                                     <div className="text-xs text-gray-500 flex flex-wrap gap-x-2">
                                         <span>{a.phone}</span>
                                         <span className="font-mono">{a.ticketCode}</span>
+                                        {a.ticketTypeName && <span className="font-semibold text-gray-800">{a.ticketTypeName}</span>}
                                         <span>{a.paymentMethod} · {a.currency === "USD" ? "$" : a.currency + " "}{a.amount.toFixed(2)}</span>
                                     </div>
                                 </div>

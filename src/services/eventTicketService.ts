@@ -39,6 +39,8 @@ export type EventTicket = {
   whatsAppUrl?: string | null;
   /** True when the event hasn't started yet. */
   isUpcoming: boolean;
+  /** Ticket type bought (Standard, VIP …); null for single-price events. */
+  ticketTypeName?: string | null;
 };
 
 export type CheckInOutcome = "ok" | "already" | "unpaid" | "not_found" | "wrong_event" | "rejected" | string;
@@ -64,6 +66,7 @@ export type EventAttendee = {
   checkedInOn?: string | null;
   checkedInBy?: string | null;
   createdOn: string;
+  ticketTypeName?: string | null;
 };
 
 export type EventAttendeeList = {

@@ -139,7 +139,7 @@ export default function AccountPage() {
                 <Link key={t.ticketCode} to={`/tickets/${encodeURIComponent(t.ticketCode)}`}
                   className={`block rounded-2xl border border-white/10 bg-white/5 p-4 hover:bg-white/10 ${t.isUpcoming ? "" : "opacity-70"}`}>
                   <div className="flex items-center justify-between gap-2">
-                    <div className="font-bold truncate">🎟 {t.eventTitle}</div>
+                    <div className="font-bold truncate">🎟 {t.eventTitle}{t.ticketTypeName ? <span className="font-semibold text-[#b9d3ee]"> · {t.ticketTypeName}</span> : null}</div>
                     <span className={`shrink-0 px-2 py-0.5 rounded-full text-[11px] font-semibold ${st.tone}`}>{st.label}</span>
                   </div>
                   <div className="mt-1 text-xs text-gray-400">

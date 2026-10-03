@@ -216,8 +216,9 @@ function TicketCard({ ticket, url }: { ticket: EventTicket; url: string }) {
             <div className="text-sm text-gray-300">{ticket.phone}</div>
           </div>
           <div className="text-right shrink-0">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-[#b9d3ee]">Price</div>
-            <div className="text-lg font-bold">{money(ticket.amount, ticket.currency)}</div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-[#b9d3ee]">{ticket.ticketTypeName ? "Ticket" : "Price"}</div>
+            {ticket.ticketTypeName && <div className="text-lg font-bold leading-tight">{ticket.ticketTypeName}</div>}
+            <div className={ticket.ticketTypeName ? "text-sm font-semibold text-gray-200" : "text-lg font-bold"}>{money(ticket.amount, ticket.currency)}</div>
             <div className="text-[11px] text-gray-400">{ticket.paymentMethod}</div>
           </div>
         </div>

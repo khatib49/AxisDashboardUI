@@ -16,7 +16,7 @@ import {
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import {
-  listRegistrations, getRegistrationStats,
+  listRegistrations, getRegistrationStats, listEvents,
   confirmRegistrationPayment, rejectRegistrationPayment,
   EventRegistration, EventRegistrationStats,
 } from "../../services/eventService";
@@ -43,6 +43,15 @@ export default function EventRegistrations() {
   const [pageSize, setPageSize] = useState(25);
   const [status, setStatus] = useState<string | undefined>();
   const [method, setMethod] = useState<string | undefined>();
+  const [ticketType, setTicketType] = useState<string | undefined>();
+  const [typeNames, setTypeNames] = useState<string[]>([]);
+
+  // Ticket types of this event (hidden ones too — they can still have sales).
+  useEffect(() => {
+    listEvents()
+      .then(evs => setTypeNames((evs.find(e => e.key === EVENT_KEY)?.ticketTypes ?? []).map(t => t.name)))
+      .catch(() => setTypeNames([]));
+  }, []);
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
 
@@ -57,7 +66,7 @@ export default function EventRegistrations() {
       const [list, s] = await Promise.all([
         listRegistrations({
           eventKey: EVENT_KEY, paymentStatus: status, paymentMethod: method,
-          search: debounced || undefined, page, pageSize,
+          ticketType, search: debounced || undefined, page, pageSize,
         }),
         getRegistrationStats(EVENT_KEY),
       ]);
@@ -67,7 +76,7 @@ export default function EventRegistrations() {
     } catch {
       message.error("Failed to load registrations");
     } finally { setLoading(false); }
-  }, [status, method, debounced, page, pageSize]);
+  }, [status, method, ticketType, debounced, page, pageSize]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -103,10 +112,10 @@ export default function EventRegistrations() {
   };
 
   const exportCsv = () => {
-    const head = ["Id","First Name","Last Name","Phone","Email","Method","Status","Amount","Currency","Registered","Confirmed By","Confirmed On"];
+    const head = ["Id","First Name","Last Name","Phone","Email","Ticket","Method","Status","Amount","Currency","Registered","Confirmed By","Confirmed On"];
     const body = rows.map(r => [
       r.id, r.firstName, r.lastName, r.phone, r.email ?? "",
-      r.paymentMethod, r.paymentStatus, r.amount, r.currency,
+      r.ticketTypeName ?? "", r.paymentMethod, r.paymentStatus, r.amount, r.currency,
       new Date(r.createdOn).toLocaleString(),
       r.confirmedBy ?? "", r.confirmedOn ? new Date(r.confirmedOn).toLocaleString() : "",
     ]);
@@ -131,6 +140,12 @@ export default function EventRegistrations() {
         </div>
       ),
     },
+    ...(typeNames.length > 0 ? [{
+      title: "Ticket", key: "ticketType", width: 120,
+      render: (_: unknown, r: EventRegistration) => r.ticketTypeName
+        ? <Tag color="purple">{r.ticketTypeName}</Tag>
+        : <Text type="secondary">—</Text>,
+    }] : []),
     {
       title: "Method", dataIndex: "paymentMethod", width: 130,
       render: (m: string) => <span>{methodIcon(m)} {m}</span>,
@@ -223,6 +238,13 @@ export default function EventRegistrations() {
                 { value: "Cash", label: "💵 Cash" },
               ]}
             />
+            {typeNames.length > 0 && (
+              <Select
+                placeholder="All tickets" allowClear style={{ width: 150 }}
+                value={ticketType} onChange={(v) => { setTicketType(v); setPage(1); }}
+                options={typeNames.map(n => ({ value: n, label: n }))}
+              />
+            )}
           </Space>
           <Space>
             <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>Refresh</Button>

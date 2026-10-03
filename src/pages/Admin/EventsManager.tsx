@@ -1,9 +1,9 @@
 // Admin CMS for public event pages.
 // Route: /admin/events  (admin only)
 //
-// One place to: write the copy, upload the promo video, set the price,
-// choose which payment methods are live, edit the WhatsApp confirmation
-// message, and publish.
+// One place to: write the copy, upload the promo video, set the price or
+// the ticket types (Standard / VIP …), choose which payment methods are
+// live, edit the WhatsApp confirmation message, and publish.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -13,22 +13,36 @@ import {
 } from "antd";
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined,
-  VideoCameraOutlined, LinkOutlined, EyeOutlined,
+  VideoCameraOutlined, LinkOutlined, EyeOutlined, ArrowUpOutlined, ArrowDownOutlined,
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import {
   listEvents, createEvent, updateEvent, deleteEvent,
   uploadEventVideo, removeEventVideo,
-  EventDto, EventUpsert, EventFeature,
+  EventDto, EventUpsert, EventFeature, EventTicketType, EventTicketTypeStats,
 } from "../../services/eventService";
 
 const { Text, Title, Paragraph } = Typography;
 
 const PLACEHOLDERS = [
   "eventTitle", "registrationId", "fullName", "firstName", "lastName",
-  "phone", "email", "paymentMethod", "amount", "currency", "eventDate", "location",
+  "phone", "email", "paymentMethod", "ticketType", "amount", "currency", "eventDate", "location",
 ];
+
+/** Editable row: a saved type keeps its key and live counts; a new row has neither. */
+type TicketTypeRow = EventTicketType & { paidCount?: number; pendingCount?: number };
+
+const money = (n: number, currency = "USD") => `${currency === "USD" ? "$" : currency + " "}${n % 1 === 0 ? n.toFixed(0) : n.toFixed(2)}`;
+
+/** "$15" or "$15 – $25" for the list, from the active types (falls back to the single price). */
+function priceRange(e: EventDto): string {
+  const active = (e.ticketTypes ?? []).filter(t => t.isActive);
+  if (active.length === 0) return money(e.price, e.currency);
+  const prices = active.map(t => t.price);
+  const lo = Math.min(...prices), hi = Math.max(...prices);
+  return lo === hi ? money(lo, e.currency) : `${money(lo, e.currency)} – ${money(hi, e.currency)}`;
+}
 
 // Chip colors on the calendar, keyed by event type. Types are free text
 // server-side; anything unknown falls back to "Other".
@@ -227,6 +241,7 @@ export default function EventsManager() {
   const [creating, setCreating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [features, setFeatures] = useState<EventFeature[]>([]);
+  const [ticketTypes, setTicketTypes] = useState<TicketTypeRow[]>([]);
   const [uploadPct, setUploadPct] = useState<number | null>(null);
   const [form] = Form.useForm();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -245,6 +260,7 @@ export default function EventsManager() {
   const openCreate = () => {
     setEditing(null); setCreating(true);
     setFeatures([]);
+    setTicketTypes([]);
     form.resetFields();
     form.setFieldsValue({
       currency: "USD", price: 0,
@@ -258,6 +274,7 @@ export default function EventsManager() {
   const openEdit = (e: EventDto) => {
     setEditing(e); setCreating(false);
     setFeatures(e.features ?? []);
+    setTicketTypes((e.ticketTypes ?? []).map((t: EventTicketTypeStats) => ({ ...t })));
     form.resetFields();
     form.setFieldsValue({
       ...e,
@@ -270,6 +287,8 @@ export default function EventsManager() {
 
   const save = async () => {
     const v = await form.validateFields();
+    const badType = ticketTypes.find(t => !t.name.trim());
+    if (badType) { message.error("Give every ticket type a name (or remove the empty row)."); return; }
     setSaving(true);
     try {
       const body: EventUpsert = {
@@ -292,6 +311,14 @@ export default function EventsManager() {
         isPublished: !!v.isPublished,
         isActive: !!v.isActive,
         capacity: v.capacity ? Number(v.capacity) : null,
+        ticketTypes: ticketTypes.map(t => ({
+          key: t.key ?? null,
+          name: t.name.trim(),
+          price: Number(t.price ?? 0),
+          description: t.description?.trim() || null,
+          capacity: t.capacity ? Number(t.capacity) : null,
+          isActive: t.isActive,
+        })),
       };
       if (editing) { await updateEvent(editing.id, body); message.success("Event updated"); }
       else { await createEvent(body); message.success("Event created"); }
@@ -355,8 +382,16 @@ export default function EventsManager() {
         : <Text type="secondary">—</Text>,
     },
     {
-      title: "Price", key: "price", width: 100, align: "right",
-      render: (_, r) => <Text strong>{r.currency === "USD" ? "$" : ""}{r.price.toFixed(2)}</Text>,
+      title: "Price", key: "price", width: 120, align: "right",
+      render: (_, r) => {
+        const n = (r.ticketTypes ?? []).filter(t => t.isActive).length;
+        return (
+          <div>
+            <Text strong style={{ whiteSpace: "nowrap" }}>{priceRange(r)}</Text>
+            {n > 0 && <div style={{ fontSize: 11, color: "#9CA3AF" }}>{n} ticket type{n > 1 ? "s" : ""}</div>}
+          </div>
+        );
+      },
     },
     {
       title: "Payment", key: "pay", width: 150,
@@ -491,16 +526,26 @@ export default function EventsManager() {
             </Form.Item>
           </Space>
 
-          <SectionLabel>Pricing & capacity</SectionLabel>
+          <SectionLabel>Tickets & capacity</SectionLabel>
+          <TicketTypesEditor rows={ticketTypes} onChange={setTicketTypes} currency={form.getFieldValue("currency") || "USD"} />
           <Space size="middle" style={{ display: "flex" }}>
-            <Form.Item name="price" label="Ticket price" style={{ flex: 1 }}>
-              <InputNumber min={0} step={0.5} prefix="$" style={{ width: "100%" }} />
-            </Form.Item>
+            {ticketTypes.some(t => t.isActive) ? (
+              <Form.Item label="Ticket price" style={{ flex: 1 }}
+                extra="Set by the ticket types above. Listings show the lowest price as “From …”.">
+                <InputNumber disabled prefix="$" style={{ width: "100%" }}
+                  value={Math.min(...ticketTypes.filter(t => t.isActive).map(t => Number(t.price ?? 0)))} />
+              </Form.Item>
+            ) : (
+              <Form.Item name="price" label="Ticket price" style={{ flex: 1 }}
+                extra="One price for everyone. Add ticket types above to sell several.">
+                <InputNumber min={0} step={0.5} prefix="$" style={{ width: "100%" }} />
+              </Form.Item>
+            )}
             <Form.Item name="currency" label="Currency" style={{ width: 110 }}>
               <Input />
             </Form.Item>
-            <Form.Item name="capacity" label="Capacity" style={{ flex: 1 }}
-              extra="Blank = unlimited">
+            <Form.Item name="capacity" label="Total capacity" style={{ flex: 1 }}
+              extra="All tickets together. Blank = unlimited">
               <InputNumber min={1} style={{ width: "100%" }} placeholder="unlimited" />
             </Form.Item>
           </Space>
@@ -606,6 +651,96 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
         {children}
       </span>
       <span style={{ flex: 1, height: 1, background: "rgba(0,0,0,.08)" }} />
+    </div>
+  );
+}
+
+/**
+ * Ticket types (Standard $15, VIP $25 …). Order here is the order on the
+ * public page. A type that already has registrations can't be deleted —
+ * removing it hides it instead, so its sales keep their label.
+ */
+function TicketTypesEditor({ rows, onChange, currency }: {
+  rows: TicketTypeRow[];
+  onChange: (rows: TicketTypeRow[]) => void;
+  currency: string;
+}) {
+  const patch = (i: number, p: Partial<TicketTypeRow>) =>
+    onChange(rows.map((r, ri) => ri === i ? { ...r, ...p } : r));
+  const move = (i: number, d: -1 | 1) => {
+    const j = i + d;
+    if (j < 0 || j >= rows.length) return;
+    const next = [...rows];
+    [next[i], next[j]] = [next[j], next[i]];
+    onChange(next);
+  };
+  const remove = (i: number) => onChange(rows.filter((_, ri) => ri !== i));
+  const add = () => {
+    const names = rows.map(r => r.name.toLowerCase());
+    const suggestion = !names.includes("standard") ? "Standard" : !names.includes("vip") ? "VIP" : "";
+    onChange([...rows, { name: suggestion, price: 0, description: "", capacity: null, isActive: true }]);
+  };
+
+  return (
+    <div style={{ marginBottom: 16 }}>
+      {rows.length === 0 && (
+        <div style={{ padding: "10px 12px", borderRadius: 8, background: "rgba(0,0,0,.03)", fontSize: 12, color: "#6B7280", marginBottom: 8 }}>
+          No ticket types: everyone pays the single ticket price below. Add types to sell, for example, Standard and VIP at different prices.
+        </div>
+      )}
+      <Space direction="vertical" style={{ width: "100%" }} size={8}>
+        {rows.map((r, i) => {
+          const sold = (r.paidCount ?? 0) + (r.pendingCount ?? 0);
+          return (
+            <div key={r.key ?? `new-${i}`}
+              style={{ border: "1px solid rgba(0,0,0,.09)", borderRadius: 10, padding: 10,
+                       background: r.isActive ? "transparent" : "rgba(0,0,0,.025)" }}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                <Input style={{ flex: "2 1 160px" }} value={r.name} maxLength={80}
+                  status={r.name.trim() ? undefined : "error"}
+                  onChange={e => patch(i, { name: e.target.value })} placeholder="Name (e.g. VIP)" />
+                <InputNumber style={{ flex: "1 1 110px" }} min={0} step={0.5} value={r.price}
+                  prefix={currency === "USD" ? "$" : undefined}
+                  onChange={v => patch(i, { price: Number(v ?? 0) })} placeholder="Price" />
+                <InputNumber style={{ flex: "1 1 120px" }} min={1} value={r.capacity ?? undefined}
+                  onChange={v => patch(i, { capacity: v ? Number(v) : null })} placeholder="Seats: unlimited" />
+                <Tooltip title={r.isActive ? "On sale" : "Hidden from the website"}>
+                  <Switch checked={r.isActive} onChange={v => patch(i, { isActive: v })}
+                    checkedChildren="On sale" unCheckedChildren="Hidden" />
+                </Tooltip>
+                <Space.Compact>
+                  <Button size="small" icon={<ArrowUpOutlined />} disabled={i === 0} onClick={() => move(i, -1)} aria-label="Move up" />
+                  <Button size="small" icon={<ArrowDownOutlined />} disabled={i === rows.length - 1} onClick={() => move(i, 1)} aria-label="Move down" />
+                </Space.Compact>
+                {sold > 0 ? (
+                  <Popconfirm title="This ticket type has registrations"
+                    description="It will be hidden from the website instead of deleted, so its sales keep their name."
+                    okText="Hide it" onConfirm={() => patch(i, { isActive: false })}>
+                    <Button size="small" danger icon={<DeleteOutlined />} aria-label="Remove" />
+                  </Popconfirm>
+                ) : (
+                  <Button size="small" danger icon={<DeleteOutlined />} onClick={() => remove(i)} aria-label="Remove" />
+                )}
+              </div>
+              <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <Input style={{ flex: "1 1 260px" }} value={r.description ?? ""} maxLength={200}
+                  onChange={e => patch(i, { description: e.target.value })}
+                  placeholder="What's included (shown under the price, optional)" />
+                {r.key && (
+                  <Space size={4}>
+                    <Tag color="green">{r.paidCount ?? 0} paid</Tag>
+                    {(r.pendingCount ?? 0) > 0 && <Tag color="orange">{r.pendingCount} pending</Tag>}
+                    {r.capacity ? <Tag>{Math.max(0, r.capacity - (r.paidCount ?? 0))} left</Tag> : null}
+                  </Space>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </Space>
+      <Button type="dashed" block icon={<PlusOutlined />} style={{ marginTop: 8 }} onClick={add}>
+        Add ticket type
+      </Button>
     </div>
   );
 }

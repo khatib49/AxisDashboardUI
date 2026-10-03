@@ -52,7 +52,9 @@ function toItem(e: EventPublicSummary): SiteEventItem {
     time: valid ? d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "Time TBA",
     spots: e.isSoldOut ? "Sold out" : e.capacity ? `${e.capacity} seats` : "Open",
     href: `/events/${e.key}`,
-    price: formatPrice(e.price, e.currency),
+    price: e.priceMax != null && e.priceMax > e.price
+      ? `From ${formatPrice(e.price, e.currency)}`
+      : formatPrice(e.price, e.currency),
     location: e.location,
   };
 }

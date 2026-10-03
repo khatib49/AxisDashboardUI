@@ -4,6 +4,31 @@ import { shopApi } from "./shopService";
 // ── Admin CMS types ───────────────────────────────────────────────────
 export type EventFeature = { icon: string; title: string; desc: string };
 
+/** A ticket type as edited in Admin → Events. `key` is issued by the server on first save. */
+export type EventTicketType = {
+  key?: string | null;
+  name: string;
+  price: number;
+  description?: string | null;
+  /** Seats for this type; null = unlimited (the event capacity still applies). */
+  capacity?: number | null;
+  isActive: boolean;
+};
+
+/** Admin view of a ticket type with live counts. */
+export type EventTicketTypeStats = EventTicketType & { key: string; paidCount: number; pendingCount: number };
+
+/** What a visitor can choose on the public page. */
+export type EventPublicTicketType = {
+  key: string;
+  name: string;
+  price: number;
+  description: string | null;
+  isSoldOut: boolean;
+  /** Seats left when a cap applies; null = plenty. */
+  remaining: number | null;
+};
+
 export type EventDto = {
   id: number;
   key: string;
@@ -32,6 +57,7 @@ export type EventDto = {
   paidCount: number;
   /** Calendar chip category: PS5 Session, Board Games, Billiards, TCG Event, Social, Tournament, Other. */
   type?: string;
+  ticketTypes?: EventTicketTypeStats[] | null;
 };
 
 export type EventUpsert = {
@@ -55,6 +81,8 @@ export type EventUpsert = {
   isActive: boolean;
   capacity?: number | null;
   type?: string | null;
+  /** Omit to leave the event's types untouched; [] = single price. */
+  ticketTypes?: EventTicketType[] | null;
 };
 
 // What the public page renders — fully data-driven.
@@ -75,6 +103,8 @@ export type EventPublic = {
   whishAvailable: boolean;
   cashAvailable: boolean;
   isSoldOut: boolean;
+  /** Empty = one ticket at `price`. */
+  ticketTypes?: EventPublicTicketType[] | null;
 };
 
 export type EventPublicConfig = {
@@ -93,6 +123,8 @@ export type EventRegisterRequest = {
   email?: string | null;
   paymentMethod: "Visa" | "Whish" | "Cash";
   eventKey?: string;
+  /** Required when the event has ticket types. The server sets the price. */
+  ticketTypeKey?: string | null;
 };
 
 export type EventRegisterResult = {
@@ -110,6 +142,7 @@ export type EventRegisterResult = {
   /** The ticket — /tickets/{ticketCode}. Pending until the payment is confirmed. */
   ticketCode?: string | null;
   ticketUrl?: string | null;
+  ticketTypeName?: string | null;
 };
 
 export type EventRegistration = {
@@ -128,6 +161,9 @@ export type EventRegistration = {
   confirmedOn: string | null;
   adminNotes: string | null;
   createdOn: string;
+  ticketCode?: string | null;
+  checkedInOn?: string | null;
+  ticketTypeName?: string | null;
 };
 
 export type EventRegistrationStats = {
@@ -159,6 +195,8 @@ export type EventPublicSummary = {
   heroImageUrl: string | null;
   capacity: number | null;
   isSoldOut: boolean;
+  /** Highest ticket-type price; when above `price` the card reads "From $price". */
+  priceMax?: number | null;
 };
 
 // ── Public (anonymous) ────────────────────────────────────────────────
@@ -266,6 +304,7 @@ export async function listRegistrations(params: {
   search?: string;
   page?: number;
   pageSize?: number;
+  ticketType?: string;
 }): Promise<PaginatedRegistrations> {
   const { data } = await api.get(`/admin/event-registrations`, { params });
   return data;

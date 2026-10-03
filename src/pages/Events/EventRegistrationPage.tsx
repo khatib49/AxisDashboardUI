@@ -13,6 +13,9 @@ import { getStoredCustomer, clearCustomerSession } from "../../services/shopServ
 
 type PayMethod = "Visa" | "Whish" | "Cash";
 
+const money = (n: number, currency: string) =>
+  `${currency === "USD" ? "$" : ""}${n % 1 === 0 ? n.toFixed(0) : n.toFixed(2)}${currency === "USD" ? "" : " " + currency}`;
+
 /** Server error message from either an axios error or our normalized ApiError. */
 function errorMessage(err: unknown, fallback: string): string {
   if (err && typeof err === "object") {
@@ -58,6 +61,7 @@ export default function EventRegistrationPage() {
   const [phone, setPhone]         = useState(storedCustomer?.phone ?? "");
   const [email, setEmail]         = useState(storedCustomer?.email ?? "");
   const [method, setMethod]       = useState<PayMethod | "">("");
+  const [ticketKey, setTicketKey] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult]       = useState<EventRegisterResult | null>(null);
   const [error, setError]         = useState<string | null>(null);
@@ -80,6 +84,9 @@ export default function EventRegistrationPage() {
     if (ev.whishAvailable) avail.push("Whish");
     if (ev.cashAvailable) avail.push("Cash");
     if (avail.length === 1) setMethod(avail[0]);
+    // …and the ticket type when there is only one left to buy.
+    const buyable = (ev.ticketTypes ?? []).filter(t => !t.isSoldOut);
+    if (buyable.length === 1) setTicketKey(buyable[0].key);
   }, [ev]);
 
   // Scroll-reveal
@@ -94,6 +101,10 @@ export default function EventRegistrationPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formRef.current?.reportValidity()) return;
+    const types = ev?.ticketTypes ?? [];
+    if (types.length > 0 && !types.some(t => t.key === ticketKey && !t.isSoldOut)) {
+      setError("Please choose a ticket."); return;
+    }
     if (!method) { setError("Please choose a payment method."); return; }
 
     // Open the tab NOW, inside the click gesture. Browsers (mobile Safari
@@ -108,6 +119,7 @@ export default function EventRegistrationPage() {
         firstName: firstName.trim(), lastName: lastName.trim(),
         phone: phone.trim(), email: email.trim() || null,
         paymentMethod: method, eventKey,
+        ticketTypeKey: types.length > 0 ? ticketKey : null,
       });
 
       // Card/Whish redirect wins — payment first, WhatsApp after they return.
@@ -158,6 +170,12 @@ export default function EventRegistrationPage() {
   }
 
   const anyOnline = ev.visaAvailable || ev.whishAvailable;
+  const ticketTypes = ev.ticketTypes ?? [];
+  const selectedType = ticketTypes.find(t => t.key === ticketKey) ?? null;
+  const prices = ticketTypes.map(t => t.price);
+  const heroPrice = prices.length > 1 && Math.min(...prices) !== Math.max(...prices)
+    ? `From ${money(Math.min(...prices), ev.currency)}`
+    : money(prices.length ? prices[0] : ev.price, ev.currency);
   const noMethods = !ev.visaAvailable && !ev.whishAvailable && !ev.cashAvailable;
   const closed = ev.isSoldOut || noMethods;
 
@@ -184,7 +202,7 @@ export default function EventRegistrationPage() {
               day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
           )}
           {ev.location && <span>📍 {ev.location}</span>}
-          <span>🎟 {ev.currency === "USD" ? "$" : ""}{ev.price} {ev.currency !== "USD" ? ev.currency : ""}</span>
+          <span>🎟 {heroPrice}</span>
         </div>
 
         {ev.isSoldOut && <div className="sg-soldout">SOLD OUT</div>}
@@ -222,6 +240,7 @@ export default function EventRegistrationPage() {
             <p>{result.message}</p>
             <div className="sg-reg-no">
               Registration #{result.registrationId}
+              {result.ticketTypeName && <> · {result.ticketTypeName}</>}
               {result.ticketCode && <> · Ticket {result.ticketCode}</>}
             </div>
 
@@ -315,6 +334,34 @@ export default function EventRegistrationPage() {
                   autoComplete="email" placeholder="you@example.com" />
               </Field>
 
+              {ticketTypes.length > 0 && (
+                <div className="sg-field" style={{ marginTop: 24 }}>
+                  <label id="sg-tix-label">Choose your ticket <span className="sg-req">*</span></label>
+                  <div className="sg-tix" role="radiogroup" aria-labelledby="sg-tix-label">
+                    {ticketTypes.map(t => {
+                      const on = t.key === ticketKey;
+                      return (
+                        <button key={t.key} type="button" role="radio" aria-checked={on}
+                          disabled={t.isSoldOut}
+                          className={`sg-tix-opt${on ? " on" : ""}${t.isSoldOut ? " out" : ""}`}
+                          onClick={() => { setTicketKey(t.key); setError(null); }}>
+                          <span className="tx-main">
+                            <span className="tx-nm">{t.name}</span>
+                            {t.description && <span className="tx-ds">{t.description}</span>}
+                            {t.isSoldOut
+                              ? <span className="tx-flag">Sold out</span>
+                              : t.remaining !== null && t.remaining <= 10
+                                ? <span className="tx-flag hot">Only {t.remaining} left</span>
+                                : null}
+                          </span>
+                          <span className="tx-price">{money(t.price, ev.currency)}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <div className="sg-field" style={{ marginTop: 24 }}>
                 <label>Payment Method <span className="sg-req">*</span></label>
                 <div className="sg-pay">
@@ -347,7 +394,9 @@ export default function EventRegistrationPage() {
 
               <div style={{ textAlign: "center", marginTop: 26 }}>
                 <button type="submit" className="sg-btn" disabled={submitting}>
-                  {submitting ? "Processing…" : "Secure My Spot ➜"}
+                  {submitting ? "Processing…"
+                    : selectedType ? `Secure My Spot · ${money(selectedType.price, ev.currency)} ➜`
+                    : "Secure My Spot ➜"}
                 </button>
                 <p style={{ marginTop: 12, fontSize: 12, opacity: 0.7 }}>
                   By registering you agree to our{" "}
@@ -515,6 +564,20 @@ const CSS = `
 .sg-pay-opt .ico{font-size:26px;display:block;margin-bottom:6px}
 .sg-pay-opt .nm{font-weight:700;font-size:15px;display:block}
 .sg-pay-opt .ds{font-size:11.5px;color:var(--muted);display:block}
+.sg-tix{display:grid;gap:12px}
+.sg-tix-opt{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:stretch;text-align:left;cursor:pointer;background:rgba(7,6,11,.6);border:1.5px solid rgba(156,163,175,.25);border-radius:14px;padding:0;color:var(--text);font:inherit;transition:border-color .25s,box-shadow .25s,transform .2s}
+.sg-tix-opt:hover:not(:disabled){transform:translateY(-2px);border-color:var(--blue)}
+.sg-tix-opt:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+.sg-tix-opt.on{border-color:var(--purple);box-shadow:0 0 0 4px rgba(139,92,246,.18),0 0 24px rgba(139,92,246,.45);background:rgba(139,92,246,.1)}
+.sg-tix-opt.out{opacity:.45;cursor:not-allowed}
+.sg-tix-opt .tx-main{display:flex;flex-direction:column;gap:3px;padding:16px 18px;min-width:0}
+.sg-tix-opt .tx-nm{font-weight:800;font-size:16px;letter-spacing:.3px}
+.sg-tix-opt .tx-ds{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.sg-tix-opt .tx-flag{font-size:12px;font-weight:700;color:var(--muted);margin-top:2px}
+.sg-tix-opt .tx-flag.hot{color:#FDA4AF}
+.sg-tix-opt .tx-price{display:flex;align-items:center;padding:16px 20px;border-left:2px dashed rgba(156,163,175,.3);font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.sg-tix-opt.on .tx-price{border-left-color:rgba(167,139,250,.6);color:var(--purple2)}
+@media (prefers-reduced-motion:reduce){.sg-tix-opt{transition:none}.sg-tix-opt:hover:not(:disabled){transform:none}}
 .sg-note{margin-top:14px;padding:12px 16px;font-size:13.5px;background:rgba(34,211,238,.07);border-left:3px solid var(--cyan);border-radius:8px;color:#C7F5FC}
 .sg-error{margin-top:16px;padding:12px 16px;background:rgba(244,63,94,.1);border-left:3px solid var(--pink);border-radius:8px;font-size:14px;color:#FDA4AF}
 .sg-alert{margin-bottom:18px;padding:14px 18px;background:rgba(251,191,36,.1);border-left:3px solid #FBBF24;border-radius:8px;font-size:14px;color:#FDE68A}
