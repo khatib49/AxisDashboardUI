@@ -1,13 +1,18 @@
-// PosItemCard — the touch card on the till item grid: image (or the
-// placeholder), name, category, price, stock state as a text pill, and a
-// slot for the quantity controls / options / add-ons the page provides.
+// PosItemCard — the touch card on the till item grid: fixed-height image
+// (or a neutral placeholder) with the stock state overlaid as text, name,
+// category, price, and a slot for the quantity controls / options / add-ons
+// the page provides.
 
-import type { ComponentProps, ReactNode } from "react";
-import { Pill } from "../../ui/PageKit";
+import { useState, type ReactNode } from "react";
 
-type PillTone = NonNullable<ComponentProps<typeof Pill>["tone"]>;
+export type PosStockTone = "red" | "blue" | "amber" | "neutral";
 
-const PLACEHOLDER = "/images/image-placeholder.svg";
+const STOCK_BADGE: Record<PosStockTone, string> = {
+    red: "bg-red-600 text-white",
+    blue: "bg-teal-600/95 text-white",
+    amber: "bg-amber-500 text-white",
+    neutral: "bg-black/60 text-white",
+};
 
 export default function PosItemCard({
     name,
@@ -26,9 +31,13 @@ export default function PosItemCard({
     priceLabel: string;
     picked: number;
     outOfStock: boolean;
-    stock: { label: string; tone: PillTone };
+    stock: { label: string; tone: PosStockTone };
     children: ReactNode;
 }) {
+    // A missing or broken image shows the same neutral placeholder.
+    const [failedSrc, setFailedSrc] = useState<string | null>(null);
+    const showImage = !!imageSrc && failedSrc !== imageSrc;
+
     return (
         <div
             className={`relative flex flex-col overflow-hidden rounded-2xl border bg-white transition-shadow dark:bg-white/[0.03] ${
@@ -46,27 +55,39 @@ export default function PosItemCard({
                 </span>
             )}
 
-            <div className="relative h-28 shrink-0 bg-gray-50 sm:h-32 dark:bg-white/5">
-                <img
-                    src={imageSrc || PLACEHOLDER}
-                    alt={name}
-                    className="h-full w-full object-cover"
-                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER; }}
-                />
+            <div className="relative h-28 shrink-0 overflow-hidden bg-gray-100 sm:h-32 dark:bg-white/5">
+                {showImage ? (
+                    <img
+                        src={imageSrc}
+                        alt={name}
+                        loading="lazy"
+                        className="h-full w-full object-cover"
+                        onError={() => setFailedSrc(imageSrc)}
+                    />
+                ) : (
+                    <div className="flex h-full w-full items-center justify-center text-gray-300 dark:text-gray-600" role="img" aria-label={name}>
+                        <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                )}
+                {/* Stock state, on the image where the eye lands first */}
+                <span className={`absolute bottom-2 left-2 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold shadow-sm ${STOCK_BADGE[stock.tone]}`}>
+                    <span className="h-1.5 w-1.5 rounded-full bg-white/90" aria-hidden />
+                    {stock.label}
+                </span>
             </div>
 
             <div className="flex flex-1 flex-col p-3">
                 <div className="min-h-[2.5rem] text-[15px] font-semibold leading-snug text-gray-900 line-clamp-2 dark:text-white" title={name}>
                     {name}
                 </div>
-                <div className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">{categoryName}</div>
-
-                <div className="mt-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-                    <span className="text-xl font-bold tabular-nums tracking-tight text-gray-900 dark:text-white">{priceLabel}</span>
-                    <Pill tone={stock.tone} dot>{stock.label}</Pill>
+                <div className="mt-0.5 flex items-end justify-between gap-2">
+                    <span className="min-w-0 truncate text-xs text-gray-500 dark:text-gray-400">{categoryName}</span>
+                    <span className="shrink-0 text-xl font-bold leading-none tabular-nums tracking-tight text-gray-900 dark:text-white">{priceLabel}</span>
                 </div>
 
-                <div className="mt-auto pt-3">{children}</div>
+                <div className="mt-3 space-y-2">{children}</div>
             </div>
         </div>
     );

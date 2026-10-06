@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { getGames, GameDto } from '../../services/gameService';
 import { getSettings, GameSettingDto } from '../../services/gameSettingsService';
-import { STATUS_ENABLED } from '../../services/statuses';
+import { STATUS_ENABLED, STATUS_DISABLED } from '../../services/statuses';
 import { getUpcomingEvents, EventDto } from '../../services/eventService';
 import { Link } from 'react-router';
 import Loader from '../../components/ui/Loader';
@@ -27,6 +27,10 @@ import { InvoiceCard } from '../../components/till/sessions/InvoiceCard';
 // ...existing imports...
 
 const PAGE_SIZE = 8;
+// Games are few (≈20): load them all in one request (with headroom), then page on screen.
+const ALL_GAMES = 500;
+// Not offered at the till.
+const HIDDEN_STATUSES = new Set([STATUS_DISABLED, 3 /* Deleted */]);
 
 const GameSession: React.FC = () => {
     const { claims } = useAuth();
@@ -135,12 +139,16 @@ const GameSession: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        // load games (paged)
-        getGames(page, PAGE_SIZE)
+        // Load every game once and keep only the ones the till can sell:
+        // Disabled / Deleted games are hidden. The games API has no status
+        // filter, so paging happens here (PAGE_SIZE per page) — paging on the
+        // server first would leave gaps and a wrong "Showing x of y".
+        getGames(1, ALL_GAMES)
             .then((res) => {
                 if (!mounted) return;
-                setGames(res.data || []);
-                setTotalCount(res.totalCount ?? null);
+                const sellable = (res.data || []).filter((g) => !HIDDEN_STATUSES.has(Number(g.statusId)));
+                setGames(sellable);
+                setTotalCount(sellable.length);
             })
             .catch((err) => {
                 if (!mounted) return;
@@ -162,7 +170,7 @@ const GameSession: React.FC = () => {
             });
 
         return () => { mounted = false; };
-    }, [page]);
+    }, []);
 
     // Load rooms for set selection
     useEffect(() => {
@@ -346,7 +354,9 @@ const GameSession: React.FC = () => {
 
             {!loading && !error && (() => {
                 const q = gameSearch.trim().toLowerCase();
-                const visibleGames = !q ? games : games.filter((g) =>
+                const pageGames = games.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+                // Search looks through every sellable game, not just this page.
+                const visibleGames = !q ? pageGames : games.filter((g) =>
                     g.name.toLowerCase().includes(q) ||
                     (g.categoryName ?? '').toLowerCase().includes(q) ||
                     (settingsByGame.get(g.id) || []).some((s) => s.name.toLowerCase().includes(q)));
@@ -375,20 +385,20 @@ const GameSession: React.FC = () => {
 
                     {!q && games.length === 0 && (
                         <div className="rounded-2xl border border-dashed border-gray-200 px-4 py-12 text-center text-sm text-gray-500 dark:border-white/10 dark:text-gray-400">
-                            No games on this page.
+                            No active games. Enable a game in Admin → Game to sell it here.
                         </div>
                     )}
 
                     {q && visibleGames.length === 0 && (
                         <div className="rounded-2xl border border-dashed border-gray-200 px-4 py-12 text-center text-gray-500 dark:border-white/10 dark:text-gray-400">
                             <div className="text-3xl mb-2">🔍</div>
-                            No games match “{gameSearch}” on this page — try the next page or clear the search.
+                            No games match “{gameSearch}” — clear the search to see all games.
                         </div>
                     )}
 
-                    {/* Pagination */}
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="text-sm tabular-nums text-gray-500 dark:text-gray-400">{totalCount !== null ? `Showing ${games.length} of ${totalCount}` : ''}</div>
+                    {/* Pagination (hidden while searching — search spans all games) */}
+                    {!q && <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="text-sm tabular-nums text-gray-500 dark:text-gray-400">{totalCount !== null ? `Showing ${pageGames.length} of ${totalCount} active games` : ''}</div>
                         <div className="flex items-center gap-1.5">
                             <button
                                 className="h-11 rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:bg-white/[0.03] dark:text-gray-200 dark:hover:bg-white/[0.06]"
@@ -400,7 +410,7 @@ const GameSession: React.FC = () => {
                                 onClick={() => setPage((p) => p + 1)} disabled={totalCount !== null && page * PAGE_SIZE >= (totalCount || 0)}
                             >Next →</button>
                         </div>
-                    </div>
+                    </div>}
                 </>
                 );
             })()}

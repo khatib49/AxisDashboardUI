@@ -226,17 +226,17 @@ const LoyaltyCheck: React.FC = () => {
 
                         {/* Quick Stats */}
                         <div className="grid grid-cols-3 divide-x divide-gray-100 border-t border-gray-100 dark:divide-white/[0.06] dark:border-white/[0.06]">
-                            <div className="px-4 py-3">
+                            <div className="min-w-0 px-3 py-3 sm:px-4">
                                 <p className="text-xs text-gray-500 dark:text-gray-400">Total Tickets</p>
-                                <p className="text-2xl font-bold tabular-nums text-gray-900 dark:text-white">{customerData.totalTicketsCurrentMonth}</p>
+                                <p className="truncate text-xl font-bold tabular-nums text-gray-900 sm:text-2xl dark:text-white">{customerData.totalTicketsCurrentMonth}</p>
                             </div>
-                            <div className="px-4 py-3">
+                            <div className="min-w-0 px-3 py-3 sm:px-4">
                                 <p className="text-xs text-gray-500 dark:text-gray-400">Pending Balance</p>
-                                <p className="text-2xl font-bold tabular-nums text-gray-900 dark:text-white">${customerData.pendingBalance.toFixed(2)}</p>
+                                <p className="truncate text-xl font-bold tabular-nums text-gray-900 sm:text-2xl dark:text-white">${customerData.pendingBalance.toFixed(2)}</p>
                             </div>
-                            <div className="px-4 py-3">
+                            <div className="min-w-0 px-3 py-3 sm:px-4">
                                 <p className="text-xs text-gray-500 dark:text-gray-400">Transactions</p>
-                                <p className="text-2xl font-bold tabular-nums text-gray-900 dark:text-white">{customerData.recentTickets.length}</p>
+                                <p className="truncate text-xl font-bold tabular-nums text-gray-900 sm:text-2xl dark:text-white">{customerData.recentTickets.length}</p>
                             </div>
                         </div>
                     </section>
