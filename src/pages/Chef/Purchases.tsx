@@ -50,6 +50,8 @@ export default function Purchases() {
   const [supplierFilter, setSupplierFilter] = useState<number | "all">("all");
   const [ingredientFilter, setIngredientFilter] = useState<number | "all">("all");
   const [search, setSearch] = useState("");
+  // What the server searches: the box, settled for 350ms (no request per keystroke).
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [range, setRange] = useState<[Dayjs, Dayjs]>([
     dayjs().subtract(30, "day").startOf("day"),
     dayjs().endOf("day"),
@@ -73,12 +75,24 @@ export default function Purchases() {
       .catch(() => {/* non-fatal */});
   }, []);
 
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const next = search.trim();
+      if (next === debouncedSearch) return;
+      // Same batch → one fetch: new term, back to page 1.
+      setDebouncedSearch(next);
+      setPage(1);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [search, debouncedSearch]);
+
   const filterArgs = useMemo(() => ({
     supplierId: supplierFilter === "all" ? null : supplierFilter,
     ingredientId: ingredientFilter === "all" ? null : ingredientFilter,
     from: range[0].toISOString(),
     to: range[1].toISOString(),
-  }), [supplierFilter, ingredientFilter, range]);
+    search: debouncedSearch || null,
+  }), [supplierFilter, ingredientFilter, range, debouncedSearch]);
 
   async function reload() {
     setLoading(true);
@@ -93,10 +107,10 @@ export default function Purchases() {
 
   const ingredientById = useMemo(() => new Map(ingredients.map((i) => [i.id, i])), [ingredients]);
 
-  // Text search runs against the currently-loaded page: supplier name,
-  // invoice number, notes, and any line ingredient name. The supplier /
-  // ingredient / date filters above are still server-side; this is just
-  // a quick free-text pass on top.
+  // Search runs on the server over every purchase in the filters (see
+  // filterArgs.search), so totals and paging include it. This local pass on
+  // the same fields narrows the loaded rows instantly while typing, before
+  // the debounced request returns; on server results it changes nothing.
   const visibleRows = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return rows;
@@ -197,7 +211,7 @@ export default function Purchases() {
   const rangeLabel = `${range[0].format("MMM D, YYYY")} – ${range[1].format("MMM D, YYYY")}`;
   const filtersActive = supplierFilter !== "all" || ingredientFilter !== "all";
   const emptyText = search.trim()
-    ? "No purchases on this page match your search"
+    ? "No purchases match your search"
     : filtersActive ? "No purchases match these filters" : "No purchases in this period";
 
   return (
@@ -210,7 +224,7 @@ export default function Purchases() {
         actions={
           <>
             <Tooltip title="Reload">
-              <Button icon={<ReloadOutlined />} onClick={() => setPage((p) => p)} loading={loading} aria-label="Reload" />
+              <Button icon={<ReloadOutlined />} onClick={() => reload()} loading={loading} aria-label="Reload" />
             </Tooltip>
             <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>New Purchase</Button>
           </>
@@ -280,7 +294,7 @@ export default function Purchases() {
             options={[{ value: "all", label: "All ingredients" },
               ...ingredients.map((i) => ({ value: i.id, label: `${i.name} (${i.unit})` }))]} />
           <RangePicker value={range}
-            onChange={(v) => v && v[0] && v[1] && setRange([v[0], v[1]])}
+            onChange={(v) => { if (v && v[0] && v[1]) { setRange([v[0], v[1]]); setPage(1); } }}
             presets={[
               { label: "This Month", value: [dayjs().startOf("month"), dayjs().endOf("day")] },
               { label: "Last 30 Days", value: [dayjs().subtract(30, "day").startOf("day"), dayjs().endOf("day")] },

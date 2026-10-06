@@ -121,6 +121,8 @@ export async function getStockMovements(opts: {
   to?: string | null;
   page?: number;
   pageSize?: number;
+  /** Free text: ingredient, notes, waste reason, created by, reference type or id. */
+  search?: string | null;
 }): Promise<PagedStockMovements> {
   const p = new URLSearchParams();
   if (opts.ingredientId != null) p.append("ingredientId", String(opts.ingredientId));
@@ -129,6 +131,7 @@ export async function getStockMovements(opts: {
   if (opts.to) p.append("to", opts.to);
   if (opts.page) p.append("page", String(opts.page));
   if (opts.pageSize) p.append("pageSize", String(opts.pageSize));
+  if (opts.search) p.append("search", opts.search);
   const qs = p.toString();
   return await get<PagedStockMovements>(`/ingredients/movements${qs ? `?${qs}` : ""}`);
 }

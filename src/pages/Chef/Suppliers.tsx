@@ -49,6 +49,14 @@ export default function Suppliers() {
   // (after filtering) falls back to the last page.
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  // A new search (or showing/hiding hidden suppliers) starts from page 1
+  // (React's "adjust state while rendering" pattern — no effect pass).
+  const filterKey = `${includeHidden}|${search.trim().toLowerCase()}`;
+  const [pagedFor, setPagedFor] = useState(filterKey);
+  if (pagedFor !== filterKey) {
+    setPagedFor(filterKey);
+    setPage(1);
+  }
   const maxPage = Math.max(1, Math.ceil(filteredRows.length / pageSize));
   const currentPage = Math.min(page, maxPage);
   const pageRows = filteredRows.slice((currentPage - 1) * pageSize, currentPage * pageSize);

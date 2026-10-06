@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Table,
   Select,
+  Input,
   DatePicker,
   Button,
   Empty,
@@ -26,6 +27,7 @@ import {
   ArrowUpOutlined,
   DeleteOutlined,
   ReloadOutlined,
+  SearchOutlined,
   SwapOutlined,
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
@@ -67,6 +69,22 @@ export default function StockMovements() {
   ]);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
+  const [search, setSearch] = useState("");
+  // What the server searches: the box, settled for 350ms (no request per keystroke).
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const next = search.trim();
+      if (next === debouncedSearch) return;
+      // Same batch → one fetch: new term, back to page 1.
+      setDebouncedSearch(next);
+      setPage(1);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [search, debouncedSearch]);
+  // Bumped by the Reload button to refetch the same filters/page.
+  const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
     // Load active ingredients once for the dropdown.
@@ -81,8 +99,9 @@ export default function StockMovements() {
       type: type || null,
       from: range[0].toISOString(),
       to: range[1].toISOString(),
+      search: debouncedSearch || null,
     }),
-    [ingredientId, type, range]
+    [ingredientId, type, range, debouncedSearch]
   );
 
   useEffect(() => {
@@ -97,7 +116,7 @@ export default function StockMovements() {
       .catch(() => mounted && message.error("Failed to load movements"))
       .finally(() => mounted && setLoading(false));
     return () => { mounted = false; };
-  }, [filterArgs, page, pageSize]);
+  }, [filterArgs, page, pageSize, reloadToken]);
 
   const columns: ColumnsType<StockMovementDto> = [
     {
@@ -162,7 +181,7 @@ export default function StockMovements() {
   const outOnPage = rows.filter((r) => r.quantity < 0).length;
   const wasteOnPage = rows.filter((r) => r.type === "Waste").length;
   const rangeLabel = `${range[0].format("MMM D, YYYY")} – ${range[1].format("MMM D, YYYY")}`;
-  const filtersActive = ingredientId !== "all" || !!type;
+  const filtersActive = ingredientId !== "all" || !!type || !!debouncedSearch;
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-6 p-4 sm:p-6">
@@ -178,7 +197,7 @@ export default function StockMovements() {
         }
         actions={
           <Tooltip title="Reload">
-            <Button icon={<ReloadOutlined />} onClick={() => setPage((p) => p)} loading={loading} aria-label="Reload" />
+            <Button icon={<ReloadOutlined />} onClick={() => setReloadToken((t) => t + 1)} loading={loading} aria-label="Reload" />
           </Tooltip>
         }
       />
@@ -222,6 +241,15 @@ export default function StockMovements() {
       >
         {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 px-5 py-4 dark:border-white/[0.06]">
+          <Input
+            allowClear
+            prefix={<SearchOutlined className="text-gray-400" />}
+            placeholder="Search ingredient, reason, notes, reference…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full sm:w-72"
+            aria-label="Search movements"
+          />
           <Select
             showSearch
             optionFilterProp="label"
@@ -250,7 +278,7 @@ export default function StockMovements() {
           />
           <RangePicker
             value={range}
-            onChange={(v) => v && v[0] && v[1] && setRange([v[0], v[1]])}
+            onChange={(v) => { if (v && v[0] && v[1]) { setRange([v[0], v[1]]); setPage(1); } }}
             presets={[
               { label: "Today", value: [dayjs().startOf("day"), dayjs().endOf("day")] },
               { label: "Last 7 days", value: [dayjs().subtract(7, "day").startOf("day"), dayjs().endOf("day")] },

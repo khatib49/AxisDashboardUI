@@ -70,6 +70,8 @@ export async function listPurchases(opts: {
   to?: string | null;
   page?: number;
   pageSize?: number;
+  /** Free text: purchase #, supplier, invoice #, notes, created by, ingredient. */
+  search?: string | null;
 }): Promise<PagedPurchases> {
   const p = new URLSearchParams();
   if (opts.supplierId != null) p.append("supplierId", String(opts.supplierId));
@@ -78,6 +80,7 @@ export async function listPurchases(opts: {
   if (opts.to) p.append("to", opts.to);
   if (opts.page) p.append("page", String(opts.page));
   if (opts.pageSize) p.append("pageSize", String(opts.pageSize));
+  if (opts.search) p.append("search", opts.search);
   const qs = p.toString();
   return await get<PagedPurchases>(`/purchases${qs ? `?${qs}` : ""}`);
 }

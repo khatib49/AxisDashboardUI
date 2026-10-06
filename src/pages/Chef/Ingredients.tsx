@@ -124,6 +124,14 @@ export default function Ingredients() {
   // (after filtering) falls back to the last page.
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  // A new search or status filter starts from page 1 (React's "adjust state
+  // while rendering" pattern — no extra render pass through an effect).
+  const filterKey = `${status}|${search.trim().toLowerCase()}`;
+  const [pagedFor, setPagedFor] = useState(filterKey);
+  if (pagedFor !== filterKey) {
+    setPagedFor(filterKey);
+    setPage(1);
+  }
   const maxPage = Math.max(1, Math.ceil(filteredRows.length / pageSize));
   const currentPage = Math.min(page, maxPage);
   const pageRows = filteredRows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
