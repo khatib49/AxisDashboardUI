@@ -1,7 +1,30 @@
 import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
+import { Button, Skeleton } from 'antd';
+import {
+    BarChartOutlined,
+    CheckCircleOutlined,
+    ClockCircleOutlined,
+    FieldTimeOutlined,
+    ReloadOutlined,
+    ThunderboltOutlined,
+    TrophyOutlined,
+} from '@ant-design/icons';
 import { getKitchenStats, KitchenStatsDto } from '../../services/kitchenService';
 import PageMeta from '../../components/common/PageMeta';
-import Loader from '../../components/ui/Loader';
+import { PageHeader, Panel, StatTile } from '../../components/ui/PageKit';
+
+// Stage colours (status — always shown with a label and the number).
+const STAGES = [
+    { key: 'pendingOrders', label: 'Waiting', bar: 'bg-amber-500', chip: 'bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300' },
+    { key: 'inProgressOrders', label: 'Cooking', bar: 'bg-blue-500', chip: 'bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300' },
+    { key: 'readyOrders', label: 'Ready', bar: 'bg-emerald-500', chip: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300' },
+    { key: 'servedToday', label: 'Completed', bar: 'bg-violet-500', chip: 'bg-violet-50 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300' },
+] as const;
+
+function Accent({ cls, children }: { cls: string; children: ReactNode }) {
+    return <span className={`flex h-9 w-9 items-center justify-center rounded-xl text-base ${cls}`}>{children}</span>;
+}
 
 export default function KitchenStats() {
     const [stats, setStats] = useState<KitchenStatsDto | null>(null);
@@ -31,144 +54,121 @@ export default function KitchenStats() {
         return () => clearInterval(interval);
     }, []);
 
+    // Skeletons only on the first load; the 30s refresh keeps the figures on screen.
+    const firstLoad = loading && !stats;
+    const stageTotal = stats ? STAGES.reduce((s, st) => s + (Number(stats[st.key]) || 0), 0) : 0;
+    const avgPrep = stats?.averagePreparationTime;
+    const hasAvg = avgPrep !== null && avgPrep !== undefined;
+
     return (
         <>
             <PageMeta title="Kitchen Statistics - AXIS" description="Kitchen performance statistics" />
-            <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                    <h1 className="text-2xl font-semibold">Kitchen Statistics</h1>
-                    <button
-                        onClick={loadStats}
-                        className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-                    >
-                        Refresh
-                    </button>
-                </div>
+            <div className="space-y-5 p-4 sm:p-6">
+                <PageHeader
+                    icon={<BarChartOutlined />}
+                    title="Kitchen Statistics"
+                    description="Kitchen performance statistics — refreshes every 30 seconds."
+                    actions={
+                        <Button size="large" icon={<ReloadOutlined spin={loading} />} onClick={loadStats}>
+                            Refresh
+                        </Button>
+                    }
+                />
 
                 {error && (
-                    <div className="mb-4 text-red-600 bg-red-50 p-4 rounded-lg">
+                    <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300">
                         {error}
                     </div>
                 )}
 
-                {loading ? (
-                    <div className="flex justify-center py-20">
-                        <Loader />
-                    </div>
-                ) : stats ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {/* Pending Orders */}
-                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-yellow-500">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">Pending Orders</p>
-                                    <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
-                                        {stats.pendingOrders}
-                                    </p>
-                                </div>
-                                <div className="bg-yellow-100 dark:bg-yellow-900/30 rounded-full p-3">
-                                    <svg className="w-8 h-8 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </div>
-                            </div>
+                {firstLoad || stats ? (
+                    <>
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                            <StatTile
+                                label="Pending Orders"
+                                loading={firstLoad}
+                                value={<span className="tabular-nums">{stats?.pendingOrders}</span>}
+                                accent={<Accent cls={STAGES[0].chip}><ClockCircleOutlined /></Accent>}
+                            />
+                            <StatTile
+                                label="In Progress"
+                                loading={firstLoad}
+                                value={<span className="tabular-nums">{stats?.inProgressOrders}</span>}
+                                accent={<Accent cls={STAGES[1].chip}><ThunderboltOutlined /></Accent>}
+                            />
+                            <StatTile
+                                label="Ready for Pickup"
+                                loading={firstLoad}
+                                value={<span className="tabular-nums">{stats?.readyOrders}</span>}
+                                accent={<Accent cls={STAGES[2].chip}><CheckCircleOutlined /></Accent>}
+                            />
+                            <StatTile
+                                label="Served Today"
+                                loading={firstLoad}
+                                value={<span className="tabular-nums">{stats?.servedToday}</span>}
+                                accent={<Accent cls={STAGES[3].chip}><TrophyOutlined /></Accent>}
+                            />
                         </div>
 
-                        {/* In Progress Orders */}
-                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-blue-500">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">In Progress</p>
-                                    <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
-                                        {stats.inProgressOrders}
-                                    </p>
-                                </div>
-                                <div className="bg-blue-100 dark:bg-blue-900/30 rounded-full p-3">
-                                    <svg className="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
+                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                            {/* Quick Summary */}
+                            <Panel
+                                title="Quick Summary"
+                                subtitle="Orders by stage"
+                                className={hasAvg ? 'lg:col-span-2' : 'lg:col-span-3'}
+                            >
+                                {!stats ? (
+                                    <Skeleton active paragraph={{ rows: 2 }} />
+                                ) : (
+                                    <>
+                                        <div
+                                            className="flex h-4 w-full gap-[2px] overflow-hidden rounded-full bg-gray-100 dark:bg-white/[0.06]"
+                                            role="img"
+                                            aria-label={STAGES.map(st => `${st.label} ${stats[st.key]}`).join(', ')}
+                                        >
+                                            {stageTotal > 0 && STAGES.map(st => {
+                                                const n = Number(stats[st.key]) || 0;
+                                                if (n <= 0) return null;
+                                                return (
+                                                    <div
+                                                        key={st.key}
+                                                        className={`h-full ${st.bar} hover:opacity-80`}
+                                                        style={{ width: `${(n / stageTotal) * 100}%` }}
+                                                        title={`${st.label}: ${n}`}
+                                                    />
+                                                );
+                                            })}
+                                        </div>
+                                        <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
+                                            {STAGES.map(st => (
+                                                <div key={st.key} className="rounded-xl border border-gray-100 px-4 py-3 dark:border-white/[0.06]">
+                                                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                                        <span className={`h-2.5 w-2.5 rounded-full ${st.bar}`} aria-hidden />
+                                                        {st.label}
+                                                    </div>
+                                                    <div className="mt-1 text-2xl font-semibold tabular-nums text-gray-900 dark:text-white">
+                                                        {stats[st.key]}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
+                            </Panel>
 
-                        {/* Ready Orders */}
-                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-green-500">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">Ready for Pickup</p>
-                                    <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
-                                        {stats.readyOrders}
-                                    </p>
-                                </div>
-                                <div className="bg-green-100 dark:bg-green-900/30 rounded-full p-3">
-                                    <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Served Today */}
-                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-purple-500">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">Served Today</p>
-                                    <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
-                                        {stats.servedToday}
-                                    </p>
-                                </div>
-                                <div className="bg-purple-100 dark:bg-purple-900/30 rounded-full p-3">
-                                    <svg className="w-8 h-8 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Average Preparation Time */}
-                        {stats.averagePreparationTime !== null && stats.averagePreparationTime !== undefined && (
-                            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-indigo-500 md:col-span-2 lg:col-span-4">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">Average Preparation Time</p>
-                                        <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
-                                            {Math.round(stats.averagePreparationTime)} minutes
-                                        </p>
+                            {/* Average Preparation Time */}
+                            {hasAvg && (
+                                <Panel title="Average Preparation Time" bodyClassName="flex items-center gap-4 p-5">
+                                    <Accent cls="bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300"><FieldTimeOutlined /></Accent>
+                                    <div className="text-[32px] font-semibold leading-tight tracking-tight tabular-nums text-gray-900 dark:text-white">
+                                        {Math.round(avgPrep)} minutes
                                     </div>
-                                    <div className="bg-indigo-100 dark:bg-indigo-900/30 rounded-full p-3">
-                                        <svg className="w-8 h-8 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                                        </svg>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Summary Card */}
-                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 rounded-lg shadow p-6 md:col-span-2 lg:col-span-4">
-                            <h2 className="text-xl font-semibold mb-4">Quick Summary</h2>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                                <div>
-                                    <p className="text-2xl font-bold text-yellow-600">{stats.pendingOrders}</p>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">Waiting</p>
-                                </div>
-                                <div>
-                                    <p className="text-2xl font-bold text-blue-600">{stats.inProgressOrders}</p>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">Cooking</p>
-                                </div>
-                                <div>
-                                    <p className="text-2xl font-bold text-green-600">{stats.readyOrders}</p>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">Ready</p>
-                                </div>
-                                <div>
-                                    <p className="text-2xl font-bold text-purple-600">{stats.servedToday}</p>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">Completed</p>
-                                </div>
-                            </div>
+                                </Panel>
+                            )}
                         </div>
-                    </div>
+                    </>
                 ) : (
-                    <div className="text-center py-10 text-gray-500">
+                    <div className="rounded-2xl border border-gray-200/80 bg-white py-10 text-center text-gray-500 dark:border-white/[0.06] dark:bg-white/[0.03] dark:text-gray-400">
                         No statistics available
                     </div>
                 )}

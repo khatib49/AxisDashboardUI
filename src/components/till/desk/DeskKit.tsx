@@ -87,15 +87,16 @@ const COUNT_TONE = {
 } as const;
 
 /** Compact counter tile: big number over a small label. */
-export function CountTile({ label, value, tone = "gray", highlight }: {
+export function CountTile({ label, value, tone = "gray", highlight, className = "" }: {
     label: ReactNode;
     value: ReactNode;
     tone?: keyof typeof COUNT_TONE;
     /** Draws a stronger ring (e.g. when there are new orders waiting). */
     highlight?: boolean;
+    className?: string;
 }) {
     return (
-        <div className={`min-w-[84px] rounded-xl px-3 py-2 text-center ring-1 ${COUNT_TONE[tone]} ${highlight ? "ring-2" : ""}`}>
+        <div className={`rounded-xl px-2 py-2 text-center ring-1 ${COUNT_TONE[tone]} ${highlight ? "ring-2" : ""} ${className}`}>
             <div className="text-xl font-bold leading-tight tabular-nums">{value}</div>
             <div className="text-[10px] font-medium uppercase tracking-wide opacity-80">{label}</div>
         </div>

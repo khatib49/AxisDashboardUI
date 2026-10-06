@@ -21,6 +21,9 @@ import AttachClientModal from '../GameCashier/AttachClientModal';
 import PaymentChoiceModal from '../../components/wallet/PaymentChoiceModal';
 import ItemAddOnsPanel, { addOnsTotal } from '../../components/items/ItemAddOnsPanel';
 import ItemVariantPicker, { variantPickTotal, variantDeltaTotal } from '../../components/items/ItemVariantPicker';
+import OpenInvoiceCard from '../../components/till/invoices/OpenInvoiceCard';
+import InvoiceDetailPanel from '../../components/till/invoices/InvoiceDetailPanel';
+import { money, useIsDesktop, useNow } from '../../components/till/invoices/invoiceUtils';
 
 const OpenInvoices: React.FC = () => {
     const [editingSetInvoiceId, setEditingSetInvoiceId] = useState<number | null>(null);
@@ -50,6 +53,12 @@ const [, setLoadingSets] = useState(false);
 
     // Selected invoice for adding items
     const [selectedInvoice, setSelectedInvoice] = useState<OpenInvoiceDto | null>(null);
+
+    // UI only: which invoice the detail panel shows, a minute-level clock for
+    // the age labels, and whether the detail sits beside the list (lg+).
+    const [activeInvoiceId, setActiveInvoiceId] = useState<number | null>(null);
+    const now = useNow(30000);
+    const isDesktop = useIsDesktop();
 
     // Items selection state
     const [items, setItems] = useState<ItemDto[]>([]);
@@ -509,70 +518,153 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
         );
     })();
 
+    // Which invoice the detail panel shows. Desktop falls back to the first
+    // visible invoice so its actions are always on screen; on smaller screens
+    // the detail opens inline under the tapped card.
+    const detailInvoice = isDesktop
+        ? (visibleInvoices.find((inv) => inv.id === activeInvoiceId) ?? visibleInvoices[0] ?? null)
+        : (visibleInvoices.find((inv) => inv.id === activeInvoiceId) ?? null);
+    const openTotal = openInvoices.reduce((s, inv) => s + (inv.totalPrice || 0), 0);
+    const firstLoad = loading && openInvoices.length === 0;
+
+    const renderDetail = (invoice: OpenInvoiceDto, onBack?: () => void) => (
+        <InvoiceDetailPanel
+            invoice={invoice}
+            now={now}
+            onBack={onBack}
+            onEditClient={() => setClientModalInvoice(invoice)}
+            sets={sets}
+            editingSet={editingSetInvoiceId === invoice.id}
+            editSetValue={editSetValue}
+            onStartEditSet={() => {
+                setEditingSetInvoiceId(invoice.id);
+                setEditSetValue(invoice.setId || null);
+            }}
+            onChangeSetValue={(v: string | number) => setEditSetValue(v === '' ? null : Number(v))}
+            onSaveSet={() => handleUpdateSet(invoice.id, editSetValue)}
+            onCancelSet={() => {
+                setEditingSetInvoiceId(null);
+                setEditSetValue(null);
+            }}
+            discounts={discounts}
+            editingDiscount={editingDiscountInvoiceId === invoice.id}
+            savingDiscount={savingDiscountId === invoice.id}
+            onStartEditDiscount={() => setEditingDiscountInvoiceId(invoice.id)}
+            onPickDiscount={(v) =>
+                handleApplyDiscount(invoice.id, v === '' ? null : Number(v))
+            }
+            onCancelDiscount={() => setEditingDiscountInvoiceId(null)}
+            closing={closingInvoiceId === invoice.id}
+            onAddItems={() => {
+                setSelectedInvoice(invoice);
+                setIsAddItemsModalOpen(true);
+            }}
+            onPrint={() => handlePrintInvoice(invoice)}
+            onPay={() => setPayingInvoice(invoice)}
+        />
+    );
+
+    const closeAddItemsModal = () => {
+        setIsAddItemsModalOpen(false);
+        setSelectedInvoice(null);
+        setSelectedItems({}); setSelectedAddOns({}); setSelectedVariants({});
+        setPage(1);
+        setSearch('');
+        setSelectedCategory(null);
+    };
+
     return (
-        <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-semibold">Open Invoices</h1>
-                <div className="flex items-center gap-2">
-                <div className="relative">
-                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" strokeLinecap="round" />
+        <div className="space-y-4 p-4 sm:p-6">
+            {/* Slim header — title, counts, search, refresh */}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-600 text-white shadow-lg shadow-orange-600/25">
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                     </span>
-                    <input
-                        value={invoiceSearch}
-                        onChange={(e) => setInvoiceSearch(e.target.value)}
-                        placeholder="Client, invoice #, item…"
-                        className="h-10 w-64 rounded-lg border border-gray-200 bg-white pl-9 pr-8 text-sm shadow-sm placeholder:text-gray-400 focus:border-orange-400 focus:outline-none focus:ring-4 focus:ring-orange-500/10"
-                    />
-                    {invoiceSearch && (
-                        <button
-                            type="button"
-                            onClick={() => setInvoiceSearch('')}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100"
-                            aria-label="Clear search"
-                        >
-                            ×
-                        </button>
-                    )}
+                    <div className="min-w-0">
+                        <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">Open Invoices</h1>
+                        <p className="text-sm text-gray-500 tabular-nums dark:text-gray-400">
+                            {firstLoad
+                                ? 'Loading…'
+                                : `${openInvoices.length} open · ${money(openTotal)}`}
+                        </p>
+                    </div>
                 </div>
-                <button
-                    onClick={loadOpenInvoices}
-                    className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition flex items-center gap-2"
-                >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                <div className="flex w-full items-center gap-2 sm:w-auto">
+                    <div className="relative min-w-0 flex-1 sm:flex-none">
+                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                                <circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" strokeLinecap="round" />
+                            </svg>
+                        </span>
+                        <input
+                            value={invoiceSearch}
+                            onChange={(e) => setInvoiceSearch(e.target.value)}
+                            placeholder="Client, invoice #, item…"
+                            aria-label="Search open invoices"
+                            className="h-12 w-full rounded-xl border border-gray-200 bg-white pl-10 pr-12 text-base shadow-sm placeholder:text-gray-400 focus:border-orange-400 focus:outline-none focus:ring-4 focus:ring-orange-500/10 dark:border-white/10 dark:bg-white/[0.03] dark:text-white dark:placeholder:text-gray-500 sm:w-72"
                         />
-                    </svg>
-                    Refresh
-                </button>
+                        {invoiceSearch && (
+                            <button
+                                type="button"
+                                onClick={() => setInvoiceSearch('')}
+                                className="absolute right-1 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg text-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/5 dark:hover:text-gray-200"
+                                aria-label="Clear search"
+                            >
+                                ×
+                            </button>
+                        )}
+                    </div>
+                    <button
+                        onClick={loadOpenInvoices}
+                        className="flex h-12 shrink-0 items-center gap-2 rounded-xl bg-orange-600 px-4 text-base font-semibold text-white shadow-sm transition hover:bg-orange-700"
+                    >
+                        <svg className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                            />
+                        </svg>
+                        Refresh
+                    </button>
                 </div>
             </div>
 
-            {loading && (
-                <div className="flex items-center justify-center py-20">
-                    <Loader />
+            {/* First load — skeleton cards at the real card size */}
+            {firstLoad && (
+                <div className="@container" aria-busy="true" aria-label="Loading open invoices">
+                    <div className="grid grid-cols-1 gap-3 @lg:grid-cols-2 @3xl:grid-cols-3 @6xl:grid-cols-4">
+                        {Array.from({ length: 6 }).map((_, i) => (
+                            <div key={i} className="h-[214px] animate-pulse rounded-2xl border border-gray-200/80 bg-white p-4 dark:border-white/[0.06] dark:bg-white/[0.03]">
+                                <div className="h-4 w-16 rounded bg-gray-100 dark:bg-white/10" />
+                                <div className="mt-4 h-5 w-32 rounded bg-gray-100 dark:bg-white/10" />
+                                <div className="mt-2 h-4 w-24 rounded bg-gray-100 dark:bg-white/10" />
+                                <div className="mt-6 ml-auto h-8 w-28 rounded bg-gray-100 dark:bg-white/10" />
+                                <div className="mt-5 h-12 rounded-xl bg-gray-100 dark:bg-white/10" />
+                            </div>
+                        ))}
+                    </div>
                 </div>
             )}
 
             {error && !loading && (
-                <div className="text-red-600 bg-red-50 p-4 rounded-lg border border-red-200">
+                <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300">
                     {error}
                 </div>
             )}
 
             {!loading && !error && openInvoices.length === 0 && (
-                <div className="text-center py-20 text-gray-500">
+                <div className="rounded-2xl border border-dashed border-gray-200 py-20 text-center text-gray-500 dark:border-white/10 dark:text-gray-400">
                     <svg
-                        className="w-16 h-16 mx-auto mb-4 text-gray-400"
+                        className="mx-auto mb-4 h-16 w-16 text-gray-300 dark:text-gray-600"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
+                        aria-hidden="true"
                     >
                         <path
                             strokeLinecap="round"
@@ -581,334 +673,79 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                         />
                     </svg>
-                    <p className="text-lg font-medium">No open invoices</p>
-                    <p className="text-sm mt-1">All invoices have been closed</p>
+                    <p className="text-lg font-medium text-gray-700 dark:text-gray-200">No open invoices</p>
+                    <p className="mt-1 text-sm">All invoices have been closed</p>
                 </div>
             )}
 
-            {!loading && !error && openInvoices.length > 0 && visibleInvoices.length === 0 && (
-                <div className="text-center py-16 text-gray-500">
-                    <div className="text-3xl mb-2">🔍</div>
-                    <p className="text-lg font-medium">No invoice matches “{invoiceSearch}”</p>
-                    <p className="text-sm mt-1">Try the client's name, the invoice number, or an item on it.</p>
-                </div>
-            )}
-
-            {!loading && !error && visibleInvoices.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {visibleInvoices.map((invoice) => (
-                     <div
-                key={invoice.id}
-                className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-orange-200 hover:border-orange-400"
-            >
-                <div className="bg-gradient-to-r from-orange-600 to-orange-700 p-4 text-white">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold">Invoice #{invoice.id}</h3>
-                        <span className="px-3 py-1 bg-white/20 rounded-full text-xs font-medium">
-                            OPEN
-                        </span>
-                    </div>
-                </div>
-
-                <div className="p-4 space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600">Created:</span>
-                        <span className="font-medium text-gray-900">
-                            {new Date(invoice.createdOn).toLocaleDateString()}
-                        </span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600">Time:</span>
-                        <span className="font-medium text-gray-900">
-                            {new Date(invoice.createdOn).toLocaleTimeString()}
-                        </span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600">Created By:</span>
-                        <span
-                            className="font-medium text-gray-900 text-xs truncate max-w-[150px]"
-                            title={invoice.createdBy}
-                        >
-                            {invoice.createdBy}
-                        </span>
-                    </div>
-
-                    {/* Client — always visible so a missing one can be attached
-                        right here, not only at order creation. */}
-                    <div className="flex items-center justify-between text-sm bg-blue-50 p-2 rounded">
-                        <span className="text-blue-600 font-medium">Client:</span>
-                        <button
-                            type="button"
-                            onClick={() => setClientModalInvoice(invoice)}
-                            className="group inline-flex items-center gap-1.5"
-                            title={invoice.userName || 'Attach a client'}
-                        >
-                            {invoice.userName ? (
-                                <span className="font-semibold text-blue-900 truncate max-w-[150px]">
-                                    {invoice.userName}
-                                </span>
-                            ) : (
-                                <span className="text-blue-400 group-hover:text-blue-600">+ Add client</span>
-                            )}
-                            <svg className="w-3.5 h-3.5 text-blue-400 group-hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                            </svg>
-                        </button>
-                    </div>
-
-                    <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600">Items:</span>
-                        <span className="font-medium text-gray-900">
-                            {invoice.items?.length || 0}
-                        </span>
-                    </div>
-
-                      {/* SET NUMBER - NEW */}
-<div className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded">
-    <span className="text-gray-600 font-medium">Set/Table:</span>
-    {editingSetInvoiceId === invoice.id ? (
-        <div className="flex items-center gap-2">
-            <Select
-                options={[
-                    { value: '', label: 'No Set' },
-                    ...sets.map(s => ({
-                        value: s.id,
-                        label: s.name
-                    }))
-                ]}
-                defaultValue={editSetValue ?? ''}
-                onChange={(v: string | number) => setEditSetValue(v === '' ? null : Number(v))}
-                className="w-32"
-            />
-            <button
-                onClick={() => handleUpdateSet(invoice.id, editSetValue)}
-                className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
-            >
-                ✓
-            </button>
-            <button
-                onClick={() => {
-                    setEditingSetInvoiceId(null);
-                    setEditSetValue(null);
-                }}
-                className="px-2 py-1 bg-gray-400 text-white rounded text-xs hover:bg-gray-500"
-            >
-                ✕
-            </button>
-        </div>
-    ) : (
-        <div className="flex items-center gap-2">
-            <span className="font-semibold text-gray-900">
-                {invoice.set || 'Not Assigned'}
-            </span>
-            <button
-                onClick={() => {
-                    setEditingSetInvoiceId(invoice.id);
-                    setEditSetValue(invoice.setId || null);
-                }}
-                className="text-blue-600 hover:text-blue-800 text-xs"
-            >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                </svg>
-            </button>
-        </div>
-    )}
-</div>
-
-                    {/* Discount — editable while the invoice is still open.
-                        The server recalculates the total, so we just reload. */}
-                    <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600">Discount:</span>
-                        {editingDiscountInvoiceId === invoice.id ? (
-                            <div className="flex items-center gap-2">
-                                <Select
-                                    options={[
-                                        { value: '', label: 'No discount' },
-                                        ...discounts.map((d) => ({
-                                            value: d.id,
-                                            label: `${d.name} — ${d.percentage}%`,
-                                        })),
-                                    ]}
-                                    defaultValue={invoice.discountId ?? ''}
-                                    isPlaceHolderDisabled={false}
-                                    placeholder="No discount"
-                                    className="w-48"
-                                    onChange={(v) =>
-                                        handleApplyDiscount(invoice.id, v === '' ? null : Number(v))
-                                    }
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setEditingDiscountInvoiceId(null)}
-                                    className="text-xs text-gray-500 hover:text-gray-700"
-                                >
-                                    Cancel
-                                </button>
+            {/* List + detail. While a reload is in flight the list stays in
+                place (no layout jump) but is dimmed and not tappable, so a
+                just-paid invoice can't be acted on again. */}
+            {!firstLoad && !error && openInvoices.length > 0 && (
+                <div
+                    aria-busy={loading}
+                    className={`grid gap-5 lg:grid-cols-[minmax(0,1fr)_400px] xl:grid-cols-[minmax(0,1fr)_440px] ${loading ? 'pointer-events-none opacity-60' : ''}`}
+                >
+                    <div className="@container min-w-0">
+                        {visibleInvoices.length === 0 ? (
+                            <div className="rounded-2xl border border-dashed border-gray-200 py-16 text-center text-gray-500 dark:border-white/10 dark:text-gray-400">
+                                <div className="mb-2 text-3xl">🔍</div>
+                                <p className="text-lg font-medium text-gray-700 dark:text-gray-200">No invoice matches “{invoiceSearch}”</p>
+                                <p className="mt-1 text-sm">Try the client's name, the invoice number, or an item on it.</p>
                             </div>
                         ) : (
-                            <button
-                                type="button"
-                                onClick={() => setEditingDiscountInvoiceId(invoice.id)}
-                                disabled={savingDiscountId === invoice.id}
-                                className="group inline-flex items-center gap-1.5 font-medium text-green-600 hover:text-green-700 disabled:opacity-50"
-                            >
-                                {savingDiscountId === invoice.id
-                                    ? 'Saving…'
-                                    : invoice.discountName
-                                        ? `${invoice.discountName}${invoice.discountPercentage ? ` (${invoice.discountPercentage}%)` : ''}`
-                                        : <span className="text-gray-400 group-hover:text-gray-600">Add discount</span>}
-                                <svg className="w-3.5 h-3.5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                </svg>
-                            </button>
+                            <div className="grid grid-cols-1 gap-3 @lg:grid-cols-2 @3xl:grid-cols-3 @6xl:grid-cols-4">
+                                {visibleInvoices.map((invoice) => {
+                                    const isSelected = detailInvoice?.id === invoice.id;
+                                    return (
+                                        <React.Fragment key={invoice.id}>
+                                            <OpenInvoiceCard
+                                                invoice={invoice}
+                                                now={now}
+                                                selected={isSelected}
+                                                closing={closingInvoiceId === invoice.id}
+                                                onSelect={() =>
+                                                    setActiveInvoiceId(!isDesktop && isSelected ? null : invoice.id)
+                                                }
+                                                onPay={() => setPayingInvoice(invoice)}
+                                            />
+                                            {!isDesktop && isSelected && (
+                                                <div className="col-span-full">
+                                                    {renderDetail(invoice, () => setActiveInvoiceId(null))}
+                                                </div>
+                                            )}
+                                        </React.Fragment>
+                                    );
+                                })}
+                            </div>
                         )}
                     </div>
 
-                    {/* Items Preview */}
-                    <div className="border-t border-gray-200 pt-3">
-                        <p className="text-xs font-medium text-gray-600 mb-2">
-                            Items in Invoice:
-                        </p>
-                        <div className="space-y-1 max-h-32 overflow-y-auto">
-                            {invoice.items?.map((item) => (
-                                <div key={item.itemId}>
-                                    <div className="flex justify-between text-xs">
-                                        <span className="text-gray-700 truncate max-w-[150px]">
-                                            {item.itemName}{item.isIncluded ? ' 🎟' : ''}
-                                        </span>
-                                        <span className="text-gray-600">
-                                            {item.quantity} × ${item.price.toFixed(2)}
-                                        </span>
-                                    </div>
-                                    {(item.variants ?? []).length > 0 && (
-                                        <div className="text-[11px] text-indigo-600 pl-3">
-                                            {(item.variants ?? []).map(v => `${v.quantity}× ${v.name}`).join(', ')}
-                                        </div>
-                                    )}
-                                    {(item.addOns ?? []).map((a) => (
-                                        <div key={a.addOnId} className="flex justify-between text-[11px] text-indigo-600 pl-3">
-                                            <span>+ {a.quantity}x {a.name}</span>
-                                            <span>${a.lineTotal.toFixed(2)}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200">
-                        <span className="text-gray-600">Total:</span>
-                        <span className="font-bold text-lg text-orange-600">
-                            ${invoice.totalPrice.toFixed(2)}
-                        </span>
-                    </div>
-
-                    {/* ACTION BUTTONS - UPDATED WITH PRINT */}
-                    <div className="grid grid-cols-3 gap-2 mt-4">
-                        {/* Add Items Button */}
-                        <button
-                            onClick={() => {
-                                setSelectedInvoice(invoice);
-                                setIsAddItemsModalOpen(true);
-                            }}
-                            className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-1 shadow-md hover:shadow-lg text-sm"
-                        >
-                            <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                                />
-                            </svg>
-                            Add
-                        </button>
-
-                        {/* Print Button - NEW */}
-                        <button
-                            onClick={() => handlePrintInvoice(invoice)}
-                            className="px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-1 shadow-md hover:shadow-lg text-sm"
-                        >
-                            <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
-                                />
-                            </svg>
-                            Print
-                        </button>
-
-                        {/* Close & Pay Button */}
-                        <button
-                            onClick={() => setPayingInvoice(invoice)}
-                            disabled={closingInvoiceId === invoice.id}
-                            className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg text-sm"
-                        >
-                            {closingInvoiceId === invoice.id ? (
-                                <>
-                                    <Loader size={14} />
-                                </>
+                    {isDesktop && (
+                        <aside className="min-w-0 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:self-start lg:overflow-y-auto">
+                            {detailInvoice ? (
+                                renderDetail(detailInvoice)
                             ) : (
-                                <>
-                                    <svg
-                                        className="w-4 h-4"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                        />
-                                    </svg>
-                                    Pay
-                                </>
+                                <div className="rounded-2xl border border-dashed border-gray-200 p-8 text-center text-sm text-gray-500 dark:border-white/10 dark:text-gray-400">
+                                    Select an invoice to see its items
+                                </div>
                             )}
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-
-                    ))}
+                        </aside>
+                    )}
                 </div>
             )}
 
             {/* Add Items Modal */}
             <Modal
                 isOpen={isAddItemsModalOpen}
-                onClose={() => {
-                    setIsAddItemsModalOpen(false);
-                    setSelectedInvoice(null);
-                    setSelectedItems({}); setSelectedAddOns({}); setSelectedVariants({});
-                    setPage(1);
-                    setSearch('');
-                    setSelectedCategory(null);
-                }}
+                onClose={closeAddItemsModal}
                 title={`Add Items to Invoice #${selectedInvoice?.id || ''}`}
             >
                 <div className="space-y-4">
                     {/* Filters */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                         <div className="flex-1">
-                            <label className="text-sm text-gray-600 mb-1 block">Category</label>
+                            <label className="mb-1 block text-sm text-gray-600 dark:text-gray-400">Category</label>
                             <Select
                                 options={[
                                     { value: '', label: 'All Categories' },
@@ -922,7 +759,7 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                             />
                         </div>
                         <div className="flex-1">
-                            <label className="text-sm text-gray-600 mb-1 block">Search</label>
+                            <label className="mb-1 block text-sm text-gray-600 dark:text-gray-400">Search</label>
                             <Input
                                 placeholder="Search items..."
                                 value={search}
@@ -936,19 +773,20 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
 
                     {/* Selected Items Summary */}
                     {selectedItemsCount > 0 && (
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                            <div className="flex items-center justify-between">
+                        <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 dark:border-blue-500/20 dark:bg-blue-500/10">
+                            <div className="flex items-center justify-between gap-3">
                                 <div>
-                                    <p className="text-sm font-medium text-blue-800">
+                                    <p className="text-sm font-semibold text-blue-800 tabular-nums dark:text-blue-200">
                                         {selectedItemsCount} item(s) selected
                                     </p>
-                                    <p className="text-xs text-blue-600">
+                                    <p className="text-base font-semibold text-blue-700 tabular-nums dark:text-blue-300">
                                         Subtotal: ${selectedItemsTotal.toFixed(2)}
                                     </p>
                                 </div>
                                 <button
+                                    type="button"
                                     onClick={() => { setSelectedItems({}); setSelectedAddOns({}); setSelectedVariants({}); }}
-                                    className="text-sm text-blue-600 hover:text-blue-800"
+                                    className="min-h-[44px] rounded-lg px-3 text-sm font-medium text-blue-600 hover:bg-blue-100 hover:text-blue-800 dark:text-blue-300 dark:hover:bg-blue-500/10"
                                 >
                                     Clear All
                                 </button>
@@ -964,29 +802,29 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                     )}
 
                     {!loadingItems && items.length === 0 && (
-                        <div className="text-center py-10 text-gray-500">
+                        <div className="py-10 text-center text-gray-500 dark:text-gray-400">
                             <p>No items found</p>
                         </div>
                     )}
 
                     {!loadingItems && items.length > 0 && (
                         <>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                            <div className="grid max-h-96 grid-cols-1 gap-3 overflow-y-auto min-[420px]:grid-cols-2 md:grid-cols-3">
                                 {items.map((item) => {
                                     const isOutOfStock = item.quantity <= 0;
                                     const selected = selectedItems[String(item.id)] || 0;
                                     return (
                                         <div
                                             key={item.id}
-                                            className={`border rounded p-3 bg-white ${
+                                            className={`rounded-xl border bg-white p-3 dark:bg-white/[0.03] ${
                                                 selected > 0
-                                                    ? 'border-blue-500 ring-2 ring-blue-100'
+                                                    ? 'border-blue-500 ring-2 ring-blue-100 dark:ring-blue-500/20'
                                                     : isOutOfStock
-                                                    ? 'border-red-200'
-                                                    : 'border-gray-200'
+                                                    ? 'border-red-200 dark:border-red-500/30'
+                                                    : 'border-gray-200 dark:border-white/10'
                                             }`}
                                         >
-                                            <div className="flex items-center gap-2 mb-2">
+                                            <div className="mb-2 flex items-center gap-2">
                                                 <img
                                                     src={
                                                         item.imagePath
@@ -994,26 +832,26 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                                                             : '/images/image-placeholder.svg'
                                                     }
                                                     alt={item.name}
-                                                    className="w-12 h-12 object-cover rounded"
+                                                    className="h-12 w-12 rounded-lg object-cover"
                                                     onError={(e) => {
                                                         (e.currentTarget as HTMLImageElement).src =
                                                             '/images/image-placeholder.svg';
                                                     }}
                                                 />
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="font-medium text-sm text-gray-800 truncate">
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="truncate text-sm font-semibold text-gray-800 dark:text-gray-100">
                                                         {item.name}
                                                     </div>
-                                                    <div className="text-xs text-gray-500">
+                                                    <div className="text-sm text-gray-500 tabular-nums dark:text-gray-400">
                                                         ${item.price}
                                                     </div>
                                                 </div>
                                             </div>
                                             <div
-                                                className={`text-xs mb-2 ${
+                                                className={`mb-2 text-xs ${
                                                     isOutOfStock
-                                                        ? 'text-red-600 font-medium'
-                                                        : 'text-gray-500'
+                                                        ? 'font-medium text-red-600 dark:text-red-400'
+                                                        : 'text-gray-500 dark:text-gray-400'
                                                 }`}
                                             >
                                                 Stock: {item.quantity}{' '}
@@ -1029,9 +867,11 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                                                     dense
                                                 />
                                             ) : (
-                                            <div className="flex items-center gap-1">
+                                            <div className="flex items-center gap-1.5">
                                                 <button
-                                                    className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                                                    type="button"
+                                                    aria-label={`Remove one ${item.name}`}
+                                                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-xl font-semibold text-gray-800 hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-white/10 dark:text-gray-100 dark:hover:bg-white/15"
                                                     disabled={selected === 0}
                                                     onClick={() => {
                                                         setSelectedItems((s) => {
@@ -1048,13 +888,15 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                                                         }
                                                     }}
                                                 >
-                                                    -
+                                                    −
                                                 </button>
-                                                <div className="px-3 py-1 border rounded text-sm min-w-[40px] text-center">
+                                                <div className="flex h-11 min-w-[44px] flex-1 items-center justify-center rounded-xl border border-gray-200 text-lg font-bold text-gray-900 tabular-nums dark:border-white/10 dark:text-white">
                                                     {selected}
                                                 </div>
                                                 <button
-                                                    className="px-2 py-1 bg-gray-200 rounded text-sm"
+                                                    type="button"
+                                                    aria-label={`Add one ${item.name}`}
+                                                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-xl font-semibold text-white hover:bg-blue-700"
                                                     onClick={() =>
                                                         setSelectedItems((s) => {
                                                             const key = String(item.id);
@@ -1089,20 +931,22 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                             </div>
 
                             {/* Pagination */}
-                            <div className="flex items-center justify-between pt-3 border-t">
-                                <div className="text-sm text-gray-600">
+                            <div className="flex items-center justify-between gap-3 border-t border-gray-100 pt-3 dark:border-white/[0.06]">
+                                <div className="text-sm text-gray-600 tabular-nums dark:text-gray-400">
                                     Page {page} — {total} items
                                 </div>
-                                <div className="space-x-2">
+                                <div className="flex gap-2">
                                     <button
-                                        className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50 text-sm"
+                                        type="button"
+                                        className="h-11 rounded-xl bg-gray-100 px-4 text-sm font-medium text-gray-800 hover:bg-gray-200 disabled:opacity-50 dark:bg-white/10 dark:text-gray-100 dark:hover:bg-white/15"
                                         disabled={page <= 1}
                                         onClick={() => setPage((p) => Math.max(1, p - 1))}
                                     >
                                         Prev
                                     </button>
                                     <button
-                                        className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50 text-sm"
+                                        type="button"
+                                        className="h-11 rounded-xl bg-gray-100 px-4 text-sm font-medium text-gray-800 hover:bg-gray-200 disabled:opacity-50 dark:bg-white/10 dark:text-gray-100 dark:hover:bg-white/15"
                                         disabled={page >= Math.max(1, Math.ceil(total / pageSize))}
                                         onClick={() => setPage((p) => p + 1)}
                                     >
@@ -1114,22 +958,17 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                     )}
 
                     {/* Action Buttons */}
-                    <div className="flex items-center gap-2 pt-4 border-t">
+                    <div className="flex items-center gap-2 border-t border-gray-100 pt-4 dark:border-white/[0.06]">
                         <button
-                            className="flex-1 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition"
-                            onClick={() => {
-                                setIsAddItemsModalOpen(false);
-                                setSelectedInvoice(null);
-                                setSelectedItems({}); setSelectedAddOns({}); setSelectedVariants({});
-                                setPage(1);
-                                setSearch('');
-                                setSelectedCategory(null);
-                            }}
+                            type="button"
+                            className="h-12 flex-1 rounded-xl bg-gray-100 px-4 font-semibold text-gray-800 transition hover:bg-gray-200 dark:bg-white/10 dark:text-gray-100 dark:hover:bg-white/15"
+                            onClick={closeAddItemsModal}
                         >
                             Cancel
                         </button>
                         <button
-                            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            type="button"
+                            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                             disabled={submitting || selectedItemsCount === 0}
                             onClick={handleAddItems}
                         >
@@ -1198,9 +1037,9 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
             )}
 
             {/* Toast Notifications */}
-            <div className="fixed bottom-6 right-6 z-50">
+            <div className="pointer-events-none fixed bottom-4 left-4 right-4 z-50 sm:bottom-6 sm:left-auto sm:right-6">
                 {notification && (
-                    <div className="max-w-sm">
+                    <div className="pointer-events-auto ml-auto max-w-sm">
                         <Alert
                             variant={notification.variant}
                             title={notification.title}

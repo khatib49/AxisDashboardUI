@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { getGames, GameDto } from '../../services/gameService';
 import { getSettings, GameSettingDto } from '../../services/gameSettingsService';
-import { getStatusName, STATUS_ENABLED, STATUS_PROCESSED_PAID } from '../../services/statuses';
+import { STATUS_ENABLED } from '../../services/statuses';
 import { getUpcomingEvents, EventDto } from '../../services/eventService';
 import { Link } from 'react-router';
 import Loader from '../../components/ui/Loader';
@@ -19,6 +19,11 @@ import { useAuth } from '../../context/AuthContext';
 import GameInvoice from '../../components/invoice/GameInvoice';
 import { getDiscounts, DiscountDto } from '../../services/discountService';
 import { searchClientsByPhone, ClientUserDto } from '../../services/clientService';
+import { Empty, Skeleton } from 'antd';
+import { Panel, StatTile } from '../../components/ui/PageKit';
+import { GameCard, GameCardSkeleton } from '../../components/till/sessions/GameCard';
+import { SetPicker } from '../../components/till/sessions/SetPicker';
+import { InvoiceCard } from '../../components/till/sessions/InvoiceCard';
 // ...existing imports...
 
 const PAGE_SIZE = 8;
@@ -400,14 +405,19 @@ const GameSession: React.FC = () => {
                 );
             })()}
             {/* Start session modal */}
-            <Modal isOpen={startModalOpen} onClose={() => { setStartModalOpen(false); setSelectedRoomId(null); setSelectedSetId(null); }} title={selectedSetting ? `Start: ${selectedSetting.name}` : 'Start session'}>
+            <Modal
+                isOpen={startModalOpen}
+                onClose={() => { setStartModalOpen(false); setSelectedRoomId(null); setSelectedSetId(null); }}
+                title={selectedSetting ? `Start: ${selectedSetting.name}` : 'Start session'}
+                subtitle={selectedSetting ? [selectedSetting.gameName, selectedSetting.isDayPass ? 'Day pass' : (selectedSetting.hours === 0 ? 'Open hour' : null), selectedSetting.isOffer ? 'Offer' : null].filter(Boolean).join(' · ') || undefined : undefined}
+            >
                 <div className="space-y-4">
                     {toast && (
-                        <div className="mb-4">
+                        <div>
                             <Alert variant={toast.variant} title={toast.title} message={toast.message} />
                         </div>
                     )}
-                    <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-4">
+                    <div className="space-y-5">
                         <div>
                             <Label>Room</Label>
                             <Select
@@ -431,7 +441,8 @@ const GameSession: React.FC = () => {
                             console.log('Found room:', selectedRoom);
                             if (selectedRoom?.isOpenSet) {
                                 return (
-                                    <div className="text-sm text-green-600 bg-green-50 p-3 rounded">
+                                    <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm font-medium text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
+                                        <span aria-hidden="true">✓</span>
                                         This is an open set room — no set selection required.
                                     </div>
                                 );
@@ -439,57 +450,37 @@ const GameSession: React.FC = () => {
                             return null;
                         })()}
 
-                        {selectedRoomId && !rooms.find(r => String(r.id) === String(selectedRoomId))?.isOpenSet && loadingAvailability && <div className="text-sm text-gray-500">Loading sets...</div>}
-
-                        {selectedRoomId && !rooms.find(r => String(r.id) === String(selectedRoomId))?.isOpenSet && !loadingAvailability && setAvailability && (
-                            <div>
-                                <Label>Select Set</Label>
-                                <div className="flex gap-3 text-xs mb-2">
-                                    <div className="flex items-center gap-1">
-                                        <div className="w-3 h-3 bg-green-100 border-2 border-green-500 rounded"></div>
-                                        <span>Available ({setAvailability.availableCount})</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        <div className="w-3 h-3 bg-red-100 border-2 border-red-500 rounded"></div>
-                                        <span>Occupied ({setAvailability.unavailableCount})</span>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-6 gap-2">
-                                    {setAvailability.available.map((set) => (
-                                        <button
-                                            key={set.id}
-                                            onClick={() => setSelectedSetId(set.id)}
-                                            className={`px-2 py-2 rounded-lg border-2 text-center text-sm font-medium transition ${selectedSetId === set.id
-                                                ? 'border-blue-600 bg-blue-100 text-blue-700'
-                                                : 'border-green-500 bg-green-50 text-green-700 hover:bg-green-100'
-                                                }`}
-                                        >
-                                            {set.name}
-                                        </button>
-                                    ))}
-                                    {setAvailability.unavailable.map((set) => (
-                                        <div
-                                            key={set.id}
-                                            className="px-2 py-2 rounded-lg border-2 border-red-500 bg-red-50 text-center text-sm font-medium text-red-700 cursor-not-allowed opacity-60"
-                                        >
-                                            {set.name}
-                                        </div>
+                        {selectedRoomId && !rooms.find(r => String(r.id) === String(selectedRoomId))?.isOpenSet && loadingAvailability && (
+                            <div aria-busy="true">
+                                <div className="mb-2 text-sm text-gray-500 dark:text-gray-400">Loading sets...</div>
+                                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+                                    {Array.from({ length: 6 }).map((_, i) => (
+                                        <div key={i} className="h-[60px] animate-pulse rounded-xl bg-gray-100 dark:bg-white/[0.06]" />
                                     ))}
                                 </div>
                             </div>
                         )}
 
+                        {selectedRoomId && !rooms.find(r => String(r.id) === String(selectedRoomId))?.isOpenSet && !loadingAvailability && setAvailability && (
+                            <SetPicker
+                                availability={setAvailability}
+                                selectedSetId={selectedSetId}
+                                onSelect={(id) => setSelectedSetId(id)}
+                            />
+                        )}
+
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
                             <Label>Hours</Label>
                             <Input type="number" value={startHours.toString()} onChange={(e) => setStartHours(Number(e.target.value))} min={'1'} disabled={!!selectedSetting?.isOffer || selectedSetting?.hours === 0 || !!selectedSetting?.isDayPass} />
                             {selectedSetting?.isOffer && (
-                                <div className="text-xs text-gray-500 mt-1">This setting is an offer — duration is fixed.</div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">This setting is an offer — duration is fixed.</div>
                             )}
                             {selectedSetting?.hours === 0 && (
-                                <div className="text-xs text-gray-500 mt-1">This is an open hour setting — duration is not applicable.</div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">This is an open hour setting — duration is not applicable.</div>
                             )}
                             {selectedSetting?.isDayPass && (
-                                <div className="text-xs text-gray-500 mt-1">This is an open day pass — duration is not applicable.</div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">This is an open day pass — duration is not applicable.</div>
                             )}
                         </div>
 
@@ -501,33 +492,35 @@ const GameSession: React.FC = () => {
                                 onChange={(e) => setNumberOfPersons(Math.max(1, Number(e.target.value)))}
                                 min={'1'}
                             />
-                            <div className="text-xs text-gray-500 mt-1">Total will be calculated per person.</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Total will be calculated per person.</div>
+                        </div>
                         </div>
 
                         {/* Event bundle preview — concrete quantities for THIS
                             headcount, so the cashier knows what to hand over. */}
                         {selectedSetting?.isEvent && (selectedSetting.items?.length ?? 0) > 0 && (
-                            <div className="rounded-lg bg-indigo-50 border border-indigo-200 p-3 text-sm">
-                                <div className="font-medium text-indigo-800 mb-1">Hand out with this event:</div>
-                                <ul className="space-y-0.5 text-indigo-700">
+                            <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-3.5 text-sm dark:border-indigo-500/30 dark:bg-indigo-500/10">
+                                <div className="mb-1.5 font-semibold text-indigo-800 dark:text-indigo-200">Hand out with this event:</div>
+                                <ul className="space-y-1 text-indigo-700 dark:text-indigo-300">
                                     {selectedSetting.items!.map((i) => (
-                                        <li key={i.itemId}>
-                                            {i.quantityPerPerson * numberOfPersons}x {i.itemName}
-                                            <span className="text-indigo-400"> ({i.quantityPerPerson} / person)</span>
+                                        <li key={i.itemId} className="text-[15px]">
+                                            <span className="font-semibold tabular-nums">{i.quantityPerPerson * numberOfPersons}x</span> {i.itemName}
+                                            <span className="text-sm text-indigo-400 dark:text-indigo-400/80"> ({i.quantityPerPerson} / person)</span>
                                         </li>
                                     ))}
                                 </ul>
-                                <div className="text-[11px] text-indigo-500 mt-1.5">
+                                <div className="text-[11px] text-indigo-500 dark:text-indigo-300/80 mt-1.5">
                                     Deducted from stock automatically — included in the event price, not billed separately.
                                 </div>
                             </div>
                         )}
 
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         {/* Discount Selection */}
                         <div>
                             <Label>Apply Discount</Label>
                             {loadingDiscounts ? (
-                                <div className="text-xs text-gray-500">Loading discounts...</div>
+                                <div className="h-11 animate-pulse rounded-lg bg-gray-100 px-4 text-xs leading-[44px] text-gray-500 dark:bg-white/[0.06] dark:text-gray-400">Loading discounts...</div>
                             ) : (
                                 <Select
                                     options={[
@@ -547,6 +540,7 @@ const GameSession: React.FC = () => {
                         <div>
                             <Label>Client (Optional)</Label>
                             <div className="flex gap-2">
+                                <div className="min-w-0 flex-1">
                                 <Input
                                     placeholder="Search by phone..."
                                     value={clientPhone}
@@ -558,8 +552,9 @@ const GameSession: React.FC = () => {
                                     }}
                                     className="flex-1"
                                 />
+                                </div>
                                 <button
-                                    className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition text-sm"
+                                    className="flex h-11 min-w-[84px] shrink-0 items-center justify-center rounded-xl bg-gray-100 px-4 text-sm font-semibold text-gray-800 transition hover:bg-gray-200 disabled:opacity-60 dark:bg-white/10 dark:text-gray-100 dark:hover:bg-white/15"
                                     onClick={handleClientSearch}
                                     disabled={searchingClient}
                                 >
@@ -586,12 +581,12 @@ const GameSession: React.FC = () => {
                                         const client = clientResults.find(c => c.id === Number(v));
                                         setSelectedClient(client || null);
                                     }}
-                                    className="mt-2 w-80"
+                                    className="mt-2 w-full"
                                 />
                             )}
                             {selectedClient && (
-                                <div className="mt-2 text-xs bg-blue-50 text-blue-700 p-2 rounded flex items-center justify-between">
-                                    <span>
+                                <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-blue-200 bg-blue-50 py-1 pl-3 pr-1 text-sm font-medium text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300">
+                                    <span className="min-w-0 truncate">
                                         Selected: {(() => {
                                             const firstName = selectedClient.firstName || '';
                                             const lastName = selectedClient.lastName || '';
@@ -605,12 +600,14 @@ const GameSession: React.FC = () => {
                                             setClientResults([]);
                                             setClientPhone('');
                                         }}
-                                        className="text-blue-600 hover:text-blue-800"
+                                        aria-label="Clear selected client"
+                                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-blue-600 hover:bg-blue-100 hover:text-blue-800 dark:text-blue-300 dark:hover:bg-blue-500/20"
                                     >
                                         ✕
                                     </button>
                                 </div>
                             )}
+                        </div>
                         </div>
 
                         {/* Comment Section */}
@@ -621,12 +618,12 @@ const GameSession: React.FC = () => {
                                 onChange={(e) => setComment(e.target.value)}
                                 placeholder="Add any notes or comments..."
                                 rows={3}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-400 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 dark:border-white/10 dark:bg-gray-900/60 dark:text-white dark:placeholder:text-white/30"
                             />
                         </div>
 
-                        <div>
-                            <Label>Total</Label>
+                        <div className="rounded-2xl border border-gray-200/80 bg-gray-50 p-4 dark:border-white/[0.06] dark:bg-white/[0.03]">
+                            <div className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Total</div>
                             {(() => {
                                 const basePrice = selectedSetting?.hours === 0 ? (selectedSetting?.price ?? 0) : ((selectedSetting?.price ?? 0) * startHours);
                                 const subtotal = basePrice * numberOfPersons;
@@ -634,26 +631,28 @@ const GameSession: React.FC = () => {
                                 const discountAmount = selectedDiscount ? (subtotal * selectedDiscount.percentage) / 100 : 0;
                                 const total = subtotal - discountAmount;
                                 return (
-                                    <div>
+                                    <div className="mt-1 flex flex-wrap items-end justify-between gap-x-4 gap-y-1">
                                         {selectedDiscount ? (
-                                            <div className="space-y-1">
-                                                <div className="text-sm text-gray-600">${basePrice.toFixed(2)} × {numberOfPersons} person{numberOfPersons !== 1 ? 's' : ''} = ${subtotal.toFixed(2)}</div>
-                                                <div className="text-sm text-green-600">Discount ({selectedDiscount.name} - {selectedDiscount.percentage}%): -${discountAmount.toFixed(2)}</div>
-                                                <div className="text-lg font-semibold">${total.toFixed(2)}</div>
-                                            </div>
+                                            <>
+                                                <div className="space-y-1">
+                                                    <div className="text-sm tabular-nums text-gray-600 dark:text-gray-300">${basePrice.toFixed(2)} × {numberOfPersons} person{numberOfPersons !== 1 ? 's' : ''} = ${subtotal.toFixed(2)}</div>
+                                                    <div className="text-sm font-medium tabular-nums text-emerald-600 dark:text-emerald-400">Discount ({selectedDiscount.name} - {selectedDiscount.percentage}%): -${discountAmount.toFixed(2)}</div>
+                                                </div>
+                                                <div className="text-4xl font-bold tracking-tight tabular-nums text-gray-900 dark:text-white">${total.toFixed(2)}</div>
+                                            </>
                                         ) : (
-                                            <div>
-                                                <div className="text-sm text-gray-600 mb-1">${basePrice.toFixed(2)} × {numberOfPersons} person{numberOfPersons !== 1 ? 's' : ''}</div>
-                                                <div className="text-lg font-semibold">${subtotal.toFixed(2)}</div>
-                                            </div>
+                                            <>
+                                                <div className="text-sm tabular-nums text-gray-600 dark:text-gray-300">${basePrice.toFixed(2)} × {numberOfPersons} person{numberOfPersons !== 1 ? 's' : ''}</div>
+                                                <div className="text-4xl font-bold tracking-tight tabular-nums text-gray-900 dark:text-white">${subtotal.toFixed(2)}</div>
+                                            </>
                                         )}
                                     </div>
                                 );
                             })()}
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="sticky bottom-0 -mx-5 -mb-4 flex items-center gap-2 border-t border-gray-200 bg-white/95 px-5 py-3 backdrop-blur dark:border-white/[0.06] dark:bg-gray-800/95">
                             <button
-                                className="px-3 py-1 bg-green-600 text-white rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 text-base font-semibold text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-emerald-500 dark:hover:bg-emerald-400"
                                 disabled={(() => {
                                     if (!selectedRoomId) return true;
                                     const selectedRoom = rooms.find(r => String(r.id) === String(selectedRoomId));
@@ -741,9 +740,9 @@ const GameSession: React.FC = () => {
                                     }
                                 }}
                             >
-                                {starting ? <Loader size={14} /> : 'Submit'}
+                                {starting ? <Loader size={14} /> : 'Start session'}
                             </button>
-                            <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => { setStartModalOpen(false); setSelectedRoomId(null); setSelectedSetId(null); }}>Cancel</button>
+                            <button className="order-first h-12 rounded-xl border border-gray-200 bg-white px-5 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:hover:bg-white/10" onClick={() => { setStartModalOpen(false); setSelectedRoomId(null); setSelectedSetId(null); }}>Cancel</button>
                         </div>
                     </div>
                 </div>
@@ -772,77 +771,77 @@ const GameSession: React.FC = () => {
                 }}
                 title="Session Started"
             >
-                <div className="p-4">
+                <div className="p-1 sm:p-2">
                     {sessionSummaryData && (
                         <div className="space-y-4">
-                            <div className="text-center mb-4">
-                                <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-3">
-                                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="text-center mb-2">
+                                <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-full mb-3 dark:bg-emerald-500/15">
+                                    <svg className="w-8 h-8 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                 </div>
-                                <h3 className="text-xl font-semibold text-gray-900">Session Active</h3>
-                                <p className="text-sm text-gray-600 mt-1">Your game session has been started successfully</p>
+                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Session Active</h3>
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Your game session has been started successfully</p>
                             </div>
 
-                            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                                <div className="flex justify-between items-center pb-2 border-b border-gray-200">
-                                    <span className="text-sm font-medium text-gray-600">Transaction ID:</span>
-                                    <span className="text-sm font-semibold text-gray-900">#{sessionSummaryData.id || sessionSummaryData.transactionId}</span>
+                            <div className="rounded-2xl border border-gray-200/80 bg-gray-50 p-4 space-y-3 dark:border-white/[0.06] dark:bg-white/[0.03]">
+                                <div className="flex justify-between items-center gap-3 pb-2 border-b border-gray-200 dark:border-white/[0.08]">
+                                    <span className="shrink-0 text-sm font-medium text-gray-600 dark:text-gray-400">Transaction ID:</span>
+                                    <span className="min-w-0 text-right text-[15px] font-semibold tabular-nums text-gray-900 dark:text-white">#{sessionSummaryData.id || sessionSummaryData.transactionId}</span>
                                 </div>
 
                                 {(sessionSummaryData.room || sessionSummaryData.roomName) && (
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm font-medium text-gray-600">Room:</span>
-                                        <span className="text-sm font-semibold text-gray-900">{sessionSummaryData.room || sessionSummaryData.roomName}</span>
+                                    <div className="flex justify-between items-center gap-3">
+                                        <span className="shrink-0 text-sm font-medium text-gray-600 dark:text-gray-400">Room:</span>
+                                        <span className="min-w-0 text-right text-[15px] font-semibold tabular-nums text-gray-900 dark:text-white">{sessionSummaryData.room || sessionSummaryData.roomName}</span>
                                     </div>
                                 )}
 
                                 {(sessionSummaryData.set || sessionSummaryData.setName) && (
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm font-medium text-gray-600">Set:</span>
-                                        <span className="text-sm font-semibold text-gray-900">{sessionSummaryData.set || sessionSummaryData.setName}</span>
+                                    <div className="flex justify-between items-center gap-3">
+                                        <span className="shrink-0 text-sm font-medium text-gray-600 dark:text-gray-400">Set:</span>
+                                        <span className="min-w-0 text-right text-[15px] font-semibold tabular-nums text-gray-900 dark:text-white">{sessionSummaryData.set || sessionSummaryData.setName}</span>
                                     </div>
                                 )}
 
                                 {(sessionSummaryData.game || sessionSummaryData.gameName) && (
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm font-medium text-gray-600">Game:</span>
-                                        <span className="text-sm font-semibold text-gray-900">{sessionSummaryData.game || sessionSummaryData.gameName}</span>
+                                    <div className="flex justify-between items-center gap-3">
+                                        <span className="shrink-0 text-sm font-medium text-gray-600 dark:text-gray-400">Game:</span>
+                                        <span className="min-w-0 text-right text-[15px] font-semibold tabular-nums text-gray-900 dark:text-white">{sessionSummaryData.game || sessionSummaryData.gameName}</span>
                                     </div>
                                 )}
 
                                 {(sessionSummaryData.gameType || sessionSummaryData.gameTypeName) && (
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm font-medium text-gray-600">Game Type:</span>
-                                        <span className="text-sm font-semibold text-gray-900">{sessionSummaryData.gameType || sessionSummaryData.gameTypeName}</span>
+                                    <div className="flex justify-between items-center gap-3">
+                                        <span className="shrink-0 text-sm font-medium text-gray-600 dark:text-gray-400">Game Type:</span>
+                                        <span className="min-w-0 text-right text-[15px] font-semibold tabular-nums text-gray-900 dark:text-white">{sessionSummaryData.gameType || sessionSummaryData.gameTypeName}</span>
                                     </div>
                                 )}
 
                                 {(sessionSummaryData.gameSetting || sessionSummaryData.gameSettingName) && (
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm font-medium text-gray-600">Setting:</span>
-                                        <span className="text-sm font-semibold text-gray-900">{sessionSummaryData.gameSetting || sessionSummaryData.gameSettingName}</span>
+                                    <div className="flex justify-between items-center gap-3">
+                                        <span className="shrink-0 text-sm font-medium text-gray-600 dark:text-gray-400">Setting:</span>
+                                        <span className="min-w-0 text-right text-[15px] font-semibold tabular-nums text-gray-900 dark:text-white">{sessionSummaryData.gameSetting || sessionSummaryData.gameSettingName}</span>
                                     </div>
                                 )}
 
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm font-medium text-gray-600">Duration:</span>
-                                    <span className="text-sm font-semibold text-gray-900">
+                                <div className="flex justify-between items-center gap-3">
+                                    <span className="shrink-0 text-sm font-medium text-gray-600 dark:text-gray-400">Duration:</span>
+                                    <span className="min-w-0 text-right text-[15px] font-semibold tabular-nums text-gray-900 dark:text-white">
                                         {sessionSummaryData.isDayPass ? 'Day Pass' : (sessionSummaryData.hours === 0 ? 'Open Hour' : `${sessionSummaryData.hours}h`)}
                                     </span>
                                 </div>
 
                                 {sessionSummaryData.numberOfPersons && (
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm font-medium text-gray-600">Persons:</span>
-                                        <span className="text-sm font-semibold text-gray-900">{sessionSummaryData.numberOfPersons}</span>
+                                    <div className="flex justify-between items-center gap-3">
+                                        <span className="shrink-0 text-sm font-medium text-gray-600 dark:text-gray-400">Persons:</span>
+                                        <span className="min-w-0 text-right text-[15px] font-semibold tabular-nums text-gray-900 dark:text-white">{sessionSummaryData.numberOfPersons}</span>
                                     </div>
                                 )}
 
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm font-medium text-gray-600">Started:</span>
-                                    <span className="text-sm font-semibold text-gray-900">
+                                <div className="flex justify-between items-center gap-3">
+                                    <span className="shrink-0 text-sm font-medium text-gray-600 dark:text-gray-400">Started:</span>
+                                    <span className="min-w-0 text-right text-[15px] font-semibold tabular-nums text-gray-900 dark:text-white">
                                         {new Date(sessionSummaryData.createdOn).toLocaleString('en-US', {
                                             month: 'short',
                                             day: 'numeric',
@@ -853,11 +852,11 @@ const GameSession: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">
-                                <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-start gap-2 dark:bg-blue-500/10 dark:border-blue-500/30">
+                                <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-                                <p className="text-sm text-blue-800">
+                                <p className="text-sm text-blue-800 dark:text-blue-200">
                                     This is an open session. Close the session to generate the final invoice.
                                 </p>
                             </div>
@@ -1014,7 +1013,7 @@ const GameSession: React.FC = () => {
 
                                         setTimeout(() => { win.focus(); win.print(); win.close(); }, 150);
                                     }}
-                                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2"
+                                    className="flex-1 h-12 px-4 bg-blue-600 text-white text-base font-semibold rounded-xl hover:bg-blue-700 active:scale-[0.99] transition flex items-center justify-center gap-2 dark:bg-blue-500 dark:hover:bg-blue-400"
                                 >
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
@@ -1026,7 +1025,7 @@ const GameSession: React.FC = () => {
                                         setSessionSummaryModalOpen(false);
                                         setSessionSummaryData(null);
                                     }}
-                                    className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition"
+                                    className="flex-1 h-12 px-4 bg-gray-900 text-white text-base font-semibold rounded-xl hover:bg-gray-700 active:scale-[0.99] transition dark:bg-white/10 dark:hover:bg-white/15"
                                 >
                                     OK
                                 </button>
@@ -1044,126 +1043,83 @@ const GameSession: React.FC = () => {
             />
 
             {/* Invoices Section */}
-            <div className="mt-8">
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold">My Invoices</h2>
+            <Panel
+                className="mt-4"
+                title="My Invoices"
+                subtitle="Yesterday & today, created by you"
+                extra={
                     <button
                         onClick={() => setShowInvoicesSection(!showInvoicesSection)}
-                        className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
+                        aria-expanded={showInvoicesSection}
+                        className="h-11 rounded-xl bg-violet-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 active:scale-[0.97] dark:bg-violet-500 dark:hover:bg-violet-400"
                     >
                         {showInvoicesSection ? 'Hide Invoices' : 'Show Invoices'}
                     </button>
-                </div>
-
+                }
+                bodyClassName={showInvoicesSection ? 'p-4 sm:p-5' : 'hidden'}
+            >
                 {showInvoicesSection && (
                     <div className="space-y-4">
-                        {/* Info Banner */}
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
-                            <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <div className="flex-1">
-                                <p className="text-sm font-medium text-blue-900">Displaying Recent Invoices</p>
-                                <p className="text-sm text-blue-700 mt-1">Showing all invoices from yesterday and today.</p>
-                            </div>
-                        </div>
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+                            {/* Total Fees Widget */}
+                            <StatTile
+                                label="Total Fees"
+                                value={<span className="tabular-nums">${totalInvoices.toFixed(2)}</span>}
+                                sub="Yesterday & Today"
+                                loading={loadingInvoices}
+                                accent={
+                                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </span>
+                                }
+                            />
 
-                        {/* Total Fees Widget */}
-                        <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-lg shadow-lg p-6 text-white">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium opacity-90">Total Fees</p>
-                                    <p className="text-3xl font-bold mt-1">${totalInvoices.toFixed(2)}</p>
-                                    <p className="text-xs opacity-75 mt-1">Yesterday & Today</p>
-                                </div>
-                                <div className="bg-white/20 rounded-full p-4">
-                                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
+                            {/* Info Banner */}
+                            <div className="flex items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-500/30 dark:bg-blue-500/10">
+                                <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <div className="flex-1">
+                                    <p className="text-sm font-medium text-blue-900 dark:text-blue-200">Displaying Recent Invoices</p>
+                                    <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">Showing all invoices from yesterday and today.</p>
                                 </div>
                             </div>
                         </div>
 
                         {/* Invoices List */}
-                        <div className="bg-white rounded-lg shadow p-6">
-                            {loadingInvoices && (
-                                <div className="flex justify-center py-10">
-                                    <Loader />
-                                </div>
-                            )}
+                        {loadingInvoices && (
+                            <div className="space-y-3" aria-busy="true">
+                                {Array.from({ length: 3 }).map((_, i) => (
+                                    <Skeleton.Button key={i} active block style={{ height: 96, borderRadius: 16 }} />
+                                ))}
+                            </div>
+                        )}
 
-                            {!loadingInvoices && userInvoices.length === 0 && (
-                                <div className="text-center py-10 text-gray-500">
-                                    No invoices found
-                                </div>
-                            )}
+                        {!loadingInvoices && userInvoices.length === 0 && (
+                            <div className="rounded-2xl border border-dashed border-gray-200 py-10 dark:border-white/10">
+                                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No invoices found" />
+                            </div>
+                        )}
 
-                            {!loadingInvoices && userInvoices.length > 0 && (
-                                <div className="space-y-4">
-                                    {userInvoices.map((invoice) => (
-                                        <div
-                                            key={invoice.transactionId}
-                                            className="border rounded-lg p-4 hover:shadow-md transition cursor-pointer"
-                                            onClick={() => {
-                                                setCurrentInvoice(invoice);
-                                                setInvoiceModalOpen(true);
-                                            }}
-                                        >
-                                            <div className="flex justify-between items-start">
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-3 mb-2">
-                                                        <span className="text-lg font-semibold text-gray-800">
-                                                            Invoice #{invoice.transactionId}
-                                                        </span>
-                                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${invoice.statusId === STATUS_ENABLED || invoice.statusId === STATUS_PROCESSED_PAID
-                                                            ? 'bg-green-100 text-green-800'
-                                                            : 'bg-gray-100 text-gray-800'
-                                                            }`}>
-                                                            {getStatusName(invoice.statusId) || 'Unknown'}
-                                                        </span>
-                                                    </div>
-                                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                                                        <div>
-                                                            <p className="text-gray-500">Date</p>
-                                                            <p className="font-medium text-gray-800">
-                                                                {new Date(invoice.createdOn).toLocaleDateString()}
-                                                            </p>
-                                                        </div>
-                                                        {invoice.roomName && (
-                                                            <div>
-                                                                <p className="text-gray-500">Room</p>
-                                                                <p className="font-medium text-gray-800">{invoice.roomName}</p>
-                                                            </div>
-                                                        )}
-                                                        {invoice.gameName && (
-                                                            <div>
-                                                                <p className="text-gray-500">Game</p>
-                                                                <p className="font-medium text-gray-800">{invoice.gameName}</p>
-                                                            </div>
-                                                        )}
-                                                        <div>
-                                                            <p className="text-gray-500">Durations</p>
-                                                            <p className="font-medium text-gray-800">
-                                                                {invoice.isDayPass ? 'Day Pass' : (invoice.hours === 0 ? 'Open Hour' : `${invoice.hours}h`)}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div className="text-right ml-4">
-                                                    <p className="text-sm text-gray-500">Total</p>
-                                                    <p className="text-2xl font-bold text-gray-800">
-                                                        ${invoice.totalPrice.toFixed(2)}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+                        {!loadingInvoices && userInvoices.length > 0 && (
+                            <div className="space-y-3">
+                                {userInvoices.map((invoice) => (
+                                    <InvoiceCard
+                                        key={invoice.transactionId}
+                                        invoice={invoice}
+                                        onOpen={() => {
+                                            setCurrentInvoice(invoice);
+                                            setInvoiceModalOpen(true);
+                                        }}
+                                    />
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
-            </div>
+            </Panel>
         </div>
     )
 }

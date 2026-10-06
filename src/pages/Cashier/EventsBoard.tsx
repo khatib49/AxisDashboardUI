@@ -6,12 +6,16 @@
 // admin reviews and publishes them.
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { CalendarOutlined, CloseOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import Modal from "../../components/ui/Modal";
 import Input from "../../components/form/input/InputField";
 import Label from "../../components/form/Label";
 import Select from "../../components/form/Select";
-import Loader from "../../components/ui/Loader";
 import Alert from "../../components/ui/alert/Alert";
+import { Pill } from "../../components/ui/PageKit";
+import { CardSkeletons, CountTile, DeskEmpty, DeskHeader, DeskSection } from "../../components/till/desk/DeskKit";
+import { EventCard } from "../../components/till/desk/EventCard";
+import { deskBtn, deskInput } from "../../components/till/desk/deskStyles";
 import { getUpcomingEvents, quickCreateEvent } from "../../services/eventService";
 import type { EventDto } from "../../services/eventService";
 import {
@@ -20,16 +24,6 @@ import {
 import type { EventAttendeeList, CheckInResult } from "../../services/eventTicketService";
 
 const EVENT_TYPES = ["PS5 Session", "Board Games", "Billiards", "TCG Event", "Social Event", "Tournament", "Other"];
-
-const TYPE_STYLES: Record<string, string> = {
-    "PS5 Session": "bg-violet-100 text-violet-700",
-    "Board Games": "bg-amber-100 text-amber-700",
-    "Billiards": "bg-green-100 text-green-700",
-    "TCG Event": "bg-purple-100 text-purple-700",
-    "Social Event": "bg-pink-100 text-pink-700",
-    "Tournament": "bg-blue-100 text-blue-700",
-    "Other": "bg-gray-100 text-gray-600",
-};
 
 const isToday = (iso: string) => {
     const d = new Date(iso), n = new Date();
@@ -93,87 +87,47 @@ export default function EventsBoard() {
         } finally { setSaving(false); }
     };
 
-    const EventCard = ({ e, big }: { e: EventDto; big?: boolean }) => (
-        <div className={`rounded-2xl border bg-white shadow-sm p-4 ${big ? "border-indigo-200 ring-2 ring-indigo-100" : "border-gray-100"}`}>
-            <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                    <div className={`font-semibold text-gray-900 ${big ? "text-lg" : "text-sm"} truncate`}>{e.title}</div>
-                    <div className="text-xs text-gray-500 mt-0.5">
-                        {e.eventDate ? new Date(e.eventDate).toLocaleString([], { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—"}
-                        {e.location ? ` · ${e.location}` : ""}
-                    </div>
-                </div>
-                <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold ${TYPE_STYLES[e.type ?? "Other"] ?? TYPE_STYLES.Other}`}>
-                    {e.type ?? "Other"}
-                </span>
-            </div>
-            <div className="mt-2 flex items-center gap-3 text-sm">
-                {e.price > 0 && <span className="font-bold text-gray-900">${e.price}</span>}
-                <span className="text-indigo-600 font-medium">
-                    🎟 {e.paidCount}{e.capacity ? ` / ${e.capacity}` : ""} sold
-                </span>
-                {!e.isPublished && (
-                    <span className="ml-auto px-1.5 py-0.5 rounded text-[10px] font-semibold bg-orange-100 text-orange-700" title="Not on the website yet — waiting for admin to publish">
-                        Internal
-                    </span>
-                )}
-            </div>
-            <button
-                type="button"
-                onClick={() => setDoorEvent(e)}
-                className={`mt-3 w-full rounded-xl font-semibold transition ${big
-                    ? "h-10 bg-indigo-600 text-white hover:bg-indigo-700 text-sm"
-                    : "h-9 border border-indigo-200 text-indigo-700 hover:bg-indigo-50 text-xs"}`}
-            >
-                🎟 Door — check in
-            </button>
-        </div>
-    );
-
     return (
-        <div className="p-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-gray-900">Events</h1>
-                    <p className="text-sm text-gray-500 mt-0.5">What's on today and coming up. Booked here = internal until admin publishes.</p>
-                </div>
-                <button
-                    onClick={() => setFormOpen(true)}
-                    className="h-10 px-4 bg-indigo-600 text-white rounded-xl shadow-sm hover:bg-indigo-700 transition text-sm font-semibold"
-                >
-                    + New Event
-                </button>
-            </div>
+        <div className="space-y-5 p-3 sm:p-6">
+            <DeskHeader
+                icon={<CalendarOutlined />}
+                title="Events"
+                description="What's on today and coming up. Booked here = internal until admin publishes."
+                actions={
+                    <button onClick={() => setFormOpen(true)} className={deskBtn("primary")}>
+                        <PlusOutlined /> New Event
+                    </button>
+                }
+            />
 
-            {loading && <div className="flex justify-center py-16"><Loader /></div>}
+            {loading && (
+                <>
+                    <CardSkeletons count={3} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" height={190} />
+                    <CardSkeletons count={4} className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4" height={170} />
+                </>
+            )}
 
             {!loading && (
                 <>
-                    <div className="mb-6">
-                        <h2 className="text-sm font-bold uppercase tracking-wide text-indigo-700 mb-2">🎟 Today</h2>
+                    <DeskSection title="🎟 Today" count={todays.length} tone="violet">
                         {todays.length === 0 ? (
-                            <div className="rounded-xl border border-dashed border-gray-200 py-6 text-center text-sm text-gray-400">
-                                Nothing scheduled today.
-                            </div>
+                            <DeskEmpty compact title="Nothing scheduled today." />
                         ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {todays.map(e => <EventCard key={e.id} e={e} big />)}
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                {todays.map(e => <EventCard key={e.id} e={e} big onDoor={setDoorEvent} />)}
                             </div>
                         )}
-                    </div>
+                    </DeskSection>
 
-                    <div>
-                        <h2 className="text-sm font-bold uppercase tracking-wide text-gray-500 mb-2">Coming up</h2>
+                    <DeskSection title="Coming up" count={upcoming.length}>
                         {upcoming.length === 0 ? (
-                            <div className="rounded-xl border border-dashed border-gray-200 py-6 text-center text-sm text-gray-400">
-                                No upcoming events in the next 3 weeks.
-                            </div>
+                            <DeskEmpty compact title="No upcoming events in the next 3 weeks." />
                         ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                                {upcoming.map(e => <EventCard key={e.id} e={e} />)}
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                                {upcoming.map(e => <EventCard key={e.id} e={e} onDoor={setDoorEvent} />)}
                             </div>
                         )}
-                    </div>
+                    </DeskSection>
                 </>
             )}
 
@@ -183,7 +137,7 @@ export default function EventsBoard() {
                         <Label>Title</Label>
                         <Input placeholder="Catan Tournament" value={title} onChange={(e) => setTitle(e.target.value)} />
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:gap-2">
                         <div className="flex-1">
                             <Label>Type</Label>
                             <Select options={EVENT_TYPES.map(t => ({ value: t, label: t }))} defaultValue={type} onChange={(v) => setType(String(v))} />
@@ -207,13 +161,13 @@ export default function EventsBoard() {
                             <Input type="number" min="0" step={1} placeholder="24" value={capacity} onChange={(e) => setCapacity(e.target.value)} />
                         </div>
                     </div>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                         The event appears on the internal boards right away. Publishing to the public website stays with the admin.
                     </p>
                     <button
                         onClick={submit}
                         disabled={saving}
-                        className="w-full h-10 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 transition"
+                        className={`${deskBtn("primary", "lg")} w-full`}
                     >
                         {saving ? "Booking…" : "Book event"}
                     </button>
@@ -251,11 +205,11 @@ const OUTCOME_STYLE: Record<string, { box: string; icon: string; title: string }
     rejected:    { box: "bg-red-600 text-white",    icon: "✕", title: "Rejected" },
 };
 
-const PAY_PILL: Record<string, string> = {
-    Paid: "bg-green-100 text-green-700",
-    Pending: "bg-amber-100 text-amber-700",
-    Rejected: "bg-red-100 text-red-700",
-    Refunded: "bg-gray-100 text-gray-600",
+const PAY_PILL: Record<string, "emerald" | "amber" | "red" | "gray"> = {
+    Paid: "emerald",
+    Pending: "amber",
+    Rejected: "red",
+    Refunded: "gray",
 };
 
 const timeOf = (iso?: string | null) => iso ? new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
@@ -340,60 +294,67 @@ function DoorDrawer({ event, onClose, notify }: {
     return (
         <div className="fixed inset-0 z-[99998] flex justify-end bg-black/40" onClick={onClose}>
             <div
-                className="h-full w-full sm:w-[560px] bg-white shadow-2xl flex flex-col"
+                className="flex h-full w-full flex-col bg-white shadow-2xl sm:w-[600px] dark:bg-gray-900"
                 onClick={(e) => e.stopPropagation()}
                 role="dialog"
                 aria-label={`Door — ${event.title}`}
             >
                 {/* Header + counters */}
-                <div className="px-5 py-4 border-b border-gray-100">
+                <div className="border-b border-gray-100 px-4 py-4 sm:px-5 dark:border-white/[0.06]">
                     <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                            <div className="text-[11px] uppercase tracking-wide text-indigo-600 font-bold">Door check-in</div>
-                            <div className="text-lg font-bold text-gray-900 truncate">{list?.eventTitle ?? event.title}</div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-[11px] font-bold uppercase tracking-wide text-violet-600 dark:text-violet-300">Door check-in</div>
+                            <div className="truncate text-lg font-bold text-gray-900 dark:text-white">{list?.eventTitle ?? event.title}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
                                 {event.eventDate ? new Date(event.eventDate).toLocaleString([], { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—"}
                                 {event.location ? ` · ${event.location}` : ""}
                             </div>
                         </div>
-                        <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-700 text-xl leading-none" aria-label="Close">✕</button>
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-500 dark:hover:bg-white/[0.06] dark:hover:text-gray-200"
+                            aria-label="Close"
+                        >
+                            <CloseOutlined />
+                        </button>
                     </div>
-                    <div className="mt-3 grid grid-cols-4 gap-2 text-center">
-                        <Counter label="Paid" value={list?.paid ?? 0} tone="text-green-700 bg-green-50" />
-                        <Counter label="Pending" value={list?.pending ?? 0} tone="text-amber-700 bg-amber-50" />
-                        <Counter label="Checked in" value={list?.checkedIn ?? 0} tone="text-indigo-700 bg-indigo-50" />
-                        <Counter label="Capacity" value={list?.capacity ?? event.capacity ?? "∞"} tone="text-gray-700 bg-gray-50" />
+                    <div className="mt-3 grid grid-cols-4 gap-2">
+                        <CountTile label="Paid" value={list?.paid ?? 0} tone="emerald" />
+                        <CountTile label="Pending" value={list?.pending ?? 0} tone="amber" />
+                        <CountTile label="Checked in" value={list?.checkedIn ?? 0} tone="violet" />
+                        <CountTile label="Capacity" value={list?.capacity ?? event.capacity ?? "∞"} tone="gray" />
                     </div>
                 </div>
 
                 {/* Scan box */}
-                <div className="px-5 py-4 border-b border-gray-100 bg-gray-50">
+                <div className="border-b border-gray-100 bg-gray-50 px-4 py-4 sm:px-5 dark:border-white/[0.06] dark:bg-white/[0.02]">
                     <form onSubmit={(e) => { e.preventDefault(); doScan(scan); }} className="flex gap-2">
                         <input
                             ref={scanRef}
                             value={scan}
                             onChange={(e) => setScan(e.target.value)}
                             placeholder="Scan QR or type ticket code (TK-…)"
+                            aria-label="Ticket code"
                             autoFocus
                             autoComplete="off"
                             autoCapitalize="characters"
                             spellCheck={false}
-                            className="flex-1 h-12 rounded-xl border border-gray-300 px-4 font-mono text-base uppercase focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="h-14 min-w-0 flex-1 rounded-xl border border-gray-300 bg-white px-4 font-mono text-lg uppercase text-gray-900 placeholder:text-sm placeholder:normal-case focus:outline-none focus:ring-2 focus:ring-violet-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-gray-500"
                         />
-                        <button type="submit" disabled={scanning || !scan.trim()}
-                            className="h-12 px-5 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700 disabled:opacity-50">
+                        <button type="submit" disabled={scanning || !scan.trim()} className={`${deskBtn("primary", "lg")} min-h-14!`}>
                             {scanning ? "…" : "Check in"}
                         </button>
                     </form>
 
                     {last && style && (
-                        <div className={`mt-3 rounded-2xl px-4 py-4 ${style.box}`}>
+                        <div role="status" className={`mt-3 rounded-2xl px-4 py-4 ${style.box}`}>
                             <div className="flex items-center gap-3">
-                                <div className="h-12 w-12 shrink-0 rounded-full bg-white/20 flex items-center justify-center text-2xl font-bold">{style.icon}</div>
+                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/20 text-2xl font-bold">{style.icon}</div>
                                 <div className="min-w-0">
                                     <div className="text-lg font-bold leading-tight">{style.title}{lastName ? ` — ${lastName}` : ""}</div>
                                     <div className="text-sm opacity-90">{last.result.message}</div>
-                                    <div className="text-[11px] opacity-75 font-mono mt-0.5">{last.code} · {timeOf(last.at.toISOString())}</div>
+                                    <div className="mt-0.5 font-mono text-[11px] opacity-75">{last.code} · {timeOf(last.at.toISOString())}</div>
                                 </div>
                             </div>
                         </div>
@@ -402,8 +363,8 @@ function DoorDrawer({ event, onClose, notify }: {
                     {log.length > 1 && (
                         <div className="mt-2 space-y-0.5">
                             {log.slice(1).map((l, i) => (
-                                <div key={i} className="flex items-center gap-2 text-[11px] text-gray-500">
-                                    <span className={`h-2 w-2 rounded-full ${l.result.outcome === "ok" ? "bg-green-500" : l.result.outcome === "already" ? "bg-amber-500" : "bg-red-500"}`} />
+                                <div key={i} className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                    <span className={`h-2 w-2 shrink-0 rounded-full ${l.result.outcome === "ok" ? "bg-green-500" : l.result.outcome === "already" ? "bg-amber-500" : "bg-red-500"}`} />
                                     <span className="font-mono">{l.code}</span>
                                     <span className="truncate">{l.result.ticket ? `${l.result.ticket.firstName} ${l.result.ticket.lastName} · ` : ""}{l.result.message}</span>
                                     <span className="ml-auto shrink-0">{timeOf(l.at.toISOString())}</span>
@@ -414,55 +375,62 @@ function DoorDrawer({ event, onClose, notify }: {
                 </div>
 
                 {/* Attendee list */}
-                <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-2">
+                <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-3 sm:px-5 dark:border-white/[0.06]">
                     <input
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         onKeyDown={(e) => { if (e.key === "Enter") reload(search); }}
                         placeholder="Search name, phone or code…"
-                        className="flex-1 h-10 rounded-xl border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        aria-label="Search registrations"
+                        className={`${deskInput} flex-1`}
                     />
-                    <button type="button" onClick={() => reload(search)} className="h-10 px-3 rounded-xl border border-gray-200 text-sm text-gray-700 hover:bg-gray-50">Search</button>
+                    <button type="button" onClick={() => reload(search)} className={deskBtn("outline")}>
+                        <SearchOutlined /> Search
+                    </button>
                 </div>
 
                 <div className="flex-1 overflow-auto">
-                    {loading && <div className="flex justify-center py-10"><Loader /></div>}
+                    {loading && <div className="px-5 py-4"><CardSkeletons count={4} className="space-y-2" height={72} /></div>}
                     {!loading && list && list.attendees.length === 0 && (
-                        <div className="py-10 text-center text-sm text-gray-400">No registrations{search ? " match your search" : " yet"}.</div>
+                        <div className="py-10 text-center text-sm text-gray-400 dark:text-gray-500">No registrations{search ? " match your search" : " yet"}.</div>
                     )}
                     {!loading && list && list.attendees.map((a) => {
                         const canCheckIn = a.paymentStatus === "Paid" && !a.checkedInOn;
                         const busy = busyId === a.id;
+                        const amount = `${a.currency === "USD" ? "$" : a.currency + " "}${a.amount.toFixed(2)}`;
                         return (
-                            <div key={a.id} className={`px-5 py-3 border-b border-gray-50 flex items-center gap-3 ${a.checkedInOn ? "bg-indigo-50/40" : ""}`}>
+                            <div
+                                key={a.id}
+                                className={`flex flex-col gap-2 border-b border-gray-100 px-4 py-3 sm:flex-row sm:items-center sm:gap-3 sm:px-5 dark:border-white/[0.04] ${a.checkedInOn ? "bg-violet-50/50 dark:bg-violet-500/[0.06]" : ""}`}
+                            >
                                 <div className="min-w-0 flex-1">
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-semibold text-gray-900 truncate">{a.firstName} {a.lastName}</span>
-                                        <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold ${PAY_PILL[a.paymentStatus] ?? "bg-gray-100 text-gray-600"}`}>{a.paymentStatus}</span>
-                                        {a.checkedInOn && <span className="shrink-0 text-[10px] text-indigo-700 font-semibold">✓ {timeOf(a.checkedInOn)}</span>}
+                                    <div className="flex flex-wrap items-center gap-1.5">
+                                        <span className="truncate text-base font-semibold text-gray-900 dark:text-white">{a.firstName} {a.lastName}</span>
+                                        <Pill tone={PAY_PILL[a.paymentStatus] ?? "gray"} dot>{a.paymentStatus}</Pill>
+                                        {a.checkedInOn && <Pill tone="violet" dot>✓ Checked in {timeOf(a.checkedInOn)}</Pill>}
                                     </div>
-                                    <div className="text-xs text-gray-500 flex flex-wrap gap-x-2">
-                                        <span>{a.phone}</span>
+                                    <div className="mt-0.5 flex flex-wrap gap-x-2 text-xs text-gray-500 dark:text-gray-400">
+                                        <span className="tabular-nums">{a.phone}</span>
                                         <span className="font-mono">{a.ticketCode}</span>
-                                        {a.ticketTypeName && <span className="font-semibold text-gray-800">{a.ticketTypeName}</span>}
-                                        <span>{a.paymentMethod} · {a.currency === "USD" ? "$" : a.currency + " "}{a.amount.toFixed(2)}</span>
+                                        {a.ticketTypeName && <span className="font-semibold text-gray-800 dark:text-gray-200">{a.ticketTypeName}</span>}
+                                        <span>{a.paymentMethod} · <b className="tabular-nums text-gray-800 dark:text-gray-200">{amount}</b></span>
                                     </div>
                                 </div>
-                                <div className="shrink-0 flex gap-1.5">
+                                <div className="flex shrink-0 gap-2">
                                     {canCheckIn && (
                                         <button type="button" disabled={busy}
                                             onClick={() => rowAction(a.id, async () => {
                                                 const r = await checkInTicket(a.ticketCode, event.key);
                                                 if (!r.ok) throw new Error(r.message);
                                             }, `${a.firstName} ${a.lastName} checked in.`)}
-                                            className="h-8 px-3 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 disabled:opacity-50">
+                                            className={`${deskBtn("primary")} flex-1 sm:flex-none`}>
                                             Check in
                                         </button>
                                     )}
                                     {a.checkedInOn && (
                                         <button type="button" disabled={busy}
                                             onClick={() => rowAction(a.id, () => undoCheckIn(a.id), "Check-in undone.")}
-                                            className="h-8 px-3 rounded-lg border border-gray-200 text-gray-700 text-xs font-semibold hover:bg-gray-50 disabled:opacity-50">
+                                            className={`${deskBtn("outline")} flex-1 sm:flex-none`}>
                                             Undo
                                         </button>
                                     )}
@@ -472,7 +440,7 @@ function DoorDrawer({ event, onClose, notify }: {
                                                 if (!window.confirm(`Confirm ${a.currency === "USD" ? "$" : a.currency + " "}${a.amount.toFixed(2)} cash received from ${a.firstName} ${a.lastName}?`)) return;
                                                 rowAction(a.id, () => confirmCashTicket(a.id), `${a.firstName} ${a.lastName} marked as paid (cash).`);
                                             }}
-                                            className="h-8 px-3 rounded-lg bg-green-600 text-white text-xs font-semibold hover:bg-green-700 disabled:opacity-50">
+                                            className={`${deskBtn("success")} flex-1 sm:flex-none`}>
                                             Confirm cash
                                         </button>
                                     )}
@@ -482,19 +450,10 @@ function DoorDrawer({ event, onClose, notify }: {
                     })}
                 </div>
 
-                <div className="px-5 py-2 border-t border-gray-100 text-[11px] text-gray-400">
+                <div className="border-t border-gray-100 px-5 py-2 text-[11px] text-gray-400 dark:border-white/[0.06] dark:text-gray-500">
                     Scanner or keyboard: type the code and press Enter. Esc closes.
                 </div>
             </div>
-        </div>
-    );
-}
-
-function Counter({ label, value, tone }: { label: string; value: number | string; tone: string }) {
-    return (
-        <div className={`rounded-xl py-2 ${tone}`}>
-            <div className="text-xl font-bold leading-tight">{value}</div>
-            <div className="text-[10px] uppercase tracking-wide opacity-80">{label}</div>
         </div>
     );
 }

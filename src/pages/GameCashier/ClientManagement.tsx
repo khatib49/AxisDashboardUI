@@ -1,4 +1,16 @@
 import { useEffect, useState } from "react";
+import { Empty, Skeleton } from "antd";
+import {
+    EditOutlined,
+    LeftOutlined,
+    MailOutlined,
+    PhoneOutlined,
+    PlusOutlined,
+    RightOutlined,
+    TeamOutlined,
+    WalletOutlined,
+    DownOutlined,
+} from "@ant-design/icons";
 import {
     createClient,
     searchClientsByPhone,
@@ -13,13 +25,8 @@ import Input from "../../components/form/input/InputField";
 import Label from "../../components/form/Label";
 import Loader from "../../components/ui/Loader";
 import Alert from "../../components/ui/alert/Alert";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHeader,
-    TableRow,
-} from "../../components/ui/table";
+import { Pill } from "../../components/ui/PageKit";
+import { TillBar, TillButton, TillSearch } from "../../components/till/game/GameTillKit";
 import WalletModal from "../../components/wallet/WalletModal";
 import WalletMovements from "../../components/wallet/WalletMovements";
 import { getWalletBalances } from "../../services/walletService";
@@ -234,179 +241,165 @@ export default function ClientManagement() {
     }
 
     return (
-        <div className="p-6">
-            <h1 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
-                Client Management
-            </h1>
+        <div className="space-y-5 p-4 sm:p-6">
+            <TillBar
+                tone="violet"
+                icon={<TeamOutlined />}
+                title="Client Management"
+                meta={!loading && !error ? <Pill tone="violet" dot>{clients.length} shown</Pill> : null}
+                actions={
+                    <TillButton variant="primary" onClick={openCreate} className="w-full sm:w-auto">
+                        <PlusOutlined /> Add Client
+                    </TillButton>
+                }
+            />
 
-            <div className="mb-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <div className="w-64">
-                        <Input
-                            placeholder="Search by phone number..."
-                            value={searchPhone}
-                            onChange={(e) => setSearchPhone(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter") handleSearch();
-                            }}
-                        />
-                    </div>
-                    <button
-                        className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition"
-                        onClick={handleSearch}
-                        disabled={searching}
-                    >
-                        {searching ? <Loader size={16} /> : "Search"}
-                    </button>
-                    {searchPhone && (
-                        <button
-                            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition"
-                            onClick={() => {
-                                setSearchPhone("");
-                                loadAllClients();
-                            }}
+            {/* Phone lookup — the hero control on this screen */}
+            <div className="rounded-2xl border border-gray-200/80 bg-white p-3 shadow-[0_1px_2px_rgba(16,24,40,0.04)] dark:border-white/[0.06] dark:bg-white/[0.03] sm:p-4">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <TillSearch
+                        size="lg"
+                        inputMode="tel"
+                        placeholder="Search by phone number..."
+                        value={searchPhone}
+                        onChange={(v) => setSearchPhone(v)}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") handleSearch();
+                        }}
+                        className="flex-1"
+                    />
+                    <div className="flex gap-2">
+                        <TillButton
+                            variant="primary"
+                            size="lg"
+                            onClick={handleSearch}
+                            disabled={searching}
+                            className="flex-1 sm:min-w-[8rem] sm:flex-none"
                         >
-                            Clear
-                        </button>
-                    )}
+                            {searching ? <Loader size={16} /> : "Search"}
+                        </TillButton>
+                        {searchPhone && (
+                            <TillButton
+                                size="lg"
+                                onClick={() => {
+                                    setSearchPhone("");
+                                    loadAllClients();
+                                }}
+                                className="flex-1 sm:flex-none"
+                            >
+                                Clear
+                            </TillButton>
+                        )}
+                    </div>
                 </div>
-                <button
-                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                    onClick={openCreate}
-                >
-                    + Add Client
-                </button>
             </div>
 
             {loading && (
-                <div className="flex justify-center py-10">
-                    <Loader />
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3" aria-label="Loading clients">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} className="h-[13.5rem] rounded-2xl border border-gray-200/80 bg-white p-5 dark:border-white/[0.06] dark:bg-white/[0.03]">
+                            <Skeleton active title={{ width: "55%" }} paragraph={{ rows: 3, width: ["70%", "40%", "90%"] }} />
+                        </div>
+                    ))}
                 </div>
             )}
 
-            {error && <div className="text-red-600 bg-red-50 p-3 rounded mb-4">{error}</div>}
+            {error && (
+                <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300">
+                    {error}
+                </div>
+            )}
 
             {!loading && !error && (
-                <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
-                    <div className="max-w-full overflow-x-auto">
-                        <Table>
-                            <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
-                                <TableRow>
-                                    <TableCell
-                                        isHeader
-                                        className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                                    >
-                                        Name
-                                    </TableCell>
-                                    <TableCell
-                                        isHeader
-                                        className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                                    >
-                                        Phone Number
-                                    </TableCell>
-                                    <TableCell
-                                        isHeader
-                                        className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                                    >
-                                        Email
-                                    </TableCell>
-                                    <TableCell
-                                        isHeader
-                                        className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                                    >
-                                        Wallet
-                                    </TableCell>
-                                    <TableCell
-                                        isHeader
-                                        className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                                    >
-                                        Actions
-                                    </TableCell>
-                                </TableRow>
-                            </TableHeader>
+                <>
+                    {clients.length === 0 && (
+                        <div className="rounded-2xl border border-dashed border-gray-200 bg-white py-14 dark:border-white/[0.08] dark:bg-white/[0.02]">
+                            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No clients found" />
+                        </div>
+                    )}
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        {clients.map((client) => {
+                            const name = `${client.firstName || ""} ${client.lastName || ""}`.trim() || "-";
+                            const hasBalance = (balances[client.id] ?? 0) > 0;
+                            return (
+                                <div
+                                    key={client.id}
+                                    className="flex flex-col rounded-2xl border border-gray-200/80 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)] dark:border-white/[0.06] dark:bg-white/[0.03]"
+                                >
+                                    <div className="flex items-start gap-3 px-5 pt-5">
+                                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-violet-100 text-base font-semibold text-violet-700 dark:bg-violet-500/15 dark:text-violet-300" aria-hidden>
+                                            {(client.firstName || client.lastName || "?").trim().charAt(0).toUpperCase() || "?"}
+                                        </span>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="truncate text-base font-semibold text-gray-900 dark:text-white" title={name}>{name}</div>
+                                            <div className="mt-0.5 flex items-center gap-1.5 truncate text-sm tabular-nums text-gray-600 dark:text-gray-300">
+                                                <PhoneOutlined className="text-gray-400" />
+                                                {client.phoneNumber || "-"}
+                                            </div>
+                                            <div className="flex items-center gap-1.5 truncate text-xs text-gray-500 dark:text-gray-400" title={client.email || undefined}>
+                                                <MailOutlined className="text-gray-400" />
+                                                <span className="truncate">{client.email || "-"}</span>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                            <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                                {clients.length === 0 && (
-                                    <TableRow>
-                                        <TableCell colSpan={5} className="px-5 py-10 text-center text-gray-500">
-                                            <div>No clients found</div>
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                                {clients.map((client) => (
-                                    <TableRow key={client.id}>
-                                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                                            <div className="font-medium text-gray-800 dark:text-white/90">
-                                                {`${client.firstName || ""} ${client.lastName || ""}`.trim() || "-"}
+                                    {/* Balance tile doubles as the wallet button (balance, top-up, history) */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setWalletClient(client)}
+                                        title="Open wallet"
+                                        className={`mx-5 mt-4 flex min-h-[4rem] items-center justify-between gap-3 rounded-xl px-4 py-3 text-left transition ${
+                                            hasBalance
+                                                ? "bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20"
+                                                : "bg-gray-50 hover:bg-gray-100 dark:bg-white/[0.03] dark:hover:bg-white/[0.06]"
+                                        }`}
+                                    >
+                                        <div>
+                                            <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                                                <WalletOutlined /> Wallet balance
                                             </div>
-                                        </TableCell>
-                                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                                            {client.phoneNumber || "-"}
-                                        </TableCell>
-                                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                                            {client.email || "-"}
-                                        </TableCell>
-                                        <TableCell className="px-4 py-3 text-start text-theme-sm">
-                                            {/* Balance chip doubles as the wallet button */}
-                                            <button
-                                                type="button"
-                                                onClick={() => setWalletClient(client)}
-                                                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition ${
-                                                    (balances[client.id] ?? 0) > 0
-                                                        ? "bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
-                                                        : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                                                }`}
-                                                title="Open wallet"
-                                            >
-                                                💰 {balances[client.id] !== undefined ? `$${balances[client.id].toFixed(2)}` : "$0.00"}
-                                            </button>
-                                        </TableCell>
-                                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    className="text-sm px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition"
-                                                    onClick={() => openEdit(client)}
-                                                >
-                                                    Edit
-                                                </button>
-                                                <button
-                                                    className="text-sm px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition"
-                                                    onClick={() => setWalletClient(client)}
-                                                >
-                                                    Top up
-                                                </button>
+                                            <div className={`text-2xl font-semibold tabular-nums ${hasBalance ? "text-indigo-700 dark:text-indigo-300" : "text-gray-500 dark:text-gray-400"}`}>
+                                                {balances[client.id] !== undefined ? `$${balances[client.id].toFixed(2)}` : "$0.00"}
                                             </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                        </div>
+                                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400">History ›</span>
+                                    </button>
+
+                                    <div className="mt-auto grid grid-cols-2 gap-2 p-5 pt-4">
+                                        <TillButton onClick={() => openEdit(client)}>
+                                            <EditOutlined /> Edit
+                                        </TillButton>
+                                        <TillButton variant="emerald" onClick={() => setWalletClient(client)}>
+                                            <PlusOutlined /> Top up
+                                        </TillButton>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
-                </div>
+                </>
             )}
 
             {/* Pagination controls */}
             {!loading && !error && clients.length > 0 && (
-                <div className="mt-4 flex items-center justify-between">
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="text-sm tabular-nums text-gray-600 dark:text-gray-400">
                         Page {page} of {totalPages}
                     </div>
                     <div className="flex items-center gap-2">
-                        <button
-                            className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded disabled:opacity-50"
+                        <TillButton
                             onClick={() => setPage((p) => Math.max(1, p - 1))}
                             disabled={page <= 1}
                         >
-                            Prev
-                        </button>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">Page {page} of {totalPages}</span>
-                        <button
-                            className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded disabled:opacity-50"
+                            <LeftOutlined /> Prev
+                        </TillButton>
+                        <span className="hidden text-sm tabular-nums text-gray-600 dark:text-gray-400 sm:inline">Page {page} of {totalPages}</span>
+                        <TillButton
                             onClick={() => setPage((p) => p + 1)}
                             disabled={page >= totalPages}
                         >
-                            Next
-                        </button>
+                            Next <RightOutlined />
+                        </TillButton>
                     </div>
                 </div>
             )}
@@ -418,19 +411,18 @@ export default function ClientManagement() {
                 title={editing ? "Edit Client" : "Add Client"}
                 footer={
                     <>
-                        <button
-                            className="px-4 py-2 bg-green-600 text-white rounded flex items-center gap-2 hover:bg-green-700 transition disabled:opacity-50"
+                        <TillButton
+                            variant="emerald"
                             onClick={submitForm}
                             disabled={submitting}
                         >
                             {submitting ? <Loader size={16} /> : editing ? "Save" : "Create"}
-                        </button>
-                        <button
-                            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+                        </TillButton>
+                        <TillButton
                             onClick={() => setIsFormOpen(false)}
                         >
                             Cancel
-                        </button>
+                        </TillButton>
                     </>
                 }
             >
@@ -486,24 +478,30 @@ export default function ClientManagement() {
 
             {/* Cash-box: every wallet top-up/spend as a filterable feed, so
                 the cashier can reconcile the drawer at a glance. */}
-            <div className="mt-6 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-white/[0.05] dark:bg-white/[0.03]">
+            <section className="rounded-2xl border border-gray-200/80 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)] dark:border-white/[0.06] dark:bg-white/[0.03]">
                 <button
                     type="button"
                     onClick={() => setShowMovements(v => !v)}
-                    className="w-full flex items-center justify-between"
+                    aria-expanded={showMovements}
+                    className="flex min-h-[4rem] w-full items-center justify-between gap-3 rounded-2xl px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-white/[0.03]"
                 >
-                    <div className="text-left">
-                        <div className="font-semibold text-gray-900 dark:text-white">💰 Wallet money — cash box</div>
-                        <div className="text-xs text-gray-500">Today's top-ups and spends, with exact cash totals for the drawer.</div>
+                    <div className="flex items-center gap-3">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-lg text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300" aria-hidden>
+                            <WalletOutlined />
+                        </span>
+                        <div>
+                            <div className="font-semibold text-gray-900 dark:text-white">Wallet money — cash box</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">Today's top-ups and spends, with exact cash totals for the drawer.</div>
+                        </div>
                     </div>
-                    <span className="text-gray-400 text-lg">{showMovements ? "▾" : "▸"}</span>
+                    <DownOutlined className={`text-gray-400 transition-transform ${showMovements ? "" : "-rotate-90"}`} />
                 </button>
                 {showMovements && (
-                    <div className="mt-4">
+                    <div className="border-t border-gray-100 p-4 dark:border-white/[0.06]">
                         <WalletMovements compact />
                     </div>
                 )}
-            </div>
+            </section>
 
             {/* Wallet panel — balance, top-up with bonus preview, history */}
             {walletClient && (

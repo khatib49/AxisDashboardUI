@@ -127,7 +127,7 @@ const Ps5Sessions: React.FC = () => {
         <div className="space-y-5 p-4 sm:p-6">
             <TillBar
                 tone="blue"
-                icon={<PlayStationIcon className="h-5 w-5" />}
+                icon={<PlayStationIcon className="h-5 w-5" fill="currentColor" />}
                 title="Open PS5 Sessions"
                 meta={!loading && !error ? (
                     <Pill tone="blue" dot>{sessions.length} open</Pill>
