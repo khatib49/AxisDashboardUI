@@ -344,6 +344,7 @@ const AccountingDashboard: React.FC = () => {
           tcgCogs={tcgCogsFromReport}
           tcgStockBuy={tcgStockBuy}
           tcgStockSell={tcgStockSell}
+          ownerDrawings={dashboard?.ownerDrawings ?? 0}
         />
 
         {/* Revenue Breakdown — Gross / Discounts / Net summary at the top so
@@ -1029,6 +1030,7 @@ interface OwnerSummaryGridProps {
   tcgCogs: number;
   tcgStockBuy: number;
   tcgStockSell: number;
+  ownerDrawings: number;
 }
 
 // Generic drill-down modal for any Owner Summary tile.
@@ -1373,6 +1375,13 @@ const OwnerSummaryGrid: React.FC<OwnerSummaryGridProps> = (p) => {
             tooltip="What we paid for TCG stock currently on hand (cost basis)." />
           <MetricTile palette="purple" onClick={() => setBd('tcgstocksell')} label="15 · TCG Stock Sell"      value={money(p.tcgStockSell)}
             tooltip="What TCG stock on hand would generate at retail price if fully sold." />
+        </div>
+
+        {/* Row 6 — Owners' Drawings: cash the owners took out. Equity, not an
+            expense, so it sits outside Operating Expenses / Net Income. */}
+        <div style={gridStyle}>
+          <MetricTile palette="amber" onClick={() => setBd('drawings')} label="16 · Owners' Drawings" value={money(p.ownerDrawings)}
+            tooltip="Cash the owners took out in the period, per owner with their share and fair share. Reduces equity and Cash on Hand — not an expense, so Net Income is unaffected." />
         </div>
       </div>
     </Card>

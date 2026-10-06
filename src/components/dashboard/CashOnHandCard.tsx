@@ -2,7 +2,9 @@
 // ==============
 // Rami's spec (2026-09-11):
 //   cashOnHand = baseline + TOTAL revenue (all time) − TOTAL expenses (all time)
+//                − owner drawings (all time)
 // Total expenses = the "Total Expenses (All)" figure on the Expenses page.
+// Owner drawings are cash out but not expenses, so they get their own term.
 // The date filter does not touch it. Computed by the server
 // (AccountingDashboardDto.cashOnHand) so every screen shows the same figure.
 //
@@ -33,7 +35,7 @@ interface Props {
 const money = (n: number) =>
   `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-const FORMULA = "Baseline + TOTAL revenue since day one (paid sales + paid event tickets) − TOTAL expenses since day one (the \"Total Expenses (All)\" figure on the Expenses page). Not affected by the date filter.";
+const FORMULA = "Baseline + TOTAL revenue since day one (paid sales + paid event tickets) − TOTAL expenses since day one (the \"Total Expenses (All)\" figure on the Expenses page) − owners' drawings since day one (cash the owners took out; not an expense). Not affected by the date filter.";
 
 export default function CashOnHandCard({ fromIso, toIso, mode = "compact", cashOverride, onBaselineSaved }: Props) {
   const [data, setData] = useState<CashOnHandDto | null>(cashOverride ?? null);
@@ -73,7 +75,8 @@ export default function CashOnHandCard({ fromIso, toIso, mode = "compact", cashO
   const isReady = !!data && !loading;
 
   const breakdown = data
-    ? `baseline ${money(data.baseline)} + total revenue ${money(data.revenue)} − total expenses ${money(data.totalExpenses)}`
+    ? `baseline ${money(data.baseline)} + total revenue ${money(data.revenue)} − total expenses ${money(data.totalExpenses)}` +
+      (data.otherCashOut ? ` − owners' drawings ${money(data.otherCashOut)}` : "")
     : "";
   const expenseDetail = "all time · not affected by the date filter";
 

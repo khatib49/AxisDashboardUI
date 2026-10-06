@@ -93,6 +93,7 @@ import IntegrationsPage from "./pages/Admin/Integrations";
 import ItemRevenueReport from "./pages/Accounting/ItemRevenueReport";
 import BooksAudit from "./pages/Accounting/BooksAudit";
 import HierarchyAudit from "./pages/Accounting/HierarchyAudit";
+import OwnersDrawings from "./pages/Accounting/OwnersDrawings";
 import Ingredients from "./pages/Chef/Ingredients";
 import StockMovements from "./pages/Chef/StockMovements";
 import Suppliers from "./pages/Chef/Suppliers";
@@ -293,6 +294,7 @@ export default function App() {
               {/* Accounting routes */}
               <Route path="/accounting" element={<PageRoute page="accounting"><AccountingDashboard /></PageRoute>} />
               <Route path="/accounting/item-revenue" element={<PageRoute page="accounting-item-revenue"><ItemRevenueReport /></PageRoute>} />
+              <Route path="/accounting/owners-drawings" element={<PageRoute page="owners-drawings"><OwnersDrawings /></PageRoute>} />
               <Route path="/accounting/accounts" element={<PageRoute page="accounting-accounts"><ChartOfAccounts /></PageRoute>} />
               <Route path="/accounting/trial-balance" element={<PageRoute page="accounting-trial-balance"><TrialBalance /></PageRoute>} />
               <Route path="/accounting/general-ledger" element={<PageRoute page="accounting-ledger"><GeneralLedger /></PageRoute>} />

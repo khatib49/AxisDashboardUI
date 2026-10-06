@@ -44,8 +44,11 @@ export type PagedExpensesResult = {
   pageSize: number;
   totalCount: number;
   totalAmount: number;
+  /** Filtered entries that are NOT owner drawings. */
   totalAmountAll: number;
   items: ExpenseDto[];
+  /** Filtered entries whose category maps to an Equity account (owner drawings). */
+  totalOwnerDrawingsAll?: number;
 };
 
 export type ExpenseCategoryCreateDto = {

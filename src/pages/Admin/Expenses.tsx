@@ -28,6 +28,7 @@ export default function Expenses() {
     const [totalCount, setTotalCount] = useState(0);
     const [totalAmount, setTotalAmount] = useState(0);
     const [totalAmountAll, setTotalAmountAll] = useState(0);
+    const [totalOwnerDrawingsAll, setTotalOwnerDrawingsAll] = useState(0);
     const [reloadToken, setReloadToken] = useState(0);
 
     // Filters
@@ -90,6 +91,7 @@ export default function Expenses() {
                 setTotalCount(result.totalCount || 0);
                 setTotalAmount(result.totalAmount || 0);
                 setTotalAmountAll(result.totalAmountAll || 0);
+                setTotalOwnerDrawingsAll(result.totalOwnerDrawingsAll || 0);
             })
             .catch((err) => {
                 if (!mounted) return;
@@ -302,7 +304,10 @@ export default function Expenses() {
                 <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-lg shadow-lg p-6 text-white">
                     <p className="text-sm font-medium opacity-90">Total Expenses (All)</p>
                     <p className="text-3xl font-bold mt-1">${totalAmountAll.toFixed(2)}</p>
-                    <p className="text-xs opacity-75 mt-1">All filtered results</p>
+                    <p className="text-xs opacity-75 mt-1">
+                        All filtered results
+                        {totalOwnerDrawingsAll > 0 && ` · excludes $${totalOwnerDrawingsAll.toFixed(2)} owner drawings (not an expense)`}
+                    </p>
                 </div>
                 <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-lg shadow-lg p-6 text-white">
                     <p className="text-sm font-medium opacity-90">Total Records</p>

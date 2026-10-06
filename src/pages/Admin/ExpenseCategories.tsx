@@ -419,7 +419,9 @@ export default function ExpenseCategories() {
                             Pick the real account this category posts to. Equity (owner draws),
                             Revenue (manual income) and Expense accounts are all selectable —
                             the dashboard classifies entries by account type, not by category.
-                            Changing this will backfill missing journal entries automatically.
+                            Owner cash out belongs on that owner's "Drawings – …" account
+                            (Accounting → Owners' Drawings); Equity entries are never counted
+                            as expenses. Changing this will backfill missing journal entries automatically.
                         </p>
                     </div>
 

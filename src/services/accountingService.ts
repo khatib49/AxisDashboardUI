@@ -45,6 +45,7 @@ export type CashOnHandDto = {
   revenue: number;
   operatingExpenses: number;
   capitalExpenses: number;
+  /** All-time owner drawings — cash out, but not an expense. */
   otherCashOut: number;
   stockPurchases: number;
   totalExpenses: number;
@@ -61,8 +62,10 @@ export type AccountingDashboardDto = {
   grossProfit: number;
   netIncome: number;
   netMarginPercent: number;
-  // Baseline + revenue − TOTAL expenses, computed server-side.
+  // Baseline + revenue − TOTAL expenses − owner drawings, computed server-side.
   cashOnHand?: CashOnHandDto | null;
+  /** Owners' drawings in the period (ledger). Equity, never part of Net Income. */
+  ownerDrawings?: number | null;
 };
 
 export type BackfillResultDto = {
