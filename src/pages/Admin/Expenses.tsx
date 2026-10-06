@@ -18,6 +18,13 @@ import Alert from "../../components/ui/alert/Alert";
 import Select from "../../components/form/Select";
 import DateTimePicker from "../../components/form/DateTimePicker";
 
+// From/To are calendar days stored at midnight UTC. Format the YYYY-MM-DD
+// part as a local date so the browser's timezone can't move it a day.
+const formatDay = (iso: string) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+    return (m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(iso)).toLocaleDateString();
+};
+
 export default function Expenses() {
     const [expenses, setExpenses] = useState<ExpenseDto[]>([]);
     const [categories, setCategories] = useState<ExpenseCategoryDto[]>([]);
@@ -380,8 +387,8 @@ export default function Expenses() {
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-500">
                                             <div className="space-y-1">
-                                                <div>From: {new Date(expense.fromDate).toLocaleDateString()}</div>
-                                                <div>To: {new Date(expense.toDate).toLocaleDateString()}</div>
+                                                <div>From: {formatDay(expense.fromDate)}</div>
+                                                <div>To: {formatDay(expense.toDate)}</div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">

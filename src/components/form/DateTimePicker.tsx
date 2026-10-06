@@ -24,6 +24,18 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 // Beirut timezone offset: UTC+2 (or UTC+3 during DST)
 const BEIRUT_TZ = 'Asia/Beirut';
 
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+/** Local calendar day as "YYYY-MM-DD". */
+const toYmd = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+
+/** Date-only values are read by their YYYY-MM-DD part, as a local date. */
+function parseValue(value: string, dateOnly: boolean): Date | null {
+    const m = dateOnly ? /^(\d{4})-(\d{2})-(\d{2})/.exec(value) : null;
+    const d = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(value);
+    return isNaN(d.getTime()) ? null : d;
+}
+
 export default function DateTimePicker({
     value = '',
     onChange,
@@ -59,8 +71,11 @@ export default function DateTimePicker({
         return () => mq.removeEventListener('change', handler);
     }, []);
 
-    // Parse value or use current Beirut time
-    const parsedDate = value ? new Date(value) : null;
+    // Parse value or use current Beirut time. In date-only mode the value is
+    // a calendar day: read its YYYY-MM-DD part as a local date so it never
+    // shifts with the browser's timezone ("2026-08-08T00:00:00Z" is 8 Aug,
+    // even in a timezone where that instant is still 7 Aug).
+    const parsedDate = value ? parseValue(value, dateOnly) : null;
     const now = new Date(new Date().toLocaleString('en-US', { timeZone: BEIRUT_TZ }));
 
     const [selectedDate, setSelectedDate] = useState<Date>(parsedDate || now);
@@ -93,6 +108,9 @@ export default function DateTimePicker({
     // Format display value — date-only mode strips the time portion.
     const formatDisplayValue = () => {
         if (!value) return '';
+        if (dateOnly && parsedDate) {
+            return new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' }).format(parsedDate);
+        }
         const date = new Date(value);
         const options: Intl.DateTimeFormatOptions = dateOnly
             ? {
@@ -167,10 +185,12 @@ export default function DateTimePicker({
     const handleDayClick = (day: number | null) => {
         if (!day) return;
         if (dateOnly) {
-            // Date-only mode: commit immediately at midnight, no time step.
+            // Date-only mode: commit the calendar day itself ("2026-08-08").
+            // Never toISOString() here — local midnight in Beirut is the
+            // previous day in UTC, which is how entries were saved a day early.
             const finalDate = new Date(displayYear, displayMonth, day, 0, 0, 0, 0);
             setSelectedDate(finalDate);
-            onChange(finalDate.toISOString());
+            onChange(toYmd(finalDate));
             setIsOpen(false);
             return;
         }
@@ -188,7 +208,7 @@ export default function DateTimePicker({
             dateOnly ? 0 : hours,
             dateOnly ? 0 : minutes
         );
-        onChange(finalDate.toISOString());
+        onChange(dateOnly ? toYmd(finalDate) : finalDate.toISOString());
         setIsOpen(false);
     };
 
