@@ -294,7 +294,7 @@ const Orders: React.FC = () => {
 
                 {/* Table */}
                 {!loadingItems && itemOrders.length > 0 && (
-                    <div className="overflow-x-auto">
+                    <div className="relative overflow-x-auto">
                         <table className="w-full min-w-[920px] text-sm">
                             <thead>
                                 <tr className="border-b border-gray-100 bg-gray-50/70 text-left dark:border-white/[0.06] dark:bg-white/[0.02]">
@@ -518,7 +518,7 @@ const Orders: React.FC = () => {
                 )}
 
                 {!loadingGames && gameOrders.length > 0 && (
-                    <div className="overflow-x-auto">
+                    <div className="relative overflow-x-auto">
                         <table className="w-full min-w-[1000px] text-sm">
                             <thead>
                                 <tr className="border-b border-gray-100 bg-gray-50/70 text-left dark:border-white/[0.06] dark:bg-white/[0.02]">
