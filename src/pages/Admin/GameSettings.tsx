@@ -1,4 +1,15 @@
 import { useEffect, useState } from 'react';
+import { Button, Empty, Skeleton, Switch as AntSwitch } from 'antd';
+import {
+    CalendarOutlined,
+    ControlOutlined,
+    DeleteOutlined,
+    EditOutlined,
+    EyeInvisibleOutlined,
+    GiftOutlined,
+    PlusOutlined,
+    TagOutlined,
+} from '@ant-design/icons';
 import { getSettings, GameSettingDto, createSetting, CreateSettingRequest, updateSetting, deleteSetting } from '../../services/gameSettingsService';
 import { getGames } from '../../services/gameService';
 import { getCategoriesByType, CategoryDto } from '../../services/categoryService';
@@ -8,7 +19,10 @@ import Label from '../../components/form/Label';
 import Input from '../../components/form/input/InputField';
 import Select from '../../components/form/Select';
 import Switch from '../../components/form/switch/Switch';
-import DeleteIconButton from '../../components/ui/DeleteIconButton';
+import { PageHeader, Panel, Pill, StatTile } from '../../components/ui/PageKit';
+import { IconChip, VenuePager } from '../../components/admin/venue/VenueKit';
+import { Field, FormSection, ToggleTile } from '../../components/admin/game/GameKit';
+import { FOOTER_BTN, MODAL_LG, MODAL_SM, fmtDate, fmtDateTime, typeTone } from '../../components/admin/game/format';
 
 export default function GameSettings() {
     const [settings, setSettings] = useState<GameSettingDto[]>([]);
@@ -191,207 +205,326 @@ export default function GameSettings() {
         }
     };
 
-    return (
-        <div className="p-6">
-            <h1 className="text-2xl font-semibold mb-4">Game Settings</h1>
+    const openEdit = (s: GameSettingDto) => {
+        // open edit modal
+        setEditingId(s.id);
+        setNewName(s.name);
+        setNewType(s.type);
+        setNewIsOffer(!!s.isOffer);
+        setNewIsDayPass(!!s.isDayPass);
+        setNewGameId(s.gameId);
+        const hoursValue = typeof s.hours === 'number' ? s.hours : '';
+        setIsOpenHour(hoursValue === 0);
+        setNewHours(hoursValue === 0 ? '' : hoursValue);
+        setNewPrice(typeof s.price === 'number' ? s.price : '');
+        setNewIsActive(s.isActive !== false);
+        setNewIsEvent(!!s.isEvent);
+        setKitLines((s.items ?? []).map(i => ({
+            itemId: i.itemId,
+            quantityPerPerson: i.quantityPerPerson,
+        })));
+        setIsOpen(true);
+    };
 
-            <div className="mb-4 flex items-center justify-end gap-3">
-                <label className="flex items-center gap-2 text-sm text-gray-300">
-                    <input
-                        type="checkbox"
-                        checked={showHidden}
-                        onChange={(e) => { setShowHidden(e.target.checked); setPage(1); }}
-                        className="w-4 h-4"
-                    />
-                    Show hidden
-                </label>
-                <button className="bg-green-600 text-white px-3 py-1 rounded" onClick={openModal}>Add Setting</button>
+    // ── List presentation (derived from the page already loaded) ────────
+    const firstLoad = loading && totalCount === null;
+    const gameNameOf = (s: GameSettingDto) => s.gameName ?? (games.find(g => g.id === s.gameId)?.name ?? s.gameId);
+    const dayPassesOnPage = settings.filter(s => s.isDayPass).length;
+    const eventsOnPage = settings.filter(s => s.isEvent).length;
+    const offersOnPage = settings.filter(s => s.isOffer).length;
+    const hiddenOnPage = settings.filter(s => s.isActive === false).length;
+
+    const rowActions = (s: GameSettingDto, hidden: boolean) => (
+        <div className="flex shrink-0 items-center justify-end gap-1">
+            <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(s)} aria-label={`Edit ${s.name}`}>
+                Edit
+            </Button>
+            {!hidden && (
+                <Button
+                    size="small"
+                    type="text"
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={() => setDeleteId(s.id)}
+                    aria-label={`Delete ${s.name}`}
+                    title="Delete"
+                />
+            )}
+        </div>
+    );
+
+    return (
+        <div className="mx-auto max-w-[1400px] space-y-6 p-4 sm:p-6">
+            <PageHeader
+                tone="violet"
+                icon={<ControlOutlined />}
+                title="Game Settings"
+                description="Prices and session rules for each game: hourly or open-hour play, day passes, offers and event bundles. Hidden settings stay on file but don't reach the cashier."
+            />
+
+            {/* KPIs — derived from the data already loaded (no extra requests) */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <StatTile
+                    label="Settings"
+                    loading={firstLoad}
+                    value={<span className="tabular-nums">{(totalCount ?? settings.length).toLocaleString('en-US')}</span>}
+                    sub={showHidden ? `Including hidden · ${hiddenOnPage} hidden on this page` : 'Visible to the cashier'}
+                    accent={<IconChip tone="violet"><ControlOutlined /></IconChip>}
+                />
+                <StatTile
+                    label="Day passes"
+                    loading={firstLoad}
+                    value={<span className="tabular-nums">{dayPassesOnPage}</span>}
+                    sub="On this page"
+                    accent={<IconChip tone="blue"><CalendarOutlined /></IconChip>}
+                />
+                <StatTile
+                    label="Events"
+                    loading={firstLoad}
+                    value={<span className="tabular-nums">{eventsOnPage}</span>}
+                    sub="On this page"
+                    accent={<IconChip tone="violet"><GiftOutlined /></IconChip>}
+                />
+                <StatTile
+                    label="Offers"
+                    loading={firstLoad}
+                    value={<span className="tabular-nums">{offersOnPage}</span>}
+                    sub="On this page"
+                    accent={<IconChip tone="amber"><TagOutlined /></IconChip>}
+                />
             </div>
 
-            {loading && <div className="text-gray-600">Loading settings...</div>}
+            <Panel
+                title="All settings"
+                subtitle={totalCount !== null ? `${totalCount.toLocaleString('en-US')} setting${totalCount === 1 ? '' : 's'}${showHidden ? ' · including hidden' : ''}` : undefined}
+                bodyClassName="p-0"
+                extra={
+                    <div className="flex flex-wrap items-center gap-3">
+                        <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                            <AntSwitch
+                                size="small"
+                                checked={showHidden}
+                                onChange={(checked) => { setShowHidden(checked); setPage(1); }}
+                            />
+                            Show hidden
+                        </label>
+                        <Button type="primary" icon={<PlusOutlined />} onClick={openModal}>Add Setting</Button>
+                    </div>
+                }
+            >
+                {loading && <div className="p-5"><Skeleton active paragraph={{ rows: 6 }} /></div>}
 
-            {!loading && (
-                <div className="bg-white rounded shadow">
-                    <div className="p-4">
-                        <table className="min-w-full">
-                            <thead>
-                                <tr>
-                                    <th className="text-left px-4 py-2">Name</th>
-                                    <th className="text-left px-4 py-2">Type</th>
-                                    <th className="text-left px-4 py-2">Offer</th>
-                                    <th className="text-left px-4 py-2">DayPass</th>
-                                    <th className="text-left px-4 py-2">Event</th>
-                                    <th className="text-left px-4 py-2">Game</th>
-                                    <th className="text-left px-4 py-2">Hours</th>
-                                    <th className="text-left px-4 py-2">Price</th>
-                                    <th className="text-left px-4 py-2">Created</th>
-                                    <th className="text-left px-4 py-2">Modified</th>
-                                    <th className="text-left px-4 py-2 sr-only">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {settings.map((s: GameSettingDto) => {
-                                    const hidden = s.isActive === false;
-                                    return (
-                                    <tr key={s.id} className={`border-t ${hidden ? 'opacity-60' : ''}`}>
-                                        <td className="px-4 py-2 align-top">
-                                            <div className="flex items-center gap-2">
-                                                <span>{s.name}</span>
-                                                {hidden && (
-                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-100 text-red-700">
-                                                        Hidden
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-2 align-top">{s.type}</td>
-                                        <td className="px-4 py-2 align-top">{s.isOffer ? 'Yes' : 'No'}</td>
-                                        <td className="px-4 py-2 align-top">{s.isDayPass ? 'Yes' : 'No'}</td>
-                                        <td className="px-4 py-2 align-top">
-                                            {s.isEvent ? (
-                                                <div className="flex flex-col gap-0.5">
-                                                    <span className="inline-flex w-fit items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-indigo-100 text-indigo-700">
-                                                        Event
-                                                    </span>
-                                                    {(s.items?.length ?? 0) > 0 && (
-                                                        <span className="text-[11px] text-gray-500">
-                                                            {s.items!.map(i => `${i.quantityPerPerson}x ${i.itemName}`).join(', ')} / person
-                                                        </span>
-                                                    )}
+                {!loading && (
+                    <>
+                        {settings.length === 0 ? (
+                            <div className="py-12">
+                                <Empty description={showHidden ? 'No settings yet' : 'No visible settings — turn on “Show hidden” to see hidden ones'} />
+                            </div>
+                        ) : (
+                            <>
+                                {/* ≥ xl: table (sidebar + 7 columns need the room) */}
+                                <div className="relative hidden overflow-x-auto xl:block">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="border-b border-gray-100 text-left text-xs font-medium text-gray-500 dark:border-white/[0.06] dark:text-gray-400">
+                                                <th className="px-5 py-3 font-medium">Setting</th>
+                                                <th className="px-3 py-3 font-medium">Type</th>
+                                                <th className="px-3 py-3 font-medium">Flags</th>
+                                                <th className="px-3 py-3 font-medium">Hours</th>
+                                                <th className="px-3 py-3 text-right font-medium">Price</th>
+                                                <th className="px-3 py-3 font-medium">Dates</th>
+                                                <th className="px-5 py-3 text-right font-medium"><span className="sr-only">Actions</span></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100 dark:divide-white/[0.06]">
+                                            {settings.map((s: GameSettingDto) => {
+                                                const hidden = s.isActive === false;
+                                                const dim = hidden ? 'opacity-60' : '';
+                                                return (
+                                                    <tr key={s.id} className={`align-top transition hover:bg-gray-50/70 dark:hover:bg-white/[0.02] ${hidden ? 'bg-gray-50/60 dark:bg-white/[0.015]' : ''}`}>
+                                                        <td className={`min-w-[200px] px-5 py-3.5 ${dim}`}>
+                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => openEdit(s)}
+                                                                    className="text-left font-medium text-gray-900 hover:text-violet-700 dark:text-gray-100 dark:hover:text-violet-300"
+                                                                >
+                                                                    {s.name}
+                                                                </button>
+                                                                {hidden && <HiddenPill />}
+                                                            </div>
+                                                            <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{gameNameOf(s)}</div>
+                                                        </td>
+                                                        <td className={`px-3 py-3.5 ${dim}`}><Pill tone={typeTone(s.type)}>{s.type}</Pill></td>
+                                                        <td className={`max-w-[220px] px-3 py-3.5 ${dim}`}><SettingFlags s={s} /></td>
+                                                        <td className={`whitespace-nowrap px-3 py-3.5 ${dim}`}><HoursCell hours={s.hours} /></td>
+                                                        <td className={`whitespace-nowrap px-3 py-3.5 text-right font-medium tabular-nums text-gray-900 dark:text-gray-100 ${dim}`}>{fmtPrice(s.price)}</td>
+                                                        <td className={`whitespace-nowrap px-3 py-3.5 text-xs leading-5 text-gray-500 dark:text-gray-400 ${dim}`}>
+                                                            <div title={fmtDateTime(s.createdOn)}><span className="text-gray-400 dark:text-gray-500">Created</span> {fmtDate(s.createdOn)}</div>
+                                                            <div title={fmtDateTime(s.modifiedOn)}><span className="text-gray-400 dark:text-gray-500">Modified</span> {fmtDate(s.modifiedOn)}</div>
+                                                        </td>
+                                                        <td className="px-5 py-3.5">{rowActions(s, hidden)}</td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* < xl: cards */}
+                                <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:hidden">
+                                    {settings.map((s: GameSettingDto) => {
+                                        const hidden = s.isActive === false;
+                                        return (
+                                            <div
+                                                key={s.id}
+                                                className={`min-w-0 rounded-xl border p-4 ${hidden ? 'border-dashed border-gray-300 bg-gray-50/60 dark:border-white/10 dark:bg-white/[0.015]' : 'border-gray-200/80 bg-white dark:border-white/[0.06] dark:bg-white/[0.02]'}`}
+                                            >
+                                                <div className="flex items-start gap-2">
+                                                    <div className={`min-w-0 flex-1 ${hidden ? 'opacity-60' : ''}`}>
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => openEdit(s)}
+                                                                className="min-w-0 break-words text-left font-medium text-gray-900 dark:text-gray-100"
+                                                            >
+                                                                {s.name}
+                                                            </button>
+                                                            {hidden && <HiddenPill />}
+                                                        </div>
+                                                        <div className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">{gameNameOf(s)}</div>
+                                                    </div>
+                                                    {rowActions(s, hidden)}
                                                 </div>
-                                            ) : (
-                                                <span className="text-gray-400">No</span>
-                                            )}
-                                        </td>
-                                        <td className="px-4 py-2 align-top">{s.gameName ?? (games.find(g => g.id === s.gameId)?.name ?? s.gameId)}</td>
-                                        <td className="px-4 py-2 align-top">{typeof s.hours === 'number' ? (s.hours === 0 ? 'Open' : s.hours) : '-'}</td>
-                                        <td className="px-4 py-2 align-top">{typeof s.price === 'number' ? s.price : '-'}</td>
-                                        <td className="px-4 py-2 align-top">{s.createdOn ? new Date(s.createdOn).toLocaleString() : '-'}</td>
-                                        <td className="px-4 py-2 align-top">{s.modifiedOn ? new Date(s.modifiedOn).toLocaleString() : '-'}</td>
-                                        <td className="px-4 py-2 text-right">
-                                            <div className="flex justify-end items-center gap-2">
-                                                <button className="text-sm px-2 py-1 bg-gray-200 rounded" onClick={() => {
-                                                    // open edit modal
-                                                    setEditingId(s.id);
-                                                    setNewName(s.name);
-                                                    setNewType(s.type);
-                                                    setNewIsOffer(!!s.isOffer);
-                                                    setNewIsDayPass(!!s.isDayPass);
-                                                    setNewGameId(s.gameId);
-                                                    const hoursValue = typeof s.hours === 'number' ? s.hours : '';
-                                                    setIsOpenHour(hoursValue === 0);
-                                                    setNewHours(hoursValue === 0 ? '' : hoursValue);
-                                                    setNewPrice(typeof s.price === 'number' ? s.price : '');
-                                                    setNewIsActive(s.isActive !== false);
-                                                    setNewIsEvent(!!s.isEvent);
-                                                    setKitLines((s.items ?? []).map(i => ({
-                                                        itemId: i.itemId,
-                                                        quantityPerPerson: i.quantityPerPerson,
-                                                    })));
-                                                    setIsOpen(true);
-                                                }}>Edit</button>
-                                                {!hidden && <DeleteIconButton onClick={() => setDeleteId(s.id)} />}
+                                                <div className={hidden ? 'opacity-60' : ''}>
+                                                    <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                                                        <Pill tone={typeTone(s.type)}>{s.type}</Pill>
+                                                        <SettingFlags s={s} inline />
+                                                    </div>
+                                                    <div className="mt-3 grid grid-cols-2 gap-3 border-t border-gray-100 pt-3 dark:border-white/[0.06]">
+                                                        <Field label="Hours"><HoursCell hours={s.hours} /></Field>
+                                                        <Field label="Price"><span className="font-medium tabular-nums">{fmtPrice(s.price)}</span></Field>
+                                                        <Field label="Created"><span className="text-xs tabular-nums">{fmtDateTime(s.createdOn)}</span></Field>
+                                                        <Field label="Modified"><span className="text-xs tabular-nums">{fmtDateTime(s.modifiedOn)}</span></Field>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </td>
-                                    </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
+                                        );
+                                    })}
+                                </div>
+                            </>
+                        )}
 
-                    <div className="p-4 flex items-center justify-between">
-                        <div className="text-sm text-gray-600">{totalCount !== null ? `Showing ${settings.length} of ${totalCount}` : ''}</div>
-                        <div className="flex items-center gap-2">
-                            <label className="text-sm text-gray-600">Page size</label>
-                            <Select options={[{ value: 5, label: '5' }, { value: 10, label: '10' }, { value: 25, label: '25' }]} defaultValue={pageSize} onChange={(v: string | number) => { setPageSize(Number(v)); setPage(1); }} className="w-24" />
-                            <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>Prev</button>
-                            <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setPage((p) => p + 1)} disabled={totalCount !== null && page * pageSize >= (totalCount || 0)}>Next</button>
-                        </div>
-                    </div>
-                </div>
-            )}
+                        <VenuePager
+                            shown={settings.length}
+                            total={totalCount}
+                            page={page}
+                            pageSize={pageSize}
+                            pageSizeOptions={[5, 10, 25]}
+                            onPageSizeChange={(n) => { setPageSize(n); setPage(1); }}
+                            onPrev={() => setPage((p) => Math.max(1, p - 1))}
+                            onNext={() => setPage((p) => p + 1)}
+                            prevDisabled={page <= 1}
+                            nextDisabled={totalCount !== null && page * pageSize >= (totalCount || 0)}
+                        />
+                    </>
+                )}
+            </Panel>
 
             <Modal
                 isOpen={isOpen}
                 onClose={() => { setIsOpen(false); setEditingId(null); }}
                 title={editingId ? "Edit Setting" : "Create Setting"}
+                subtitle={editingId ? 'Changes apply to new sessions at the cashier.' : 'A price and session rule the cashier can pick for a game.'}
+                className={MODAL_LG}
                 footer={(
                     <>
-                        <button className="bg-gray-200 px-3 py-1 rounded" onClick={() => setIsOpen(false)}>Cancel</button>
-                        <button className="bg-blue-600 text-white px-3 py-1 rounded" onClick={handleCreateOrUpdate} disabled={creating}>{creating ? 'Saving...' : (editingId ? 'Save' : 'Create')}</button>
+                        <Button className={FOOTER_BTN} onClick={() => setIsOpen(false)}>Cancel</Button>
+                        <Button className={FOOTER_BTN} type="primary" onClick={handleCreateOrUpdate} disabled={creating}>{creating ? 'Saving...' : (editingId ? 'Save' : 'Create')}</Button>
                     </>
                 )}
             >
-                <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-                    <div>
-                        <Label>Name</Label>
-                        <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Name" />
-                    </div>
-                    <div>
-                        <Label>Type</Label>
-                        <Select
-                            options={types.map(t => ({ value: t.name, label: t.name }))}
-                            defaultValue={newType}
-                            placeholder="Select a type"
-                            onChange={(v) => setNewType(typeof v === 'number' ? String(v) : v)}
-                        />
-                    </div>
-                    <div>
-                        <Label>Offer</Label>
-                        <div className="flex items-center gap-2">
-                            <Switch key={String(newIsOffer)} label="Is this an offer?" defaultChecked={newIsOffer} onChange={(checked) => setNewIsOffer(checked)} />
+                <div className="space-y-4">
+                    {/* ── Basics ─────────────────────────────────────────── */}
+                    <FormSection title="Basics" description="What the cashier sees and which game it applies to.">
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="min-w-0">
+                                <Label>Name</Label>
+                                <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Name" />
+                            </div>
+                            <div className="min-w-0">
+                                <Label>Type</Label>
+                                <Select
+                                    options={types.map(t => ({ value: t.name, label: t.name }))}
+                                    defaultValue={newType}
+                                    placeholder="Select a type"
+                                    onChange={(v) => setNewType(typeof v === 'number' ? String(v) : v)}
+                                />
+                            </div>
+                            <div className="min-w-0 sm:col-span-2">
+                                <Label>Game</Label>
+                                <Select options={games.map(g => ({ value: g.id, label: g.name }))} defaultValue={newGameId} onChange={(v) => setNewGameId(typeof v === 'number' ? String(v) : v)} />
+                            </div>
                         </div>
-                    </div>
-                    <div>
-                        <Label>Open Hour</Label>
-                        <div className="flex items-center gap-2">
-                            <Switch key={String(isOpenHour)} label="Is this open hour?" defaultChecked={isOpenHour} onChange={(checked) => {
-                                setIsOpenHour(checked);
-                                if (checked) {
-                                    setNewHours('');
-                                }
-                            }} />
-                        </div>
-                    </div>
-                    <div>
-                        <Label>Day Pass</Label>
-                        <div className="flex items-center gap-2">
-                            <Switch
-                                key={String(newIsDayPass)}
-                                label="Is this a day pass?"
-                                defaultChecked={newIsDayPass}
-                                onChange={(checked) => {
-                                    setNewIsDayPass(checked);
+                    </FormSection>
+
+                    {/* ── Pricing & duration ─────────────────────────────── */}
+                    <FormSection title="Pricing & duration" description="Open-hour and day-pass settings don't use a fixed number of hours.">
+                        <div className="grid gap-2 sm:grid-cols-3">
+                            <ToggleTile>
+                                <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Open Hour</div>
+                                <Switch key={String(isOpenHour)} label="Is this open hour?" defaultChecked={isOpenHour} onChange={(checked) => {
+                                    setIsOpenHour(checked);
                                     if (checked) {
-                                        // clear hours when day pass is enabled and ensure hours input is blocked
                                         setNewHours('');
                                     }
-                                }}
-                            />
+                                }} />
+                            </ToggleTile>
+                            <ToggleTile>
+                                <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Day Pass</div>
+                                <Switch
+                                    key={String(newIsDayPass)}
+                                    label="Is this a day pass?"
+                                    defaultChecked={newIsDayPass}
+                                    onChange={(checked) => {
+                                        setNewIsDayPass(checked);
+                                        if (checked) {
+                                            // clear hours when day pass is enabled and ensure hours input is blocked
+                                            setNewHours('');
+                                        }
+                                    }}
+                                />
+                            </ToggleTile>
+                            <ToggleTile>
+                                <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Offer</div>
+                                <Switch key={String(newIsOffer)} label="Is this an offer?" defaultChecked={newIsOffer} onChange={(checked) => setNewIsOffer(checked)} />
+                            </ToggleTile>
                         </div>
-                    </div>
-                    <div>
-                        <Label>Hours</Label>
-                        <Input
-                            type="number"
-                            value={newHours === '' ? '' : String(newHours)}
-                            onChange={(e) => setNewHours(e.target.value === '' ? '' : Number(e.target.value))}
-                            placeholder="Hours"
-                            disabled={isOpenHour || newIsDayPass}
-                        />
-                    </div>
-                    <div>
-                        <Label>Price</Label>
-                        <Input type="number" value={newPrice === '' ? '' : String(newPrice)} onChange={(e) => setNewPrice(e.target.value === '' ? '' : Number(e.target.value))} placeholder="Price" />
-                    </div>
-                    <div>
-                        <Label>Game</Label>
-                        <Select options={games.map(g => ({ value: g.id, label: g.name }))} defaultValue={newGameId} onChange={(v) => setNewGameId(typeof v === 'number' ? String(v) : v)} />
-                    </div>
+                        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                            <div className="min-w-0">
+                                <Label>Hours</Label>
+                                <Input
+                                    type="number"
+                                    value={newHours === '' ? '' : String(newHours)}
+                                    onChange={(e) => setNewHours(e.target.value === '' ? '' : Number(e.target.value))}
+                                    placeholder="Hours"
+                                    disabled={isOpenHour || newIsDayPass}
+                                />
+                                {(isOpenHour || newIsDayPass) && (
+                                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                        Not used for {isOpenHour ? 'open-hour' : 'day-pass'} settings.
+                                    </p>
+                                )}
+                            </div>
+                            <div className="min-w-0">
+                                <Label>Price</Label>
+                                <Input type="number" value={newPrice === '' ? '' : String(newPrice)} onChange={(e) => setNewPrice(e.target.value === '' ? '' : Number(e.target.value))} placeholder="Price" />
+                            </div>
+                        </div>
+                    </FormSection>
 
                     {/* ── Event kit ──────────────────────────────────────── */}
-                    <div className="rounded-lg border border-gray-200 p-3">
+                    <FormSection title="Event bundle" description="Events (Pre Release, Draft…) can hand out stock items with each session.">
                         <Label>Event</Label>
                         <div className="flex items-center gap-2">
                             <Switch
@@ -406,18 +539,29 @@ export default function GameSettings() {
                         </div>
 
                         {newIsEvent && (
-                            <div className="mt-3 space-y-2">
-                                <p className="text-xs text-gray-500">
+                            <div className="mt-4 space-y-3">
+                                <p className="rounded-lg bg-gray-50 px-3 py-2 text-xs leading-5 text-gray-600 dark:bg-white/[0.03] dark:text-gray-400">
                                     Items handed out with this event. They come <b>off stock</b> when the
                                     session starts, but add <b>nothing</b> to the bill — the price above is
                                     what the customer pays. Quantity is <b>per person</b>.
                                 </p>
 
+                                {kitLines.length > 0 && (
+                                    <div className="hidden grid-cols-[minmax(0,1fr)_7rem_auto] gap-2 px-0.5 text-xs font-medium text-gray-500 sm:grid dark:text-gray-400">
+                                        <span>Item</span>
+                                        <span>Qty / person</span>
+                                        <span className="w-[94px]" aria-hidden />
+                                    </div>
+                                )}
+
                                 {kitLines.map((line, idx) => {
                                     const taken = usedItemIds(idx);
                                     return (
-                                        <div key={idx} className="flex items-end gap-2">
-                                            <div className="flex-1">
+                                        <div
+                                            key={idx}
+                                            className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 rounded-lg border border-gray-200 p-2 sm:grid-cols-[minmax(0,1fr)_7rem_auto] sm:items-end sm:border-0 sm:p-0 dark:border-white/10"
+                                        >
+                                            <div className="col-span-2 min-w-0 sm:col-span-1">
                                                 <Select
                                                     options={allItems
                                                         .filter((it) => !taken.has(Number(it.id)))
@@ -430,7 +574,7 @@ export default function GameSettings() {
                                                     onChange={(v) => patchKitLine(idx, { itemId: v === '' ? '' : Number(v) })}
                                                 />
                                             </div>
-                                            <div className="w-28">
+                                            <div className="min-w-0">
                                                 <Input
                                                     type="number"
                                                     min="0"
@@ -444,28 +588,25 @@ export default function GameSettings() {
                                                     placeholder="Qty / person"
                                                 />
                                             </div>
-                                            <button
-                                                type="button"
+                                            <Button
+                                                danger
+                                                icon={<DeleteOutlined />}
                                                 onClick={() => removeKitLine(idx)}
-                                                className="h-11 px-3 rounded-lg border border-gray-200 text-sm text-red-600 hover:bg-red-50"
+                                                className="h-11!"
                                             >
                                                 Remove
-                                            </button>
+                                            </Button>
                                         </div>
                                     );
                                 })}
 
-                                <button
-                                    type="button"
-                                    onClick={addKitLine}
-                                    className="text-sm px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200"
-                                >
-                                    + Add item
-                                </button>
+                                <Button type="dashed" block icon={<PlusOutlined />} onClick={addKitLine}>
+                                    Add item
+                                </Button>
 
                                 {/* Concrete preview beats explaining the multiplication. */}
                                 {kitLines.some((l) => l.itemId !== '' && Number(l.quantityPerPerson) > 0) && (
-                                    <p className="text-xs text-indigo-700 bg-indigo-50 rounded-md px-2 py-1.5">
+                                    <p className="rounded-lg bg-indigo-50 px-3 py-2 text-xs text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300">
                                         A session with 4 people will deduct{' '}
                                         {kitLines
                                             .filter((l) => l.itemId !== '' && Number(l.quantityPerPerson) > 0)
@@ -479,12 +620,13 @@ export default function GameSettings() {
                                 )}
                             </div>
                         )}
-                    </div>
+                    </FormSection>
+
                     {/* Active toggle — only shown when editing. Lets admins hide a
                         setting from the cashier UI without losing it, or restore a
                         previously hidden one. */}
                     {editingId && (
-                        <div>
+                        <FormSection title="Visibility">
                             <Label>Active</Label>
                             <div className="flex items-center gap-2">
                                 <Switch
@@ -494,11 +636,11 @@ export default function GameSettings() {
                                     onChange={(checked) => setNewIsActive(checked)}
                                 />
                             </div>
-                            <p className="mt-1 text-xs text-gray-400">
+                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                                 Turn off to hide this setting from the cashier and game-cashier
                                 screens. Historical transactions that referenced it remain intact.
                             </p>
-                        </div>
+                        </FormSection>
                     )}
                     {/* actions are rendered in the Modal footer */}
                 </div>
@@ -508,19 +650,76 @@ export default function GameSettings() {
                 isOpen={!!deleteId}
                 onClose={() => setDeleteId(null)}
                 title="Confirm delete"
+                className={MODAL_SM}
                 footer={(
                     <>
-                        <button className="px-3 py-1 bg-red-600 text-white rounded flex items-center gap-2" onClick={handleDelete}>
+                        <Button className={FOOTER_BTN} onClick={() => setDeleteId(null)}>Cancel</Button>
+                        <Button className={FOOTER_BTN} danger type="primary" onClick={handleDelete}>
                             {deleting ? 'Deleting...' : 'Delete'}
-                        </button>
-                        <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setDeleteId(null)}>Cancel</button>
+                        </Button>
                     </>
                 )}
             >
                 <div className="space-y-4">
-                    <p>Are you sure you want to delete this setting?</p>
+                    <p className="text-gray-700 dark:text-gray-300">Are you sure you want to delete this setting?</p>
                 </div>
             </Modal>
         </div>
     );
+}
+
+// ── Row presentation helpers (pure UI) ───────────────────────────────────
+
+function HiddenPill() {
+    return (
+        <Pill tone="red">
+            <EyeInvisibleOutlined className="text-[10px]" /> Hidden
+        </Pill>
+    );
+}
+
+/** Offer / Day pass / Event as compact pills, plus the event bundle line. */
+function SettingFlags({ s, inline = false }: { s: GameSettingDto; inline?: boolean }) {
+    const none = !s.isOffer && !s.isDayPass && !s.isEvent;
+    const bundle = s.isEvent && (s.items?.length ?? 0) > 0
+        ? `${s.items!.map(i => `${i.quantityPerPerson}× ${i.itemName}`).join(', ')} / person`
+        : null;
+    const pills = (
+        <>
+            {s.isOffer && <Pill tone="amber">Offer</Pill>}
+            {s.isDayPass && <Pill tone="blue">Day pass</Pill>}
+            {s.isEvent && <Pill tone="purple" dot>Event</Pill>}
+        </>
+    );
+    if (inline) {
+        return (
+            <>
+                {pills}
+                {bundle && <span className="w-full text-[11px] leading-4 text-gray-500 dark:text-gray-400">{bundle}</span>}
+            </>
+        );
+    }
+    return (
+        <div className="min-w-0">
+            {none ? (
+                <span className="text-gray-400 dark:text-gray-500">—</span>
+            ) : (
+                <div className="flex flex-wrap gap-1">{pills}</div>
+            )}
+            {bundle && <div className="mt-1 text-[11px] leading-4 text-gray-500 dark:text-gray-400">{bundle}</div>}
+        </div>
+    );
+}
+
+/** "Open" for open-hour settings, "N h" otherwise, "—" when unset. */
+function HoursCell({ hours }: { hours?: number }) {
+    if (typeof hours !== 'number') return <span className="text-gray-400 dark:text-gray-500">—</span>;
+    if (hours === 0) return <Pill tone="emerald" dot>Open</Pill>;
+    return <span className="tabular-nums text-gray-800 dark:text-gray-200">{hours} h</span>;
+}
+
+function fmtPrice(price?: number): string {
+    return typeof price === 'number'
+        ? `$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+        : '—';
 }

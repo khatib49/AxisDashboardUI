@@ -824,6 +824,7 @@ export default function CashierItems() {
                                                 {hasActiveVariants(it) ? (
                                                     /* Options with own stock: pick per colour; the item qty is the sum. */
                                                     <PosVariantPicker
+                                                        itemName={it.name}
                                                         variants={it.variants!}
                                                         picks={selectedVariants[String(it.id)] ?? {}}
                                                         onChange={(next) => setVariantPicks(String(it.id), next)}
