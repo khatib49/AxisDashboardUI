@@ -14,30 +14,25 @@
 //
 // Per owner: what they drew, their share of all drawings, their ownership %,
 // the fair share (total drawings × ownership %) and how far over/under it
-// they are.
+// they are. Clicking an owner opens the detail popup.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Button,
-  Card,
-  Col,
   DatePicker,
+  Dropdown,
   Empty,
   Form,
   Input,
   InputNumber,
   Modal,
-  Progress,
-  Row,
+  Segmented,
   Select,
-  Space,
-  Statistic,
+  Skeleton,
   Switch,
   Table,
-  Tag,
   Tooltip,
-  Typography,
   message,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
@@ -48,8 +43,11 @@ import {
   StopOutlined,
   InfoCircleOutlined,
   WalletOutlined,
-  TeamOutlined,
-  EyeOutlined,
+  AppstoreOutlined,
+  UnorderedListOutlined,
+  MoreOutlined,
+  ArrowRightOutlined,
+  WarningOutlined,
 } from "@ant-design/icons";
 import dayjs, { Dayjs } from "dayjs";
 import { Link } from "react-router";
@@ -70,16 +68,25 @@ import {
 } from "../../services/ownerService";
 import { getPostableAccounts, AccountDto } from "../../services/expenseService";
 import OwnerDrawingDetailModal from "../../components/Accounting/OwnerDrawingDetailModal";
+import DrawingsComposition from "../../components/Accounting/owners/DrawingsComposition";
+import { Eyebrow, OwnerAvatar, ShareMeter, StatusBadge } from "../../components/Accounting/owners/ownerVisuals";
+import { PageHeader, Panel, StatTile } from "../../components/ui/PageKit";
+import { money, moneyCompact, pct, useOwnerColors } from "../../components/Accounting/owners/ownerFormat";
 
 const { RangePicker } = DatePicker;
-const { Text, Paragraph } = Typography;
 
-const money = (n: number) =>
-  `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-const pct = (n: number) => `${n.toLocaleString("en-US", { maximumFractionDigits: 2 })}%`;
 const ymd = (d: Dayjs) => d.format("YYYY-MM-DD");
 
 const PAYMENT_METHODS = ["Cash", "Bank transfer", "Cheque", "Whish", "OMT", "Other"];
+
+// Quick period chips. "custom" = whatever the range picker holds.
+const PRESETS: { key: string; label: string; range: () => [Dayjs, Dayjs] }[] = [
+  { key: "month", label: "This month", range: () => [dayjs().startOf("month"), dayjs().endOf("day")] },
+  { key: "last", label: "Last month", range: () => [dayjs().subtract(1, "month").startOf("month"), dayjs().subtract(1, "month").endOf("month")] },
+  { key: "quarter", label: "This quarter", range: () => [dayjs().startOf("month").subtract(dayjs().month() % 3, "month"), dayjs().endOf("day")] },
+  { key: "year", label: "This year", range: () => [dayjs().startOf("year"), dayjs().endOf("day")] },
+  { key: "lastyear", label: "Last year", range: () => [dayjs().subtract(1, "year").startOf("year"), dayjs().subtract(1, "year").endOf("year")] },
+];
 
 const errMsg = (e: unknown, fallback: string) =>
   e && typeof e === "object" && typeof (e as { message?: unknown }).message === "string"
@@ -90,11 +97,13 @@ type OwnerForm = { name: string; ownershipPercent: number; notes?: string; isAct
 type DrawingForm = { ownerId: number; amount: number; drawingDate: Dayjs; paymentMethod?: string; comment?: string };
 
 export default function OwnersDrawings() {
-  const [range, setRange] = useState<[Dayjs, Dayjs]>([dayjs().startOf("year"), dayjs().endOf("day")]);
+  const [range, setRange] = useState<[Dayjs, Dayjs]>(PRESETS[3].range());
+  const [preset, setPreset] = useState<string>("year");
   const [summary, setSummary] = useState<OwnerDrawingsSummaryDto | null>(null);
   const [owners, setOwners] = useState<OwnerDto[]>([]);
   const [showHiddenOwners, setShowHiddenOwners] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [view, setView] = useState<"cards" | "table">("cards");
 
   // Drawings register
   const [drawings, setDrawings] = useState<OwnerDrawingDto[]>([]);
@@ -157,6 +166,21 @@ export default function OwnersDrawings() {
   const reloadAll = () => { loadSummary(); loadDrawings(); };
   const activeOwners = useMemo(() => owners.filter((o) => o.isActive), [owners]);
   const totalPct = summary?.totalOwnershipPercent ?? 0;
+  const pctOff = Math.abs(totalPct - 100) > 0.004;
+
+  // Colour follows the owner (by id), so every chart, card and row agrees.
+  const color = useOwnerColors([...(summary?.owners ?? []).map((o) => o.ownerId), ...owners.map((o) => o.id)]);
+
+  const summaryRows: (OwnerDrawingsLineDto & { key: string; other?: boolean })[] = useMemo(() => [
+    ...(summary?.owners ?? []).map((o) => ({ ...o, key: `o-${o.accountId}` })),
+    ...(summary?.otherAccounts ?? []).map((o) => ({ ...o, key: `x-${o.accountId}`, other: true })),
+  ], [summary]);
+
+  const periodLabel = `${range[0].format("MMM D, YYYY")} – ${range[1].format("MMM D, YYYY")}`;
+  const topOver = useMemo(() => {
+    const over = (summary?.owners ?? []).filter((o) => o.variance > 0.004).sort((a, b) => b.variance - a.variance);
+    return over[0] ?? null;
+  }, [summary]);
 
   // ── Owner modal ─────────────────────────────────────────────────────
   const openOwnerModal = async (editing: OwnerDto | null) => {
@@ -274,420 +298,462 @@ export default function OwnersDrawings() {
     }
   };
 
-  // ── Summary table ───────────────────────────────────────────────────
-  const summaryRows: (OwnerDrawingsLineDto & { key: string; other?: boolean })[] = useMemo(() => [
-    ...(summary?.owners ?? []).map((o) => ({ ...o, key: `o-${o.accountId}` })),
-    ...(summary?.otherAccounts ?? []).map((o) => ({ ...o, key: `x-${o.accountId}`, other: true })),
-  ], [summary]);
-
+  // ── Table view of the summary (also the accessible view of the cards) ──
   const summaryColumns: ColumnsType<OwnerDrawingsLineDto & { key: string; other?: boolean }> = [
     {
       title: "Owner",
       key: "name",
       render: (_, r) => (
-        <Space direction="vertical" size={0}>
-          <Space size={6}>
-            <Typography.Link strong onClick={() => setDetailRow(r)}>{r.name}</Typography.Link>
-            {r.other && <Tag color="orange">no owner linked</Tag>}
-            {r.ownerId && !r.isActive && <Tag>hidden</Tag>}
-          </Space>
-          <Text type="secondary" style={{ fontSize: 12 }}>{r.accountNumber} · {r.accountName}</Text>
-        </Space>
+        <button type="button" onClick={() => setDetailRow(r)} className="flex items-center gap-3 text-left">
+          <OwnerAvatar name={r.name} color={color(r.ownerId)} size={32} />
+          <span>
+            <span className="block font-medium text-gray-900 hover:text-violet-700 dark:text-gray-100">{r.name}</span>
+            <span className="block text-xs text-gray-500">{r.accountNumber} · {r.accountName}{r.other ? " · no owner linked" : ""}</span>
+          </span>
+        </button>
       ),
     },
+    { title: "Ownership", dataIndex: "ownershipPercent", align: "right", width: 100, render: (v: number, r) => (r.ownerId ? pct(v) : "—") },
+    { title: "Drawn", dataIndex: "drawn", align: "right", width: 130, render: (v: number) => <span className="font-semibold tabular-nums">{money(v)}</span> },
     {
-      title: "Ownership",
-      dataIndex: "ownershipPercent",
-      align: "right",
-      width: 100,
-      render: (v: number, r) => (r.ownerId ? pct(v) : "—"),
-    },
-    {
-      title: "Drawn (period)",
-      dataIndex: "drawn",
-      align: "right",
-      width: 140,
-      render: (v: number) => <Text strong>{money(v)}</Text>,
-    },
-    {
-      title: (
-        <Tooltip title="This owner's drawings ÷ total drawings of all owners in the period. The grey marker is their ownership %.">
-          Share of drawings <InfoCircleOutlined />
-        </Tooltip>
-      ),
+      title: <Tooltip title="Drawn ÷ total drawings of all owners. The dark tick is the ownership %.">Share of drawings <InfoCircleOutlined /></Tooltip>,
       key: "share",
-      width: 220,
+      width: 210,
       render: (_, r) => (
-        <div style={{ position: "relative" }}>
-          <Progress
-            percent={Math.max(0, Math.min(100, r.shareOfDrawingsPercent))}
-            showInfo={false}
-            size="small"
-            strokeColor={r.ownerId && r.shareOfDrawingsPercent > r.ownershipPercent + 0.005 ? "#dc2626" : "#7c3aed"}
-          />
-          {r.ownerId ? (
-            <div
-              title={`Ownership ${pct(r.ownershipPercent)}`}
-              style={{ position: "absolute", top: 2, left: `${Math.min(100, r.ownershipPercent)}%`, width: 2, height: 12, background: "#475569" }}
-            />
-          ) : null}
-          <Text style={{ fontSize: 12 }}>
-            {pct(r.shareOfDrawingsPercent)}
-            {r.ownerId ? <Text type="secondary" style={{ fontSize: 12 }}> · owns {pct(r.ownershipPercent)}</Text> : null}
-          </Text>
+        <div className="space-y-1">
+          <ShareMeter share={r.shareOfDrawingsPercent} owned={r.ownershipPercent} color={color(r.ownerId)} showOwned={r.ownerId != null} />
+          <div className="text-xs tabular-nums text-gray-600 dark:text-gray-300">{pct(r.shareOfDrawingsPercent)}</div>
         </div>
       ),
     },
-    {
-      title: (
-        <Tooltip title="Fair share = total drawings in the period × ownership %. What this owner would have drawn if drawings followed ownership.">
-          Fair share <InfoCircleOutlined />
-        </Tooltip>
-      ),
-      dataIndex: "entitledAmount",
-      align: "right",
-      width: 130,
-      render: (v: number, r) => (r.ownerId ? money(v) : "—"),
-    },
-    {
-      title: (
-        <Tooltip title="Drawn − fair share. Positive = drew more than their ownership share; negative = drew less.">
-          Over / (under) <InfoCircleOutlined />
-        </Tooltip>
-      ),
-      dataIndex: "variance",
-      align: "right",
-      width: 130,
-      render: (v: number, r) =>
-        r.ownerId ? (
-          <Text type={v > 0.004 ? "danger" : v < -0.004 ? "success" : undefined}>
-            {v < 0 ? `(${money(-v)})` : money(v)}
-          </Text>
-        ) : "—",
-    },
+    { title: <Tooltip title="Total drawings × ownership %">Fair share <InfoCircleOutlined /></Tooltip>, dataIndex: "entitledAmount", align: "right", width: 120, render: (v: number, r) => (r.ownerId ? <span className="tabular-nums">{money(v)}</span> : "—") },
+    { title: "Over / (under)", dataIndex: "variance", align: "right", width: 170, render: (v: number, r) => (r.ownerId ? <StatusBadge variance={v} /> : "—") },
     { title: "Entries", dataIndex: "entryCount", align: "right", width: 80 },
-    {
-      title: "Lifetime",
-      dataIndex: "lifetimeDrawn",
-      align: "right",
-      width: 130,
-      render: (v: number) => <Text type="secondary">{money(v)}</Text>,
-    },
-    {
-      title: "",
-      key: "act",
-      width: 190,
-      render: (_, r) => (
-        <Space size={6}>
-          <Button size="small" icon={<EyeOutlined />} onClick={() => setDetailRow(r)}>
-            Details
-          </Button>
-          {r.ownerId && r.isActive ? (
-            <Button size="small" icon={<PlusOutlined />} onClick={() => openDrawingModal(null, r.ownerId!)}>
-              Drawing
-            </Button>
-          ) : null}
-        </Space>
-      ),
-    },
+    { title: "Lifetime", dataIndex: "lifetimeDrawn", align: "right", width: 120, render: (v: number) => <span className="tabular-nums text-gray-500">{money(v)}</span> },
   ];
 
-  // ── Owners table ────────────────────────────────────────────────────
-  const ownerColumns: ColumnsType<OwnerDto> = [
-    {
-      title: "Owner",
-      dataIndex: "name",
-      render: (v: string, r) => (
-        <Space>
-          <Text strong>{v}</Text>
-          {!r.isActive && <Tag>hidden</Tag>}
-        </Space>
-      ),
-    },
-    { title: "Ownership", dataIndex: "ownershipPercent", align: "right", width: 110, render: (v: number) => pct(v) },
-    {
-      title: "Drawings account",
-      key: "acc",
-      render: (_, r) => <Text>{r.drawingsAccountNumber} · {r.drawingsAccountName}</Text>,
-    },
-    { title: "Notes", dataIndex: "notes", render: (v: string | null) => v || <Text type="secondary">—</Text> },
-    {
-      title: "",
-      key: "act",
-      width: 150,
-      render: (_, r) => (
-        <Space>
-          <Button size="small" icon={<EditOutlined />} onClick={() => openOwnerModal(r)}>Edit</Button>
-          {r.isActive && <Button size="small" danger onClick={() => hideOwner(r)}>Hide</Button>}
-        </Space>
-      ),
-    },
-  ];
-
-  // ── Drawings table ──────────────────────────────────────────────────
+  // ── Drawings register ───────────────────────────────────────────────
   const drawingColumns: ColumnsType<OwnerDrawingDto> = [
     {
       title: "Date",
       dataIndex: "drawingDate",
       width: 120,
-      render: (v: string) => dayjs(v).format("MMM DD, YYYY"),
+      render: (v: string) => <span className="tabular-nums">{dayjs(v.slice(0, 10)).format("MMM D, YYYY")}</span>,
     },
-    { title: "Owner", dataIndex: "ownerName" },
+    {
+      title: "Owner",
+      dataIndex: "ownerName",
+      render: (v: string, r) => (
+        <span className="flex items-center gap-2">
+          <OwnerAvatar name={v} color={color(r.ownerId)} size={26} />
+          <span className="font-medium text-gray-900 dark:text-gray-100">{v}</span>
+        </span>
+      ),
+    },
     {
       title: "Amount",
       dataIndex: "amount",
       align: "right",
       width: 130,
-      render: (v: number, r) => (r.isVoided ? <Text delete type="secondary">{money(v)}</Text> : <Text strong>{money(v)}</Text>),
+      render: (v: number, r) => (
+        <span className={`tabular-nums ${r.isVoided ? "text-gray-400 line-through" : "font-semibold text-gray-900 dark:text-gray-100"}`}>{money(v)}</span>
+      ),
     },
-    { title: "Method", dataIndex: "paymentMethod", width: 120, render: (v: string | null) => v || "—" },
-    { title: "Comment", dataIndex: "comment", render: (v: string | null) => v || <Text type="secondary">—</Text> },
+    {
+      title: "Method",
+      dataIndex: "paymentMethod",
+      width: 130,
+      render: (v: string | null) =>
+        v ? <span className="rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-700 dark:bg-white/5 dark:text-gray-300">{v}</span> : <span className="text-gray-400">—</span>,
+    },
+    { title: "Comment", dataIndex: "comment", render: (v: string | null) => v || <span className="text-gray-400">—</span> },
     {
       title: "Journal entry",
       dataIndex: "journalEntryNumber",
       width: 140,
-      render: (v: string | null) => (v ? <Tag>{v}</Tag> : <Text type="secondary">—</Text>),
+      render: (v: string | null) => (v ? <code className="rounded bg-gray-50 px-1.5 py-0.5 text-[11px] text-gray-600 dark:bg-white/5 dark:text-gray-300">{v}</code> : "—"),
     },
     {
       title: "Status",
       key: "status",
-      width: 110,
+      width: 120,
       render: (_, r) =>
         r.isVoided ? (
-          <Tooltip title={r.voidReason ?? undefined}><Tag color="red">Cancelled</Tag></Tooltip>
+          <Tooltip title={r.voidReason ?? undefined}>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-500/10 dark:text-red-300">
+              <span className="h-1.5 w-1.5 rounded-full bg-red-500" /> Cancelled
+            </span>
+          </Tooltip>
         ) : (
-          <Tag color="green">Posted</Tag>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Posted
+          </span>
         ),
     },
     {
       title: "",
       key: "act",
-      width: 170,
+      width: 56,
       render: (_, r) =>
         r.isVoided ? null : (
-          <Space>
-            <Button size="small" icon={<EditOutlined />} onClick={() => openDrawingModal(r)}>Edit</Button>
-            <Button size="small" danger icon={<StopOutlined />} onClick={() => { setVoidTarget(r); setVoidReason(""); }}>
-              Cancel
-            </Button>
-          </Space>
+          <Dropdown
+            trigger={["click"]}
+            menu={{
+              items: [
+                { key: "edit", icon: <EditOutlined />, label: "Edit", onClick: () => openDrawingModal(r) },
+                { key: "void", icon: <StopOutlined />, label: "Cancel drawing", danger: true, onClick: () => { setVoidTarget(r); setVoidReason(""); } },
+              ],
+            }}
+          >
+            <Button type="text" size="small" icon={<MoreOutlined />} aria-label="Actions" />
+          </Dropdown>
         ),
     },
   ];
 
+  const otherHeld = owners.filter((o) => o.isActive && o.id !== ownerModal.editing?.id).reduce((a, o) => a + o.ownershipPercent, 0);
+
   return (
-    <div style={{ padding: 24 }}>
-      <Space direction="vertical" size="large" style={{ width: "100%" }}>
-        {/* Header */}
-        <Card>
-          <Space style={{ width: "100%", justifyContent: "space-between" }} wrap>
-            <Space direction="vertical" size={0}>
-              <Space>
-                <WalletOutlined style={{ fontSize: 22, color: "#7c3aed" }} />
-                <span style={{ fontSize: 22, fontWeight: 700 }}>Owners' Drawings</span>
-                <Tag color="purple">Equity · not an expense</Tag>
-              </Space>
-              <Text type="secondary">
-                Cash the owners take out for personal use. Each drawing posts DR the owner's drawings account / CR 1000 Cash.
-                It reduces equity and Cash on Hand, never Net Income.
-              </Text>
-            </Space>
-            <Space wrap>
-              <RangePicker
-                value={range}
-                allowClear={false}
-                onChange={(v) => { if (v && v[0] && v[1]) setRange([v[0], v[1]]); }}
-                presets={[
-                  { label: "This Month", value: [dayjs().startOf("month"), dayjs().endOf("day")] },
-                  { label: "Last Month", value: [dayjs().subtract(1, "month").startOf("month"), dayjs().subtract(1, "month").endOf("month")] },
-                  { label: "This Quarter", value: [dayjs().startOf("month").subtract(dayjs().month() % 3, "month"), dayjs().endOf("day")] },
-                  { label: "This Year", value: [dayjs().startOf("year"), dayjs().endOf("day")] },
-                  { label: "Last Year", value: [dayjs().subtract(1, "year").startOf("year"), dayjs().subtract(1, "year").endOf("year")] },
-                ]}
-              />
-              <Button icon={<ReloadOutlined />} onClick={reloadAll} loading={loading}>Refresh</Button>
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => openDrawingModal(null)} disabled={activeOwners.length === 0}>
-                Record drawing
-              </Button>
-            </Space>
-          </Space>
-        </Card>
-
-        {/* Setup / data-quality notices */}
-        {summary && activeOwners.length === 0 && (
-          <Alert
-            type="info"
-            showIcon
-            message="No owners yet"
-            description={'Add each owner with their ownership %. The first one creates the "Owners\' Drawings" header account, and every owner gets their own drawings sub-account under it.'}
-            action={<Button type="primary" icon={<PlusOutlined />} onClick={() => openOwnerModal(null)}>Add owner</Button>}
-          />
-        )}
-        {summary && activeOwners.length > 0 && Math.abs(totalPct - 100) > 0.004 && (
-          <Alert
-            type="warning"
-            showIcon
-            message={`Active owners add up to ${pct(totalPct)}, not 100%`}
-            description="Fair shares are calculated from each owner's %. Edit the owners so the total is exactly 100%."
-          />
-        )}
-        {summary && summary.unlinkedEquityCategories.length > 0 && (
-          <Alert
-            type="warning"
-            showIcon
-            message="Some entry categories post to Equity outside Owners' Drawings"
-            description={
-              <div>
-                <Paragraph style={{ marginBottom: 6 }}>
-                  These look like the old "cash out" workaround. Their entries are already kept out of expenses, but they
-                  are not counted under any owner here. Open{" "}
-                  <Link to="/admin/expense-categories">Entries Management → Categories</Link> and map each one to the
-                  matching owner's drawings account; its history is re-posted there automatically.
-                </Paragraph>
-                <ul style={{ margin: 0, paddingLeft: 18 }}>
-                  {summary.unlinkedEquityCategories.map((c) => (
-                    <li key={c.categoryId}>
-                      <Text strong>{c.categoryName}</Text> → {c.accountNumber} {c.accountName} · {c.entryCount} entries · {money(c.totalAmount)}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            }
-          />
-        )}
-
-        {/* Stats */}
-        <Row gutter={[16, 16]}>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic
-                title={`Total drawings · ${summary?.headerAccountNumber || "—"} ${summary?.headerAccountName ?? ""}`}
-                value={summary?.totalDrawings ?? 0}
-                precision={2}
-                prefix="$"
-                loading={loading}
-              />
-              <Text type="secondary" style={{ fontSize: 12 }}>{range[0].format("MMM D, YYYY")} – {range[1].format("MMM D, YYYY")}</Text>
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic title="Lifetime drawings" value={summary?.lifetimeTotalDrawings ?? 0} precision={2} prefix="$" loading={loading} />
-              <Text type="secondary" style={{ fontSize: 12 }}>all time, all owners</Text>
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic
-                title="Total ownership"
-                value={totalPct}
-                precision={2}
-                suffix="%"
-                loading={loading}
-                valueStyle={{ color: Math.abs(totalPct - 100) > 0.004 ? "#d97706" : "#16a34a" }}
-              />
-              <Text type="secondary" style={{ fontSize: 12 }}>active owners</Text>
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic title="Owners" value={activeOwners.length} prefix={<TeamOutlined />} loading={loading} />
-              <Text type="secondary" style={{ fontSize: 12 }}>each with their own drawings account</Text>
-            </Card>
-          </Col>
-        </Row>
-
-        {/* Per-owner summary */}
-        <Card title="Drawings by owner" extra={<Text type="secondary">from the general ledger</Text>}>
-          <Table
-            rowKey="key"
-            size="middle"
-            loading={loading}
-            columns={summaryColumns}
-            dataSource={summaryRows}
-            pagination={false}
-            scroll={{ x: 1180 }}
-            locale={{ emptyText: <Empty description="No owners yet" /> }}
-            summary={() =>
-              summary && summaryRows.length > 0 ? (
-                <Table.Summary.Row style={{ background: "#faf5ff" }}>
-                  <Table.Summary.Cell index={0}>
-                    <Text strong>{summary.headerAccountNumber} · {summary.headerAccountName}</Text>
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={1} align="right"><Text strong>{pct(totalPct)}</Text></Table.Summary.Cell>
-                  <Table.Summary.Cell index={2} align="right"><Text strong>{money(summary.totalDrawings)}</Text></Table.Summary.Cell>
-                  <Table.Summary.Cell index={3}><Text strong>{summary.totalDrawings !== 0 ? "100%" : "—"}</Text></Table.Summary.Cell>
-                  <Table.Summary.Cell index={4} align="right">
-                    <Text strong>{money(summaryRows.filter((r) => r.ownerId).reduce((a, r) => a + r.entitledAmount, 0))}</Text>
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={5} />
-                  <Table.Summary.Cell index={6} align="right">
-                    <Text strong>{summaryRows.reduce((a, r) => a + r.entryCount, 0)}</Text>
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={7} align="right"><Text strong>{money(summary.lifetimeTotalDrawings)}</Text></Table.Summary.Cell>
-                  <Table.Summary.Cell index={8} />
-                </Table.Summary.Row>
-              ) : null
-            }
-          />
-        </Card>
-
-        {/* Owners */}
-        <Card
-          title="Owners & ownership"
-          extra={
-            <Space>
-              <Space size={6}>
-                <Switch size="small" checked={showHiddenOwners} onChange={setShowHiddenOwners} />
-                <Text type="secondary">Show hidden</Text>
-              </Space>
-              <Button icon={<PlusOutlined />} onClick={() => openOwnerModal(null)}>Add owner</Button>
-            </Space>
-          }
-        >
-          <Table rowKey="id" size="small" loading={loading} columns={ownerColumns} dataSource={owners} pagination={false} scroll={{ x: 800 }} />
-        </Card>
-
-        {/* Drawings register */}
-        <Card
-          title="Drawings register"
-          extra={
-            <Space wrap>
-              <Select
-                allowClear
-                placeholder="All owners"
-                style={{ minWidth: 180 }}
-                value={ownerFilter ?? undefined}
-                onChange={(v) => setOwnerFilter(v ?? null)}
-                options={owners.map((o) => ({ value: o.id, label: o.name }))}
-              />
-              <Space size={6}>
-                <Switch size="small" checked={showVoided} onChange={setShowVoided} />
-                <Text type="secondary">Show cancelled</Text>
-              </Space>
-            </Space>
-          }
-        >
-          <Text type="secondary" style={{ display: "block", marginBottom: 12 }}>
-            {drawingsCount} entr{drawingsCount === 1 ? "y" : "ies"} · total {money(drawingsTotal)} recorded on this page in the period
-          </Text>
-          <Table
-            rowKey="id"
-            size="small"
-            loading={drawingsLoading}
-            columns={drawingColumns}
-            dataSource={drawings}
-            scroll={{ x: 1000 }}
-            pagination={{
-              current: drawingsPage,
-              pageSize,
-              total: drawingsCount,
-              onChange: setDrawingsPage,
-              showSizeChanger: false,
+    <div className="mx-auto max-w-[1400px] space-y-6 p-4 sm:p-6">
+      {/* ── Header ─────────────────────────────────────────────────── */}
+      <PageHeader
+        icon={<WalletOutlined />}
+        title="Owners' Drawings"
+        badge="Equity · not an expense"
+        description={<>Cash the owners take out for personal use. Each drawing posts <b>DR</b> the owner's drawings account / <b>CR</b> 1000 Cash — it reduces equity and Cash on Hand, never Net Income.</>}
+        actions={
+          <>
+            <Tooltip title="Refresh">
+              <Button icon={<ReloadOutlined />} onClick={reloadAll} loading={loading} aria-label="Refresh" />
+            </Tooltip>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => openDrawingModal(null)} disabled={activeOwners.length === 0}>
+              Record drawing
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Chips scroll sideways on a phone instead of overflowing. */}
+          <div className="max-w-full overflow-x-auto">
+            <Segmented
+              value={preset}
+              onChange={(k) => {
+                const p = PRESETS.find((x) => x.key === k);
+                setPreset(String(k));
+                if (p) setRange(p.range());
+              }}
+              options={[...PRESETS.map((p) => ({ label: p.label, value: p.key })), { label: "Custom", value: "custom" }]}
+            />
+          </div>
+          <RangePicker
+            value={range}
+            allowClear={false}
+            onChange={(v) => {
+              if (v && v[0] && v[1]) { setRange([v[0], v[1]]); setPreset("custom"); }
             }}
           />
-        </Card>
-      </Space>
+        </div>
+      </PageHeader>
+
+      {/* ── Notices ────────────────────────────────────────────────── */}
+      {summary && activeOwners.length === 0 && (
+        <Alert
+          type="info"
+          showIcon
+          message="No owners yet"
+          description={'Add each owner with their ownership %. The first one creates the "Owners\' Drawings" header account, and every owner gets their own drawings sub-account under it.'}
+          action={<Button type="primary" icon={<PlusOutlined />} onClick={() => openOwnerModal(null)}>Add owner</Button>}
+        />
+      )}
+      {summary && activeOwners.length > 0 && pctOff && (
+        <Alert
+          type="warning"
+          showIcon
+          message={`Active owners add up to ${pct(totalPct)}, not 100%`}
+          description="Fair shares are calculated from each owner's %. Edit the owners so the total is exactly 100%."
+        />
+      )}
+      {summary && summary.unlinkedEquityCategories.length > 0 && (
+        <Alert
+          type="warning"
+          showIcon
+          message="Some entry categories post to Equity outside Owners' Drawings"
+          description={
+            <div>
+              <p className="mb-1.5">
+                Their entries are already kept out of expenses, but they are not counted under any owner here. Open{" "}
+                <Link to="/admin/expense-categories">Entries Management → Categories</Link> and map each one to the matching
+                owner's drawings account; its history is re-posted there automatically.
+              </p>
+              <ul className="m-0 list-disc pl-5">
+                {summary.unlinkedEquityCategories.map((c) => (
+                  <li key={c.categoryId}>
+                    <b>{c.categoryName}</b> → {c.accountNumber} {c.accountName} · {c.entryCount} entries · {money(c.totalAmount)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          }
+        />
+      )}
+
+      {/* ── KPIs ───────────────────────────────────────────────────── */}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatTile
+          label="Total drawings"
+          loading={loading && !summary}
+          value={moneyCompact(summary?.totalDrawings ?? 0)}
+          sub={<>{periodLabel}{summary?.headerAccountNumber ? <> · {summary.headerAccountNumber} {summary.headerAccountName}</> : null}</>}
+          accent={<span className="rounded-lg bg-violet-50 p-1.5 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300"><WalletOutlined /></span>}
+        />
+        <StatTile
+          label="Lifetime drawings"
+          loading={loading && !summary}
+          value={moneyCompact(summary?.lifetimeTotalDrawings ?? 0)}
+          sub="All time, all owners"
+        />
+        <StatTile
+          label="Ownership allocated"
+          loading={loading && !summary}
+          value={pct(totalPct)}
+          accent={
+            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${pctOff ? "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300" : "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"}`}>
+              {pctOff ? <><WarningOutlined /> Check</> : <>✓ Complete</>}
+            </span>
+          }
+          sub={
+            <div className="mt-1 flex h-1.5 w-full gap-[2px] overflow-hidden rounded-full bg-gray-100 dark:bg-white/10">
+              {activeOwners.map((o) => (
+                <div key={o.id} title={`${o.name} ${pct(o.ownershipPercent)}`} style={{ width: `${o.ownershipPercent}%`, background: color(o.id) }} />
+              ))}
+            </div>
+          }
+        />
+        <StatTile
+          label="Most over-drawn"
+          loading={loading && !summary}
+          value={topOver ? <span className="flex items-center gap-2.5"><OwnerAvatar name={topOver.name} color={color(topOver.ownerId)} size={30} />{topOver.name}</span> : "Nobody"}
+          sub={topOver ? <>{money(topOver.variance)} above their {pct(topOver.ownershipPercent)} fair share</> : "Every owner is at or under their fair share"}
+        />
+      </div>
+
+      {/* ── Composition + per-owner ─────────────────────────────────── */}
+      <div className="grid gap-6 xl:grid-cols-5">
+        <Panel
+          className="xl:col-span-2"
+          title="Who drew what"
+          subtitle="Each owner's slice of the drawings, against the slice they own"
+        >
+          {loading && !summary ? (
+            <Skeleton active />
+          ) : summaryRows.length === 0 ? (
+            <Empty description="No owners yet" />
+          ) : (summary?.totalDrawings ?? 0) === 0 ? (
+            <Empty description="No drawings in this period" />
+          ) : (
+            <DrawingsComposition rows={summaryRows} totalDrawings={summary!.totalDrawings} color={color} onOpen={setDetailRow} />
+          )}
+        </Panel>
+
+        <Panel
+          className="xl:col-span-3"
+          title="Drawings by owner"
+          subtitle="From the general ledger · click an owner for the entries and the calculation"
+          extra={
+            <Segmented
+              size="small"
+              value={view}
+              onChange={(v) => setView(v as "cards" | "table")}
+              options={[
+                { value: "cards", icon: <AppstoreOutlined />, label: "Cards" },
+                { value: "table", icon: <UnorderedListOutlined />, label: "Table" },
+              ]}
+            />
+          }
+        >
+          {loading && !summary ? (
+            <Skeleton active />
+          ) : summaryRows.length === 0 ? (
+            <Empty description="No owners yet" />
+          ) : view === "cards" ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              {summaryRows.map((r) => (
+                <article
+                  key={r.key}
+                  onClick={() => setDetailRow(r)}
+                  className="group relative cursor-pointer rounded-xl border border-gray-200/80 bg-white p-4 transition hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md dark:border-white/[0.06] dark:bg-white/[0.02] dark:hover:border-white/15"
+                >
+                  <span className="absolute inset-x-0 top-0 h-1 rounded-t-xl" style={{ background: color(r.ownerId) }} />
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <OwnerAvatar name={r.name} color={color(r.ownerId)} size={40} />
+                      <div className="min-w-0">
+                        <div className="truncate font-semibold text-gray-900 dark:text-white">{r.name}</div>
+                        <div className="truncate text-xs text-gray-500 dark:text-gray-400">{r.accountNumber} · {r.accountName}</div>
+                      </div>
+                    </div>
+                    {r.ownerId != null ? (
+                      <span className="shrink-0 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-700 dark:bg-white/5 dark:text-gray-200">
+                        {pct(r.ownershipPercent)}
+                      </span>
+                    ) : (
+                      <span className="shrink-0 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700">No owner</span>
+                    )}
+                  </div>
+
+                  <div className="mt-4 flex items-end justify-between gap-3">
+                    <div>
+                      <Eyebrow>Drawn</Eyebrow>
+                      <div className="mt-0.5 text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">{money(r.drawn)}</div>
+                    </div>
+                    <div className="text-right text-xs text-gray-500 dark:text-gray-400">
+                      <div className="tabular-nums">{r.entryCount} entr{r.entryCount === 1 ? "y" : "ies"}</div>
+                      <div className="tabular-nums">Lifetime {money(r.lifetimeDrawn)}</div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 space-y-1.5">
+                    <ShareMeter share={r.shareOfDrawingsPercent} owned={r.ownershipPercent} color={color(r.ownerId)} showOwned={r.ownerId != null} />
+                    <div className="flex justify-between text-xs tabular-nums text-gray-500 dark:text-gray-400">
+                      <span><b className="font-semibold text-gray-800 dark:text-gray-200">{pct(r.shareOfDrawingsPercent)}</b> of drawings</span>
+                      {r.ownerId != null && <span>owns {pct(r.ownershipPercent)}</span>}
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between gap-2 border-t border-gray-100 pt-3 dark:border-white/[0.06]">
+                    {r.ownerId != null ? (
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        Fair share <span className="font-semibold tabular-nums text-gray-800 dark:text-gray-200">{money(r.entitledAmount)}</span>
+                      </div>
+                    ) : <span />}
+                    {r.ownerId != null && <StatusBadge variance={r.variance} />}
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between">
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-violet-700 opacity-80 group-hover:opacity-100 dark:text-violet-300">
+                      Details <ArrowRightOutlined className="transition group-hover:translate-x-0.5" />
+                    </span>
+                    {r.ownerId != null && r.isActive && (
+                      <Button
+                        size="small"
+                        icon={<PlusOutlined />}
+                        onClick={(e) => { e.stopPropagation(); openDrawingModal(null, r.ownerId!); }}
+                      >
+                        Drawing
+                      </Button>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <Table
+              rowKey="key"
+              size="middle"
+              columns={summaryColumns}
+              dataSource={summaryRows}
+              pagination={false}
+              scroll={{ x: 1000 }}
+              summary={() =>
+                summary ? (
+                  <Table.Summary.Row className="bg-violet-50/60 dark:bg-violet-500/5">
+                    <Table.Summary.Cell index={0}><b>{summary.headerAccountNumber} · {summary.headerAccountName}</b></Table.Summary.Cell>
+                    <Table.Summary.Cell index={1} align="right"><b>{pct(totalPct)}</b></Table.Summary.Cell>
+                    <Table.Summary.Cell index={2} align="right"><b className="tabular-nums">{money(summary.totalDrawings)}</b></Table.Summary.Cell>
+                    <Table.Summary.Cell index={3}><b>{summary.totalDrawings !== 0 ? "100%" : "—"}</b></Table.Summary.Cell>
+                    <Table.Summary.Cell index={4} align="right">
+                      <b className="tabular-nums">{money(summaryRows.filter((r) => r.ownerId).reduce((a, r) => a + r.entitledAmount, 0))}</b>
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell index={5} />
+                    <Table.Summary.Cell index={6} align="right"><b>{summaryRows.reduce((a, r) => a + r.entryCount, 0)}</b></Table.Summary.Cell>
+                    <Table.Summary.Cell index={7} align="right"><b className="tabular-nums">{money(summary.lifetimeTotalDrawings)}</b></Table.Summary.Cell>
+                  </Table.Summary.Row>
+                ) : null
+              }
+            />
+          )}
+        </Panel>
+      </div>
+
+      {/* ── Owners & ownership ─────────────────────────────────────── */}
+      <Panel
+        title="Owners & ownership"
+        subtitle="Each owner has their own drawings account under the Owners' Drawings header"
+        extra={
+          <div className="flex items-center gap-3">
+            <label className="flex cursor-pointer items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+              <Switch size="small" checked={showHiddenOwners} onChange={setShowHiddenOwners} /> Show hidden
+            </label>
+            <Button icon={<PlusOutlined />} onClick={() => openOwnerModal(null)}>Add owner</Button>
+          </div>
+        }
+      >
+        {owners.length === 0 ? (
+          <Empty description="No owners yet" />
+        ) : (
+          <ul className="divide-y divide-gray-100 dark:divide-white/[0.06]">
+            {owners.map((o) => (
+              <li key={o.id} className={`flex flex-wrap items-center gap-4 py-3 first:pt-0 last:pb-0 ${o.isActive ? "" : "opacity-60"}`}>
+                <OwnerAvatar name={o.name} color={color(o.id)} size={36} />
+                <div className="min-w-[160px] flex-1">
+                  <div className="flex items-center gap-2 font-medium text-gray-900 dark:text-gray-100">
+                    {o.name}
+                    {!o.isActive && <span className="rounded bg-gray-100 px-1.5 text-[10px] uppercase text-gray-500 dark:bg-white/5">hidden</span>}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {o.drawingsAccountNumber} · {o.drawingsAccountName}{o.notes ? <> · {o.notes}</> : null}
+                  </div>
+                </div>
+                <div className="flex w-full items-center gap-3 sm:w-64">
+                  <div className="h-1.5 flex-1 rounded-full bg-gray-100 dark:bg-white/10">
+                    <div className="h-full rounded-full" style={{ width: `${Math.min(100, o.ownershipPercent)}%`, background: color(o.id) }} />
+                  </div>
+                  <span className="w-14 text-right text-sm font-semibold tabular-nums text-gray-900 dark:text-gray-100">{pct(o.ownershipPercent)}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openOwnerModal(o)}>Edit</Button>
+                  {o.isActive && <Button type="text" size="small" danger onClick={() => hideOwner(o)}>Hide</Button>}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
+
+      {/* ── Drawings register ──────────────────────────────────────── */}
+      <Panel
+        title="Drawings register"
+        subtitle={<>{drawingsCount} entr{drawingsCount === 1 ? "y" : "ies"} · {money(drawingsTotal)} recorded on this page in the period</>}
+        extra={
+          <div className="flex flex-wrap items-center gap-3">
+            <Select
+              allowClear
+              placeholder="All owners"
+              style={{ minWidth: 180 }}
+              value={ownerFilter ?? undefined}
+              onChange={(v) => setOwnerFilter(v ?? null)}
+              options={owners.map((o) => ({
+                value: o.id,
+                label: <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full" style={{ background: color(o.id) }} />{o.name}</span>,
+              }))}
+            />
+            <label className="flex cursor-pointer items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+              <Switch size="small" checked={showVoided} onChange={setShowVoided} /> Show cancelled
+            </label>
+          </div>
+        }
+      >
+        <Table
+          rowKey="id"
+          size="middle"
+          loading={drawingsLoading}
+          columns={drawingColumns}
+          dataSource={drawings}
+          scroll={{ x: 1000 }}
+          locale={{ emptyText: <Empty description="No drawings recorded on this page in the period" /> }}
+          pagination={{ current: drawingsPage, pageSize, total: drawingsCount, onChange: setDrawingsPage, showSizeChanger: false, hideOnSinglePage: true }}
+        />
+      </Panel>
 
       {/* Drawings behind one row + how its numbers are calculated */}
       <OwnerDrawingDetailModal
@@ -696,7 +762,9 @@ export default function OwnersDrawings() {
         headerLabel={summary ? `${summary.headerAccountNumber} ${summary.headerAccountName}` : "Owners' Drawings"}
         from={fromStr}
         to={toStr}
+        color={color(detailRow?.ownerId)}
         onClose={() => setDetailRow(null)}
+        onRecordDrawing={detailRow?.ownerId != null && detailRow.isActive ? () => { const id = detailRow.ownerId!; setDetailRow(null); openDrawingModal(null, id); } : undefined}
       />
 
       {/* Owner modal */}
@@ -709,19 +777,17 @@ export default function OwnersDrawings() {
         confirmLoading={saving}
         destroyOnHidden
       >
-        <Form form={ownerForm} layout="vertical" preserve={false} initialValues={ownerModal.init}>
+        <Form form={ownerForm} layout="vertical" preserve={false} initialValues={ownerModal.init} requiredMark={false}>
           <Form.Item name="name" label="Name" rules={[{ required: true, message: "Name is required" }]}>
             <Input placeholder="Ahmad Houhou" maxLength={150} />
           </Form.Item>
           <Form.Item
             name="ownershipPercent"
             label="Ownership %"
-            extra={`Other active owners hold ${pct(
-              owners.filter((o) => o.isActive && o.id !== ownerModal.editing?.id).reduce((a, o) => a + o.ownershipPercent, 0)
-            )}. The total cannot exceed 100%.`}
+            extra={`Other active owners hold ${pct(otherHeld)}. The total cannot exceed 100% (max ${pct(Math.max(0, 100 - otherHeld))} here).`}
             rules={[{ required: true, message: "Ownership % is required" }]}
           >
-            <InputNumber min={0.01} max={100} step={0.5} precision={2} addonAfter="%" style={{ width: "100%" }} />
+            <InputNumber min={0.01} max={100} step={0.5} precision={2} suffix="%" style={{ width: "100%" }} />
           </Form.Item>
           {!ownerModal.editing && (
             <Form.Item
@@ -753,40 +819,38 @@ export default function OwnersDrawings() {
         title={drawingModal.editing ? "Edit drawing" : "Record owner drawing"}
         onCancel={() => setDrawingModal({ open: false, editing: null })}
         onOk={saveDrawing}
-        okText={drawingModal.editing ? "Save" : "Record"}
+        okText={drawingModal.editing ? "Save" : "Record drawing"}
         confirmLoading={saving}
         destroyOnHidden
       >
-        <Alert
-          type="info"
-          showIcon
-          style={{ marginBottom: 16 }}
-          message="Posts DR the owner's drawings account / CR 1000 Cash on Hand. Not an expense."
-        />
-        <Form form={drawingForm} layout="vertical" preserve={false} initialValues={drawingModal.init}>
+        <div className="mb-4 rounded-lg bg-violet-50 px-3 py-2 text-xs text-violet-800 dark:bg-violet-500/10 dark:text-violet-200">
+          Posts <b>DR</b> the owner's drawings account / <b>CR</b> 1000 Cash on Hand. Not an expense.
+        </div>
+        <Form form={drawingForm} layout="vertical" preserve={false} initialValues={drawingModal.init} requiredMark={false}>
           <Form.Item name="ownerId" label="Owner" rules={[{ required: true, message: "Pick the owner" }]}>
             <Select
               placeholder="Who took the cash?"
               options={(drawingModal.editing ? owners : activeOwners).map((o) => ({
                 value: o.id,
-                label: `${o.name} (${pct(o.ownershipPercent)}) · ${o.drawingsAccountNumber}`,
+                label: (
+                  <span className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full" style={{ background: color(o.id) }} />
+                    {o.name} <span className="text-gray-400">· {pct(o.ownershipPercent)} · {o.drawingsAccountNumber}</span>
+                  </span>
+                ),
               }))}
             />
           </Form.Item>
-          <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item name="amount" label="Amount" rules={[{ required: true, message: "Amount is required" }]}>
-                <InputNumber min={0.01} step={10} precision={2} prefix="$" style={{ width: "100%" }} />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="drawingDate" label="Date" rules={[{ required: true, message: "Date is required" }]}>
-                <DatePicker style={{ width: "100%" }} disabledDate={(d) => d.isAfter(dayjs().endOf("day"))} />
-              </Form.Item>
-            </Col>
-          </Row>
+          <div className="grid grid-cols-2 gap-3">
+            <Form.Item name="amount" label="Amount" rules={[{ required: true, message: "Amount is required" }]}>
+              <InputNumber min={0.01} step={10} precision={2} prefix="$" style={{ width: "100%" }} />
+            </Form.Item>
+            <Form.Item name="drawingDate" label="Date" rules={[{ required: true, message: "Date is required" }]}>
+              <DatePicker style={{ width: "100%" }} disabledDate={(d) => d.isAfter(dayjs().endOf("day"))} />
+            </Form.Item>
+          </div>
           <Form.Item name="paymentMethod" label="Paid by">
-            <Select options={PAYMENT_METHODS.map((m) => ({ value: m, label: m }))} allowClear />
+            <Select allowClear options={PAYMENT_METHODS.map((m) => ({ value: m, label: m }))} />
           </Form.Item>
           <Form.Item name="comment" label="Comment">
             <Input.TextArea rows={2} maxLength={500} placeholder="Optional" />
@@ -807,18 +871,23 @@ export default function OwnersDrawings() {
         destroyOnHidden
       >
         {voidTarget && (
-          <Space direction="vertical" style={{ width: "100%" }}>
-            <Text>
-              {voidTarget.ownerName} · {money(voidTarget.amount)} on {dayjs(voidTarget.drawingDate).format("MMM DD, YYYY")}
-            </Text>
-            <Text type="secondary">
-              The row stays on file as cancelled and its journal entry {voidTarget.journalEntryNumber ?? ""} is voided, so it no
-              longer counts in the ledger or Cash on Hand.
-            </Text>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 rounded-lg border border-gray-100 p-3 dark:border-white/10">
+              <OwnerAvatar name={voidTarget.ownerName} color={color(voidTarget.ownerId)} size={32} />
+              <div className="flex-1">
+                <div className="font-medium">{voidTarget.ownerName}</div>
+                <div className="text-xs text-gray-500">{dayjs(voidTarget.drawingDate.slice(0, 10)).format("MMM D, YYYY")} · {voidTarget.journalEntryNumber ?? "no journal entry"}</div>
+              </div>
+              <div className="font-semibold tabular-nums">{money(voidTarget.amount)}</div>
+            </div>
+            <p className="text-sm text-gray-500">
+              The row stays on file as cancelled and its journal entry is voided, so it no longer counts in the ledger or Cash on Hand.
+            </p>
             <Input.TextArea rows={2} maxLength={500} placeholder="Reason (optional)" value={voidReason} onChange={(e) => setVoidReason(e.target.value)} />
-          </Space>
+          </div>
         )}
       </Modal>
     </div>
   );
 }
+

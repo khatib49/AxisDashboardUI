@@ -25,7 +25,10 @@ import { integrationSettingsService } from "../../services/integrationSettingsSe
 interface Props {
   fromIso: string;
   toIso: string;
-  mode?: "compact" | "full";
+  /** compact = main dashboard; full = legacy strip; hero = accounting dashboard headline card. */
+  mode?: "compact" | "full" | "hero";
+  /** Hero mode: opens the "how it is built" breakdown. */
+  onDetails?: () => void;
   /** Pre-fetched breakdown from the parent's dashboard call (skips a round-trip). */
   cashOverride?: CashOnHandDto | null;
   /** Called after the baseline is saved so the parent can refetch. */
@@ -37,7 +40,7 @@ const money = (n: number) =>
 
 const FORMULA = "Baseline + TOTAL revenue since day one (paid sales + paid event tickets) − TOTAL expenses since day one (the \"Total Expenses (All)\" figure on the Expenses page) − owners' drawings since day one (cash the owners took out; not an expense). Not affected by the date filter.";
 
-export default function CashOnHandCard({ fromIso, toIso, mode = "compact", cashOverride, onBaselineSaved }: Props) {
+export default function CashOnHandCard({ fromIso, toIso, mode = "compact", cashOverride, onBaselineSaved, onDetails }: Props) {
   const [data, setData] = useState<CashOnHandDto | null>(cashOverride ?? null);
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -79,6 +82,61 @@ export default function CashOnHandCard({ fromIso, toIso, mode = "compact", cashO
       (data.otherCashOut ? ` − owners' drawings ${money(data.otherCashOut)}` : "")
     : "";
   const expenseDetail = "all time · not affected by the date filter";
+
+  if (mode === "hero") {
+    const negative = !!data && data.amount < 0;
+    const parts = data
+      ? [
+          { label: "Baseline", value: data.baseline, sign: "" },
+          { label: "Revenue", value: data.revenue, sign: "+" },
+          { label: "Expenses", value: data.totalExpenses, sign: "−" },
+          ...(data.otherCashOut ? [{ label: "Owners' drawings", value: data.otherCashOut, sign: "−" }] : []),
+        ]
+      : [];
+    return (
+      <>
+        <div className="relative h-full overflow-hidden rounded-2xl bg-gradient-to-br from-cyan-600 via-cyan-700 to-teal-800 p-5 text-white shadow-lg shadow-cyan-900/20">
+          <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
+          <div className="relative flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-cyan-50">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/15 text-[10px] font-bold">1</span>
+              Cash on Hand
+              <Tooltip title={FORMULA}><InfoCircleOutlined className="text-cyan-100/80" /></Tooltip>
+            </div>
+            <div className="flex items-center gap-1">
+              {onDetails && (
+                <button type="button" onClick={onDetails} className="rounded-lg bg-white/10 px-2.5 py-1 text-xs font-medium text-white transition hover:bg-white/20">
+                  Details ›
+                </button>
+              )}
+              <Tooltip title="Edit baseline">
+                <button type="button" onClick={openEdit} className="rounded-lg bg-white/10 px-2 py-1 text-xs text-white transition hover:bg-white/20" aria-label="Edit baseline">
+                  <EditOutlined />
+                </button>
+              </Tooltip>
+            </div>
+          </div>
+          {isReady ? (
+            <>
+              <div className={`relative mt-3 text-4xl font-semibold tracking-tight ${negative ? "text-red-200" : ""}`}>{money(data!.amount)}</div>
+              <div className="relative mt-4 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-cyan-50/90">
+                {parts.map((p) => (
+                  <span key={p.label} className="whitespace-nowrap">
+                    <span className="text-cyan-100/70">{p.sign} {p.label}</span>{" "}
+                    <span className="font-semibold tabular-nums text-white">{money(p.value)}</span>
+                  </span>
+                ))}
+              </div>
+              <div className="relative mt-2 text-[11px] text-cyan-100/70">{expenseDetail}</div>
+            </>
+          ) : (
+            <div className="relative flex justify-center py-6"><Spin size="small" /></div>
+          )}
+        </div>
+        <BaselineModal open={editing} draft={draft} setDraft={setDraft} onCancel={() => setEditing(false)} onSave={saveBaseline} saving={saving} />
+      </>
+    );
+  }
 
   if (mode === "compact") {
     return (

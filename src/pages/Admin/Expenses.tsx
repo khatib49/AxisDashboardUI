@@ -1,560 +1,539 @@
-import { useEffect, useState } from "react";
-import {
-    queryExpenses,
-    createExpense,
-    updateExpense,
-    deleteExpense,
-    getExpenseCategories,
-    ExpenseDto,
-    ExpenseCreateDto,
-    ExpenseUpdateDto,
-    ExpenseCategoryDto,
-} from "../../services/expenseService";
-import Modal from "../../components/ui/Modal";
-import Input from "../../components/form/input/InputField";
-import Label from "../../components/form/Label";
-import Loader from "../../components/ui/Loader";
-import Alert from "../../components/ui/alert/Alert";
-import Select from "../../components/form/Select";
-import DateTimePicker from "../../components/form/DateTimePicker";
+// Entries (Expenses)
+// ==================
+// Every manual entry: rent, salaries, supplies… and the legacy "cash out"
+// categories that post to an owner's drawings account. Each entry posts
+// DR <category's account> / CR 1000 Cash, one journal entry per month it
+// covers. Entries whose category maps to an Equity account are owner
+// drawings: listed here, but kept out of the expense total.
+//
+// Dates are calendar days ("YYYY-MM-DD") end to end — never an instant —
+// so a day picked in Beirut is the day saved.
 
-// From/To are calendar days stored at midnight UTC. Format the YYYY-MM-DD
-// part as a local date so the browser's timezone can't move it a day.
-const formatDay = (iso: string) => {
-    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
-    return (m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(iso)).toLocaleDateString();
+import { useEffect, useMemo, useState } from "react";
+import {
+  AutoComplete,
+  Button,
+  DatePicker,
+  Dropdown,
+  Empty,
+  Form,
+  Input,
+  InputNumber,
+  Modal,
+  Segmented,
+  Select,
+  Table,
+  Tooltip,
+  message,
+} from "antd";
+import type { ColumnsType } from "antd/es/table";
+import {
+  DeleteOutlined,
+  EditOutlined,
+  FileTextOutlined,
+  FilterOutlined,
+  MoreOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  WalletOutlined,
+} from "@ant-design/icons";
+import dayjs, { Dayjs } from "dayjs";
+import { Link } from "react-router";
+import {
+  queryExpenses,
+  createExpense,
+  updateExpense,
+  deleteExpense,
+  getExpenseCategories,
+  getPostableAccounts,
+  AccountDto,
+  ExpenseDto,
+  ExpenseCategoryDto,
+} from "../../services/expenseService";
+import { PageHeader, Panel, Pill, StatTile } from "../../components/ui/PageKit";
+import { KIND_META, makeKindLookup, money, moneyCompact, parseDay } from "../../components/Accounting/entries/categoryKind";
+
+const { RangePicker } = DatePicker;
+
+const ymd = (d: Dayjs) => d.format("YYYY-MM-DD");
+const dayOf = (iso: string) => dayjs(parseDay(iso));
+
+const PAYMENT_METHODS = ["Cash", "Card", "Bank transfer", "Cheque", "Whish", "OMT"];
+
+const PERIODS: { key: string; label: string; range: () => [Dayjs, Dayjs] | null }[] = [
+  { key: "all", label: "All time", range: () => null },
+  { key: "month", label: "This month", range: () => [dayjs().startOf("month"), dayjs().endOf("month")] },
+  { key: "last", label: "Last month", range: () => [dayjs().subtract(1, "month").startOf("month"), dayjs().subtract(1, "month").endOf("month")] },
+  { key: "year", label: "This year", range: () => [dayjs().startOf("year"), dayjs().endOf("year")] },
+];
+
+const errMsg = (e: unknown, fallback: string) =>
+  e && typeof e === "object" && typeof (e as { message?: unknown }).message === "string" ? (e as { message: string }).message : fallback;
+
+type EntryForm = {
+  categoryId: number;
+  amount: number;
+  paymentMethod?: string;
+  comment?: string;
+  mode: "day" | "range";
+  day?: Dayjs;
+  range?: [Dayjs, Dayjs];
 };
 
+/** "Oct 4, 2026" or "Jan 1 – Mar 31, 2026" + how many months it spans. */
+function periodOf(e: ExpenseDto) {
+  const f = dayOf(e.fromDate);
+  const t = dayOf(e.toDate);
+  if (f.isSame(t, "day")) return { text: f.format("MMM D, YYYY"), months: 1, range: false };
+  const sameYear = f.year() === t.year();
+  const months = (t.year() - f.year()) * 12 + (t.month() - f.month()) + 1;
+  return { text: `${f.format(sameYear ? "MMM D" : "MMM D, YYYY")} – ${t.format("MMM D, YYYY")}`, months, range: true };
+}
+
 export default function Expenses() {
-    const [expenses, setExpenses] = useState<ExpenseDto[]>([]);
-    const [categories, setCategories] = useState<ExpenseCategoryDto[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [page, setPage] = useState(1);
-    const [pageSize] = useState(20);
-    const [totalCount, setTotalCount] = useState(0);
-    const [totalAmount, setTotalAmount] = useState(0);
-    const [totalAmountAll, setTotalAmountAll] = useState(0);
-    const [totalOwnerDrawingsAll, setTotalOwnerDrawingsAll] = useState(0);
-    const [reloadToken, setReloadToken] = useState(0);
+  const [expenses, setExpenses] = useState<ExpenseDto[]>([]);
+  const [categories, setCategories] = useState<ExpenseCategoryDto[]>([]);
+  const [accounts, setAccounts] = useState<AccountDto[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalAmount, setTotalAmount] = useState(0);
+  const [totalAmountAll, setTotalAmountAll] = useState(0);
+  const [totalOwnerDrawingsAll, setTotalOwnerDrawingsAll] = useState(0);
+  const [reloadToken, setReloadToken] = useState(0);
 
-    // Filters
-    const [filterCategoryId, setFilterCategoryId] = useState<number | null>(null);
-    const [filterFromDate, setFilterFromDate] = useState<string>("");
-    const [filterToDate, setFilterToDate] = useState<string>("");
+  // Filters
+  const [period, setPeriod] = useState<string>("all");
+  const [range, setRange] = useState<[Dayjs, Dayjs] | null>(null);
+  const [filterCategoryId, setFilterCategoryId] = useState<number | null>(null);
 
-    // Form states
-    const [isFormOpen, setIsFormOpen] = useState(false);
-    const [editing, setEditing] = useState<ExpenseDto | null>(null);
-    const [form, setForm] = useState<{
-        categoryId: number | null;
-        amount: number;
-        paymentMethod: string;
-        comment: string;
-        fromDate: string;
-        toDate: string;
-    }>({
-        categoryId: null,
-        amount: 0,
-        paymentMethod: "",
-        comment: "",
-        fromDate: "",
-        toDate: "",
+  // Form
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<ExpenseDto | null>(null);
+  const [formInit, setFormInit] = useState<Partial<EntryForm>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [form] = Form.useForm<EntryForm>();
+  const watchMode = Form.useWatch("mode", form);
+  const watchCategory = Form.useWatch("categoryId", form);
+  const watchRange = Form.useWatch("range", form);
+
+  const kindOf = useMemo(() => makeKindLookup(accounts), [accounts]);
+  const catById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
+  const kindOfCategory = (categoryId: number | null | undefined) => {
+    const c = categoryId != null ? catById.get(categoryId) : undefined;
+    return c ? kindOf(c.accountId) : "expense";
+  };
+
+  // Load entries
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    setError(null);
+    queryExpenses({
+      page,
+      pageSize,
+      categoryId: filterCategoryId || undefined,
+      from: range ? ymd(range[0]) : undefined,
+      to: range ? ymd(range[1]) : undefined,
+    })
+      .then((r) => {
+        if (!alive) return;
+        setExpenses(r.items || []);
+        setTotalCount(r.totalCount || 0);
+        setTotalAmount(r.totalAmount || 0);
+        setTotalAmountAll(r.totalAmountAll || 0);
+        setTotalOwnerDrawingsAll(r.totalOwnerDrawingsAll || 0);
+      })
+      .catch((e) => { if (alive) setError(errMsg(e, "Failed to load entries")); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [page, filterCategoryId, range, reloadToken]);
+
+  // Categories + accounts (for each category's kind)
+  useEffect(() => {
+    getExpenseCategories().then((d) => setCategories(d || [])).catch(() => {});
+    getPostableAccounts().then((d) => setAccounts(d || [])).catch(() => {});
+  }, []);
+
+  const categoryOptions = useMemo(
+    () =>
+      [...categories]
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((c) => {
+          const k = KIND_META[kindOf(c.accountId)];
+          return {
+            value: c.id,
+            search: `${c.name} ${c.accountNumber ?? ""} ${k.label}`.toLowerCase(),
+            label: (
+              <span className="flex items-center justify-between gap-2">
+                <span className="truncate">{c.name}</span>
+                {k.label !== "Expense" && <Pill tone={k.tone}>{k.label}</Pill>}
+              </span>
+            ),
+          };
+        }),
+    [categories, kindOf]
+  );
+
+  const filtersActive = !!filterCategoryId || !!range;
+  const reload = () => setReloadToken((t) => t + 1);
+
+  // ── Form ────────────────────────────────────────────────────────────
+  const openCreate = () => {
+    setEditing(null);
+    setFormInit({ mode: "day", day: dayjs(), paymentMethod: "Cash" });
+    setFormOpen(true);
+  };
+
+  const openEdit = (e: ExpenseDto) => {
+    const f = dayOf(e.fromDate);
+    const t = dayOf(e.toDate);
+    const single = f.isSame(t, "day");
+    setEditing(e);
+    setFormInit({
+      categoryId: e.categoryId,
+      amount: e.amount,
+      paymentMethod: e.paymentMethod ?? undefined,
+      comment: e.comment ?? "",
+      mode: single ? "day" : "range",
+      day: single ? f : undefined,
+      range: single ? undefined : [f, t],
     });
-    const [submitting, setSubmitting] = useState(false);
+    setFormOpen(true);
+  };
 
-    // Delete confirmation
-    const [deleteId, setDeleteId] = useState<number | null>(null);
-    const [deleting, setDeleting] = useState(false);
-
-    const [notification, setNotification] = useState<{
-        variant: "success" | "error" | "warning" | "info";
-        title: string;
-        message: string;
-    } | null>(null);
-
-    useEffect(() => {
-        if (!notification) return;
-        const t = setTimeout(() => setNotification(null), 4000);
-        return () => clearTimeout(t);
-    }, [notification]);
-
-    // Load expenses
-    useEffect(() => {
-        let mounted = true;
-        setLoading(true);
-        setError(null);
-
-        queryExpenses({
-            page,
-            pageSize,
-            categoryId: filterCategoryId || undefined,
-            from: filterFromDate || undefined,
-            to: filterToDate || undefined,
-        })
-            .then((result) => {
-                if (!mounted) return;
-                setExpenses(result.items || []);
-                setTotalCount(result.totalCount || 0);
-                setTotalAmount(result.totalAmount || 0);
-                setTotalAmountAll(result.totalAmountAll || 0);
-                setTotalOwnerDrawingsAll(result.totalOwnerDrawingsAll || 0);
-            })
-            .catch((err) => {
-                if (!mounted) return;
-                setError(err?.message || "Failed to load expenses");
-            })
-            .finally(() => {
-                if (!mounted) return;
-                setLoading(false);
-            });
-
-        return () => {
-            mounted = false;
-        };
-    }, [page, pageSize, filterCategoryId, filterFromDate, filterToDate, reloadToken]);
-
-    // Load categories
-    useEffect(() => {
-        let mounted = true;
-        getExpenseCategories()
-            .then((data) => {
-                if (!mounted) return;
-                setCategories(data || []);
-            })
-            .catch(() => {
-                /* ignore */
-            });
-        return () => {
-            mounted = false;
-        };
-    }, []);
-
-    function openCreateForm() {
-        setEditing(null);
-        setForm({
-            categoryId: null,
-            amount: 0,
-            paymentMethod: "",
-            comment: "",
-            fromDate: "",
-            toDate: "",
-        });
-        setIsFormOpen(true);
+  const submit = async () => {
+    const v = await form.validateFields();
+    const [from, to] = v.mode === "day" ? [v.day!, v.day!] : v.range!;
+    const dto = {
+      categoryId: v.categoryId,
+      amount: v.amount,
+      paymentMethod: v.paymentMethod?.trim() || null,
+      comment: v.comment?.trim() || null,
+      fromDate: ymd(from),
+      toDate: ymd(to),
+    };
+    setSubmitting(true);
+    try {
+      if (editing) {
+        await updateExpense(editing.id, dto);
+        message.success("Entry updated");
+      } else {
+        await createExpense(dto);
+        message.success("Entry added");
+      }
+      setFormOpen(false);
+      reload();
+    } catch (e) {
+      message.error(errMsg(e, "Save failed"));
+    } finally {
+      setSubmitting(false);
     }
+  };
 
-    function openEditForm(expense: ExpenseDto) {
-        setEditing(expense);
-        setForm({
-            categoryId: expense.categoryId,
-            amount: expense.amount,
-            paymentMethod: expense.paymentMethod || "",
-            comment: expense.comment || "",
-            fromDate: expense.fromDate, // ISO string for DateTimePicker
-            toDate: expense.toDate,
-        });
-        setIsFormOpen(true);
-    }
-
-    async function submitForm() {
-        if (!form.categoryId) {
-            setNotification({ variant: "error", title: "Validation", message: "Please select a category" });
-            return;
-        }
-        if (!form.fromDate || !form.toDate) {
-            setNotification({ variant: "error", title: "Validation", message: "Please select from and to dates" });
-            return;
-        }
-
-        setSubmitting(true);
-        try {
-            if (editing) {
-                const dto: ExpenseUpdateDto = {
-                    amount: form.amount,
-                    paymentMethod: form.paymentMethod || null,
-                    comment: form.comment || null,
-                    fromDate: form.fromDate, // Already ISO string from DateTimePicker
-                    toDate: form.toDate,
-                    categoryId: form.categoryId,
-                };
-                const updated = await updateExpense(editing.id, dto);
-                setExpenses((s) => s.map((e) => (e.id === editing.id ? updated : e)));
-                setNotification({ variant: "success", title: "Updated", message: "Expense updated successfully" });
-            } else {
-                const dto: ExpenseCreateDto = {
-                    categoryId: form.categoryId,
-                    amount: form.amount,
-                    paymentMethod: form.paymentMethod || null,
-                    comment: form.comment || null,
-                    fromDate: form.fromDate, // Already ISO string from DateTimePicker
-                    toDate: form.toDate,
-                };
-                await createExpense(dto);
-                setReloadToken((t) => t + 1);
-                setNotification({ variant: "success", title: "Created", message: "Expense created successfully" });
-            }
-            setIsFormOpen(false);
-            setEditing(null);
-        } catch (err: unknown) {
-            let message = "Failed to save";
-            if (err && typeof err === "object") {
-                const maybe = err as { message?: unknown };
-                if (typeof maybe.message === "string") message = maybe.message;
-            }
-            setError(message);
-            setNotification({ variant: "error", title: "Save failed", message });
-        } finally {
-            setSubmitting(false);
-        }
-    }
-
-    async function confirmDelete() {
-        if (!deleteId) return;
-        setDeleting(true);
-        try {
-            await deleteExpense(deleteId);
-            setExpenses((s) => s.filter((e) => e.id !== deleteId));
-            setDeleteId(null);
-            setNotification({ variant: "success", title: "Deleted", message: "Expense deleted successfully" });
-            setReloadToken((t) => t + 1);
-        } catch (err: unknown) {
-            let message = "Failed to delete";
-            if (err && typeof err === "object") {
-                const maybe = err as { message?: unknown };
-                if (typeof maybe.message === "string") message = maybe.message;
-            }
-            setError(message);
-            setNotification({ variant: "error", title: "Delete failed", message });
-        } finally {
-            setDeleting(false);
-        }
-    }
-
-    return (
-        <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-semibold">Expenses</h1>
-                <button
-                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
-                    onClick={openCreateForm}
-                >
-                    + Add Expense
-                </button>
+  const confirmDelete = (e: ExpenseDto) => {
+    Modal.confirm({
+      title: "Delete this entry?",
+      content: (
+        <div className="space-y-2">
+          <div className="rounded-lg border border-gray-100 p-3 dark:border-white/10">
+            <div className="flex justify-between gap-3">
+              <span className="font-medium">{e.categoryName}</span>
+              <span className="font-semibold tabular-nums">{money(e.amount)}</span>
             </div>
-
-            {/* Filters */}
-            <div className="bg-white rounded-lg shadow p-4 mb-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <Label>Category</Label>
-                        <Select
-                            options={[
-                                { value: "", label: "All Categories" },
-                                ...categories.map((c) => ({ value: c.id, label: c.name })),
-                            ]}
-                            defaultValue={filterCategoryId ?? ""}
-                            onChange={(v) => {
-                                setFilterCategoryId(v === "" ? null : Number(v));
-                                setPage(1);
-                            }}
-                        />
-                    </div>
-                    <div>
-                        <DateTimePicker
-                            label="From Date"
-                            mode="date"
-                            value={filterFromDate}
-                            onChange={(value) => {
-                                setFilterFromDate(value);
-                                setPage(1);
-                            }}
-                            placeholder="Select start date"
-                        />
-                    </div>
-                    <div>
-                        <DateTimePicker
-                            label="To Date"
-                            mode="date"
-                            value={filterToDate}
-                            onChange={(value) => {
-                                setFilterToDate(value);
-                                setPage(1);
-                            }}
-                            placeholder="Select end date"
-                        />
-                    </div>
-                </div>
-                {(filterCategoryId || filterFromDate || filterToDate) && (
-                    <div className="mt-3">
-                        <button
-                            className="text-sm text-indigo-600 hover:text-indigo-800"
-                            onClick={() => {
-                                setFilterCategoryId(null);
-                                setFilterFromDate("");
-                                setFilterToDate("");
-                                setPage(1);
-                            }}
-                        >
-                            Clear Filters
-                        </button>
-                    </div>
-                )}
-            </div>
-
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg shadow-lg p-6 text-white">
-                    <p className="text-sm font-medium opacity-90">Total Expenses (Page)</p>
-                    <p className="text-3xl font-bold mt-1">${totalAmount.toFixed(2)}</p>
-                    <p className="text-xs opacity-75 mt-1">Current page total</p>
-                </div>
-                <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-lg shadow-lg p-6 text-white">
-                    <p className="text-sm font-medium opacity-90">Total Expenses (All)</p>
-                    <p className="text-3xl font-bold mt-1">${totalAmountAll.toFixed(2)}</p>
-                    <p className="text-xs opacity-75 mt-1">
-                        All filtered results
-                        {totalOwnerDrawingsAll > 0 && ` · excludes $${totalOwnerDrawingsAll.toFixed(2)} owner drawings (not an expense)`}
-                    </p>
-                </div>
-                <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-lg shadow-lg p-6 text-white">
-                    <p className="text-sm font-medium opacity-90">Total Records</p>
-                    <p className="text-3xl font-bold mt-1">{totalCount}</p>
-                    <p className="text-xs opacity-75 mt-1">Total expense entries</p>
-                </div>
-            </div>
-
-            {loading && (
-                <div className="flex items-center justify-center py-20">
-                    <Loader />
-                </div>
-            )}
-
-            {error && <div className="text-red-600 bg-red-50 p-3 rounded mb-4">{error}</div>}
-
-            {!loading && !error && (
-                <>
-                    <div className="bg-white rounded-lg shadow overflow-hidden">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        ID
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Category
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Amount
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Payment Method
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Period
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Comment
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Created
-                                    </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Actions
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                                {expenses.length === 0 && (
-                                    <tr>
-                                        <td colSpan={8} className="px-6 py-10 text-center text-gray-500">
-                                            No expenses found
-                                        </td>
-                                    </tr>
-                                )}
-                                {expenses.map((expense) => (
-                                    <tr key={expense.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                            {expense.id}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            {expense.categoryName}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                                            ${expense.amount.toFixed(2)}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {expense.paymentMethod || "-"}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500">
-                                            <div className="space-y-1">
-                                                <div>From: {formatDay(expense.fromDate)}</div>
-                                                <div>To: {formatDay(expense.toDate)}</div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                                            {expense.comment || "-"}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {new Date(expense.createdOn).toLocaleDateString()}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <button
-                                                className="text-indigo-600 hover:text-indigo-900 mr-3"
-                                                onClick={() => openEditForm(expense)}
-                                            >
-                                                Edit
-                                            </button>
-                                            <button
-                                                className="text-red-600 hover:text-red-900"
-                                                onClick={() => setDeleteId(expense.id)}
-                                            >
-                                                Delete
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Pagination */}
-                    <div className="mt-6 flex items-center justify-between">
-                        <div className="text-sm text-gray-600">
-                            Showing page {page} of {Math.max(1, Math.ceil(totalCount / pageSize))} — {totalCount} total
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <button
-                                className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
-                                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                                disabled={page <= 1}
-                            >
-                                Prev
-                            </button>
-                            <div className="text-sm">Page {page}</div>
-                            <button
-                                className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
-                                onClick={() => setPage((p) => p + 1)}
-                                disabled={page >= Math.ceil(totalCount / pageSize)}
-                            >
-                                Next
-                            </button>
-                        </div>
-                    </div>
-                </>
-            )}
-
-            {/* Create/Edit Modal */}
-            <Modal
-                isOpen={isFormOpen}
-                onClose={() => setIsFormOpen(false)}
-                title={editing ? "Edit Expense" : "Create Expense"}
-            >
-                <div className="flex flex-col gap-4">
-                    <div>
-                        <Label>Category *</Label>
-                        <Select
-                            options={[
-                                { value: "", label: "-- Select category --" },
-                                ...categories.map((c) => ({ value: c.id, label: c.name })),
-                            ]}
-                            defaultValue={form.categoryId ?? ""}
-                            onChange={(v: string | number) =>
-                                setForm((f) => ({ ...f, categoryId: v === "" ? null : Number(v) }))
-                            }
-                        />
-                    </div>
-                    <div>
-                        <Label>Amount *</Label>
-                        <Input
-                            type="number"
-                            placeholder="0.00"
-                            value={form.amount}
-                            onChange={(e) => setForm((f) => ({ ...f, amount: Number(e.target.value) }))}
-                        />
-                    </div>
-                    <div>
-                        <Label>Payment Method</Label>
-                        <Input
-                            placeholder="Cash, Card, Bank Transfer, etc."
-                            value={form.paymentMethod}
-                            onChange={(e) => setForm((f) => ({ ...f, paymentMethod: e.target.value }))}
-                        />
-                    </div>
-                    <div>
-                        <DateTimePicker
-                            label="From Date"
-                            mode="date"
-                            value={form.fromDate}
-                            onChange={(value) => setForm((f) => ({ ...f, fromDate: value }))}
-                            placeholder="Select start date"
-                            required
-                        />
-                    </div>
-                    <div>
-                        <DateTimePicker
-                            label="To Date"
-                            mode="date"
-                            value={form.toDate}
-                            onChange={(value) => setForm((f) => ({ ...f, toDate: value }))}
-                            placeholder="Select end date"
-                            required
-                        />
-                    </div>
-                    <div>
-                        <Label>Comment</Label>
-                        <textarea
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                            rows={3}
-                            placeholder="Additional notes..."
-                            value={form.comment}
-                            onChange={(e) => setForm((f) => ({ ...f, comment: e.target.value }))}
-                        />
-                    </div>
-                    <div className="flex items-center gap-2 pt-2">
-                        <button
-                            className="px-4 py-2 bg-green-600 text-white rounded flex items-center gap-2 disabled:opacity-50"
-                            onClick={submitForm}
-                            disabled={submitting}
-                        >
-                            {submitting ? <Loader size={16} /> : editing ? "Save Changes" : "Create Expense"}
-                        </button>
-                        <button
-                            className="px-4 py-2 bg-gray-200 rounded"
-                            onClick={() => setIsFormOpen(false)}
-                        >
-                            Cancel
-                        </button>
-                    </div>
-                </div>
-            </Modal>
-
-            {/* Delete Confirmation Modal */}
-            <Modal isOpen={!!deleteId} onClose={() => setDeleteId(null)} title="Confirm Delete">
-                <div className="space-y-4">
-                    <p>Are you sure you want to delete this expense? This action cannot be undone.</p>
-                    <div className="flex items-center gap-2">
-                        <button
-                            className="px-4 py-2 bg-red-600 text-white rounded flex items-center gap-2 disabled:opacity-50"
-                            onClick={confirmDelete}
-                            disabled={deleting}
-                        >
-                            {deleting ? <Loader size={16} /> : "Delete"}
-                        </button>
-                        <button className="px-4 py-2 bg-gray-200 rounded" onClick={() => setDeleteId(null)}>
-                            Cancel
-                        </button>
-                    </div>
-                </div>
-            </Modal>
-
-            {/* Toast notification */}
-            <div className="fixed bottom-6 right-6 z-50">
-                {notification && (
-                    <div className="max-w-sm">
-                        <Alert variant={notification.variant} title={notification.title} message={notification.message} />
-                    </div>
-                )}
-            </div>
+            <div className="text-xs text-gray-500">{periodOf(e).text}{e.comment ? ` · ${e.comment}` : ""}</div>
+          </div>
+          <p className="text-sm text-gray-500">Its journal entries are removed too. This cannot be undone.</p>
         </div>
-    );
+      ),
+      okText: "Delete",
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        try {
+          await deleteExpense(e.id);
+          message.success("Entry deleted");
+          reload();
+        } catch (err) {
+          message.error(errMsg(err, "Delete failed"));
+        }
+      },
+    });
+  };
+
+  // ── Table ───────────────────────────────────────────────────────────
+  const columns: ColumnsType<ExpenseDto> = [
+    {
+      title: "Date",
+      key: "period",
+      width: 190,
+      render: (_, e) => {
+        const p = periodOf(e);
+        return (
+          <div>
+            <div className="whitespace-nowrap font-medium tabular-nums text-gray-900 dark:text-gray-100">{p.text}</div>
+            {p.range && <div className="mt-0.5 text-[11px] text-gray-500">spread over {p.months} month{p.months === 1 ? "" : "s"}</div>}
+          </div>
+        );
+      },
+    },
+    {
+      title: "Category",
+      dataIndex: "categoryName",
+      render: (v: string, e) => {
+        const kind = kindOfCategory(e.categoryId);
+        const meta = KIND_META[kind];
+        return (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-medium text-gray-900 dark:text-gray-100">{v}</span>
+            {kind !== "expense" && (
+              <Tooltip title={meta.hint}>
+                <span><Pill tone={meta.tone} dot>{meta.label}</Pill></span>
+              </Tooltip>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      title: "Amount",
+      dataIndex: "amount",
+      align: "right",
+      width: 130,
+      render: (v: number, e) => {
+        const drawing = kindOfCategory(e.categoryId) === "drawing";
+        return (
+          <Tooltip title={drawing ? "Owner drawing — not counted in Total expenses" : undefined}>
+            <span className={`whitespace-nowrap font-semibold tabular-nums ${drawing ? "text-violet-700 dark:text-violet-300" : "text-gray-900 dark:text-gray-100"}`}>{money(v)}</span>
+          </Tooltip>
+        );
+      },
+    },
+    {
+      title: "Paid by",
+      dataIndex: "paymentMethod",
+      width: 120,
+      render: (v: string | null) => (v ? <Pill>{v}</Pill> : <span className="text-gray-400">—</span>),
+    },
+    {
+      title: "Comment",
+      dataIndex: "comment",
+      ellipsis: { showTitle: false },
+      render: (v: string | null) =>
+        v ? <Tooltip title={v} placement="topLeft"><span className="text-gray-600 dark:text-gray-300">{v}</span></Tooltip> : <span className="text-gray-400">—</span>,
+    },
+    {
+      title: "Added",
+      dataIndex: "createdOn",
+      width: 120,
+      render: (v: string, e) => (
+        <div className="text-xs text-gray-500">
+          <div className="tabular-nums">{dayjs(v).format("MMM D, YYYY")}</div>
+          <div className="text-gray-400">#{e.id}</div>
+        </div>
+      ),
+    },
+    {
+      title: "",
+      key: "act",
+      width: 56,
+      align: "right",
+      render: (_, e) => (
+        <Dropdown
+          trigger={["click"]}
+          menu={{
+            items: [
+              { key: "edit", icon: <EditOutlined />, label: "Edit", onClick: () => openEdit(e) },
+              { key: "delete", icon: <DeleteOutlined />, label: "Delete", danger: true, onClick: () => confirmDelete(e) },
+            ],
+          }}
+        >
+          <Button type="text" size="small" icon={<MoreOutlined />} aria-label="Actions" />
+        </Dropdown>
+      ),
+    },
+  ];
+
+  // Form helpers
+  const selectedKind = watchCategory ? kindOfCategory(watchCategory) : null;
+  const selectedCat = watchCategory ? catById.get(watchCategory) : undefined;
+  const rangeMonths = watchMode === "range" && watchRange?.[0] && watchRange?.[1]
+    ? (watchRange[1].year() - watchRange[0].year()) * 12 + (watchRange[1].month() - watchRange[0].month()) + 1
+    : 0;
+
+  const periodLabel = range ? `${range[0].format("MMM D, YYYY")} – ${range[1].format("MMM D, YYYY")}` : "All time";
+
+  return (
+    <div className="mx-auto max-w-[1400px] space-y-6 p-4 sm:p-6">
+      <PageHeader
+        tone="blue"
+        icon={<FileTextOutlined />}
+        title="Entries"
+        description="Every manual entry — rent, salaries, supplies, cash outs. Each one posts to its category's account against 1000 Cash, one journal entry per month it covers."
+        actions={
+          <>
+            <Tooltip title="Refresh">
+              <Button icon={<ReloadOutlined />} onClick={reload} loading={loading} aria-label="Refresh" />
+            </Tooltip>
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>Add entry</Button>
+          </>
+        }
+      >
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="max-w-full overflow-x-auto">
+            <Segmented
+              value={period}
+              onChange={(k) => {
+                const p = PERIODS.find((x) => x.key === k);
+                setPeriod(String(k));
+                if (p) { setRange(p.range()); setPage(1); }
+              }}
+              options={[...PERIODS.map((p) => ({ label: p.label, value: p.key })), { label: "Custom", value: "custom" }]}
+            />
+          </div>
+          <RangePicker
+            value={range}
+            onChange={(v) => {
+              setRange(v && v[0] && v[1] ? [v[0], v[1]] : null);
+              setPeriod(v ? "custom" : "all");
+              setPage(1);
+            }}
+          />
+          <Select
+            allowClear
+            showSearch
+            placeholder={<span><FilterOutlined /> All categories</span>}
+            style={{ minWidth: 240 }}
+            value={filterCategoryId ?? undefined}
+            onChange={(v) => { setFilterCategoryId(v ?? null); setPage(1); }}
+            options={categoryOptions}
+            filterOption={(input, opt) => (opt?.search ?? "").includes(input.toLowerCase())}
+          />
+          {filtersActive && (
+            <Button type="link" onClick={() => { setFilterCategoryId(null); setRange(null); setPeriod("all"); setPage(1); }}>
+              Clear filters
+            </Button>
+          )}
+        </div>
+      </PageHeader>
+
+      {/* KPIs */}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatTile
+          label="Total expenses"
+          loading={loading && totalCount === 0}
+          value={moneyCompact(totalAmountAll)}
+          sub={<>{periodLabel}{filterCategoryId ? <> · {catById.get(filterCategoryId)?.name}</> : null} · owner drawings excluded</>}
+          accent={<span className="rounded-lg bg-blue-50 p-1.5 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300"><FileTextOutlined /></span>}
+        />
+        <StatTile label="Entries" loading={loading && totalCount === 0} value={totalCount.toLocaleString("en-US")} sub="Matching the filters" />
+        <StatTile label="On this page" loading={loading && totalCount === 0} value={moneyCompact(totalAmount)} sub={`Page ${page} of ${Math.max(1, Math.ceil(totalCount / pageSize))}`} />
+        <StatTile
+          label="Owner drawings"
+          loading={loading && totalCount === 0}
+          value={moneyCompact(totalOwnerDrawingsAll)}
+          accent={<span className="rounded-lg bg-violet-50 p-1.5 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300"><WalletOutlined /></span>}
+          sub={<>Cash outs in these entries — not an expense · <Link to="/accounting/owners-drawings" className="font-medium text-violet-700 dark:text-violet-300">Owners' Drawings →</Link></>}
+        />
+      </div>
+
+      {/* Table */}
+      <Panel
+        title="All entries"
+        subtitle={<>{totalCount.toLocaleString("en-US")} entr{totalCount === 1 ? "y" : "ies"} · newest period first</>}
+        bodyClassName="p-0"
+      >
+        {error ? (
+          <div className="m-5 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">{error}</div>
+        ) : (
+          <Table
+            rowKey="id"
+            size="middle"
+            loading={loading}
+            columns={columns}
+            dataSource={expenses}
+            scroll={{ x: 1000 }}
+            locale={{ emptyText: <Empty description={filtersActive ? "No entries match these filters" : "No entries yet"} /> }}
+            pagination={{
+              current: page,
+              pageSize,
+              total: totalCount,
+              onChange: setPage,
+              showSizeChanger: false,
+              showTotal: (t, [a, b]) => `${a}–${b} of ${t.toLocaleString("en-US")}`,
+              style: { paddingInline: 20 },
+            }}
+          />
+        )}
+      </Panel>
+
+      {/* Add / edit */}
+      <Modal
+        open={formOpen}
+        title={editing ? `Edit entry #${editing.id}` : "Add entry"}
+        onCancel={() => setFormOpen(false)}
+        onOk={submit}
+        okText={editing ? "Save changes" : "Add entry"}
+        confirmLoading={submitting}
+        destroyOnHidden
+        width={560}
+      >
+        <Form form={form} layout="vertical" preserve={false} initialValues={formInit} requiredMark={false} className="pt-2">
+          <Form.Item name="categoryId" label="Category" rules={[{ required: true, message: "Pick a category" }]}>
+            <Select
+              showSearch
+              placeholder="What is it for?"
+              options={categoryOptions}
+              filterOption={(input, opt) => (opt?.search ?? "").includes(input.toLowerCase())}
+            />
+          </Form.Item>
+
+          {selectedKind && selectedKind !== "expense" && (
+            <div className={`-mt-2 mb-4 rounded-lg px-3 py-2 text-xs ${selectedKind === "unmapped" ? "bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200" : "bg-violet-50 text-violet-800 dark:bg-violet-500/10 dark:text-violet-200"}`}>
+              {KIND_META[selectedKind].hint}
+              {selectedCat?.accountNumber && <> Account: <b>{selectedCat.accountNumber} {selectedCat.accountName}</b>.</>}
+              {selectedKind === "drawing" && <> You can also record it on <Link to="/accounting/owners-drawings" className="font-medium underline">Owners' Drawings</Link>.</>}
+            </div>
+          )}
+
+          <div className="grid gap-x-3 sm:grid-cols-2">
+            <Form.Item name="amount" label="Amount" rules={[{ required: true, message: "Amount is required" }, { type: "number", min: 0.01, message: "Must be more than 0" }]}>
+              <InputNumber min={0.01} step={10} precision={2} prefix="$" style={{ width: "100%" }} placeholder="0.00" />
+            </Form.Item>
+            <Form.Item name="paymentMethod" label="Paid by">
+              <AutoComplete options={PAYMENT_METHODS.map((m) => ({ value: m }))} placeholder="Cash, Card…" filterOption={(i, o) => (o?.value ?? "").toLowerCase().includes(i.toLowerCase())} />
+            </Form.Item>
+          </div>
+
+          <Form.Item name="mode" label="When">
+            <Segmented
+              block
+              options={[
+                { value: "day", label: "One day" },
+                { value: "range", label: "Spread over a period" },
+              ]}
+            />
+          </Form.Item>
+          {watchMode === "range" ? (
+            <Form.Item
+              name="range"
+              rules={[{ required: true, message: "Pick the period" }]}
+              extra={rangeMonths > 1 ? `Booked as ${rangeMonths} monthly journal entries, split by days in each month.` : "e.g. rent for a year, salaries for a quarter."}
+            >
+              <RangePicker style={{ width: "100%" }} />
+            </Form.Item>
+          ) : (
+            <Form.Item name="day" rules={[{ required: true, message: "Pick the date" }]}>
+              <DatePicker style={{ width: "100%" }} />
+            </Form.Item>
+          )}
+
+          <Form.Item name="comment" label="Comment">
+            <Input.TextArea rows={2} maxLength={500} placeholder="Optional — what was it exactly?" />
+          </Form.Item>
+        </Form>
+      </Modal>
+    </div>
+  );
 }
