@@ -6,7 +6,7 @@
 
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { Table, DatePicker, Button, Empty, Tooltip, message } from "antd";
+import { Table, DatePicker, Button, Empty, Input, Tooltip, message } from "antd";
 import {
   AppstoreOutlined,
   ClockCircleOutlined,
@@ -14,6 +14,7 @@ import {
   FireOutlined,
   InfoCircleOutlined,
   ReloadOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import dayjs, { Dayjs } from "dayjs";
@@ -50,6 +51,25 @@ export default function InventoryValuation() {
   ]);
   const [data, setData] = useState<InventoryValuationDto | null>(null);
   const [loading, setLoading] = useState(false);
+  // "Find ingredient": the API returns every ingredient in one response, so
+  // filtering here covers all of them. Narrows all three tables; the KPI
+  // tiles and the Share % stay whole-inventory figures.
+  const [search, setSearch] = useState("");
+  const [byPage, setByPage] = useState(1);
+  const [byPageSize, setByPageSize] = useState(20);
+  const q = search.trim().toLowerCase();
+  // A new search starts the By Ingredient table from page 1.
+  const [pagedFor, setPagedFor] = useState(q);
+  if (pagedFor !== q) {
+    setPagedFor(q);
+    setByPage(1);
+  }
+  const matches = (r: { ingredientName: string; unit: string }) =>
+    !q || r.ingredientName.toLowerCase().includes(q) || r.unit.toLowerCase().includes(q);
+  const byIngredientRows = (data?.byIngredient ?? []).filter(matches);
+  const topMoverRows = (data?.topMovers ?? []).filter(matches);
+  const slowMoverRows = (data?.slowMovers ?? []).filter(matches);
+  const noMatch = <Empty description={`No ingredient matches “${search.trim()}”`} />;
 
   async function reload() {
     setLoading(true);
@@ -134,6 +154,15 @@ export default function InventoryValuation() {
         }
       >
         <div className="flex flex-wrap items-center gap-3">
+          <Input
+            allowClear
+            prefix={<SearchOutlined className="text-gray-400" />}
+            placeholder="Find ingredient…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full sm:w-64"
+            aria-label="Find ingredient"
+          />
           <RangePicker value={range}
             onChange={(v) => v && v[0] && v[1] && setRange([v[0], v[1]])}
             presets={[
@@ -201,25 +230,30 @@ export default function InventoryValuation() {
           <Panel
             title="By Ingredient"
             subtitle="Current value, highest first"
-            extra={data ? <Pill tone="emerald"><AppstoreOutlined /> {data.byIngredient.length} ingredients</Pill> : undefined}
+            extra={data ? <Pill tone="emerald"><AppstoreOutlined /> {q ? `${byIngredientRows.length} of ${data.byIngredient.length}` : data.byIngredient.length} ingredients</Pill> : undefined}
             bodyClassName="p-0"
           >
             <Table size="middle" loading={loading} rowKey="ingredientId" columns={byIngredientCols}
-              dataSource={data?.byIngredient ?? []} pagination={{ pageSize: 20, showSizeChanger: true, showLessItems: true, className: "flex-wrap gap-y-2 px-4 sm:px-5" }}
-              locale={{ emptyText: loading ? <div className="h-24" /> : <Empty description="No ingredients with stock" /> }} />
+              dataSource={byIngredientRows}
+              pagination={{
+                current: byPage, pageSize: byPageSize,
+                onChange: (p, s) => { setByPage(p); setByPageSize(s); },
+                showSizeChanger: true, showLessItems: true, className: "flex-wrap gap-y-2 px-4 sm:px-5",
+              }}
+              locale={{ emptyText: loading ? <div className="h-24" /> : q ? noMatch : <Empty description="No ingredients with stock" /> }} />
           </Panel>
 
           <div className="grid gap-6 xl:grid-cols-2">
             <Panel title="Top Movers" subtitle={`Consumed in this period · ${periodLabel}`} bodyClassName="p-0">
               <Table size="middle" loading={loading} rowKey="ingredientId" columns={topMoversCols}
-                dataSource={data?.topMovers ?? []} pagination={false}
-                locale={{ emptyText: loading ? <div className="h-24" /> : <Empty description="Nothing consumed in this period" /> }} />
+                dataSource={topMoverRows} pagination={false}
+                locale={{ emptyText: loading ? <div className="h-24" /> : q ? noMatch : <Empty description="Nothing consumed in this period" /> }} />
             </Panel>
 
             <Panel title="Slow Movers" subtitle="Value sitting still" bodyClassName="p-0">
               <Table size="middle" loading={loading} rowKey="ingredientId" columns={slowMoversCols}
-                dataSource={data?.slowMovers ?? []} pagination={false}
-                locale={{ emptyText: loading ? <div className="h-24" /> : <Empty description="No slow movers" /> }} />
+                dataSource={slowMoverRows} pagination={false}
+                locale={{ emptyText: loading ? <div className="h-24" /> : q ? noMatch : <Empty description="No slow movers" /> }} />
             </Panel>
           </div>
         </>
