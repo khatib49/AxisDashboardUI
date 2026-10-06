@@ -1,32 +1,24 @@
 // src/components/Accounting/GeneralLedger.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Table,
   Button,
-  Card,
   DatePicker,
-  Space,
   Select,
-  Row,
-  Col,
-  Statistic,
   message,
-  Spin,
-  Typography,
-  Tag
+  Skeleton,
+  Empty,
+  Tooltip
 } from 'antd';
 import {
+  BookOutlined,
   DownloadOutlined,
   PrinterOutlined,
-  ReloadOutlined,
-  ArrowUpOutlined,
-  ArrowDownOutlined
+  ReloadOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
-
-
 
 import {
   getAllAccounts,
@@ -34,10 +26,33 @@ import {
 } from '../../services/accountsApi';
 
 import type { Account, GeneralLedger, GeneralLedgerLine } from '../../services/accounting';
+import { PageHeader, Panel, StatTile } from '../ui/PageKit';
+import { AccountCode } from './reports/AccountTypePill';
+import { Amount } from './reports/Amount';
+import { money } from './reports/money';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
-const { Title, Text } = Typography;
+
+// The API computes balances on the account's normal side (debit-normal for
+// assets/expenses, credit-normal for liabilities/equity/revenue), so a
+// negative balance means the account sits on the opposite side.
+const NEGATIVE_HINT =
+  "Below zero on this account's normal side (debit for assets/expenses, credit for liabilities, equity and revenue).";
+
+const negativeFlag = (
+  <Tooltip title={NEGATIVE_HINT}>
+    <span tabIndex={0} className="cursor-help">Negative</span>
+  </Tooltip>
+);
+
+/** Debit / credit cell: the amount, or an em dash for zero. */
+const DrCr = ({ amount }: { amount: number }) =>
+  amount > 0 ? (
+    <span className="whitespace-nowrap tabular-nums text-gray-900 dark:text-gray-100">{money(amount)}</span>
+  ) : (
+    <span className="text-gray-300 dark:text-gray-600" aria-label="none">—</span>
+  );
 
 const GeneralLedger: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -53,12 +68,6 @@ const GeneralLedger: React.FC = () => {
     loadAccounts();
   }, []);
 
-  useEffect(() => {
-    if (selectedAccountId) {
-      loadLedger();
-    }
-  }, [selectedAccountId, dateRange]);
-
   const loadAccounts = async () => {
     try {
       const data = await getAllAccounts(undefined, true);
@@ -73,7 +82,9 @@ const GeneralLedger: React.FC = () => {
     }
   };
 
-  const loadLedger = async () => {
+  // Re-created only when the account or the period changes, so the effect
+  // below reloads on exactly those changes.
+  const loadLedger = useCallback(async () => {
     if (!selectedAccountId) return;
 
     setLoading(true);
@@ -88,13 +99,19 @@ const GeneralLedger: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedAccountId, dateRange]);
+
+  useEffect(() => {
+    if (selectedAccountId) {
+      loadLedger();
+    }
+  }, [selectedAccountId, loadLedger]);
 
   const handleExportToCSV = () => {
     if (!ledger) return;
 
     const headers = ['Date', 'Entry Number', 'Description', 'Debit', 'Credit', 'Balance'];
-    
+
     const rows = [
       ['Opening Balance', '', '', '', '', ledger.openingBalance.toFixed(2)],
       ...ledger.transactions.map(tx => [
@@ -139,22 +156,25 @@ const GeneralLedger: React.FC = () => {
       dataIndex: 'date',
       key: 'date',
       width: 120,
-      render: (date) => dayjs(date).format('MMM DD, YYYY')
+      render: (date) => (
+        <span className="whitespace-nowrap tabular-nums text-gray-700 dark:text-gray-300">
+          {dayjs(date).format('MMM DD, YYYY')}
+        </span>
+      )
     },
     {
       title: 'Entry Number',
       dataIndex: 'entryNumber',
       key: 'entryNumber',
       width: 150,
-      render: (entryNumber) => (
-        <Tag color="blue">{entryNumber}</Tag>
-      )
+      render: (entryNumber) => <AccountCode>{entryNumber}</AccountCode>
     },
     {
       title: 'Description',
       dataIndex: 'description',
       key: 'description',
-      ellipsis: true
+      ellipsis: true,
+      render: (description) => <span className="text-gray-800 dark:text-gray-200">{description}</span>
     },
     {
       title: 'Debit',
@@ -162,14 +182,7 @@ const GeneralLedger: React.FC = () => {
       key: 'debit',
       width: 150,
       align: 'right',
-      render: (amount) =>
-        amount > 0 ? (
-          <Text style={{ color: '#1890ff' }}>
-            ${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-          </Text>
-        ) : (
-          '-'
-        )
+      render: (amount: number) => <DrCr amount={amount} />
     },
     {
       title: 'Credit',
@@ -177,173 +190,139 @@ const GeneralLedger: React.FC = () => {
       key: 'credit',
       width: 150,
       align: 'right',
-      render: (amount) =>
-        amount > 0 ? (
-          <Text style={{ color: '#1890ff' }}>
-            ${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-          </Text>
-        ) : (
-          '-'
-        )
+      render: (amount: number) => <DrCr amount={amount} />
     },
     {
       title: 'Running Balance',
       dataIndex: 'runningBalance',
       key: 'runningBalance',
-      width: 150,
+      width: 170,
       align: 'right',
-      render: (balance) => (
-        <Text strong style={{ color: balance >= 0 ? '#52c41a' : '#ff4d4f' }}>
-          ${Math.abs(balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-        </Text>
-      )
+      render: (balance: number) => <Amount value={balance} strong />
     }
   ];
 
   const totalDebits = ledger?.transactions.reduce((sum, tx) => sum + tx.debit, 0) || 0;
   const totalCredits = ledger?.transactions.reduce((sum, tx) => sum + tx.credit, 0) || 0;
   const netChange = totalDebits - totalCredits;
+  const netChangeText = `${netChange > 0 ? '+' : ''}${money(netChange)}`;
 
   return (
-    <div>
-      {/* Summary Cards */}
-      {ledger && (
-        <Row gutter={16} style={{ marginBottom: 24 }}>
-          <Col span={6}>
-            <Card>
-              <Statistic
-                title="Opening Balance"
-                value={Math.abs(ledger.openingBalance)}
-                prefix={ledger.openingBalance >= 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
-                precision={2}
-                valueStyle={{ color: ledger.openingBalance >= 0 ? '#52c41a' : '#ff4d4f' }}
-              />
-            </Card>
-          </Col>
-          <Col span={6}>
-            <Card>
-              <Statistic
-                title="Total Debits"
-                value={totalDebits}
-                prefix="$"
-                precision={2}
-                valueStyle={{ color: '#1890ff' }}
-              />
-            </Card>
-          </Col>
-          <Col span={6}>
-            <Card>
-              <Statistic
-                title="Total Credits"
-                value={totalCredits}
-                prefix="$"
-                precision={2}
-                valueStyle={{ color: '#1890ff' }}
-              />
-            </Card>
-          </Col>
-          <Col span={6}>
-            <Card>
-              <Statistic
-                title="Closing Balance"
-                value={Math.abs(ledger.closingBalance)}
-                prefix={ledger.closingBalance >= 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
-                precision={2}
-                valueStyle={{ color: ledger.closingBalance >= 0 ? '#52c41a' : '#ff4d4f' }}
-              />
-            </Card>
-          </Col>
-        </Row>
-      )}
-
-      {/* Main Card */}
-      <Card
-        title={
-          <Space direction="vertical" size={0}>
-            <Title level={4} style={{ margin: 0 }}>
-              General Ledger
-            </Title>
-            {selectedAccount && (
-              <Text type="secondary">
-                {selectedAccount.accountNumber} - {selectedAccount.accountName}
-              </Text>
-            )}
-          </Space>
+    <div className="mx-auto max-w-[1400px] space-y-6 p-4 sm:p-6">
+      <PageHeader
+        tone="blue"
+        icon={<BookOutlined />}
+        title="General Ledger"
+        badge={selectedAccount ? selectedAccount.accountNumber : undefined}
+        description={
+          selectedAccount
+            ? `${selectedAccount.accountNumber} - ${selectedAccount.accountName} · every posting in the period with its running balance.`
+            : 'Every posting to one account for a period, with its running balance.'
         }
-        extra={
-          <Space>
-            <Select
-              showSearch
-              placeholder="Select account"
-              style={{ width: 300 }}
-              value={selectedAccountId}
-              onChange={setSelectedAccountId}
-              optionFilterProp="children"
-              filterOption={(input, option) =>
-                (option?.children as unknown as string).toLowerCase().includes(input.toLowerCase())
-              }
-            >
-              {accounts.map(acc => (
-                <Option key={acc.id} value={acc.id}>
-                  {acc.accountNumber} - {acc.accountName}
-                </Option>
-              ))}
-            </Select>
-            <RangePicker
-              value={dateRange}
-              onChange={(dates) => dates && setDateRange(dates as [dayjs.Dayjs, dayjs.Dayjs])}
-              format="YYYY-MM-DD"
-            />
-            <Button icon={<ReloadOutlined />} onClick={loadLedger}>
-              Refresh
-            </Button>
+        actions={
+          <div className="flex flex-wrap items-center gap-2 print:hidden">
+            <Tooltip title="Refresh">
+              <Button icon={<ReloadOutlined />} onClick={loadLedger} loading={loading} aria-label="Refresh" />
+            </Tooltip>
             <Button icon={<DownloadOutlined />} onClick={handleExportToCSV} disabled={!ledger}>
               Export CSV
             </Button>
             <Button icon={<PrinterOutlined />} onClick={handlePrint} disabled={!ledger}>
               Print
             </Button>
-          </Space>
+          </div>
         }
       >
+        <div className="flex flex-wrap items-center gap-3 print:hidden">
+          <Select
+            showSearch
+            placeholder="Select account"
+            aria-label="Account"
+            className="w-full sm:w-[340px]"
+            value={selectedAccountId}
+            onChange={setSelectedAccountId}
+            optionFilterProp="children"
+            filterOption={(input, option) =>
+              (option?.children as unknown as string).toLowerCase().includes(input.toLowerCase())
+            }
+          >
+            {accounts.map(acc => (
+              <Option key={acc.id} value={acc.id}>
+                {`${acc.accountNumber} - ${acc.accountName}`}
+              </Option>
+            ))}
+          </Select>
+          <RangePicker
+            value={dateRange}
+            onChange={(dates) => dates && setDateRange(dates as [dayjs.Dayjs, dayjs.Dayjs])}
+            format="YYYY-MM-DD"
+          />
+        </div>
+      </PageHeader>
+
+      {/* Summary tiles */}
+      {(ledger || loading) && (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatTile
+            label="Opening Balance"
+            loading={loading || !ledger}
+            value={ledger && <Amount value={ledger.openingBalance} flag={negativeFlag} />}
+            sub={ledger && `as of ${dayjs(ledger.fromDate).format('MMM DD, YYYY')}`}
+          />
+          <StatTile
+            label="Total Debits"
+            loading={loading || !ledger}
+            value={<span className="tabular-nums">{money(totalDebits)}</span>}
+            sub={ledger && `${ledger.transactions.length} transaction${ledger.transactions.length === 1 ? '' : 's'}`}
+          />
+          <StatTile
+            label="Total Credits"
+            loading={loading || !ledger}
+            value={<span className="tabular-nums">{money(totalCredits)}</span>}
+          />
+          <StatTile
+            label="Closing Balance"
+            loading={loading || !ledger}
+            value={ledger && <Amount value={ledger.closingBalance} flag={negativeFlag} />}
+            sub={ledger && `Net change ${netChangeText} (debits − credits)`}
+          />
+        </div>
+      )}
+
+      {/* Ledger */}
+      <Panel
+        title={
+          selectedAccount ? (
+            <span className="flex flex-wrap items-center gap-2">
+              <AccountCode>{selectedAccount.accountNumber}</AccountCode>
+              <span>{selectedAccount.accountName}</span>
+            </span>
+          ) : (
+            'General Ledger'
+          )
+        }
+        subtitle={
+          ledger && !loading
+            ? `${dayjs(ledger.fromDate).format('MMM DD, YYYY')} – ${dayjs(ledger.toDate).format('MMM DD, YYYY')} · ${ledger.transactions.length} transaction${ledger.transactions.length === 1 ? '' : 's'}`
+            : undefined
+        }
+        bodyClassName="p-0"
+      >
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '50px 0' }}>
-            <Spin size="large" />
+          <div className="p-5">
+            <Skeleton active paragraph={{ rows: 8 }} />
           </div>
         ) : ledger ? (
           <>
             {/* Opening Balance Row */}
-            <div
-              style={{
-                padding: '12px',
-                background: '#fafafa',
-                border: '1px solid #d9d9d9',
-                borderRadius: '4px',
-                marginBottom: '16px'
-              }}
-            >
-              <Row justify="space-between" align="middle">
-                <Col>
-                  <Text strong>Opening Balance</Text>
-                  <br />
-                  <Text type="secondary">
-                    as of {dayjs(ledger.fromDate).format('MMMM DD, YYYY')}
-                  </Text>
-                </Col>
-                <Col>
-                  <Text
-                    strong
-                    style={{
-                      fontSize: '18px',
-                      color: ledger.openingBalance >= 0 ? '#52c41a' : '#ff4d4f'
-                    }}
-                  >
-                    ${Math.abs(ledger.openingBalance).toLocaleString('en-US', {
-                      minimumFractionDigits: 2
-                    })}
-                  </Text>
-                </Col>
-              </Row>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 bg-gray-50/70 px-5 py-3 dark:border-white/[0.06] dark:bg-white/[0.02]">
+              <div>
+                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">Opening Balance</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  as of {dayjs(ledger.fromDate).format('MMMM DD, YYYY')}
+                </div>
+              </div>
+              <Amount value={ledger.openingBalance} strong flag={negativeFlag} className="text-base" />
             </div>
 
             {/* Transactions Table */}
@@ -353,72 +332,56 @@ const GeneralLedger: React.FC = () => {
               rowKey={(record) => record.entryNumber + record.date}
               pagination={false}
               size="middle"
+              scroll={{ x: 900 }}
               locale={{
-                emptyText: 'No transactions in this period'
+                emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No transactions in this period" />
               }}
+              summary={() =>
+                ledger.transactions.length > 0 ? (
+                  <Table.Summary.Row className="bg-gray-50/70 dark:bg-white/[0.02]">
+                    <Table.Summary.Cell index={0} colSpan={3}>
+                      <span className="font-semibold text-gray-900 dark:text-gray-100">Period totals</span>
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell index={3} align="right">
+                      <span className="whitespace-nowrap font-semibold tabular-nums text-gray-900 dark:text-gray-100">{money(totalDebits)}</span>
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell index={4} align="right">
+                      <span className="whitespace-nowrap font-semibold tabular-nums text-gray-900 dark:text-gray-100">{money(totalCredits)}</span>
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell index={5} align="right" />
+                  </Table.Summary.Row>
+                ) : null
+              }
             />
 
             {/* Closing Balance Row */}
-            <div
-              style={{
-                padding: '12px',
-                background: '#e6f7ff',
-                border: '1px solid #91d5ff',
-                borderRadius: '4px',
-                marginTop: '16px'
-              }}
-            >
-              <Row justify="space-between" align="middle">
-                <Col>
-                  <Text strong style={{ fontSize: '16px' }}>
-                    Closing Balance
-                  </Text>
-                  <br />
-                  <Text type="secondary">
-                    as of {dayjs(ledger.toDate).format('MMMM DD, YYYY')}
-                  </Text>
-                </Col>
-                <Col>
-                  <Space direction="vertical" align="end" size={0}>
-                    <Text
-                      strong
-                      style={{
-                        fontSize: '20px',
-                        color: ledger.closingBalance >= 0 ? '#52c41a' : '#ff4d4f'
-                      }}
-                    >
-                      ${Math.abs(ledger.closingBalance).toLocaleString('en-US', {
-                        minimumFractionDigits: 2
-                      })}
-                    </Text>
-                    <Text type="secondary">
-                      Net Change: $
-                      {Math.abs(netChange).toLocaleString('en-US', { minimumFractionDigits: 2 })}{' '}
-                      {netChange >= 0 ? '↑' : '↓'}
-                    </Text>
-                  </Space>
-                </Col>
-              </Row>
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-b-2xl border-t border-blue-100 bg-blue-50/60 px-5 py-4 dark:border-blue-500/15 dark:bg-blue-500/10">
+              <div>
+                <div className="text-base font-semibold text-gray-900 dark:text-white">Closing Balance</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  as of {dayjs(ledger.toDate).format('MMMM DD, YYYY')}
+                </div>
+              </div>
+              <div className="flex flex-col items-end gap-0.5">
+                <Amount value={ledger.closingBalance} strong flag={negativeFlag} className="text-xl" />
+                <span className="text-xs tabular-nums text-gray-500 dark:text-gray-400">
+                  Net change: {netChangeText} (debits − credits)
+                </span>
+              </div>
             </div>
           </>
         ) : (
-          <div style={{ textAlign: 'center', padding: '50px 0' }}>
-            <Text type="secondary">Select an account to view its general ledger</Text>
+          <div className="py-12">
+            <Empty description="Select an account to view its general ledger" />
           </div>
         )}
-      </Card>
+      </Panel>
 
       <style>{`
         @media print {
-          .ant-card-extra,
           .ant-btn,
           .ant-select {
             display: none !important;
-          }
-          
-          .ant-card {
-            box-shadow: none !important;
-            border: 1px solid #000 !important;
           }
         }
       `}</style>

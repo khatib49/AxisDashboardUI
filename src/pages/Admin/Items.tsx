@@ -1,5 +1,30 @@
 import { useEffect, useState } from "react";
 import {
+    Button,
+    Dropdown,
+    Empty,
+    Input as AntInput,
+    Segmented,
+    Select as AntSelect,
+    Skeleton,
+    Table,
+    Tooltip,
+} from "antd";
+import type { ColumnsType } from "antd/es/table";
+import {
+    AppstoreOutlined,
+    DeleteOutlined,
+    EditOutlined,
+    ExperimentOutlined,
+    MoreOutlined,
+    PictureOutlined,
+    PlusOutlined,
+    ReloadOutlined,
+    SearchOutlined,
+    ShoppingCartOutlined,
+    WarningOutlined,
+} from "@ant-design/icons";
+import {
     getItems,
     getItem,
     createItem,
@@ -13,19 +38,28 @@ import Select from "../../components/form/Select";
 import Input from "../../components/form/input/InputField";
 import Loader from "../../components/ui/Loader";
 import Alert from "../../components/ui/alert/Alert";
-import DeleteIconButton from "../../components/ui/DeleteIconButton";
 import { getCategoriesByType, CategoryDto } from "../../services/categoryService";
 import { getItemAddOns, setItemAddOns, getItemVariants, setItemVariants } from "../../services/itemService";
 import { getStatusName, STATUS_ENABLED, STATUS_DISABLED } from '../../services/statuses';
 import StatusToggle from '../../components/ui/StatusToggle';
 import RecipeEditorModal from '../../components/stock/RecipeEditorModal';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHeader,
-    TableRow,
-} from "../../components/ui/table";
+import { PageHeader, Panel, Pill, StatTile } from "../../components/ui/PageKit";
+import PagerFooter from "../../components/inventory/PagerFooter";
+
+const PLACEHOLDER_IMG = '/images/image-placeholder.svg';
+
+// Stock thresholds for the list badge: nothing left (or oversold) = Out, a handful = Low.
+const LOW_STOCK_MAX = 5;
+const stockLevel = (qty: number) => (qty <= 0 ? "out" : qty <= LOW_STOCK_MAX ? "low" : "ok");
+
+const STATUS_FILTERS = [
+    { value: STATUS_ENABLED, label: 'Enabled' },
+    { value: STATUS_DISABLED, label: 'Disabled' },
+    { value: 3, label: 'Deleted' },
+    { value: 0, label: 'All' },
+];
+
+const usd = (n: number) => `$${Number(n).toFixed(2)}`;
 
 export default function Items() {
     const [items, setItems] = useState<ItemDto[]>([]);
@@ -40,6 +74,8 @@ export default function Items() {
     // 1 Enabled (default), 2 Disabled, 3 Deleted, 0 all
     const [statusFilter, setStatusFilter] = useState<number>(STATUS_ENABLED);
     const [debouncedSearch, setDebouncedSearch] = useState('');
+    // Bumped by the Refresh button to re-run the same list request.
+    const [reloadToken, setReloadToken] = useState(0);
 
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editing, setEditing] = useState<ItemDto | null>(null);
@@ -109,7 +145,7 @@ export default function Items() {
         return () => {
             mounted = false;
         };
-    }, [page, pageSize, selectedCategory, debouncedSearch, statusFilter]);
+    }, [page, pageSize, selectedCategory, debouncedSearch, statusFilter, reloadToken]);
 
     // Debounce search input (300ms)
     useEffect(() => {
@@ -283,146 +319,254 @@ export default function Items() {
         setImagePreview(url);
     }
 
+    // ── List presentation ──────────────────────────────────────────────
+    const categoryName = (id: number | null) =>
+        id == null ? null : (categories.find(c => c.id === id)?.name ?? `#${id}`);
+
+    const statusPill = (id?: number | null) => {
+        const name = getStatusName(id) ?? id ?? '-';
+        if (id === STATUS_ENABLED) return <Pill tone="emerald" dot>{name}</Pill>;
+        if (id === STATUS_DISABLED) return <Pill tone="red" dot>{name}</Pill>;
+        return <Pill tone="gray" dot>{name}</Pill>;
+    };
+
+    const outOnPage = items.filter(it => stockLevel(it.quantity) === "out").length;
+    const lowOnPage = items.filter(it => stockLevel(it.quantity) === "low").length;
+    const onlineOnPage = items.filter(it => it.sellOnline).length;
+    const statusLabel = STATUS_FILTERS.find(s => s.value === statusFilter)?.label ?? 'All';
+    const firstLoad = loading && totalCount === null;
+    const filtersActive = selectedCategory !== null || debouncedSearch !== '';
+
+    const columns: ColumnsType<ItemDto> = [
+        {
+            title: "",
+            key: "image",
+            width: 72,
+            render: (_, it) => it.imagePath ? (
+                <img
+                    src={resolveImageUrl(it.imagePath)}
+                    alt={it.name}
+                    className="h-11 w-11 rounded-lg border border-gray-100 object-cover dark:border-white/10"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_IMG; }}
+                />
+            ) : (
+                <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-gray-100 text-base text-gray-400 dark:bg-white/5 dark:text-gray-500" aria-label="No image">
+                    <PictureOutlined />
+                </span>
+            ),
+        },
+        {
+            title: "Item",
+            key: "name",
+            width: 240,
+            render: (_, it) => (
+                <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{it.name}</span>
+                    {it.sellOnline && (
+                        <Tooltip title={it.weightKg != null ? `Sold online · ${it.weightKg} kg` : "Sold online"}>
+                            <span><Pill tone="blue" dot>Online</Pill></span>
+                        </Tooltip>
+                    )}
+                </div>
+            ),
+        },
+        {
+            title: "Category",
+            key: "category",
+            width: 160,
+            render: (_, it) => {
+                const name = categoryName(it.categoryId);
+                return name ? <span className="text-gray-700 dark:text-gray-300">{name}</span> : <span className="text-gray-400 dark:text-gray-500">—</span>;
+            },
+        },
+        {
+            title: "Description / type",
+            dataIndex: "type",
+            ellipsis: { showTitle: false },
+            render: (v: string) => v
+                ? <Tooltip title={v} placement="topLeft"><span className="text-gray-600 dark:text-gray-400">{v}</span></Tooltip>
+                : <span className="text-gray-400 dark:text-gray-500">—</span>,
+        },
+        {
+            title: "Buy price",
+            dataIndex: "buyPrice",
+            align: "right",
+            width: 110,
+            render: (v: number | null | undefined) => v != null
+                ? <span className="whitespace-nowrap tabular-nums text-gray-600 dark:text-gray-400">{usd(v)}</span>
+                : <span className="text-gray-400 dark:text-gray-500">—</span>,
+        },
+        {
+            title: "Price",
+            dataIndex: "price",
+            align: "right",
+            width: 110,
+            render: (v: number | null | undefined) => v != null
+                ? <span className="whitespace-nowrap font-semibold tabular-nums text-gray-900 dark:text-gray-100">{usd(v)}</span>
+                : <span className="text-gray-400 dark:text-gray-500">—</span>,
+        },
+        {
+            title: "Stock",
+            dataIndex: "quantity",
+            align: "right",
+            width: 130,
+            render: (v: number) => {
+                const level = stockLevel(v);
+                return (
+                    <div className="flex items-center justify-end gap-2">
+                        {level === "out" && <Pill tone="red" dot>Out</Pill>}
+                        {level === "low" && <Pill tone="amber" dot>Low</Pill>}
+                        <span className={`tabular-nums ${level === "out" ? "font-semibold text-red-600 dark:text-red-400" : "text-gray-800 dark:text-gray-200"}`}>{v}</span>
+                    </div>
+                );
+            },
+        },
+        {
+            title: "Status",
+            dataIndex: "statusId",
+            width: 120,
+            render: (v: number | null | undefined) => statusPill(v),
+        },
+        {
+            title: "",
+            key: "actions",
+            width: 140,
+            align: "right",
+            fixed: "right",
+            render: (_, it) => (
+                <div className="flex items-center justify-end gap-1">
+                    {/* Recipe button — opens the stock-tracking recipe editor for this item */}
+                    <Tooltip title="Configure ingredients consumed when this item is sold">
+                        <Button size="small" icon={<ExperimentOutlined />} onClick={() => setRecipeItem(it)}>Recipe</Button>
+                    </Tooltip>
+                    <Dropdown
+                        trigger={["click"]}
+                        menu={{
+                            items: [
+                                { key: "edit", icon: <EditOutlined />, label: "Edit", onClick: () => openEdit(it) },
+                                { key: "delete", icon: <DeleteOutlined />, label: "Delete", danger: true, onClick: () => setDeleteId(it.id) },
+                            ],
+                        }}
+                    >
+                        <Button type="text" size="small" icon={<MoreOutlined />} aria-label={`Actions for ${it.name}`} />
+                    </Dropdown>
+                </div>
+            ),
+        },
+    ];
+
     return (
-        <div className="p-6">
-            <h1 className="text-2xl font-semibold mb-4">Items</h1>
-
-            <div className="mb-4 flex items-center justify-between">
-                <button className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded" onClick={openCreate}>
-                    Add Item
-                </button>
-
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center">
-                        <label className="text-sm text-gray-600 mr-2">Category</label>
-                        <div className="w-48">
-                            <Select
-                                options={[{ value: '', label: 'All' }, ...categories.map(c => ({ value: c.id, label: c.name }))]}
-                                defaultValue={selectedCategory ?? ''}
-                                onChange={(v: string | number) => { setPage(1); setSelectedCategory(v === '' ? null : Number(v)); }}
-                            />
-                        </div>
-                    </div>
-                    <div className="flex items-center">
-                        <label className="text-sm text-gray-600 mr-2">Status</label>
-                        <div className="w-36">
-                            <Select
-                                options={[
-                                    { value: STATUS_ENABLED, label: 'Enabled' },
-                                    { value: STATUS_DISABLED, label: 'Disabled' },
-                                    { value: 3, label: 'Deleted' },
-                                    { value: 0, label: 'All' },
-                                ]}
-                                defaultValue={statusFilter}
-                                onChange={(v: string | number) => { setPage(1); setStatusFilter(Number(v)); }}
-                            />
-                        </div>
-                    </div>
-                    <div className="flex items-center">
-                        <label className="text-sm text-gray-600 mr-2">Search</label>
-                        <div className="w-56">
-                            <Input placeholder="Search items..." value={search} onChange={(e) => { setPage(1); setSearch(e.target.value); }} className="px-2 py-1" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {loading && <div className="text-gray-600">Loading items...</div>}
-
-            {error && <div className="text-red-600 bg-red-50 p-3 rounded">{error}</div>}
-
-            {!loading && !error && (
-                <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+        <div className="mx-auto max-w-[1400px] space-y-6 p-4 sm:p-6">
+            <PageHeader
+                tone="blue"
+                icon={<AppstoreOutlined />}
+                title="Items"
+                description="Everything the cashier and the online shop can sell — prices, stock, recipes and add-ons."
+                actions={
+                    <>
+                        <Tooltip title="Refresh">
+                            <Button icon={<ReloadOutlined />} onClick={() => setReloadToken((t) => t + 1)} loading={loading} aria-label="Refresh" />
+                        </Tooltip>
+                        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>Add item</Button>
+                    </>
+                }
+            >
+                <div className="flex flex-wrap items-center gap-3">
                     <div className="max-w-full overflow-x-auto">
-                        <Table>
-                            <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
-                                <TableRow>
-                                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Image</TableCell>
-                                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Name</TableCell>
-                                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Quantity</TableCell>
-                                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Buy Price</TableCell>
-                                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Price</TableCell>
-                                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Type</TableCell>
-                                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Category</TableCell>
-                                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Status</TableCell>
-                                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Actions</TableCell>
-                                </TableRow>
-                            </TableHeader>
-
-                            <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                                {items.map((it) => (
-                                    <TableRow key={it.id}>
-                                        <TableCell className="px-4 py-3 text-start">
-                                            <img
-                                                src={it.imagePath ? resolveImageUrl(it.imagePath) : '/images/image-placeholder.svg'}
-                                                alt={it.name}
-                                                className="w-12 h-8 object-cover rounded"
-                                                onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/images/image-placeholder.svg'; }}
-                                            />
-                                        </TableCell>
-                                        <TableCell className="px-5 py-4 sm:px-6 text-start">
-                                            <div className="font-medium text-gray-800 dark:text-white/90 flex items-center gap-2">
-                                                {it.name}
-                                                {it.sellOnline && <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-sky-100 text-sky-800 text-[10px] font-semibold" title={it.weightKg != null ? `Sold online · ${it.weightKg} kg` : "Sold online"}>online</span>}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{it.quantity}</TableCell>
-                                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-    {it.buyPrice != null ? `$${Number(it.buyPrice).toFixed(2)}` : '—'}
-</TableCell>
-                                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{it.price}</TableCell>
-                                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{it.type}</TableCell>
-                                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{categories.find(c => c.id === it.categoryId)?.name ?? String(it.categoryId)}</TableCell>
-                                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                                            {(() => {
-                                                const id = it.statusId;
-                                                const name = getStatusName(id) ?? id ?? '-';
-                                                if (id === STATUS_ENABLED) {
-                                                    return <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">{name}</span>;
-                                                }
-                                                if (id === STATUS_DISABLED) {
-                                                    return <span className="inline-flex items-center px-2 py-1 rounded-full bg-red-100 text-red-800 text-xs font-medium">{name}</span>;
-                                                }
-                                                return <span className="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 text-gray-800 text-xs">{name}</span>;
-                                            })()}
-                                        </TableCell>
-                                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                                            <div className="flex items-center gap-2">
-                                                <button className="text-sm px-2 py-1 bg-gray-200 rounded" onClick={() => openEdit(it)}>Edit</button>
-                                                {/* Recipe button — opens the stock-tracking recipe editor for this item */}
-                                                <button
-                                                    className="text-sm px-2 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200"
-                                                    onClick={() => setRecipeItem(it)}
-                                                    title="Configure ingredients consumed when this item is sold"
-                                                >
-                                                    Recipe
-                                                </button>
-                                                <DeleteIconButton onClick={() => setDeleteId(it.id)} />
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                        <Segmented
+                            value={statusFilter}
+                            onChange={(v) => { setPage(1); setStatusFilter(Number(v)); }}
+                            options={STATUS_FILTERS}
+                        />
                     </div>
-                </div>
-            )}
-
-            {/* Pagination controls */}
-            <div className="mt-4 flex items-center justify-between">
-                <div className="text-sm text-gray-600">{totalCount !== null ? `Showing ${items.length} of ${totalCount}` : ''}</div>
-                <div className="flex items-center gap-2">
-                    <label className="text-sm text-gray-600">Page size</label>
-                    <Select
-                        options={[{ value: 5, label: '5' }, { value: 10, label: '10' }, { value: 25, label: '25' }, { value: 50, label: '50' }]}
-                        defaultValue={pageSize}
-                        onChange={(v: string | number) => { setPageSize(Number(v)); setPage(1); }}
-                        className="w-24"
+                    <AntSelect
+                        allowClear
+                        showSearch
+                        optionFilterProp="label"
+                        placeholder="All categories"
+                        className="w-full sm:w-56"
+                        value={selectedCategory ?? undefined}
+                        onChange={(v?: number) => { setPage(1); setSelectedCategory(v == null ? null : Number(v)); }}
+                        options={categories.map(c => ({ value: c.id, label: c.name }))}
                     />
-                    <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>Prev</button>
-                    <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setPage((p) => p + 1)} disabled={totalCount !== null && page * pageSize >= (totalCount || 0)}>Next</button>
+                    <AntInput
+                        allowClear
+                        prefix={<SearchOutlined className="text-gray-400" />}
+                        placeholder="Search items..."
+                        className="w-full sm:w-64"
+                        value={search}
+                        onChange={(e) => { setPage(1); setSearch(e.target.value); }}
+                    />
                 </div>
+            </PageHeader>
+
+            {/* KPIs — derived from the list already loaded (no extra requests) */}
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <StatTile
+                    label="Items"
+                    loading={firstLoad}
+                    value={<span className="tabular-nums">{(totalCount ?? items.length).toLocaleString("en-US")}</span>}
+                    sub={<>{statusLabel}{selectedCategory !== null ? <> · {categoryName(selectedCategory)}</> : null}{debouncedSearch ? <> · “{debouncedSearch}”</> : null}</>}
+                    accent={<span className="rounded-lg bg-blue-50 p-1.5 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300"><AppstoreOutlined /></span>}
+                />
+                <StatTile
+                    label="Out of stock"
+                    loading={firstLoad}
+                    value={<span className="tabular-nums">{outOnPage}</span>}
+                    sub="On this page · 0 or less in stock"
+                    accent={outOnPage ? <span className="text-red-500"><WarningOutlined /></span> : undefined}
+                />
+                <StatTile
+                    label="Low stock"
+                    loading={firstLoad}
+                    value={<span className="tabular-nums">{lowOnPage}</span>}
+                    sub={`On this page · ${LOW_STOCK_MAX} or fewer left`}
+                    accent={lowOnPage ? <span className="text-amber-500"><WarningOutlined /></span> : undefined}
+                />
+                <StatTile
+                    label="Sold online"
+                    loading={firstLoad}
+                    value={<span className="tabular-nums">{onlineOnPage}</span>}
+                    sub="On this page"
+                    accent={<span className="rounded-lg bg-sky-50 p-1.5 text-sky-600 dark:bg-sky-500/10 dark:text-sky-300"><ShoppingCartOutlined /></span>}
+                />
             </div>
+
+            <Panel
+                title="All items"
+                subtitle={totalCount !== null ? `${totalCount.toLocaleString("en-US")} item${totalCount === 1 ? "" : "s"} · ${statusLabel.toLowerCase()}` : undefined}
+                bodyClassName="p-0"
+            >
+                {error ? (
+                    <div className="m-5 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">{error}</div>
+                ) : firstLoad ? (
+                    <div className="p-5"><Skeleton active paragraph={{ rows: 6 }} /></div>
+                ) : (
+                    <Table
+                        rowKey="id"
+                        size="middle"
+                        loading={loading}
+                        columns={columns}
+                        dataSource={items}
+                        pagination={false}
+                        scroll={{ x: 1180 }}
+                        locale={{ emptyText: <Empty description={filtersActive ? "No items match these filters" : "No items yet"} /> }}
+                    />
+                )}
+
+                {/* Pagination controls */}
+                <PagerFooter
+                    shown={items.length}
+                    total={totalCount}
+                    page={page}
+                    pageSize={pageSize}
+                    onPageSizeChange={(n) => { setPageSize(n); setPage(1); }}
+                    onPrev={() => setPage((p) => Math.max(1, p - 1))}
+                    onNext={() => setPage((p) => p + 1)}
+                    prevDisabled={page <= 1}
+                    nextDisabled={totalCount !== null && page * pageSize >= (totalCount || 0)}
+                />
+            </Panel>
 
             <Modal
                 isOpen={isFormOpen}

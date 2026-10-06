@@ -1,4 +1,23 @@
 import React, { useEffect, useState, useCallback } from "react";
+import { Button, Dropdown, Empty, Input as AntInput, Skeleton, Tooltip } from "antd";
+import {
+    CloseOutlined,
+    CoffeeOutlined,
+    DeleteOutlined,
+    DoubleLeftOutlined,
+    DoubleRightOutlined,
+    DownOutlined,
+    EditOutlined,
+    LeftOutlined,
+    MoreOutlined,
+    ReloadOutlined,
+    RightOutlined,
+    SearchOutlined,
+    ShoppingOutlined,
+    TrophyOutlined,
+    UpOutlined,
+    WarningFilled,
+} from "@ant-design/icons";
 import {
     getItemTransactions, getGameTransactions,
     ItemTransaction, GameTransaction,
@@ -11,9 +30,59 @@ import Modal from '../../components/ui/Modal';
 import Label from '../../components/form/Label';
 import Input from '../../components/form/input/InputField';
 import Select from '../../components/form/Select';
-
+import { PageHeader, Panel, Pill } from "../../components/ui/PageKit";
 // ── NEW: status constant for open invoices ────────────────────
 const STATUS_OPEN_INVOICE = 7;
+
+
+// ── Status pill helper ────────────────────────────────────────────────────
+function StatusBadge({ statusId }: { statusId: number }) {
+    if (statusId === STATUS_PROCESSED_PAID)
+        return <Pill tone="emerald" dot>Processed & Paid</Pill>;
+    if (statusId === STATUS_OPEN_INVOICE)
+        return <Pill tone="amber" dot>Open Invoice</Pill>;
+    // 2 / 3 (Disabled / Deleted) are the cancelled-style states.
+    return <Pill tone={statusId === 2 || statusId === 3 ? "red" : "gray"} dot>{getStatusName(statusId) ?? statusId}</Pill>;
+}
+
+// Invoice number with the date / time stacked under it.
+function InvoiceCell({ id, createdOn }: { id?: number; createdOn: string }) {
+    return (
+        <div className="whitespace-nowrap">
+            <div className="font-semibold tabular-nums text-gray-900 dark:text-gray-100">#{id}</div>
+            <div className="mt-0.5 text-xs tabular-nums text-gray-500 dark:text-gray-400">
+                {new Date(createdOn).toLocaleDateString('en-GB')}
+                <span className="text-gray-400 dark:text-gray-500"> · {new Date(createdOn).toLocaleTimeString()}</span>
+            </div>
+        </div>
+    );
+}
+
+// « Prev Next » row, shown under a list when it has more than one page.
+function OrdersPager({ label, atStart, atEnd, onFirst, onPrev, onNext, onLast }: {
+    label: React.ReactNode;
+    atStart: boolean;
+    atEnd: boolean;
+    onFirst: () => void;
+    onPrev: () => void;
+    onNext: () => void;
+    onLast: () => void;
+}) {
+    return (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-5 py-3 dark:border-white/[0.06]">
+            <span className="text-xs tabular-nums text-gray-500 dark:text-gray-400">{label}</span>
+            <div className="flex gap-1.5">
+                <Button size="small" icon={<DoubleLeftOutlined />} disabled={atStart} onClick={onFirst} aria-label="First page" />
+                <Button size="small" icon={<LeftOutlined />} disabled={atStart} onClick={onPrev}>Prev</Button>
+                <Button size="small" disabled={atEnd} onClick={onNext}>Next <RightOutlined /></Button>
+                <Button size="small" icon={<DoubleRightOutlined />} disabled={atEnd} onClick={onLast} aria-label="Last page" />
+            </div>
+        </div>
+    );
+}
+
+const TH = "px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400";
+const ROW_ACTIONS_CLS = "flex items-center justify-end gap-1";
 
 const Orders: React.FC = () => {
     const [itemOrders, setItemOrders] = useState<ItemTransaction[]>([]);
@@ -159,29 +228,32 @@ const Orders: React.FC = () => {
     const totalItemPages = Math.max(1, Math.ceil(itemTotal / pageSize));
     const totalGamePages = Math.max(1, Math.ceil(gameTotal / pageSize));
 
-    // ── Status badge helper ───────────────────────────────────────────────────
-    const StatusBadge = ({ statusId }: { statusId: number }) => {
-        if (statusId === STATUS_PROCESSED_PAID)
-            return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">✓ Processed & Paid</span>;
-        if (statusId === STATUS_OPEN_INVOICE)
-            return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">● Open Invoice</span>;
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">{getStatusName(statusId) ?? statusId}</span>;
-    };
-
     return (
-        <div className="p-6 space-y-10">
+        <div className="mx-auto max-w-[1400px] space-y-6 p-4 sm:p-6">
             {/* ── Page Header ─────────────────────────────────────────── */}
-            <div>
-                <h1 className="text-2xl font-bold text-gray-900">Orders Management</h1>
-                <p className="text-sm text-gray-500 mt-1">Coffee shop, FNB, and game session orders</p>
-            </div>
+            <PageHeader
+                tone="emerald"
+                icon={<ShoppingOutlined />}
+                title="Orders Management"
+                description="Coffee shop, FNB, and game session orders"
+                actions={
+                    <Tooltip title="Refresh">
+                        <Button
+                            icon={<ReloadOutlined />}
+                            loading={loadingItems || loadingGames}
+                            onClick={() => { loadItemTransactions(); loadGameTransactions(); }}
+                            aria-label="Refresh"
+                        />
+                    </Tooltip>
+                }
+            />
 
             {/* ── Global message banner ────────────────────────────────── */}
             {message && (
-                <div className={`px-4 py-3 rounded-lg text-sm font-medium border ${
+                <div role="status" className={`rounded-xl border px-4 py-3 text-sm font-medium ${
                     message.type === 'success'
-                        ? 'bg-green-50 text-green-800 border-green-200'
-                        : 'bg-red-50 text-red-800 border-red-200'
+                        ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300'
+                        : 'border-red-200 bg-red-50 text-red-800 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300'
                 }`}>
                     {message.text}
                 </div>
@@ -190,378 +262,337 @@ const Orders: React.FC = () => {
             {/* ══════════════════════════════════════════════════════════
                 COFFEE SHOP ORDERS
             ══════════════════════════════════════════════════════════ */}
-            <section>
-                {/* Section header */}
-                <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
-                    <div>
-                        <h2 className="text-lg font-semibold text-gray-800">Coffee Shop Orders</h2>
-                        <p className="text-xs text-gray-400 mt-0.5">Includes open invoices and completed orders</p>
-                    </div>
-                    <div className="flex items-center gap-3 flex-wrap">
+            <Panel
+                title={<span className="inline-flex items-center gap-2"><CoffeeOutlined className="text-emerald-600 dark:text-emerald-400" /> Coffee Shop Orders</span>}
+                subtitle="Includes open invoices and completed orders"
+                bodyClassName="p-0"
+                extra={
+                    <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                         {/* Stats pills */}
-                        <div className="flex gap-2">
-                            <span className="px-3 py-1.5 bg-slate-100 rounded-lg text-xs font-medium text-slate-600">
-                                {itemTotal} orders
-                            </span>
-                            <span className="px-3 py-1.5 bg-indigo-50 rounded-lg text-xs font-medium text-indigo-700">
-                                ${itemTotalRevenue.toFixed(2)} revenue
-                            </span>
-                        </div>
+                        <Pill tone="gray"><span className="tabular-nums">{itemTotal} orders</span></Pill>
+                        <Pill tone="violet"><span className="tabular-nums">${itemTotalRevenue.toFixed(2)} revenue</span></Pill>
                         {/* Search */}
-                        <div className="relative">
-                            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                            <input
-                                type="text"
-                                placeholder="Search orders..."
-                                value={itemSearch}
-                                onChange={(e) => { setItemSearch(e.target.value); setItemPage(1); }}
-                                className="pl-9 pr-3 py-2 w-56 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
-                            />
-                        </div>
+                        <AntInput
+                            allowClear
+                            prefix={<SearchOutlined className="text-gray-400" />}
+                            placeholder="Search orders..."
+                            value={itemSearch}
+                            onChange={(e) => { setItemSearch(e.target.value); setItemPage(1); }}
+                            className="w-full sm:w-56"
+                            aria-label="Search coffee shop orders"
+                        />
                     </div>
-                </div>
-
+                }
+            >
                 {/* Loading */}
-                {loadingItems && <div className="flex justify-center py-16"><Loader /></div>}
+                {loadingItems && <div className="p-5"><Skeleton active paragraph={{ rows: 6 }} /></div>}
 
                 {/* Empty */}
                 {!loadingItems && itemOrders.length === 0 && (
-                    <div className="text-center py-16 text-gray-400 text-sm">No orders found.</div>
+                    <div className="py-12"><Empty description="No orders found." /></div>
                 )}
 
                 {/* Table */}
                 {!loadingItems && itemOrders.length > 0 && (
-                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                        {/* Table header */}
-                        <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                            <div className="col-span-1">Invoice</div>
-                            <div className="col-span-2">Date / Time</div>
-                            <div className="col-span-2">Cashier</div>
-                            <div className="col-span-3">Items</div>
-                            <div className="col-span-1">Total</div>
-                            <div className="col-span-2">Status</div>
-                            <div className="col-span-1">Actions</div>
-                        </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full min-w-[920px] text-sm">
+                            <thead>
+                                <tr className="border-b border-gray-100 bg-gray-50/70 text-left dark:border-white/[0.06] dark:bg-white/[0.02]">
+                                    <th className={`${TH} pl-5`}>Invoice</th>
+                                    <th className={TH}>Cashier</th>
+                                    <th className={TH}>Items</th>
+                                    <th className={`${TH} text-right`}>Total</th>
+                                    <th className={TH}>Status</th>
+                                    <th className={`${TH} pr-5 text-right`}><span className="sr-only">Actions</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {itemOrders.map((o, idx) => {
+                                    const isOpen = o.statusId === STATUS_OPEN_INVOICE;
+                                    const isExpanded = expandedRow === o.transactionId;
+                                    // Left accent: amber for open invoices, violet for the expanded row.
+                                    const accent = isOpen
+                                        ? 'shadow-[inset_3px_0_0_0_var(--color-amber-400)]'
+                                        : isExpanded ? 'shadow-[inset_3px_0_0_0_var(--color-violet-400)]' : '';
+                                    return (
+                                        <React.Fragment key={`${o.transactionId}-${idx}`}>
+                                            {/* Main row */}
+                                            <tr
+                                                className={`cursor-pointer border-b border-gray-100 align-middle transition-colors dark:border-white/[0.06] ${
+                                                    isExpanded ? 'bg-gray-50/80 dark:bg-white/[0.03]' : 'hover:bg-gray-50/70 dark:hover:bg-white/[0.02]'
+                                                }`}
+                                                onClick={() => setExpandedRow(isExpanded ? null : (o.transactionId ?? null))}
+                                            >
+                                                {/* Invoice # + date/time */}
+                                                <td className={`py-3 pl-5 pr-4 ${accent}`}>
+                                                    <InvoiceCell id={o.transactionId} createdOn={o.createdOn} />
+                                                </td>
 
-                        {/* Rows */}
-                        {itemOrders.map((o, idx) => {
-                            const isOpen = o.statusId === STATUS_OPEN_INVOICE;
-                            const isExpanded = expandedRow === o.transactionId;
-                            return (
-                                <React.Fragment key={`${o.transactionId}-${idx}`}>
-                                    {/* Main row */}
-                                    <div
-                                        className={`grid grid-cols-12 gap-2 px-4 py-3.5 items-center cursor-pointer border-b border-gray-100 transition-colors
-                                            ${isOpen ? 'bg-amber-50 hover:bg-amber-100' : 'bg-white hover:bg-gray-50'}
-                                            ${isExpanded ? 'border-l-4 border-l-indigo-400' : ''}`}
-                                        onClick={() => setExpandedRow(isExpanded ? null : (o.transactionId ?? null))}
-                                    >
-                                        {/* Invoice # */}
-                                        <div className="col-span-1">
-                                            <span className="font-bold text-gray-900 text-sm">#{o.transactionId}</span>
-                                            {isOpen && (
-                                                <div className="text-[10px] text-amber-600 font-medium mt-0.5">OPEN</div>
-                                            )}
-                                        </div>
+                                                {/* Cashier */}
+                                                <td className="max-w-[200px] px-4 py-3">
+                                                    <div className="truncate font-medium text-gray-800 dark:text-gray-200">
+                                                        {o.createdBy?.split('@')[0] ?? '—'}
+                                                    </div>
+                                                    <div className="truncate text-xs text-gray-500 dark:text-gray-400">{o.createdBy}</div>
+                                                </td>
 
-                                        {/* Date/Time */}
-                                        <div className="col-span-2">
-                                            <div className="text-sm font-medium text-gray-800">
-                                                {new Date(o.createdOn).toLocaleDateString('en-GB')}
-                                            </div>
-                                            <div className="text-xs text-gray-400">
-                                                {new Date(o.createdOn).toLocaleTimeString()}
-                                            </div>
-                                        </div>
-
-                                        {/* Cashier */}
-                                        <div className="col-span-2">
-                                            <div className="text-sm font-medium text-gray-800 truncate">
-                                                {o.createdBy?.split('@')[0] ?? '—'}
-                                            </div>
-                                            <div className="text-xs text-gray-400 truncate">{o.createdBy}</div>
-                                        </div>
-
-                                        {/* Items preview */}
-                                        <div className="col-span-3">
-                                            {o.items && o.items.length > 0 ? (
-                                                <div className="flex flex-wrap gap-1">
-                                                    {o.items.slice(0, 2).map((item, ii) => (
-                                                        <span key={ii} className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded-md text-xs text-gray-700">
-                                                            <span className="font-medium">{item.itemName}</span>
-                                                            <span className="text-indigo-500 font-semibold">×{item.quantity}</span>
-                                                            {item.categoryName && (
-                                                                <span className="text-gray-400">({item.categoryName})</span>
+                                                {/* Items preview */}
+                                                <td className="px-4 py-3">
+                                                    {o.items && o.items.length > 0 ? (
+                                                        <div className="flex max-w-[360px] flex-wrap items-center gap-1">
+                                                            {o.items.slice(0, 2).map((item, ii) => (
+                                                                <span key={ii} className="inline-flex max-w-full items-center gap-1 rounded-md border border-gray-200/80 bg-white px-1.5 py-0.5 text-xs text-gray-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-gray-300">
+                                                                    <span className="truncate font-medium">{item.itemName}</span>
+                                                                    <span className="font-semibold tabular-nums text-violet-600 dark:text-violet-300">×{item.quantity}</span>
+                                                                    {item.categoryName && (
+                                                                        <span className="truncate text-gray-400 dark:text-gray-500">· {item.categoryName}</span>
+                                                                    )}
+                                                                </span>
+                                                            ))}
+                                                            {o.items.length > 2 && (
+                                                                <span className="text-xs text-gray-500 dark:text-gray-400">+{o.items.length - 2} more</span>
                                                             )}
-                                                        </span>
-                                                    ))}
-                                                    {o.items.length > 2 && (
-                                                        <span className="text-xs text-gray-400 self-center">+{o.items.length - 2} more</span>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-xs text-gray-400 dark:text-gray-500">No items</span>
                                                     )}
-                                                </div>
-                                            ) : (
-                                                <span className="text-gray-400 text-xs">No items</span>
+                                                </td>
+
+                                                {/* Total */}
+                                                <td className="whitespace-nowrap px-4 py-3 text-right font-semibold tabular-nums text-gray-900 dark:text-gray-100">
+                                                    ${o.totalPrice.toFixed(2)}
+                                                </td>
+
+                                                {/* Status */}
+                                                <td className="px-4 py-3">
+                                                    <StatusBadge statusId={o.statusId} />
+                                                </td>
+
+                                                {/* Actions */}
+                                                <td className="py-3 pl-4 pr-5" onClick={e => e.stopPropagation()}>
+                                                    <div className={ROW_ACTIONS_CLS}>
+                                                        <Tooltip title={isExpanded ? 'Collapse' : 'Expand items'}>
+                                                            <Button
+                                                                type="text"
+                                                                size="small"
+                                                                icon={isExpanded ? <UpOutlined /> : <DownOutlined />}
+                                                                aria-label={isExpanded ? `Collapse invoice ${o.transactionId}` : `Expand items of invoice ${o.transactionId}`}
+                                                                aria-expanded={isExpanded}
+                                                                onClick={() => setExpandedRow(isExpanded ? null : (o.transactionId ?? null))}
+                                                            />
+                                                        </Tooltip>
+                                                        <Dropdown
+                                                            trigger={["click"]}
+                                                            menu={{
+                                                                items: [
+                                                                    { key: "edit", icon: <EditOutlined />, label: "Edit", onClick: () => handleEdit(o) },
+                                                                    { key: "delete", icon: <DeleteOutlined />, label: "Delete", danger: true, onClick: () => { if (o.transactionId !== undefined) handleDeleteClick(o.transactionId); } },
+                                                                ],
+                                                            }}
+                                                        >
+                                                            <Button type="text" size="small" icon={<MoreOutlined />} aria-label={`Actions for invoice ${o.transactionId}`} />
+                                                        </Dropdown>
+                                                    </div>
+                                                </td>
+                                            </tr>
+
+                                            {/* ── Expanded item detail row ── */}
+                                            {isExpanded && (
+                                                <tr className="border-b border-gray-100 dark:border-white/[0.06]">
+                                                    <td colSpan={6} className={`bg-gray-50/80 px-5 py-4 dark:bg-white/[0.03] ${accent}`}>
+                                                        {isOpen && (
+                                                            <div className="mb-3 flex w-fit items-center gap-2 rounded-lg bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">
+                                                                <WarningFilled />
+                                                                Open Invoice — you can remove individual items below
+                                                            </div>
+                                                        )}
+                                                        <div className="overflow-hidden rounded-xl border border-gray-200/80 bg-white dark:border-white/[0.06] dark:bg-transparent">
+                                                            <table className="w-full text-sm">
+                                                                <thead>
+                                                                    <tr className="border-b border-gray-100 text-[11px] uppercase tracking-wide text-gray-500 dark:border-white/[0.06] dark:text-gray-400">
+                                                                        <th className="px-4 py-2 text-left font-semibold">Item</th>
+                                                                        <th className="px-4 py-2 text-left font-semibold">Category</th>
+                                                                        <th className="px-4 py-2 text-center font-semibold">Qty</th>
+                                                                        <th className="px-4 py-2 text-right font-semibold">Unit Price</th>
+                                                                        <th className="px-4 py-2 text-right font-semibold">Line Total</th>
+                                                                        {isOpen && <th className="px-4 py-2 text-right font-semibold">Remove</th>}
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody className="divide-y divide-gray-100 dark:divide-white/[0.06]">
+                                                                    {(o.items || []).map((item, ii) => {
+                                                                        const rmKey = `${o.transactionId}-${item.itemId}`;
+                                                                        const isRemoving = removingItem === rmKey;
+                                                                        return (
+                                                                            <tr key={ii}>
+                                                                                <td className="px-4 py-2">
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        {item.imagePath && (
+                                                                                            <img src={item.imagePath} alt="" className="h-8 w-8 rounded-md object-cover" />
+                                                                                        )}
+                                                                                        <span className="font-medium text-gray-800 dark:text-gray-200">{item.itemName}</span>
+                                                                                    </div>
+                                                                                </td>
+                                                                                <td className="px-4 py-2">
+                                                                                    {item.categoryName
+                                                                                        ? <Pill tone="gray">{item.categoryName}</Pill>
+                                                                                        : <span className="text-gray-400 dark:text-gray-500">—</span>}
+                                                                                </td>
+                                                                                <td className="px-4 py-2 text-center font-semibold tabular-nums text-violet-600 dark:text-violet-300">
+                                                                                    ×{item.quantity}
+                                                                                </td>
+                                                                                <td className="whitespace-nowrap px-4 py-2 text-right tabular-nums text-gray-600 dark:text-gray-400">
+                                                                                    {item.unitPrice != null ? `$${item.unitPrice.toFixed(2)}` : '—'}
+                                                                                </td>
+                                                                                <td className="whitespace-nowrap px-4 py-2 text-right font-semibold tabular-nums text-gray-800 dark:text-gray-200">
+                                                                                    {item.lineTotal != null ? `$${item.lineTotal.toFixed(2)}` : '—'}
+                                                                                </td>
+                                                                                {isOpen && (
+                                                                                    <td className="px-4 py-2 text-right">
+                                                                                        <Button
+                                                                                            size="small"
+                                                                                            danger
+                                                                                            icon={isRemoving ? undefined : <CloseOutlined />}
+                                                                                            disabled={isRemoving}
+                                                                                            onClick={() => handleRemoveItem(o, item.itemId)}
+                                                                                        >
+                                                                                            {isRemoving ? 'Removing…' : 'Remove'}
+                                                                                        </Button>
+                                                                                    </td>
+                                                                                )}
+                                                                            </tr>
+                                                                        );
+                                                                    })}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </td>
+                                                </tr>
                                             )}
-                                        </div>
-
-                                        {/* Total */}
-                                        <div className="col-span-1">
-                                            <span className="text-sm font-bold text-gray-900">${o.totalPrice.toFixed(2)}</span>
-                                        </div>
-
-                                        {/* Status */}
-                                        <div className="col-span-2">
-                                            <StatusBadge statusId={o.statusId} />
-                                        </div>
-
-                                        {/* Actions */}
-                                        <div className="col-span-1" onClick={e => e.stopPropagation()}>
-                                            <div className="flex items-center gap-1.5">
-                                                <button
-                                                    className="p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-                                                    title={isExpanded ? 'Collapse' : 'Expand items'}
-                                                    onClick={() => setExpandedRow(isExpanded ? null : (o.transactionId ?? null))}
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isExpanded ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
-                                                    </svg>
-                                                </button>
-                                                <button
-                                                    className="p-1.5 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                                                    title="Edit"
-                                                    onClick={() => handleEdit(o)}
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                    </svg>
-                                                </button>
-                                                <button
-                                                    className="p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                                                    title="Delete"
-                                                    onClick={() => o.transactionId !== undefined && handleDeleteClick(o.transactionId)}
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* ── Expanded item detail row ── */}
-                                    {isExpanded && (
-                                        <div className={`px-6 py-4 border-b border-gray-100 ${isOpen ? 'bg-amber-50/60' : 'bg-gray-50/60'}`}>
-                                            {isOpen && (
-                                                <div className="flex items-center gap-2 mb-3 text-xs font-medium text-amber-700 bg-amber-100 px-3 py-1.5 rounded-lg w-fit">
-                                                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                                    </svg>
-                                                    Open Invoice — you can remove individual items below
-                                                </div>
-                                            )}
-                                            <table className="w-full text-sm">
-                                                <thead>
-                                                    <tr className="text-xs text-gray-400 uppercase tracking-wide">
-                                                        <th className="text-left pb-2 font-semibold">Item</th>
-                                                        <th className="text-left pb-2 font-semibold">Category</th>
-                                                        <th className="text-center pb-2 font-semibold">Qty</th>
-                                                        <th className="text-right pb-2 font-semibold">Unit Price</th>
-                                                        <th className="text-right pb-2 font-semibold">Line Total</th>
-                                                        {isOpen && <th className="text-right pb-2 font-semibold">Remove</th>}
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-gray-100">
-                                                    {(o.items || []).map((item, ii) => {
-                                                        const rmKey = `${o.transactionId}-${item.itemId}`;
-                                                        const isRemoving = removingItem === rmKey;
-                                                        return (
-                                                            <tr key={ii} className="hover:bg-white/60 transition-colors">
-                                                                <td className="py-2 pr-4">
-                                                                    <div className="flex items-center gap-2">
-                                                                        {item.imagePath && (
-                                                                            <img src={item.imagePath} alt="" className="w-8 h-8 rounded-md object-cover" />
-                                                                        )}
-                                                                        <span className="font-medium text-gray-800">{item.itemName}</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td className="py-2 pr-4">
-                                                                    <span className="px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-600">
-                                                                        {item.categoryName ?? '—'}
-                                                                    </span>
-                                                                </td>
-                                                                <td className="py-2 text-center">
-                                                                    <span className="font-semibold text-indigo-600">×{item.quantity}</span>
-                                                                </td>
-                                                                <td className="py-2 text-right text-gray-600">
-                                                                    ${item.unitPrice?.toFixed(2) ?? '—'}
-                                                                </td>
-                                                                <td className="py-2 text-right font-semibold text-gray-800">
-                                                                    ${item.lineTotal?.toFixed(2) ?? '—'}
-                                                                </td>
-                                                                {isOpen && (
-                                                                    <td className="py-2 text-right">
-                                                                        <button
-                                                                            disabled={isRemoving}
-                                                                            onClick={() => handleRemoveItem(o, item.itemId)}
-                                                                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                                                        >
-                                                                            {isRemoving ? (
-                                                                                <span>Removing…</span>
-                                                                            ) : (
-                                                                                <>
-                                                                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                                                    </svg>
-                                                                                    Remove
-                                                                                </>
-                                                                            )}
-                                                                        </button>
-                                                                    </td>
-                                                                )}
-                                                            </tr>
-                                                        );
-                                                    })}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    )}
-                                </React.Fragment>
-                            );
-                        })}
+                                        </React.Fragment>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
                     </div>
                 )}
 
                 {/* Pagination */}
                 {!loadingItems && itemTotal > pageSize && (
-                    <div className="flex items-center justify-between mt-4 text-sm text-gray-500">
-                        <span>Page {itemPage} of {totalItemPages} — {itemTotal} orders</span>
-                        <div className="flex gap-1.5">
-                            <button
-                                className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium"
-                                disabled={itemPage <= 1}
-                                onClick={() => setItemPage(1)}
-                            >«</button>
-                            <button
-                                className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium"
-                                disabled={itemPage <= 1}
-                                onClick={() => setItemPage(p => p - 1)}
-                            >Prev</button>
-                            <button
-                                className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium"
-                                disabled={itemPage >= totalItemPages}
-                                onClick={() => setItemPage(p => p + 1)}
-                            >Next</button>
-                            <button
-                                className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium"
-                                disabled={itemPage >= totalItemPages}
-                                onClick={() => setItemPage(totalItemPages)}
-                            >»</button>
-                        </div>
-                    </div>
+                    <OrdersPager
+                        label={<>Page {itemPage} of {totalItemPages} — {itemTotal} orders</>}
+                        atStart={itemPage <= 1}
+                        atEnd={itemPage >= totalItemPages}
+                        onFirst={() => setItemPage(1)}
+                        onPrev={() => setItemPage(p => p - 1)}
+                        onNext={() => setItemPage(p => p + 1)}
+                        onLast={() => setItemPage(totalItemPages)}
+                    />
                 )}
-            </section>
+            </Panel>
 
             {/* ══════════════════════════════════════════════════════════
                 GAME SESSION ORDERS  — unchanged logic, enhanced design
             ══════════════════════════════════════════════════════════ */}
-            <section>
-                <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
-                    <div>
-                        <h2 className="text-lg font-semibold text-gray-800">Game Session Orders</h2>
-                        <p className="text-xs text-gray-400 mt-0.5">{gameTotal} sessions</p>
-                    </div>
-                    <div className="relative">
-                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                        <input
-                            type="text"
+            <Panel
+                title={<span className="inline-flex items-center gap-2"><TrophyOutlined className="text-violet-600 dark:text-violet-400" /> Game Session Orders</span>}
+                subtitle="Room and table sessions"
+                bodyClassName="p-0"
+                extra={
+                    <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+                        <Pill tone="gray"><span className="tabular-nums">{gameTotal} sessions</span></Pill>
+                        <AntInput
+                            allowClear
+                            prefix={<SearchOutlined className="text-gray-400" />}
                             placeholder="Search sessions..."
                             value={gameSearch}
                             onChange={(e) => { setGameSearch(e.target.value); setGamePage(1); }}
-                            className="pl-9 pr-3 py-2 w-56 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                            className="w-full sm:w-56"
+                            aria-label="Search game session orders"
                         />
                     </div>
-                </div>
-
-                {loadingGames && <div className="flex justify-center py-16"><Loader /></div>}
+                }
+            >
+                {loadingGames && <div className="p-5"><Skeleton active paragraph={{ rows: 6 }} /></div>}
                 {!loadingGames && gameOrders.length === 0 && (
-                    <div className="text-center py-16 text-gray-400 text-sm">No game session orders found.</div>
+                    <div className="py-12"><Empty description="No game session orders found." /></div>
                 )}
 
                 {!loadingGames && gameOrders.length > 0 && (
-                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                        <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                            <div className="col-span-1">Invoice</div>
-                            <div className="col-span-2">Date / Time</div>
-                            <div className="col-span-2">Cashier</div>
-                            <div className="col-span-2">Room / Game</div>
-                            <div className="col-span-1">Setting</div>
-                            <div className="col-span-1">Hours</div>
-                            <div className="col-span-1">Total</div>
-                            <div className="col-span-1">Status</div>
-                            <div className="col-span-1">Actions</div>
-                        </div>
-
-                        {gameOrders.map((o, idx) => (
-                            <div key={`${o.transactionId}-${idx}`} className="grid grid-cols-12 gap-2 px-4 py-3.5 items-center border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                                <div className="col-span-1">
-                                    <span className="font-bold text-gray-900 text-sm">#{o.transactionId}</span>
-                                </div>
-                                <div className="col-span-2">
-                                    <div className="text-sm font-medium text-gray-800">{new Date(o.createdOn).toLocaleDateString('en-GB')}</div>
-                                    <div className="text-xs text-gray-400">{new Date(o.createdOn).toLocaleTimeString()}</div>
-                                </div>
-                                <div className="col-span-2">
-                                    <div className="text-sm font-medium text-gray-800 truncate">{o.createdBy?.split('@')[0]}</div>
-                                    {o.setName && <div className="text-xs text-gray-400">Set: {o.setName}</div>}
-                                </div>
-                                <div className="col-span-2">
-                                    <div className="text-sm font-medium text-gray-800">{o.roomName || '—'}</div>
-                                    <div className="text-xs text-gray-400">{o.gameName || '—'}</div>
-                                </div>
-                                <div className="col-span-1 text-sm text-gray-600">
-                                    <div>{o.gameSettingName || '—'}</div>
-                                    {o.gameCategoryName && <div className="text-xs text-gray-400">{o.gameCategoryName}</div>}
-                                </div>
-                                <div className="col-span-1 text-sm text-gray-600">
-                                    {o.hours === 0 ? <span className="text-xs text-amber-600 font-medium">Open</span> : `${o.hours}h`}
-                                </div>
-                                <div className="col-span-1">
-                                    <span className="text-sm font-bold text-gray-900">${o.totalPrice.toFixed(2)}</span>
-                                </div>
-                                <div className="col-span-1">
-                                    <StatusBadge statusId={o.statusId} />
-                                </div>
-                                <div className="col-span-1">
-                                    <div className="flex items-center gap-1">
-                                        <button className="p-1.5 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors" title="Edit" onClick={() => handleEdit(o)}>
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                                        </button>
-                                        <button className="p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors" title="Delete" onClick={() => { if (typeof o.transactionId === 'number') handleDeleteClick(o.transactionId); }}>
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+                    <div className="overflow-x-auto">
+                        <table className="w-full min-w-[1000px] text-sm">
+                            <thead>
+                                <tr className="border-b border-gray-100 bg-gray-50/70 text-left dark:border-white/[0.06] dark:bg-white/[0.02]">
+                                    <th className={`${TH} pl-5`}>Invoice</th>
+                                    <th className={TH}>Cashier</th>
+                                    <th className={TH}>Room / Game</th>
+                                    <th className={TH}>Setting</th>
+                                    <th className={`${TH} text-right`}>Hours</th>
+                                    <th className={`${TH} text-right`}>Total</th>
+                                    <th className={TH}>Status</th>
+                                    <th className={`${TH} pr-5 text-right`}><span className="sr-only">Actions</span></th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-white/[0.06]">
+                                {gameOrders.map((o, idx) => (
+                                    <tr key={`${o.transactionId}-${idx}`} className="align-middle transition-colors hover:bg-gray-50/70 dark:hover:bg-white/[0.02]">
+                                        <td className="py-3 pl-5 pr-4">
+                                            <InvoiceCell id={o.transactionId} createdOn={o.createdOn} />
+                                        </td>
+                                        <td className="max-w-[200px] px-4 py-3">
+                                            <div className="truncate font-medium text-gray-800 dark:text-gray-200">{o.createdBy?.split('@')[0]}</div>
+                                            {o.setName && <div className="truncate text-xs text-gray-500 dark:text-gray-400">Set: {o.setName}</div>}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="font-medium text-gray-800 dark:text-gray-200">{o.roomName || '—'}</div>
+                                            <div className="text-xs text-gray-500 dark:text-gray-400">{o.gameName || '—'}</div>
+                                        </td>
+                                        <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                                            <div>{o.gameSettingName || '—'}</div>
+                                            {o.gameCategoryName && <div className="text-xs text-gray-500 dark:text-gray-400">{o.gameCategoryName}</div>}
+                                        </td>
+                                        <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-gray-700 dark:text-gray-300">
+                                            {o.hours === 0 ? <Pill tone="amber" dot>Open</Pill> : `${o.hours}h`}
+                                        </td>
+                                        <td className="whitespace-nowrap px-4 py-3 text-right font-semibold tabular-nums text-gray-900 dark:text-gray-100">
+                                            ${o.totalPrice.toFixed(2)}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <StatusBadge statusId={o.statusId} />
+                                        </td>
+                                        <td className="py-3 pl-4 pr-5">
+                                            <div className={ROW_ACTIONS_CLS}>
+                                                <Dropdown
+                                                    trigger={["click"]}
+                                                    menu={{
+                                                        items: [
+                                                            { key: "edit", icon: <EditOutlined />, label: "Edit", onClick: () => handleEdit(o) },
+                                                            { key: "delete", icon: <DeleteOutlined />, label: "Delete", danger: true, onClick: () => { if (typeof o.transactionId === 'number') handleDeleteClick(o.transactionId); } },
+                                                        ],
+                                                    }}
+                                                >
+                                                    <Button type="text" size="small" icon={<MoreOutlined />} aria-label={`Actions for session ${o.transactionId}`} />
+                                                </Dropdown>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 )}
 
                 {!loadingGames && gameTotal > pageSize && (
-                    <div className="flex items-center justify-between mt-4 text-sm text-gray-500">
-                        <span>Page {gamePage} of {totalGamePages} — {gameTotal} sessions</span>
-                        <div className="flex gap-1.5">
-                            <button className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 text-xs font-medium" disabled={gamePage <= 1} onClick={() => setGamePage(1)}>«</button>
-                            <button className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 text-xs font-medium" disabled={gamePage <= 1} onClick={() => setGamePage(p => p - 1)}>Prev</button>
-                            <button className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 text-xs font-medium" disabled={gamePage >= totalGamePages} onClick={() => setGamePage(p => p + 1)}>Next</button>
-                            <button className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 text-xs font-medium" disabled={gamePage >= totalGamePages} onClick={() => setGamePage(totalGamePages)}>»</button>
-                        </div>
-                    </div>
+                    <OrdersPager
+                        label={<>Page {gamePage} of {totalGamePages} — {gameTotal} sessions</>}
+                        atStart={gamePage <= 1}
+                        atEnd={gamePage >= totalGamePages}
+                        onFirst={() => setGamePage(1)}
+                        onPrev={() => setGamePage(p => p - 1)}
+                        onNext={() => setGamePage(p => p + 1)}
+                        onLast={() => setGamePage(totalGamePages)}
+                    />
                 )}
-            </section>
+            </Panel>
 
             {/* ── Edit Modal (unchanged) ─────────────────────────────── */}
             <Modal isOpen={editModalOpen} onClose={() => { setEditModalOpen(false); setEditingTransaction(null); setMessage(null); }} title="Edit Transaction"
