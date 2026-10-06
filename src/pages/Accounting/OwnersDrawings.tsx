@@ -49,6 +49,7 @@ import {
   InfoCircleOutlined,
   WalletOutlined,
   TeamOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
 import dayjs, { Dayjs } from "dayjs";
 import { Link } from "react-router";
@@ -68,6 +69,7 @@ import {
   OwnerDrawingsSummaryDto,
 } from "../../services/ownerService";
 import { getPostableAccounts, AccountDto } from "../../services/expenseService";
+import OwnerDrawingDetailModal from "../../components/Accounting/OwnerDrawingDetailModal";
 
 const { RangePicker } = DatePicker;
 const { Text, Paragraph } = Typography;
@@ -108,6 +110,8 @@ export default function OwnersDrawings() {
   const [ownerModal, setOwnerModal] = useState<{ open: boolean; editing: OwnerDto | null; init?: Partial<OwnerForm> }>({ open: false, editing: null });
   const [drawingModal, setDrawingModal] = useState<{ open: boolean; editing: OwnerDrawingDto | null; init?: Partial<DrawingForm> }>({ open: false, editing: null });
   const [voidTarget, setVoidTarget] = useState<OwnerDrawingDto | null>(null);
+  // Row of "Drawings by owner" whose detail popup is open.
+  const [detailRow, setDetailRow] = useState<OwnerDrawingsLineDto | null>(null);
   const [voidReason, setVoidReason] = useState("");
   const [saving, setSaving] = useState(false);
   const [equityAccounts, setEquityAccounts] = useState<AccountDto[]>([]);
@@ -283,7 +287,7 @@ export default function OwnersDrawings() {
       render: (_, r) => (
         <Space direction="vertical" size={0}>
           <Space size={6}>
-            <Text strong>{r.name}</Text>
+            <Typography.Link strong onClick={() => setDetailRow(r)}>{r.name}</Typography.Link>
             {r.other && <Tag color="orange">no owner linked</Tag>}
             {r.ownerId && !r.isActive && <Tag>hidden</Tag>}
           </Space>
@@ -372,13 +376,19 @@ export default function OwnersDrawings() {
     {
       title: "",
       key: "act",
-      width: 110,
-      render: (_, r) =>
-        r.ownerId && r.isActive ? (
-          <Button size="small" icon={<PlusOutlined />} onClick={() => openDrawingModal(null, r.ownerId!)}>
-            Drawing
+      width: 190,
+      render: (_, r) => (
+        <Space size={6}>
+          <Button size="small" icon={<EyeOutlined />} onClick={() => setDetailRow(r)}>
+            Details
           </Button>
-        ) : null,
+          {r.ownerId && r.isActive ? (
+            <Button size="small" icon={<PlusOutlined />} onClick={() => openDrawingModal(null, r.ownerId!)}>
+              Drawing
+            </Button>
+          ) : null}
+        </Space>
+      ),
     },
   ];
 
@@ -596,7 +606,7 @@ export default function OwnersDrawings() {
             columns={summaryColumns}
             dataSource={summaryRows}
             pagination={false}
-            scroll={{ x: 1100 }}
+            scroll={{ x: 1180 }}
             locale={{ emptyText: <Empty description="No owners yet" /> }}
             summary={() =>
               summary && summaryRows.length > 0 ? (
@@ -678,6 +688,16 @@ export default function OwnersDrawings() {
           />
         </Card>
       </Space>
+
+      {/* Drawings behind one row + how its numbers are calculated */}
+      <OwnerDrawingDetailModal
+        row={detailRow}
+        totalDrawings={summary?.totalDrawings ?? 0}
+        headerLabel={summary ? `${summary.headerAccountNumber} ${summary.headerAccountName}` : "Owners' Drawings"}
+        from={fromStr}
+        to={toStr}
+        onClose={() => setDetailRow(null)}
+      />
 
       {/* Owner modal */}
       <Modal

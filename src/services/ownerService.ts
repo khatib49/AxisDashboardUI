@@ -113,6 +113,36 @@ export type OwnerDrawingsSummaryDto = {
   unlinkedEquityCategories: UnlinkedEquityCategoryDto[];
 };
 
+export type OwnerDrawingsLedgerLineDto = {
+  journalEntryId: number;
+  entryNumber: string;
+  entryDate: string;
+  description: string;
+  /** "Drawings page" | "Entry category" | "Manual journal entry" | other reference type */
+  source: string;
+  sourceDetail: string | null;
+  debit: number;
+  credit: number;
+  runningTotal: number;
+  ownerDrawingId: number | null;
+  expenseId: number | null;
+};
+
+export type OwnerDrawingsLedgerDto = {
+  accountId: number;
+  accountNumber: string;
+  accountName: string;
+  ownerId: number | null;
+  ownerName: string | null;
+  from: string | null;
+  to: string | null;
+  totalDebit: number;
+  totalCredit: number;
+  drawn: number;
+  entryCount: number;
+  lines: OwnerDrawingsLedgerLineDto[];
+};
+
 // ── Owners ──────────────────────────────────────────────────────────────
 
 export async function getOwners(includeInactive = false): Promise<OwnerDto[]> {
@@ -165,4 +195,12 @@ export async function getOwnerDrawingsSummary(from?: string | null, to?: string 
   if (to) params.append("to", to);
   const qs = params.toString();
   return await get<OwnerDrawingsSummaryDto>(`/owners/drawings-summary${qs ? `?${qs}` : ""}`);
+}
+
+/** The journal lines behind one summary row, with where each came from. */
+export async function getOwnerDrawingsLedger(accountId: number, from?: string | null, to?: string | null): Promise<OwnerDrawingsLedgerDto> {
+  const params = new URLSearchParams({ accountId: String(accountId) });
+  if (from) params.append("from", from);
+  if (to) params.append("to", to);
+  return await get<OwnerDrawingsLedgerDto>(`/owners/drawings-ledger?${params.toString()}`);
 }
