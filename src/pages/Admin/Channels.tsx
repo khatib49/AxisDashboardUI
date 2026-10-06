@@ -5,7 +5,17 @@
 // admin section without surprise. Hide instead of delete — historical
 // transactions keep their ChannelId.
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Button, Empty, Input as AntInput, Skeleton, Switch as AntSwitch, Tooltip } from "antd";
+import {
+  CheckCircleOutlined,
+  EditOutlined,
+  EyeInvisibleOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  SearchOutlined,
+  ShareAltOutlined,
+} from "@ant-design/icons";
 import {
   getChannels,
   createChannel,
@@ -19,8 +29,9 @@ import Modal from "../../components/ui/Modal";
 import Input from "../../components/form/input/InputField";
 import Label from "../../components/form/Label";
 import Loader from "../../components/ui/Loader";
-import Alert from "../../components/ui/alert/Alert";
 import Switch from "../../components/form/switch/Switch";
+import { PageHeader, Panel, Pill, StatTile } from "../../components/ui/PageKit";
+import { ErrorNote, IconChip, RowMenu, Toast } from "../../components/admin/venue/VenueKit";
 
 export default function Channels() {
   const [channels, setChannels] = useState<ChannelDto[]>([]);
@@ -30,6 +41,10 @@ export default function Channels() {
   // includeHidden=true so soft-deleted channels also show up and can be
   // restored via the edit modal.
   const [showHidden, setShowHidden] = useState(false);
+  // Bumped by the Refresh button to re-run the same list request.
+  const [reloadToken, setReloadToken] = useState(0);
+  // Client-side search over the loaded list (presentation only).
+  const [q, setQ] = useState("");
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editing, setEditing] = useState<ChannelDto | null>(null);
@@ -65,7 +80,7 @@ export default function Channels() {
     return () => {
       mounted = false;
     };
-  }, [showHidden]);
+  }, [showHidden, reloadToken]);
 
   function openCreate() {
     setEditing(null);
@@ -138,110 +153,158 @@ export default function Channels() {
     }
   }
 
+  // ── List presentation (derived from the list already loaded) ────────
+  const firstLoad = loading && channels.length === 0;
+  const activeCount = channels.filter((c) => c.isActive).length;
+  const hiddenCount = channels.length - activeCount;
+  const visible = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    if (!s) return channels;
+    return channels.filter((c) => [String(c.id), c.name, c.description ?? ""].join(" ").toLowerCase().includes(s));
+  }, [channels, q]);
+
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Channels</h1>
-        <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-sm text-gray-300">
-            <input
-              type="checkbox"
-              checked={showHidden}
-              onChange={(e) => setShowHidden(e.target.checked)}
-              className="w-4 h-4"
-            />
-            Show hidden
-          </label>
-          <button
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
-            onClick={openCreate}
-          >
-            + Add Channel
-          </button>
-        </div>
+    <div className="mx-auto max-w-[1400px] space-y-6 p-4 sm:p-6">
+      <PageHeader
+        tone="blue"
+        icon={<ShareAltOutlined />}
+        title="Channels"
+        description="Sales channels (Toters, etc.) cashiers can attach to F&B orders. Hiding a channel removes it from the cashier — past transactions keep it."
+        actions={
+          <>
+            <Tooltip title="Refresh">
+              <Button icon={<ReloadOutlined />} onClick={() => setReloadToken((t) => t + 1)} loading={loading} aria-label="Refresh" />
+            </Tooltip>
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>Add channel</Button>
+          </>
+        }
+      />
+
+      {/* KPIs — derived from the list already loaded (no extra requests) */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <StatTile
+          label="Channels"
+          loading={firstLoad}
+          value={<span className="tabular-nums">{channels.length}</span>}
+          sub={showHidden ? "Including hidden" : "Visible to cashier"}
+          accent={<IconChip tone="blue"><ShareAltOutlined /></IconChip>}
+        />
+        <StatTile
+          label="Active"
+          loading={firstLoad}
+          value={<span className="tabular-nums">{activeCount}</span>}
+          sub="Shown on the cashier order form"
+          accent={<IconChip tone="emerald"><CheckCircleOutlined /></IconChip>}
+        />
+        <StatTile
+          label="Hidden"
+          loading={firstLoad}
+          value={<span className="tabular-nums">{showHidden ? hiddenCount : "—"}</span>}
+          sub={showHidden ? "Restore one from its edit dialog" : "Turn on “Show hidden” to list them"}
+          accent={<IconChip tone="gray"><EyeInvisibleOutlined /></IconChip>}
+        />
       </div>
 
-      {loading && (
-        <div className="flex items-center justify-center py-20">
-          <Loader />
-        </div>
-      )}
+      <Panel
+        title={showHidden ? "All channels" : "Active channels"}
+        subtitle={q.trim() ? `${visible.length} of ${channels.length}` : `${channels.length} channel${channels.length === 1 ? "" : "s"}`}
+        bodyClassName="p-0"
+        extra={
+          <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+              <AntSwitch size="small" checked={showHidden} onChange={(checked) => setShowHidden(checked)} />
+              Show hidden
+            </label>
+            <AntInput
+              allowClear
+              prefix={<SearchOutlined className="text-gray-400" />}
+              placeholder="Search channels…"
+              aria-label="Search channels"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              className="w-full sm:w-60!"
+            />
+          </div>
+        }
+      >
+        {error ? (
+          <ErrorNote>{error}</ErrorNote>
+        ) : loading ? (
+          <div className="p-5"><Skeleton active paragraph={{ rows: 5 }} /></div>
+        ) : visible.length === 0 ? (
+          <div className="py-12"><Empty description={q.trim() ? `Nothing matches “${q.trim()}”` : "No channels found"} /></div>
+        ) : (
+          <ul className="divide-y divide-gray-100 dark:divide-white/[0.06]">
+            {visible.map((c) => (
+              <li
+                key={c.id}
+                className={`flex flex-wrap items-center gap-x-5 gap-y-2 px-5 py-3.5 transition hover:bg-gray-50/70 dark:hover:bg-white/[0.02] ${c.isActive ? "" : "bg-gray-50/50 dark:bg-white/[0.01]"}`}
+              >
+                <span
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-semibold uppercase ${
+                    c.isActive
+                      ? "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300"
+                      : "bg-gray-100 text-gray-400 dark:bg-white/5 dark:text-gray-500"
+                  }`}
+                  aria-hidden
+                >
+                  {c.name.trim().charAt(0) || "#"}
+                </span>
 
-      {error && <div className="text-red-600 bg-red-50 p-3 rounded mb-4">{error}</div>}
-
-      {!loading && !error && (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {channels.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-6 py-10 text-center text-gray-500">
-                    No channels found
-                  </td>
-                </tr>
-              )}
-              {channels.map((c) => (
-                <tr key={c.id} className={`hover:bg-gray-50 ${c.isActive ? "" : "opacity-60"}`}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{c.id}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                    <div className="flex items-center gap-2">
-                      <span>{c.name}</span>
-                      {!c.isActive && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-100 text-red-700">
-                          Hidden
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">{c.description || "-"}</td>
-                  <td className="px-6 py-4 text-sm">
-                    {c.isActive ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Active
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-700">
-                        Hidden
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <div className="min-w-[180px] flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
                     <button
-                      className="text-indigo-600 hover:text-indigo-900 mr-3"
+                      type="button"
                       onClick={() => openEdit(c)}
+                      className={`text-left font-medium hover:text-blue-700 dark:hover:text-blue-300 ${c.isActive ? "text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400"}`}
                     >
-                      Edit
+                      {c.name}
                     </button>
-                    {c.isActive && (
-                      <button
-                        className="text-red-600 hover:text-red-900"
-                        onClick={() => setDeleteId(c.id)}
-                      >
-                        Hide
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+                    <span className="text-[11px] tabular-nums text-gray-400 dark:text-gray-500">#{c.id}</span>
+                  </div>
+                  <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{c.description || "-"}</div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {c.isActive ? (
+                    <Pill tone="emerald" dot>Active</Pill>
+                  ) : (
+                    <Pill tone="gray" dot>Hidden</Pill>
+                  )}
+                  <RowMenu
+                    label={c.name}
+                    items={[
+                      { key: "edit", icon: <EditOutlined />, label: c.isActive ? "Edit" : "Edit / restore", onClick: () => openEdit(c) },
+                      // Only active channels can be hidden; hidden ones are restored from the edit dialog.
+                      ...(c.isActive
+                        ? [
+                            { type: "divider" as const },
+                            { key: "hide", icon: <EyeInvisibleOutlined />, label: "Hide", danger: true, onClick: () => setDeleteId(c.id) },
+                          ]
+                        : []),
+                    ]}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
 
       {/* Create / Edit modal */}
       <Modal
         isOpen={isFormOpen}
         onClose={() => setIsFormOpen(false)}
         title={editing ? "Edit Channel" : "Create Channel"}
+        className="sm:max-w-xl!"
+        footer={
+          <>
+            <Button onClick={() => setIsFormOpen(false)}>Cancel</Button>
+            <Button type="primary" onClick={submitForm} disabled={submitting} icon={submitting ? <Loader size={16} /> : undefined}>
+              {editing ? "Save Changes" : "Create Channel"}
+            </Button>
+          </>
+        }
       >
         <div className="flex flex-col gap-4">
           <div>
@@ -255,7 +318,7 @@ export default function Channels() {
           <div>
             <Label>Description</Label>
             <textarea
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
               rows={3}
               placeholder="Optional notes about this channel..."
               value={form.description}
@@ -263,7 +326,7 @@ export default function Channels() {
             />
           </div>
           {editing && (
-            <div>
+            <div className="rounded-lg border border-gray-200 p-3 dark:border-white/10">
               <Label>Active</Label>
               <div className="flex items-center gap-2">
                 <Switch
@@ -273,61 +336,38 @@ export default function Channels() {
                   onChange={(checked) => setForm((f) => ({ ...f, isActive: checked }))}
                 />
               </div>
-              <p className="mt-1 text-xs text-gray-400">
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 Turn off to hide this channel from the cashier order form. Historical
                 transactions that referenced it remain intact.
               </p>
             </div>
           )}
-          <div className="flex items-center gap-2 pt-2">
-            <button
-              className="px-4 py-2 bg-green-600 text-white rounded flex items-center gap-2 disabled:opacity-50"
-              onClick={submitForm}
-              disabled={submitting}
-            >
-              {submitting ? <Loader size={16} /> : editing ? "Save Changes" : "Create Channel"}
-            </button>
-            <button className="px-4 py-2 bg-gray-200 rounded" onClick={() => setIsFormOpen(false)}>
-              Cancel
-            </button>
-          </div>
         </div>
       </Modal>
 
       {/* Hide confirmation */}
-      <Modal isOpen={!!deleteId} onClose={() => setDeleteId(null)} title="Hide Channel">
-        <div className="space-y-4">
-          <p>
-            Hide this channel from the cashier order form? Past transactions that
-            reference it stay intact. You can restore it from "Show hidden".
-          </p>
-          <div className="flex items-center gap-2">
-            <button
-              className="px-4 py-2 bg-red-600 text-white rounded flex items-center gap-2 disabled:opacity-50"
-              onClick={confirmDelete}
-              disabled={deleting}
-            >
-              {deleting ? <Loader size={16} /> : "Hide"}
-            </button>
-            <button className="px-4 py-2 bg-gray-200 rounded" onClick={() => setDeleteId(null)}>
-              Cancel
-            </button>
-          </div>
-        </div>
+      <Modal
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        title="Hide Channel"
+        className="sm:max-w-md!"
+        footer={
+          <>
+            <Button onClick={() => setDeleteId(null)}>Cancel</Button>
+            <Button danger type="primary" onClick={confirmDelete} disabled={deleting} icon={deleting ? <Loader size={16} /> : undefined}>
+              Hide
+            </Button>
+          </>
+        }
+      >
+        <p className="text-gray-700 dark:text-gray-300">
+          Hide this channel from the cashier order form? Past transactions that
+          reference it stay intact. You can restore it from "Show hidden".
+        </p>
       </Modal>
 
       {/* Toast */}
-      <div className="fixed bottom-6 right-6 z-50">
-        {notification && (
-          <div className="max-w-sm">
-            <Alert
-              variant={notification.variant}
-              title={notification.title}
-              message={notification.message}
-            />
-          </div>
-        )}
-      </div>
+      <Toast notification={notification} />
     </div>
   );
 }

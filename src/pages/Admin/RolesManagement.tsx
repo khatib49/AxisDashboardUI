@@ -5,10 +5,21 @@
 // may also call that page's API. The admin role always has everything.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, Button, Checkbox, Input, Modal, Popconfirm, Tag, Tooltip, message } from "antd";
-import { DeleteOutlined, PlusOutlined, SaveOutlined, TeamOutlined, UndoOutlined } from "@ant-design/icons";
+import { Alert, Button, Empty, Input, Modal, Popconfirm, Skeleton, Tooltip, message } from "antd";
+import {
+  AppstoreOutlined,
+  CrownOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  SafetyCertificateOutlined,
+  SaveOutlined,
+  TeamOutlined,
+  UndoOutlined,
+} from "@ant-design/icons";
 import PageMeta from "../../components/common/PageMeta";
-import ComponentCard from "../../components/common/ComponentCard";
+import { PageHeader, Panel, Pill, StatTile } from "../../components/ui/PageKit";
+import PermissionChecklist from "../../components/admin/people/PermissionChecklist";
 import { PAGE_GROUPS } from "../../config/pages";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -84,13 +95,6 @@ export default function RolesManagement() {
   const isAdminRole = current?.name === "admin";
   const editable = !!current && !isAdminRole;
 
-  const toggle = (set: Set<string>, key: string, on: boolean) => {
-    const next = new Set(set);
-    if (on) next.add(key);
-    else next.delete(key);
-    return next;
-  };
-
   const save = async () => {
     if (!current || !editable) return;
     setSaving(true);
@@ -138,145 +142,174 @@ export default function RolesManagement() {
     }
   };
 
-  const PermissionGrid = ({ value, onChange, disabled }: { value: Set<string>; onChange: (next: Set<string>) => void; disabled?: boolean }) => (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {groups.map(([group, pages]) => {
-        const all = pages.every((p) => value.has(p.key));
-        const some = !all && pages.some((p) => value.has(p.key));
-        return (
-          <div key={group} className="rounded-xl border border-gray-200/80 bg-gray-50/60 p-3 dark:border-white/10 dark:bg-white/[0.02]">
-            <label className="mb-2 flex cursor-pointer items-center justify-between gap-2">
-              <span className="text-sm font-semibold text-gray-800 dark:text-white">{group}</span>
-              <Checkbox
-                checked={all}
-                indeterminate={some}
-                disabled={disabled}
-                onChange={(e) => {
-                  let next = new Set(value);
-                  for (const p of pages) next = toggle(next, p.key, e.target.checked);
-                  onChange(next);
-                }}
-              />
-            </label>
-            <div className="space-y-1">
-              {pages.map((p) => (
-                <label key={p.key} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1 hover:bg-white dark:hover:bg-white/5">
-                  <Checkbox checked={value.has(p.key)} disabled={disabled} onChange={(e) => onChange(toggle(value, p.key, e.target.checked))} />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">{p.label}</span>
-                  <span className="ml-auto truncate text-[11px] text-gray-400">{p.path}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
+  // KPIs — all from the two lists already loaded.
+  const firstLoad = loading && roles.length === 0;
+  const builtInCount = roles.filter((r) => r.builtIn).length;
+  const customCount = roles.length - builtInCount;
+  const assignedUsers = roles.reduce((n, r) => n + (r.users || 0), 0);
 
   return (
-    <div className="space-y-5">
+    <div className="mx-auto max-w-[1400px] space-y-6 p-4 sm:p-6">
       <PageMeta title="Roles & Permissions — AXIS Admin" description="Create roles and choose which pages each role can open" />
 
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Roles & Permissions</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Create a role, tick the pages it may open, then assign it to users under Users Management.
-          </p>
-        </div>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
-          New role
-        </Button>
+      <PageHeader
+        icon={<SafetyCertificateOutlined />}
+        title="Roles & Permissions"
+        description="Create a role, tick the pages it may open, then assign it to users under Users Management."
+        actions={
+          <>
+            <Tooltip title="Refresh">
+              <Button icon={<ReloadOutlined />} onClick={load} loading={loading} aria-label="Refresh" />
+            </Tooltip>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+              New role
+            </Button>
+          </>
+        }
+      />
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatTile
+          label="Roles"
+          loading={firstLoad}
+          value={<span className="tabular-nums">{roles.length}</span>}
+          sub={`${builtInCount} built-in · ${customCount} custom`}
+          accent={<span className="rounded-lg bg-violet-50 p-1.5 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300"><SafetyCertificateOutlined /></span>}
+        />
+        <StatTile
+          label="Custom roles"
+          loading={firstLoad}
+          value={<span className="tabular-nums">{customCount}</span>}
+          sub="Created here — can be deleted"
+        />
+        <StatTile
+          label="Role assignments"
+          loading={firstLoad}
+          value={<span className="tabular-nums">{assignedUsers}</span>}
+          sub="Users holding each role, summed"
+          accent={<span className="rounded-lg bg-blue-50 p-1.5 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300"><TeamOutlined /></span>}
+        />
+        <StatTile
+          label="Pages"
+          loading={firstLoad}
+          value={<span className="tabular-nums">{catalog.length}</span>}
+          sub={`In ${groups.length} group${groups.length === 1 ? "" : "s"}`}
+          accent={<span className="rounded-lg bg-emerald-50 p-1.5 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300"><AppstoreOutlined /></span>}
+        />
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[300px_minmax(0,1fr)]">
+      <div className="grid gap-6 xl:grid-cols-[300px_minmax(0,1fr)]">
         {/* Role list */}
-        <div className="space-y-2">
-          {loading && roles.length === 0 && <div className="text-sm text-gray-500">Loading roles…</div>}
-          {roles.map((r) => {
-            const active = r.name === selected;
-            return (
-              <button
-                key={r.name}
-                type="button"
-                onClick={() => setSelected(r.name)}
-                className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-all ${
-                  active
-                    ? "border-brand-200 bg-brand-50 shadow-sm dark:border-brand-500/30 dark:bg-brand-500/15"
-                    : "border-transparent hover:border-gray-200 hover:bg-white dark:hover:border-white/10 dark:hover:bg-white/5"
-                }`}
-              >
-                <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${active ? "bg-white text-brand-600 dark:bg-brand-500/20 dark:text-brand-200" : "bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-gray-400"}`}>
-                  <TeamOutlined />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-2">
-                    <span className="truncate text-sm font-semibold text-gray-900 dark:text-white">{roleLabel(r.name)}</span>
-                    {r.builtIn && <Tag className="!m-0 !text-[10px]">built-in</Tag>}
-                  </span>
-                  <span className="block text-xs text-gray-500 dark:text-gray-400">
-                    {r.users} user{r.users === 1 ? "" : "s"} · {r.name === "admin" ? "all pages" : `${r.pages.length} page${r.pages.length === 1 ? "" : "s"}`}
-                  </span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
+        <Panel title="Roles" subtitle="Pick a role to edit its pages" bodyClassName="p-2">
+          {firstLoad ? (
+            <div className="p-3"><Skeleton active paragraph={{ rows: 5 }} /></div>
+          ) : roles.length === 0 ? (
+            <div className="py-8"><Empty description="No roles yet" /></div>
+          ) : (
+            <ul className="space-y-1">
+              {roles.map((r) => {
+                const active = r.name === selected;
+                return (
+                  <li key={r.name}>
+                    <button
+                      type="button"
+                      onClick={() => setSelected(r.name)}
+                      aria-current={active ? "true" : undefined}
+                      className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition ${
+                        active
+                          ? "border-violet-200 bg-violet-50 dark:border-violet-500/30 dark:bg-violet-500/10"
+                          : "border-transparent hover:border-gray-200 hover:bg-gray-50 dark:hover:border-white/10 dark:hover:bg-white/5"
+                      }`}
+                    >
+                      <span
+                        className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${
+                          active
+                            ? "bg-white text-violet-600 shadow-sm dark:bg-violet-500/20 dark:text-violet-200"
+                            : "bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-gray-400"
+                        }`}
+                      >
+                        {r.name === "admin" ? <CrownOutlined /> : <TeamOutlined />}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center gap-2">
+                          <span className="truncate text-sm font-semibold text-gray-900 dark:text-white">{roleLabel(r.name)}</span>
+                          {r.builtIn && <Pill tone="gray">Built-in</Pill>}
+                        </span>
+                        <span className="block text-xs text-gray-500 dark:text-gray-400">
+                          {r.users} user{r.users === 1 ? "" : "s"} · {r.name === "admin" ? "all pages" : `${r.pages.length} page${r.pages.length === 1 ? "" : "s"}`}
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Panel>
 
         {/* Permissions editor */}
-        <div>
-          {!current ? (
-            <ComponentCard title="Pick a role" desc="Select a role on the left, or create a new one.">
-              <div />
-            </ComponentCard>
-          ) : (
-            <ComponentCard
-              title={roleLabel(current.name)}
-              desc={SOCIAL_HINT[current.name] ?? "Custom role."}
-              action={
-                <div className="flex flex-wrap items-center gap-2">
-                  {editable && (
-                    <>
-                      <Tooltip title="Undo unsaved changes">
-                        <Button icon={<UndoOutlined />} disabled={!dirty} onClick={() => setDraft(new Set(current.pages))}>
-                          Discard
-                        </Button>
-                      </Tooltip>
-                      <Button type="primary" icon={<SaveOutlined />} loading={saving} disabled={!dirty} onClick={save}>
-                        Save
+        {!current ? (
+          <Panel title="Pick a role" subtitle="Select a role on the left, or create a new one.">
+            {firstLoad ? <Skeleton active paragraph={{ rows: 6 }} /> : <Empty description="No role selected" />}
+          </Panel>
+        ) : (
+          <Panel
+            title={
+              <span className="flex flex-wrap items-center gap-2">
+                {roleLabel(current.name)}
+                {current.builtIn ? <Pill tone="gray">Built-in</Pill> : <Pill tone="violet">Custom</Pill>}
+                {editable && dirty && <Pill tone="amber" dot>Unsaved</Pill>}
+              </span>
+            }
+            subtitle={
+              <>
+                {SOCIAL_HINT[current.name] ?? "Custom role."}
+                {!isAdminRole && <> · <span className="tabular-nums">{draft.size} of {catalog.length}</span> pages · {current.users} user{current.users === 1 ? "" : "s"}</>}
+              </>
+            }
+            extra={
+              <div className="flex flex-wrap items-center gap-2">
+                {editable && (
+                  <>
+                    <Tooltip title="Undo unsaved changes">
+                      <Button icon={<UndoOutlined />} disabled={!dirty} onClick={() => setDraft(new Set(current.pages))}>
+                        Discard
                       </Button>
-                    </>
-                  )}
-                  {!current.builtIn && (
-                    <Popconfirm
-                      title={`Delete the "${roleLabel(current.name)}" role?`}
-                      description={current.users > 0 ? `${current.users} user(s) still hold it — reassign them first.` : "This can't be undone."}
-                      okText="Delete"
-                      okButtonProps={{ danger: true, disabled: current.users > 0 }}
-                      onConfirm={() => remove(current.name)}
-                    >
-                      <Button danger icon={<DeleteOutlined />}>
-                        Delete
-                      </Button>
-                    </Popconfirm>
-                  )}
-                </div>
-              }
-            >
-              {isAdminRole ? (
-                <Alert type="info" showIcon message="Admins can open every page and use every API. This role can't be edited." />
-              ) : (
-                <>
-                  {dirty && <Alert type="warning" showIcon className="mb-4" message="Unsaved changes — press Save to apply them." />}
-                  {current.name === claims?.primaryRole && (
-                    <Alert type="info" showIcon className="mb-4" message="This is your own role. Changes apply to you too." />
-                  )}
-                  <PermissionGrid value={draft} onChange={setDraft} />
-                </>
-              )}
-            </ComponentCard>
-          )}
-        </div>
+                    </Tooltip>
+                    <Button type="primary" icon={<SaveOutlined />} loading={saving} disabled={!dirty} onClick={save}>
+                      Save
+                    </Button>
+                  </>
+                )}
+                {!current.builtIn && (
+                  <Popconfirm
+                    title={`Delete the "${roleLabel(current.name)}" role?`}
+                    description={current.users > 0 ? `${current.users} user(s) still hold it — reassign them first.` : "This can't be undone."}
+                    okText="Delete"
+                    okButtonProps={{ danger: true, disabled: current.users > 0 }}
+                    onConfirm={() => remove(current.name)}
+                  >
+                    <Button danger icon={<DeleteOutlined />}>
+                      Delete
+                    </Button>
+                  </Popconfirm>
+                )}
+              </div>
+            }
+          >
+            {isAdminRole ? (
+              <Alert type="info" showIcon message="Admins can open every page and use every API. This role can't be edited." />
+            ) : (
+              <>
+                {dirty && <Alert type="warning" showIcon className="mb-4" message="Unsaved changes — press Save to apply them." />}
+                {current.name === claims?.primaryRole && (
+                  <Alert type="info" showIcon className="mb-4" message="This is your own role. Changes apply to you too." />
+                )}
+                <PermissionChecklist groups={groups} value={draft} onChange={setDraft} />
+              </>
+            )}
+          </Panel>
+        )}
       </div>
 
       <Modal
@@ -288,7 +321,7 @@ export default function RolesManagement() {
         confirmLoading={creating}
         width={960}
       >
-        <div className="space-y-4">
+        <div className="space-y-5 pt-2">
           <div>
             <div className="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">Role name</div>
             <Input
@@ -298,11 +331,14 @@ export default function RolesManagement() {
               maxLength={40}
               onPressEnter={create}
             />
-            <div className="mt-1 text-xs text-gray-400">Lower-case letters, digits and underscores. Spaces become underscores.</div>
+            <div className="mt-1 text-xs text-gray-400 dark:text-gray-500">Lower-case letters, digits and underscores. Spaces become underscores.</div>
           </div>
           <div>
-            <div className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Pages this role can open</div>
-            <PermissionGrid value={newPages} onChange={setNewPages} />
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Pages this role can open</span>
+              <span className="text-xs tabular-nums text-gray-500 dark:text-gray-400">{newPages.size} of {catalog.length} selected</span>
+            </div>
+            <PermissionChecklist groups={groups} value={newPages} onChange={setNewPages} />
           </div>
         </div>
       </Modal>

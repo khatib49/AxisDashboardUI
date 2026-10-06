@@ -6,18 +6,15 @@ import {
   Button,
   Input,
   Select,
-  Tag,
-  Space,
-  Card,
-  Row,
-  Col,
-  Statistic,
   Tabs,
   Tree,
   message,
   Modal,
   Spin,
-  Tooltip
+  Tooltip,
+  Dropdown,
+  Empty,
+  Skeleton
 } from 'antd';
 import {
   PlusOutlined,
@@ -25,9 +22,14 @@ import {
   EyeOutlined,
   EditOutlined,
   DeleteOutlined,
-  DollarOutlined,
-  FileTextOutlined,
-  FileSearchOutlined
+  FileSearchOutlined,
+  MoreOutlined,
+  ReloadOutlined,
+  BookOutlined,
+  ExclamationCircleFilled,
+  UnorderedListOutlined,
+  ApartmentOutlined,
+  PieChartOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { DataNode } from 'antd/es/tree';
@@ -45,10 +47,13 @@ import type { AccountBalance } from '../../services/accountsApi';
 import type { Account, AccountType, AccountHierarchy, AccountSummary } from '../../services/accounting';
 import AccountForm from './AccountForm';
 import TransactionsReportModal from './TransactionsReportModal';
+import { PageHeader, Panel, Pill, StatTile } from '../ui/PageKit';
+import { AccountCode, AccountTypePill } from './reports/AccountTypePill';
+import { Amount } from './reports/Amount';
+import { isNegative, money } from './reports/money';
+import { AccountFlags } from './coa/AccountFlags';
 
-const { Search } = Input;
 const { Option } = Select;
-const { TabPane } = Tabs;
 
 const ChartOfAccounts: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -67,13 +72,20 @@ const ChartOfAccounts: React.FC = () => {
   const [activeTab, setActiveTab] = useState('1');
   // Transactions Report modal state — opens from the row-level Report button.
   const [reportAccount, setReportAccount] = useState<Account | null>(null);
+  // Presentation only: skeletons until the first successful load, and an
+  // error state instead of zero figures when loading failed.
+  const [loaded, setLoaded] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   useEffect(() => {
     loadData();
+    // Reload whenever the server-side filters change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterTypeId, showInactive]);
 
   const loadData = async () => {
     setLoading(true);
+    setLoadFailed(false);
     try {
       const [accountsData, typesData, hierarchyData, summaryData, balancesData] = await Promise.all([
         getAllAccounts(filterTypeId, !showInactive ? true : undefined),
@@ -92,7 +104,9 @@ const ChartOfAccounts: React.FC = () => {
         map[b.accountId] = b.rollupBalance ?? b.balance;
       });
       setRollupByAccountId(map);
+      setLoaded(true);
     } catch (error) {
+      setLoadFailed(true);
       message.error('Failed to load accounts');
       console.error(error);
     } finally {
@@ -109,8 +123,9 @@ const ChartOfAccounts: React.FC = () => {
           await deactivateAccount(id);
           message.success('Account deactivated successfully');
           loadData();
-        } catch (error: any) {
-          message.error(error.response?.data?.message || 'Failed to deactivate account');
+        } catch (error: unknown) {
+          const apiMessage = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
+          message.error(apiMessage || 'Failed to deactivate account');
         }
       }
     });
@@ -127,30 +142,52 @@ const ChartOfAccounts: React.FC = () => {
     acc.accountName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Header accounts = accounts that have children in the loaded hierarchy.
+  // Display only (Header / manual-entry pills).
+  const headerIds = new Set<number>();
+  const collectHeaders = (items: AccountHierarchy[]) => {
+    items.forEach(item => {
+      if (item.children.length > 0) {
+        headerIds.add(item.id);
+        collectHeaders(item.children);
+      }
+    });
+  };
+  collectHeaders(hierarchy);
+
   const columns: ColumnsType<Account> = [
     {
       title: 'Number',
       dataIndex: 'accountNumber',
       key: 'accountNumber',
       width: 120,
-      sorter: (a, b) => a.accountNumber.localeCompare(b.accountNumber)
+      sorter: (a, b) => a.accountNumber.localeCompare(b.accountNumber),
+      render: (accountNumber: string) => <AccountCode>{accountNumber}</AccountCode>
     },
     {
       title: 'Account Name',
       dataIndex: 'accountName',
       key: 'accountName',
       render: (text, record) => (
-        <Space>
-          {text}
-          {record.isSystemAccount && <Tag color="blue">System</Tag>}
-          {!record.isActive && <Tag color="red">Inactive</Tag>}
-        </Space>
+        <span className="flex flex-wrap items-center gap-1.5">
+          <span className={`font-medium ${record.isActive ? 'text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'}`}>
+            {text}
+          </span>
+          <AccountFlags
+            isSystem={record.isSystemAccount}
+            isActive={record.isActive}
+            isHeader={headerIds.has(record.id)}
+            allowManualEntry={record.allowManualEntry}
+          />
+        </span>
       )
     },
     {
       title: 'Type',
       dataIndex: 'accountTypeName',
       key: 'accountTypeName',
+      width: 130,
+      render: (type: string) => <AccountTypePill type={type} />,
       filters: accountTypes.map(t => ({ text: t.typeName, value: t.id })),
       onFilter: (value, record) => record.accountTypeId === value
     },
@@ -158,15 +195,20 @@ const ChartOfAccounts: React.FC = () => {
       title: 'Parent',
       dataIndex: 'parentAccountName',
       key: 'parentAccountName',
-      render: (text) => text || '-'
+      render: (text) =>
+        text ? (
+          <span className="text-gray-600 dark:text-gray-400">{text}</span>
+        ) : (
+          <span className="text-gray-300 dark:text-gray-600" aria-label="none">—</span>
+        )
     },
     {
       title: 'Direct',
       dataIndex: 'currentBalance',
       key: 'currentBalance',
       align: 'right',
-      width: 130,
-      render: (balance) => `$${balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+      width: 140,
+      render: (balance: number) => <Amount value={balance} />
     },
     {
       // Rollup = this account's balance + every descendant's balance. For
@@ -175,16 +217,19 @@ const ChartOfAccounts: React.FC = () => {
       title: 'Rollup',
       key: 'rollupBalance',
       align: 'right',
-      width: 140,
+      width: 150,
       render: (_, record) => {
         const rollup = rollupByAccountId[record.id];
         const direct = record.currentBalance;
         const value = rollup ?? direct;
         const differs = rollup !== undefined && Math.abs(rollup - direct) > 0.005;
         return (
-          <Tooltip title={differs ? `Direct $${direct.toLocaleString('en-US', { minimumFractionDigits: 2 })} + descendants` : 'Same as Direct (no children)'}>
-            <span style={{ fontWeight: differs ? 600 : 400, color: differs ? '#1F4E79' : undefined }}>
-              ${value.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          <Tooltip title={differs ? `Direct ${money(direct)} + descendants` : 'Same as Direct (no children)'}>
+            <span className="inline-flex items-center justify-end gap-1.5">
+              {differs && (
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-violet-600 dark:text-violet-300">Σ</span>
+              )}
+              <Amount value={value} strong={differs} />
             </span>
           </Tooltip>
         );
@@ -193,46 +238,65 @@ const ChartOfAccounts: React.FC = () => {
     {
       title: 'Actions',
       key: 'actions',
-      width: 200,
+      width: 96,
+      align: 'right',
+      fixed: 'right',
       render: (_, record) => (
-        <Space>
+        <span className="inline-flex items-center gap-1">
           <Tooltip title="View transactions report and move lines">
             <Button
-              type="link"
+              type="text"
+              size="small"
               icon={<FileSearchOutlined />}
+              aria-label={`Transactions report for ${record.accountNumber}`}
               onClick={() => setReportAccount(record)}
             />
           </Tooltip>
-          <Button
-            type="link"
-            icon={<EyeOutlined />}
-            onClick={() => {
-              setEditingAccount(record);
-              setModalVisible(true);
+          <Dropdown
+            trigger={['click']}
+            menu={{
+              items: [
+                {
+                  key: 'view',
+                  icon: <EyeOutlined />,
+                  label: 'View',
+                  onClick: () => {
+                    setEditingAccount(record);
+                    setModalVisible(true);
+                  }
+                },
+                {
+                  key: 'edit',
+                  icon: <EditOutlined />,
+                  label: 'Edit',
+                  onClick: () => {
+                    setEditingAccount(record);
+                    setModalVisible(true);
+                  }
+                },
+                ...(!record.isSystemAccount
+                  ? [
+                      { type: 'divider' as const },
+                      {
+                        key: 'deactivate',
+                        icon: <DeleteOutlined />,
+                        label: 'Deactivate',
+                        danger: true,
+                        onClick: () => handleDelete(record.id)
+                      }
+                    ]
+                  : [])
+              ]
             }}
-          />
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => {
-              setEditingAccount(record);
-              setModalVisible(true);
-            }}
-          />
-          {!record.isSystemAccount && (
-            <Button
-              type="link"
-              danger
-              icon={<DeleteOutlined />}
-              onClick={() => handleDelete(record.id)}
-            />
-          )}
-        </Space>
+          >
+            <Button type="text" size="small" icon={<MoreOutlined />} aria-label={`More actions for ${record.accountNumber}`} />
+          </Dropdown>
+        </span>
       )
     }
   ];
 
-  const convertToTreeData = (items: AccountHierarchy[]): DataNode[] => {
+  const convertToTreeData = (items: AccountHierarchy[], depth = 0): DataNode[] => {
     return items.map(item => {
       const rollup = rollupByAccountId[item.id];
       const direct = item.currentBalance;
@@ -240,159 +304,274 @@ const ChartOfAccounts: React.FC = () => {
       const showRollup = hasChildren && rollup !== undefined && Math.abs(rollup - direct) > 0.005;
       return {
         title: (
-          <span>
-            <strong>{item.accountNumber}</strong> - {item.accountName}
-            <span style={{ marginLeft: 8, color: '#999' }}>
-              ${direct.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 py-0.5">
+            <AccountCode>{item.accountNumber}</AccountCode>
+            <span className={`${hasChildren ? 'font-semibold' : ''} ${item.isActive ? 'text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'}`}>
+              {item.accountName}
+            </span>
+            {depth === 0 && <AccountTypePill type={item.accountTypeName} />}
+            {!item.isActive && <Pill tone="red" dot>Inactive</Pill>}
+            <span className={`whitespace-nowrap text-xs tabular-nums ${isNegative(direct) ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}`}>
+              {money(direct)}
             </span>
             {showRollup && (
-              <span style={{ marginLeft: 8, color: '#1F4E79', fontWeight: 600 }}>
-                (rollup ${rollup!.toLocaleString('en-US', { minimumFractionDigits: 2 })})
+              <span className="inline-flex items-center gap-1 rounded-md bg-violet-50 px-1.5 py-0.5 text-xs text-violet-700 dark:bg-violet-500/10 dark:text-violet-300">
+                rollup <Amount value={rollup!} strong />
               </span>
             )}
           </span>
         ),
         key: item.id.toString(),
-        children: hasChildren ? convertToTreeData(item.children) : undefined,
+        children: hasChildren ? convertToTreeData(item.children, depth + 1) : undefined,
       };
     });
   };
 
+  // Tile figures are only shown once a load has succeeded — never fake zeros.
+  const tileLoading = !loaded && (loading || !loadFailed);
+  const notLoaded = !loaded && loadFailed;
+  const firstLoad = !loaded && !loadFailed;
+  const totalAssets = summary.find(s => s.accountTypeName === 'Asset')?.totalBalance || 0;
+  const totalRevenue = summary.find(s => s.accountTypeName === 'Revenue')?.totalBalance || 0;
+  const activeCount = accounts.filter(a => a.isActive).length;
+
+  const notLoadedEmpty = (
+    <div className="py-12">
+      <Empty description="Accounts not loaded" />
+    </div>
+  );
+
+  const tabLabel = (icon: React.ReactNode, text: string) => (
+    <span className="inline-flex items-center gap-2">{icon}{text}</span>
+  );
+
   return (
-    <div>
-      {/* Summary Cards */}
-      <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="Total Accounts"
-              value={accounts.length}
-              prefix={<FileTextOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="Active Accounts"
-              value={accounts.filter(a => a.isActive).length}
-              valueStyle={{ color: '#3f8600' }}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="Total Assets"
-              value={summary.find(s => s.accountTypeName === 'Asset')?.totalBalance || 0}
-              prefix={<DollarOutlined />}
-              precision={2}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="Total Revenue"
-              value={summary.find(s => s.accountTypeName === 'Revenue')?.totalBalance || 0}
-              prefix={<DollarOutlined />}
-              precision={2}
-              valueStyle={{ color: '#3f8600' }}
-            />
-          </Card>
-        </Col>
-      </Row>
+    <div className="mx-auto max-w-[1400px] space-y-6 p-4 sm:p-6">
+      <PageHeader
+        tone="violet"
+        icon={<BookOutlined />}
+        title="Chart of Accounts"
+        description="Every account in the books with its direct balance and its rollup (the account plus all of its descendants)."
+        actions={
+          <>
+            <Tooltip title="Refresh">
+              <Button icon={<ReloadOutlined />} onClick={() => loadData()} loading={loading} aria-label="Refresh" />
+            </Tooltip>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => {
+                setEditingAccount(null);
+                setModalVisible(true);
+              }}
+            >
+              New Account
+            </Button>
+          </>
+        }
+      >
+        {/* Toolbar */}
+        <div className="flex flex-wrap items-center gap-3">
+          <Input
+            placeholder="Search by account number or name"
+            aria-label="Search accounts"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            prefix={<SearchOutlined className="text-gray-400" />}
+            allowClear
+            className="w-full sm:w-auto sm:min-w-[280px] sm:flex-1"
+          />
+          <Select
+            placeholder="Filter by type"
+            aria-label="Filter by type"
+            className="w-full sm:w-[180px]"
+            value={filterTypeId}
+            onChange={setFilterTypeId}
+            allowClear
+          >
+            {accountTypes.map(type => (
+              <Option key={type.id} value={type.id}>
+                {type.typeName}
+              </Option>
+            ))}
+          </Select>
+          <Button
+            type={showInactive ? 'primary' : 'default'}
+            aria-pressed={showInactive}
+            onClick={() => setShowInactive(!showInactive)}
+          >
+            {showInactive ? 'Show Active Only' : 'Show Inactive'}
+          </Button>
+        </div>
+      </PageHeader>
 
-      {/* Main Content */}
-      <Card>
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
-          {/* Toolbar */}
-          <Row gutter={16} align="middle">
-            <Col flex="auto">
-              <Search
-                placeholder="Search by account number or name"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                prefix={<SearchOutlined />}
-                allowClear
-              />
-            </Col>
-            <Col>
-              <Select
-                placeholder="Filter by type"
-                style={{ width: 180 }}
-                value={filterTypeId}
-                onChange={setFilterTypeId}
-                allowClear
+      {/* Summary tiles */}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatTile
+          label="Total Accounts"
+          loading={tileLoading}
+          value={<span className="tabular-nums">{loaded ? accounts.length : '—'}</span>}
+          sub={notLoaded ? 'Not loaded' : `${showInactive ? 'Including inactive' : 'Active only'}${filterTypeId !== undefined ? ' · type filter on' : ''}`}
+        />
+        <StatTile
+          label="Active Accounts"
+          loading={tileLoading}
+          value={
+            <span className="tabular-nums text-emerald-600 dark:text-emerald-400">{loaded ? activeCount : '—'}</span>
+          }
+          sub={notLoaded ? 'Not loaded' : loaded && showInactive ? `${accounts.length - activeCount} inactive` : undefined}
+        />
+        <StatTile
+          label="Total Assets"
+          loading={tileLoading}
+          accent={<AccountTypePill type="Asset" />}
+          value={loaded ? <Amount value={totalAssets} /> : '—'}
+          sub={notLoaded ? 'Not loaded' : undefined}
+        />
+        <StatTile
+          label="Total Revenue"
+          loading={tileLoading}
+          accent={<AccountTypePill type="Revenue" />}
+          value={
+            loaded ? <Amount value={totalRevenue} className={totalRevenue >= 0 ? '!text-emerald-600 dark:!text-emerald-400' : ''} /> : '—'
+          }
+          sub={notLoaded ? 'Not loaded' : undefined}
+        />
+      </div>
+
+      {/* Load error */}
+      {loadFailed && !loading && (
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 dark:border-red-500/20 dark:bg-red-500/10">
+          <div className="flex items-start gap-3">
+            <ExclamationCircleFilled className="mt-0.5 text-lg text-red-500" aria-hidden />
+            <div>
+              <div className="font-semibold text-red-800 dark:text-red-300">Failed to load accounts</div>
+              <div className="text-sm text-red-700/80 dark:text-red-300/80">
+                {loaded ? 'Showing the last loaded figures. Try again.' : 'No figures are shown until the accounts load. Try again.'}
+              </div>
+            </div>
+          </div>
+          <Button onClick={() => loadData()}>Retry</Button>
+        </div>
+      )}
+
+      {/* Views */}
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        items={[
+          {
+            key: '1',
+            label: tabLabel(<UnorderedListOutlined />, 'List View'),
+            children: (
+              <Panel
+                title="All accounts"
+                subtitle={
+                  loaded
+                    ? `${filteredAccounts.length} of ${accounts.length} account${accounts.length === 1 ? '' : 's'}${searchTerm ? ` matching “${searchTerm}”` : ''}`
+                    : undefined
+                }
+                bodyClassName="p-0"
               >
-                {accountTypes.map(type => (
-                  <Option key={type.id} value={type.id}>
-                    {type.typeName}
-                  </Option>
-                ))}
-              </Select>
-            </Col>
-            <Col>
-              <Button
-                type={showInactive ? 'primary' : 'default'}
-                onClick={() => setShowInactive(!showInactive)}
+                {notLoaded ? (
+                  notLoadedEmpty
+                ) : firstLoad ? (
+                  <div className="p-5">
+                    <Skeleton active paragraph={{ rows: 8 }} />
+                  </div>
+                ) : (
+                  <Table
+                    columns={columns}
+                    dataSource={filteredAccounts}
+                    rowKey="id"
+                    loading={loading}
+                    size="middle"
+                    scroll={{ x: 1000 }}
+                    locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No accounts" /> }}
+                    pagination={{
+                      pageSize: 20,
+                      showSizeChanger: true,
+                      showTotal: (total) => `Total ${total} accounts`,
+                      className: '!px-4'
+                    }}
+                  />
+                )}
+              </Panel>
+            )
+          },
+          {
+            key: '2',
+            label: tabLabel(<ApartmentOutlined />, 'Hierarchy View'),
+            children: (
+              <Panel
+                title="Account hierarchy"
+                subtitle="Direct balance on every account; headers whose descendants carry balances also show their rollup."
+                extra={
+                  <span className="flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                    <span className="inline-flex items-center gap-1 rounded-md bg-violet-50 px-1.5 py-0.5 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300">
+                      rollup
+                    </span>
+                    = account + descendants
+                  </span>
+                }
               >
-                {showInactive ? 'Show Active Only' : 'Show Inactive'}
-              </Button>
-            </Col>
-            <Col>
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => {
-                  setEditingAccount(null);
-                  setModalVisible(true);
-                }}
-              >
-                New Account
-              </Button>
-            </Col>
-          </Row>
-
-          {/* Tabs */}
-          <Tabs activeKey={activeTab} onChange={setActiveTab}>
-            <TabPane tab="List View" key="1">
+                {notLoaded ? (
+                  notLoadedEmpty
+                ) : firstLoad ? (
+                  <Skeleton active paragraph={{ rows: 8 }} />
+                ) : (
+                  <Spin spinning={loading}>
+                    {hierarchy.length === 0 ? (
+                      <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No accounts" />
+                    ) : (
+                      <div className="relative overflow-x-auto">
+                        <Tree
+                          showLine
+                          defaultExpandAll
+                          treeData={convertToTreeData(hierarchy)}
+                          className="bg-transparent"
+                        />
+                      </div>
+                    )}
+                  </Spin>
+                )}
+              </Panel>
+            )
+          },
+          {
+            key: '3',
+            label: tabLabel(<PieChartOutlined />, 'Summary by Type'),
+            children: notLoaded ? (
+              <Panel>{notLoadedEmpty}</Panel>
+            ) : firstLoad ? (
+              <Panel>
+                <Skeleton active paragraph={{ rows: 8 }} />
+              </Panel>
+            ) : (
               <Spin spinning={loading}>
-                <Table
-                  columns={columns}
-                  dataSource={filteredAccounts}
-                  rowKey="id"
-                  pagination={{
-                    pageSize: 20,
-                    showSizeChanger: true,
-                    showTotal: (total) => `Total ${total} accounts`
-                  }}
-                />
-              </Spin>
-            </TabPane>
-
-            <TabPane tab="Hierarchy View" key="2">
-              <Spin spinning={loading}>
-                <Tree
-                  showLine
-                  defaultExpandAll
-                  treeData={convertToTreeData(hierarchy)}
-                />
-              </Spin>
-            </TabPane>
-
-            <TabPane tab="Summary by Type" key="3">
-              <Spin spinning={loading}>
-                <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                <div className="space-y-6">
+                  {summary.length === 0 && (
+                    <Panel>
+                      <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No accounts" />
+                    </Panel>
+                  )}
                   {summary.map(item => (
-                    <Card
+                    <Panel
                       key={item.accountTypeName}
-                      title={item.accountTypeName}
-                      extra={
-                        <Tag color="blue">
-                          ${item.totalBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                        </Tag>
+                      title={
+                        <span className="flex flex-wrap items-center gap-2">
+                          <AccountTypePill type={item.accountTypeName} />
+                          <span>{item.accountTypeName}</span>
+                        </span>
                       }
+                      subtitle={`${item.accounts.length} account${item.accounts.length === 1 ? '' : 's'}`}
+                      extra={
+                        <span className="inline-flex items-baseline gap-2 text-sm">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">Total</span>
+                          <Amount value={item.totalBalance} strong />
+                        </span>
+                      }
+                      bodyClassName="p-0"
                     >
                       <Table
                         columns={columns.filter(c => c.key !== 'accountTypeName')}
@@ -400,15 +579,17 @@ const ChartOfAccounts: React.FC = () => {
                         rowKey="id"
                         pagination={false}
                         size="small"
+                        scroll={{ x: 880 }}
+                        locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No accounts" /> }}
                       />
-                    </Card>
+                    </Panel>
                   ))}
-                </Space>
+                </div>
               </Spin>
-            </TabPane>
-          </Tabs>
-        </Space>
-      </Card>
+            )
+          }
+        ]}
+      />
 
       {/* Account Form Modal */}
       <Modal

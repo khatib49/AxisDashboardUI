@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { Segmented } from 'antd';
+import { HistoryOutlined } from '@ant-design/icons';
+import { PageHeader } from '../../components/ui/PageKit';
 import { TransactionAuditLogsPage } from './TransactionAuditLogsPage';
 import { AdminAuditTab } from './AdminAuditTab';
 
@@ -14,48 +17,27 @@ export const AuditLogsPage = () => {
   const active = TABS.find(t => t.key === tab)!;
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="mb-4">
-        <h1 className="text-2xl font-bold text-gray-900">Audit Logs</h1>
-        <p className="text-sm text-gray-500 mt-1">{active.subtitle}</p>
-      </div>
-
-      {/* Tab strip */}
-      <div className="border-b border-gray-200 mb-4">
-        <nav className="-mb-px flex gap-6" aria-label="Tabs">
-          {TABS.map(t => {
-            const isActive = t.key === tab;
-            return (
-              <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
-                className={
-                  'whitespace-nowrap py-3 px-1 border-b-2 text-sm font-medium transition-colors ' +
-                  (isActive
-                    ? 'border-blue-600 text-blue-700'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300')
-                }
-              >
-                {t.label}
-              </button>
-            );
-          })}
-        </nav>
-      </div>
-
-      {/* Body — the existing TransactionAuditLogsPage already owns its own
-          padding and h1/intro. We render it as-is for the Transactions tab
-          to avoid duplicating its filter/table/pagination logic. The new
-          AdminAuditTab is layout-only (no outer padding/title) since we own
-          the page chrome here. */}
-      {tab === 'transactions' ? (
-        <div className="-mx-6 -mt-2">
-          <TransactionAuditLogsPage />
+    <div className="mx-auto max-w-[1400px] space-y-6 p-4 sm:p-6">
+      <PageHeader
+        tone="blue"
+        icon={<HistoryOutlined />}
+        title="Audit Logs"
+        badge="Read-only"
+        description={active.subtitle}
+      >
+        {/* Tab strip */}
+        <div className="max-w-full overflow-x-auto">
+          <Segmented
+            value={tab}
+            onChange={(v) => setTab(v as TabKey)}
+            options={TABS.map(t => ({ value: t.key, label: t.label }))}
+          />
         </div>
-      ) : (
-        <AdminAuditTab />
-      )}
+      </PageHeader>
+
+      {/* Body — each tab owns its own filters, table and pagination; this
+          page only owns the chrome (header + tab strip). */}
+      {tab === 'transactions' ? <TransactionAuditLogsPage /> : <AdminAuditTab />}
     </div>
   );
 };

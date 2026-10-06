@@ -1,18 +1,36 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { Button, Empty, Input as AntInput, Skeleton, Tooltip } from 'antd';
+import {
+    ClockCircleOutlined, DeleteOutlined, DownOutlined, EditOutlined, FileTextOutlined,
+    ReloadOutlined, SearchOutlined, TrophyOutlined, UnorderedListOutlined, UpOutlined,
+} from '@ant-design/icons';
 import {
   getGameTransactions, GameTransaction,
   updateTransaction, deleteTransaction, TransactionUpdateDto,
   replaceTransactionItems,
 } from '../../services/transactionService';
-import { getStatusName, STATUS_ENABLED } from '../../services/statuses';
+import { STATUS_PROCESSED_UNPAID } from '../../services/statuses';
 import { getItems, ItemDto } from '../../services/itemService';
+import { PageHeader, Panel, Pill, StatTile } from '../../components/ui/PageKit';
+import {
+    type ApiError, DetailField, InvoiceCell, ItemLinesTable, TxDialog, TxError, TxPager, TxStatusPill,
+    TX_INPUT, TX_LABEL, TX_TH,
+} from '../../components/admin/transactions/TxKit';
+import ItemsEditorDialog from '../../components/admin/transactions/ItemsEditorDialog';
+
+const money = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export default function GameTransactions() {
     const [items, setItems] = useState<GameTransaction[]>([]);
     const [page, setPage] = useState(1);
     const [pageSize] = useState(10);
     const [total, setTotal] = useState(0);
-    const [loading, setLoading] = useState(false);
+    // Sum of TotalPrice over every matching transaction (returned with each page).
+    const [totalInvoices, setTotalInvoices] = useState(0);
+    // Starts true so the first paint shows skeletons, not zeros.
+    const [loading, setLoading] = useState(true);
+    // Bumped by the Refresh button to re-run the list load with the same params.
+    const [refreshKey, setRefreshKey] = useState(0);
     const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
     const [search, setSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -82,9 +100,11 @@ export default function GameTransactions() {
                 Page: page, PageSize: pageSize, Search: debouncedSearch || undefined,
             });
             setItems(res.data || []);
-        } catch (e: any) {
-            const d = e?.response?.data;
-            setError(d?.message ?? d?.error ?? e?.message ?? 'Save failed');
+            setTotalInvoices(res.totalInvoices ?? 0);
+        } catch (e: unknown) {
+            const err = e as ApiError;
+            const d = err?.response?.data;
+            setError(d?.message ?? d?.error ?? err?.message ?? 'Save failed');
         } finally { setItemsSaving(false); }
     };
 
@@ -111,8 +131,10 @@ export default function GameTransactions() {
                 Search: debouncedSearch || undefined,
             });
             setItems(res.data || []);
-        } catch (e: any) {
-            setError(e?.response?.data?.message ?? e?.message ?? 'Save failed');
+            setTotalInvoices(res.totalInvoices ?? 0);
+        } catch (e: unknown) {
+            const err = e as ApiError;
+            setError(err?.response?.data?.message ?? err?.message ?? 'Save failed');
         } finally { setSaving(false); }
     };
 
@@ -128,8 +150,10 @@ export default function GameTransactions() {
             });
             setItems(res.data || []);
             setTotal(res.totalCount || 0);
-        } catch (e: any) {
-            setError(e?.response?.data?.message ?? e?.message ?? 'Delete failed');
+            setTotalInvoices(res.totalInvoices ?? 0);
+        } catch (e: unknown) {
+            const err = e as ApiError;
+            setError(err?.response?.data?.message ?? err?.message ?? 'Delete failed');
         } finally { setDeleting(false); }
     };
 
@@ -164,6 +188,7 @@ export default function GameTransactions() {
                 if (!cancelled) {
                     setItems(res.data || []);
                     setTotal(res.totalCount || 0);
+                    setTotalInvoices(res.totalInvoices ?? 0);
                 }
             } catch (err) {
                 console.error('Failed to load game transactions', err);
@@ -175,466 +200,349 @@ export default function GameTransactions() {
         return () => {
             cancelled = true;
         };
-    }, [page, pageSize, debouncedSearch]);
+    }, [page, pageSize, debouncedSearch, refreshKey]);
 
     const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
+    // KPI figures — totals come from the API; "on this page" ones from the loaded rows.
+    const firstLoad = loading && items.length === 0 && total === 0;
+    const avgInvoice = total > 0 ? totalInvoices / total : 0;
+    const hoursOnPage = items.reduce((s, t) => s + (t.hours > 0 ? t.hours : 0), 0);
+    const dayPassesOnPage = items.filter(t => t.isDayPass).length;
+
     return (
-        <div className="p-6">
-            <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">Game Transactions</h2>
-                <div className="w-64">
-                    <input
-                        type="text"
+        <div className="mx-auto max-w-[1400px] space-y-6 p-4 sm:p-6">
+            <PageHeader
+                tone="blue"
+                icon={<TrophyOutlined />}
+                title="Game Transactions"
+                description="Room, table and console sessions with their F&B lines. Edit hours, totals and status, change items on open or closed invoices, or delete with stock restored."
+                actions={
+                    <Tooltip title="Refresh">
+                        <Button
+                            icon={<ReloadOutlined />}
+                            loading={loading}
+                            onClick={() => setRefreshKey(k => k + 1)}
+                            aria-label="Refresh"
+                        />
+                    </Tooltip>
+                }
+            />
+
+            {/* ── KPI tiles ───────────────────────────────────────────── */}
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <StatTile
+                    label="Transactions"
+                    loading={firstLoad}
+                    value={<span className="tabular-nums">{total.toLocaleString('en-US')}</span>}
+                    sub={debouncedSearch ? 'Matching your search' : 'All game transactions'}
+                    accent={<span className="rounded-lg bg-blue-50 p-1.5 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300"><FileTextOutlined /></span>}
+                />
+                <StatTile
+                    label="Total invoiced"
+                    loading={firstLoad}
+                    value={<span className="tabular-nums">{money(totalInvoices)}</span>}
+                    sub="Sum of all matching transactions"
+                />
+                <StatTile
+                    label="Average invoice"
+                    loading={firstLoad}
+                    value={<span className="tabular-nums">{money(avgInvoice)}</span>}
+                    sub="Total invoiced ÷ transactions"
+                />
+                <StatTile
+                    label="Hours — on this page"
+                    loading={firstLoad}
+                    value={<span className="tabular-nums">{hoursOnPage.toLocaleString('en-US')}</span>}
+                    sub={<span className="tabular-nums">{dayPassesOnPage} day pass{dayPassesOnPage === 1 ? '' : 'es'} · page {page} of {totalPages}</span>}
+                    accent={<span className="rounded-lg bg-violet-50 p-1.5 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300"><ClockCircleOutlined /></span>}
+                />
+            </div>
+
+            {/* ── Transactions table ──────────────────────────────────── */}
+            <Panel
+                title="Sessions"
+                subtitle="Click a row to see its details and item lines"
+                bodyClassName="p-0"
+                extra={
+                    <AntInput
+                        allowClear
+                        prefix={<SearchOutlined className="text-gray-400" />}
                         placeholder="Search invoices..."
                         value={search}
                         onChange={(e) => {
                             setSearch(e.target.value);
                             setPage(1); // Reset to first page on search
                         }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        className="w-full sm:w-64"
+                        aria-label="Search invoices"
                     />
-                </div>
-            </div>
-
-            <div className="bg-white shadow rounded-md overflow-hidden">
-                <div className="space-y-4 p-4">
-                    {loading ? (
-                        <div className="px-4 py-6 text-center text-sm text-gray-500">Loading...</div>
-                    ) : items.length === 0 ? (
-                        <div className="px-4 py-6 text-center text-sm text-gray-500">No transactions found</div>
-                    ) : (
-                        items.map((t) => {
-                                                    const isExpanded = typeof t.transactionId === 'number' ? expandedIds.has(t.transactionId) : false;
-                                                    return (
-                                                        <div key={t.transactionId} className="border rounded-lg overflow-hidden">
-                                    <div
-                                        className="p-4 cursor-pointer hover:bg-gray-50 transition"
-                                        onClick={() => {
-                                            if (typeof t.transactionId === 'number') {
-                                                toggleExpanded(t.transactionId);
-                                            }
-                                        }}
-                                    >
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex-1 grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <div className="text-xs text-gray-500">Transaction ID</div>
-                                                    <div className="text-sm font-medium text-gray-900">#{t.transactionId}</div>
-                                                </div>
-                                                <div>
-                                                    <div className="text-xs text-gray-500">Date</div>
-                                                    <div className="text-sm text-gray-900">{new Date(t.createdOn).toLocaleString()}</div>
-                                                </div>
-                                                <div>
-                                                    <div className="text-xs text-gray-500">Created By</div>
-                                                    <div className="text-sm text-gray-900">{t.createdBy}</div>
-                                                </div>
-                                                <div>
-                                                    <div className="text-xs text-gray-500">Total Paid</div>
-                                                    <div className="text-sm font-semibold text-gray-900">${t.totalPrice.toFixed(2)}</div>
-                                                </div>
-                                                {t.gameName && (
-                                                    <div>
-                                                        <div className="text-xs text-gray-500">Game</div>
-                                                        <div className="text-sm font-medium text-gray-900">{t.gameName}</div>
+                }
+            >
+                {loading ? (
+                    <div className="p-5"><Skeleton active paragraph={{ rows: 6 }} /></div>
+                ) : items.length === 0 ? (
+                    <div className="py-12"><Empty description="No transactions found" /></div>
+                ) : (
+                    <div className="relative overflow-x-auto">
+                        <table className="w-full min-w-[1160px] text-sm">
+                            <thead>
+                                <tr className="border-b border-gray-100 bg-gray-50/70 text-left dark:border-white/[0.06] dark:bg-white/[0.02]">
+                                    <th className={`${TX_TH} pl-5`}>Invoice</th>
+                                    <th className={TX_TH}>Created By</th>
+                                    <th className={TX_TH}>Room / Game</th>
+                                    <th className={TX_TH}>Setting</th>
+                                    <th className={`${TX_TH} text-right`}>Hours</th>
+                                    <th className={TX_TH}>Customer</th>
+                                    <th className={`${TX_TH} text-right`}>Total Paid</th>
+                                    <th className={TX_TH}>Status</th>
+                                    <th className={`${TX_TH} pr-5 text-right`}><span className="sr-only">Actions</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {items.map((t, idx) => {
+                                    const isExpanded = typeof t.transactionId === 'number' ? expandedIds.has(t.transactionId) : false;
+                                    const isOpen = t.statusId === STATUS_PROCESSED_UNPAID;
+                                    const itemCount = t.items ? t.items.length : 0;
+                                    const toggle = () => {
+                                        if (typeof t.transactionId === 'number') {
+                                            toggleExpanded(t.transactionId);
+                                        }
+                                    };
+                                    // Left accent: amber for open (unpaid) invoices, violet for the expanded row.
+                                    const accent = isOpen
+                                        ? 'shadow-[inset_3px_0_0_0_var(--color-amber-400)]'
+                                        : isExpanded ? 'shadow-[inset_3px_0_0_0_var(--color-violet-400)]' : '';
+                                    return (
+                                        <React.Fragment key={`${t.transactionId}-${idx}`}>
+                                            <tr
+                                                className={`cursor-pointer border-b border-gray-100 align-middle transition-colors dark:border-white/[0.06] ${
+                                                    isExpanded ? 'bg-gray-50/80 dark:bg-white/[0.03]' : 'hover:bg-gray-50/70 dark:hover:bg-white/[0.02]'
+                                                }`}
+                                                onClick={toggle}
+                                            >
+                                                <td className={`py-3 pl-5 pr-4 ${accent}`}>
+                                                    <InvoiceCell id={t.transactionId} createdOn={t.createdOn} />
+                                                </td>
+                                                <td className="max-w-[180px] px-4 py-3">
+                                                    <div className="truncate font-medium text-gray-800 dark:text-gray-200">{t.createdBy}</div>
+                                                    {t.channelName && <div className="truncate text-xs text-gray-500 dark:text-gray-400">{t.channelName}</div>}
+                                                </td>
+                                                <td className="max-w-[200px] px-4 py-3">
+                                                    <div className="truncate font-medium text-gray-800 dark:text-gray-200">
+                                                        {t.roomName || '—'}
+                                                        {t.setName && <span className="font-normal text-gray-500 dark:text-gray-400"> · {t.setName}</span>}
                                                     </div>
-                                                )}
-                                                {t.gameCategoryName && (
-                                                    <div>
-                                                        <div className="text-xs text-gray-500">Game Category</div>
-                                                        <div className="text-sm text-gray-900">{t.gameCategoryName}</div>
-                                                    </div>
-                                                )}
-                                                {t.gameTypeName && (
-                                                    <div>
-                                                        <div className="text-xs text-gray-500">Game Type</div>
-                                                        <div className="text-sm text-gray-900">{t.gameTypeName}</div>
-                                                    </div>
-                                                )}
-                                                {t.gameSettingName && (
-                                                    <div>
-                                                        <div className="text-xs text-gray-500">Game Setting</div>
-                                                        <div className="text-sm text-gray-900">{t.gameSettingName}</div>
-                                                    </div>
-                                                )}
-                                                {t.roomName && (
-                                                    <div>
-                                                        <div className="text-xs text-gray-500">Room</div>
-                                                        <div className="text-sm text-gray-900">{t.roomName}</div>
-                                                    </div>
-                                                )}
-                                                {t.setName && (
-                                                    <div>
-                                                        <div className="text-xs text-gray-500">Set</div>
-                                                        <div className="text-sm text-gray-900">{t.setName}</div>
-                                                    </div>
-                                                )}
-                                                {t.hours > 0 && (
-                                                    <div>
-                                                        <div className="text-xs text-gray-500">Hours</div>
-                                                        <div className="text-sm text-gray-900">{t.hours}</div>
-                                                    </div>
-                                                )}
-                                                {/* Everything below reaches the panel now — it was on the
-                                                    record all along but never projected into the report DTO. */}
-                                                <div>
-                                                    <div className="text-xs text-gray-500">Persons</div>
-                                                    <div className="text-sm font-medium text-gray-900">{t.numberOfPersons ?? 1}</div>
-                                                </div>
-                                                {t.userName && (
-                                                    <div>
-                                                        <div className="text-xs text-gray-500">Customer</div>
-                                                        <div className="text-sm font-medium text-gray-900">{t.userName}</div>
-                                                    </div>
-                                                )}
-                                                {t.discount && (
-                                                    <div>
-                                                        <div className="text-xs text-gray-500">Discount</div>
-                                                        <div className="text-sm font-medium text-green-700">
+                                                    <div className="truncate text-xs text-gray-500 dark:text-gray-400">{t.gameName || '—'}</div>
+                                                </td>
+                                                <td className="max-w-[200px] px-4 py-3">
+                                                    <div className="truncate text-gray-700 dark:text-gray-300">{t.gameSettingName || '—'}</div>
+                                                    {(t.gameCategoryName || t.gameTypeName) && (
+                                                        <div className="truncate text-xs text-gray-500 dark:text-gray-400">
+                                                            {[t.gameCategoryName, t.gameTypeName].filter(Boolean).join(' · ')}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-gray-700 dark:text-gray-300">
+                                                    {t.hours > 0 ? `${t.hours}h` : '—'}
+                                                    {t.isDayPass && <div className="mt-0.5"><Pill tone="violet">Day Pass</Pill></div>}
+                                                </td>
+                                                <td className="max-w-[170px] px-4 py-3">
+                                                    <div className="truncate font-medium text-gray-800 dark:text-gray-200">{t.userName || '—'}</div>
+                                                    <div className="text-xs tabular-nums text-gray-500 dark:text-gray-400">Persons: {t.numberOfPersons ?? 1}</div>
+                                                </td>
+                                                <td className="whitespace-nowrap px-4 py-3 text-right">
+                                                    <div className="font-semibold tabular-nums text-gray-900 dark:text-gray-100">${t.totalPrice.toFixed(2)}</div>
+                                                    {t.discount && (
+                                                        <div className="text-xs text-emerald-700 dark:text-emerald-400">
                                                             {t.discount.name} ({t.discount.percentage}%)
                                                         </div>
-                                                    </div>
-                                                )}
-                                                {t.channelName && (
-                                                    <div>
-                                                        <div className="text-xs text-gray-500">Channel</div>
-                                                        <div className="text-sm text-gray-900">{t.channelName}</div>
-                                                    </div>
-                                                )}
-                                                {t.isDayPass && (
-                                                    <div>
-                                                        <div className="text-xs text-gray-500">Day Pass</div>
-                                                        <div className="text-sm font-medium text-indigo-700">Yes</div>
-                                                    </div>
-                                                )}
-                                                {t.modifiedOn && (
-                                                    <div>
-                                                        <div className="text-xs text-gray-500">Modified</div>
-                                                        <div className="text-sm text-gray-900">
-                                                            {new Date(t.modifiedOn).toLocaleString()}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                                {t.comment && (
-                                                    <div className="col-span-2">
-                                                        <div className="text-xs text-gray-500">Comment</div>
-                                                        <div className="text-sm text-gray-900">{t.comment}</div>
-                                                    </div>
-                                                )}
-                                                <div>
-                                                    <div className="text-xs text-gray-500">Status</div>
-                                                    <span
-                                                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${t.statusId === STATUS_ENABLED ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                                            }`}
-                                                    >
-                                                        {getStatusName(t.statusId) || t.statusId}
-                                                    </span>
-                                                </div>
-                                                <div>
-                                                    <div className="text-xs text-gray-500">Items Count</div>
-                                                    <div className="text-sm text-gray-900">{t.items ? t.items.length : 0} item(s)</div>
-                                                </div>
-                                            </div>
-                                            <div className="ml-4 flex-shrink-0 flex items-center gap-2">
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <TxStatusPill statusId={t.statusId} />
+                                                    <div className="mt-1 text-xs tabular-nums text-gray-500 dark:text-gray-400">{itemCount} item(s)</div>
+                                                </td>
                                                 {/* Edit / Delete — stopPropagation so they don't toggle expand */}
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); openEdit(t); }}
-                                                    className="px-2.5 py-1 text-xs bg-blue-50 text-blue-700 rounded border border-blue-200 hover:bg-blue-100"
-                                                    title="Edit"
-                                                >
-                                                    Edit
-                                                </button>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); openItemsEditor(t); }}
-                                                    className="px-2.5 py-1 text-xs bg-purple-50 text-purple-700 rounded border border-purple-200 hover:bg-purple-100"
-                                                    title="Edit items (works on open AND closed)"
-                                                >
-                                                    Items
-                                                </button>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        if (typeof t.transactionId === 'number') setDeletingId(t.transactionId);
-                                                    }}
-                                                    className="px-2.5 py-1 text-xs bg-red-50 text-red-700 rounded border border-red-200 hover:bg-red-100"
-                                                    title="Delete"
-                                                >
-                                                    Delete
-                                                </button>
-                                                <svg
-                                                    className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    viewBox="0 0 24 24"
-                                                >
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                                </svg>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {isExpanded && t.items && t.items.length > 0 && (
-                                        <div className="border-t bg-gray-50 p-4">
-                                            <div className="text-xs font-medium text-gray-700 mb-3">Items Detail</div>
-                                            <div className="space-y-2">
-                                                {t.items.map((item, idx) => (
-                                                    <div key={idx} className="flex items-center justify-between bg-white p-3 rounded border">
-                                                        <div className="flex items-center gap-3">
-                                                            {item.imagePath && (
-                                                                <img
-                                                                    src={`${import.meta.env.VITE_API_IMAGE_BASE_URL || ''}/${item.imagePath}`}
-                                                                    alt={item.itemName}
-                                                                    className="w-10 h-10 object-cover rounded"
-                                                                    onError={(e) => {
-                                                                        e.currentTarget.src = '/images/image-placeholder.svg';
-                                                                    }}
-                                                                />
-                                                            )}
-                                                            <div>
-                                                                <div className="text-sm font-medium text-gray-900">{item.itemName}</div>
-                                                                <div className="text-xs text-gray-500">
-                                                                    <span className="font-medium">Category:</span> {item.categoryName}
-                                                                </div>
-                                                                <div className="text-xs text-gray-500">
-                                                                    <span className="font-medium">Unit Price:</span> ${item.unitPrice.toFixed(2)} × {item.quantity}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div>
-                                                            <div className="text-xs text-gray-500">Line Total</div>
-                                                            <div className="text-sm font-semibold text-gray-900">${item.lineTotal.toFixed(2)}</div>
-                                                        </div>
+                                                <td className="py-3 pl-4 pr-5" onClick={(e) => e.stopPropagation()}>
+                                                    <div className="flex items-center justify-end gap-0.5">
+                                                        <Tooltip title="Edit">
+                                                            <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEdit(t)} aria-label={`Edit transaction ${t.transactionId}`} />
+                                                        </Tooltip>
+                                                        <Tooltip title="Edit items (works on open AND closed)">
+                                                            <Button type="text" size="small" icon={<UnorderedListOutlined />} onClick={() => openItemsEditor(t)} aria-label={`Edit items of transaction ${t.transactionId}`} />
+                                                        </Tooltip>
+                                                        <Tooltip title="Delete">
+                                                            <Button
+                                                                type="text"
+                                                                size="small"
+                                                                danger
+                                                                icon={<DeleteOutlined />}
+                                                                onClick={() => {
+                                                                    if (typeof t.transactionId === 'number') setDeletingId(t.transactionId);
+                                                                }}
+                                                                aria-label={`Delete transaction ${t.transactionId}`}
+                                                            />
+                                                        </Tooltip>
+                                                        <Tooltip title={isExpanded ? 'Collapse' : 'Show details'}>
+                                                            <Button
+                                                                type="text"
+                                                                size="small"
+                                                                icon={isExpanded ? <UpOutlined /> : <DownOutlined />}
+                                                                onClick={toggle}
+                                                                aria-expanded={isExpanded}
+                                                                aria-label={isExpanded ? `Collapse transaction ${t.transactionId}` : `Show details of transaction ${t.transactionId}`}
+                                                            />
+                                                        </Tooltip>
                                                     </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })
-                    )}
-                </div>
-            </div>
+                                                </td>
+                                            </tr>
 
-            <div className="mt-4 flex items-center justify-between">
-                <div className="text-sm text-gray-600">Showing page {page} of {totalPages} — {total} items</div>
-                <div className="space-x-2">
-                    <button
-                        className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
-                        disabled={page <= 1}
-                        onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    >
-                        Prev
-                    </button>
-                    <button
-                        className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
-                        disabled={page >= totalPages}
-                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    >
-                        Next
-                    </button>
-                </div>
-            </div>
+                                            {isExpanded && (
+                                                <tr className="border-b border-gray-100 dark:border-white/[0.06]">
+                                                    <td colSpan={9} className={`bg-gray-50/80 px-5 py-4 dark:bg-white/[0.03] ${accent}`}>
+                                                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-6">
+                                                            <DetailField label="Transaction ID"><span className="tabular-nums">#{t.transactionId}</span></DetailField>
+                                                            <DetailField label="Date"><span className="tabular-nums">{new Date(t.createdOn).toLocaleString()}</span></DetailField>
+                                                            <DetailField label="Created By">{t.createdBy}</DetailField>
+                                                            <DetailField label="Total Paid"><span className="font-semibold tabular-nums">${t.totalPrice.toFixed(2)}</span></DetailField>
+                                                            {t.gameName && <DetailField label="Game"><span className="font-medium">{t.gameName}</span></DetailField>}
+                                                            {t.gameCategoryName && <DetailField label="Game Category">{t.gameCategoryName}</DetailField>}
+                                                            {t.gameTypeName && <DetailField label="Game Type">{t.gameTypeName}</DetailField>}
+                                                            {t.gameSettingName && <DetailField label="Game Setting">{t.gameSettingName}</DetailField>}
+                                                            {t.roomName && <DetailField label="Room">{t.roomName}</DetailField>}
+                                                            {t.setName && <DetailField label="Set">{t.setName}</DetailField>}
+                                                            {t.hours > 0 && <DetailField label="Hours"><span className="tabular-nums">{t.hours}</span></DetailField>}
+                                                            {/* Everything below reaches the panel now — it was on the
+                                                                record all along but never projected into the report DTO. */}
+                                                            <DetailField label="Persons"><span className="tabular-nums">{t.numberOfPersons ?? 1}</span></DetailField>
+                                                            {t.userName && <DetailField label="Customer">{t.userName}</DetailField>}
+                                                            {t.discount && (
+                                                                <DetailField label="Discount">
+                                                                    <span className="font-medium text-emerald-700 dark:text-emerald-400">{t.discount.name} ({t.discount.percentage}%)</span>
+                                                                </DetailField>
+                                                            )}
+                                                            {t.channelName && <DetailField label="Channel">{t.channelName}</DetailField>}
+                                                            {t.isDayPass && <DetailField label="Day Pass"><span className="font-medium text-indigo-700 dark:text-indigo-300">Yes</span></DetailField>}
+                                                            {t.modifiedOn && (
+                                                                <DetailField label="Modified"><span className="tabular-nums">{new Date(t.modifiedOn).toLocaleString()}</span></DetailField>
+                                                            )}
+                                                            <DetailField label="Status"><TxStatusPill statusId={t.statusId} /></DetailField>
+                                                            <DetailField label="Items Count">{itemCount} item(s)</DetailField>
+                                                            {t.comment && <DetailField label="Comment" className="col-span-2 sm:col-span-4 lg:col-span-6">{t.comment}</DetailField>}
+                                                        </div>
+                                                        {t.items && t.items.length > 0 && (
+                                                            <>
+                                                                <div className="mb-2 mt-5 text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Items Detail</div>
+                                                                <ItemLinesTable items={t.items} />
+                                                            </>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </React.Fragment>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                <TxPager
+                    page={page}
+                    totalPages={totalPages}
+                    total={total}
+                    onPrev={() => setPage((p) => Math.max(1, p - 1))}
+                    onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+                />
+            </Panel>
 
             {/* ── Edit modal ──────────────────────────────────────────── */}
             {editing && (
-                <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => !saving && setEditing(null)}>
-                    <div className="bg-white rounded-lg shadow-xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
-                        <div className="px-5 py-3 border-b border-gray-200">
-                            <h3 className="font-semibold text-gray-800">Edit Transaction #{editing.transactionId}</h3>
-                            <p className="text-xs text-gray-500">Changing items must be done from the cashier flow.</p>
-                        </div>
-                        <div className="p-5 space-y-4">
-                            <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Hours</label>
-                                <input
-                                    type="number"
-                                    step="0.5"
-                                    min="0"
-                                    value={editDraft.hours ?? ''}
-                                    onChange={(e) => setEditDraft(d => ({ ...d, hours: e.target.value === '' ? null : Number(e.target.value) }))}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Total Price ($)</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    value={editDraft.totalPrice ?? ''}
-                                    onChange={(e) => setEditDraft(d => ({ ...d, totalPrice: e.target.value === '' ? null : Number(e.target.value) }))}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Status ID</label>
-                                <input
-                                    type="number"
-                                    value={editDraft.statusId ?? ''}
-                                    onChange={(e) => setEditDraft(d => ({ ...d, statusId: e.target.value === '' ? null : Number(e.target.value) }))}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                            </div>
-                            {error && (
-                                <div className="p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">{error}</div>
-                            )}
-                        </div>
-                        <div className="px-5 py-3 border-t border-gray-200 flex justify-end gap-2">
-                            <button
-                                disabled={saving}
-                                onClick={() => setEditing(null)}
-                                className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 rounded"
-                            >Cancel</button>
-                            <button
-                                disabled={saving}
-                                onClick={saveEdit}
-                                className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-                            >{saving ? 'Saving…' : 'Save'}</button>
-                        </div>
+                <TxDialog
+                    busy={saving}
+                    onClose={() => setEditing(null)}
+                    title={<>Edit Transaction #{editing.transactionId}</>}
+                    subtitle="Changing items must be done from the cashier flow."
+                    footer={<>
+                        <Button disabled={saving} onClick={() => setEditing(null)}>Cancel</Button>
+                        <Button type="primary" disabled={saving} loading={saving} onClick={saveEdit}>{saving ? 'Saving…' : 'Save'}</Button>
+                    </>}
+                >
+                    <div>
+                        <label htmlFor="gtx-edit-hours" className={TX_LABEL}>Hours</label>
+                        <input
+                            id="gtx-edit-hours"
+                            type="number"
+                            step="0.5"
+                            min="0"
+                            value={editDraft.hours ?? ''}
+                            onChange={(e) => setEditDraft(d => ({ ...d, hours: e.target.value === '' ? null : Number(e.target.value) }))}
+                            className={`${TX_INPUT} tabular-nums`}
+                        />
                     </div>
-                </div>
+                    <div>
+                        <label htmlFor="gtx-edit-total" className={TX_LABEL}>Total Price ($)</label>
+                        <input
+                            id="gtx-edit-total"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={editDraft.totalPrice ?? ''}
+                            onChange={(e) => setEditDraft(d => ({ ...d, totalPrice: e.target.value === '' ? null : Number(e.target.value) }))}
+                            className={`${TX_INPUT} tabular-nums`}
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="gtx-edit-status" className={TX_LABEL}>Status ID</label>
+                        <input
+                            id="gtx-edit-status"
+                            type="number"
+                            value={editDraft.statusId ?? ''}
+                            onChange={(e) => setEditDraft(d => ({ ...d, statusId: e.target.value === '' ? null : Number(e.target.value) }))}
+                            className={`${TX_INPUT} tabular-nums`}
+                        />
+                    </div>
+                    {error && <TxError>{error}</TxError>}
+                </TxDialog>
             )}
 
             {/* ── Items editor (admin, any status) ────────────────────── */}
             {itemsEditing && (
-                <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => !itemsSaving && setItemsEditing(null)}>
-                    <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-                        <div className="px-5 py-3 border-b border-gray-200">
-                            <h3 className="font-semibold text-gray-800">Edit Items — Transaction #{itemsEditing.transactionId}</h3>
-                            <p className="text-xs text-gray-500">
-                                Works on open and closed transactions. Stock and totals adjust automatically; every change is audited.
-                            </p>
-                        </div>
-
-                        <div className="p-5 space-y-4 overflow-y-auto">
-                            {/* Current lines */}
-                            {itemsDraft.length === 0 ? (
-                                <div className="text-sm text-gray-400 text-center py-4">No items on this transaction.</div>
-                            ) : (
-                                <div className="space-y-2">
-                                    {itemsDraft.map((d, i) => (
-                                        <div key={d.itemId} className="flex items-center gap-2 border border-gray-200 rounded px-3 py-2">
-                                            <div className="flex-1">
-                                                <div className="text-sm font-medium text-gray-800">{d.name}</div>
-                                                <div className="text-xs text-gray-500">${d.price.toFixed(2)} each</div>
-                                            </div>
-                                            <input
-                                                type="number"
-                                                min={0}
-                                                value={d.quantity}
-                                                onChange={(e) => {
-                                                    const v = Math.max(0, Number(e.target.value || 0));
-                                                    setItemsDraft(arr => arr.map((x, xi) => xi === i ? { ...x, quantity: v } : x));
-                                                }}
-                                                className="w-20 border border-gray-300 rounded px-2 py-1 text-sm text-right"
-                                            />
-                                            <button
-                                                onClick={() => setItemsDraft(arr => arr.filter((_, xi) => xi !== i))}
-                                                className="px-2 py-1 text-xs bg-red-50 text-red-600 rounded border border-red-200 hover:bg-red-100"
-                                            >
-                                                Remove
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-
-                            {/* Add-item picker */}
-                            <div className="border-t border-gray-100 pt-3">
-                                <div className="text-xs font-semibold text-gray-600 mb-1">Add item</div>
-                                <input
-                                    type="text"
-                                    placeholder="Search items (2+ chars)…"
-                                    value={pickerSearch}
-                                    onChange={(e) => setPickerSearch(e.target.value)}
-                                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
-                                />
-                                {pickerLoading && <div className="text-xs text-gray-400 mt-1">Searching…</div>}
-                                {pickerItems.length > 0 && (
-                                    <div className="mt-1 border border-gray-200 rounded max-h-40 overflow-auto">
-                                        {pickerItems.map((it) => {
-                                            const already = itemsDraft.some(d => d.itemId === Number(it.id));
-                                            return (
-                                                <button
-                                                    key={it.id}
-                                                    disabled={already}
-                                                    onClick={() => {
-                                                        setItemsDraft(arr => [...arr, {
-                                                            itemId: Number(it.id), name: it.name,
-                                                            price: it.price, quantity: 1,
-                                                        }]);
-                                                        setPickerSearch('');
-                                                        setPickerItems([]);
-                                                    }}
-                                                    className="w-full text-left px-3 py-2 text-sm hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed border-b border-gray-100 last:border-0"
-                                                >
-                                                    {it.name} <span className="text-xs text-gray-500">— ${it.price}</span>
-                                                    {already && <span className="text-xs text-gray-400"> (already added)</span>}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Live delta preview */}
-                            <div className="text-xs text-gray-500">
-                                New items subtotal:&nbsp;
-                                <b>${itemsDraft.reduce((s, d) => s + d.price * d.quantity, 0).toFixed(2)}</b>
-                                &nbsp;·&nbsp;Session/time charges stay untouched; discount still applies.
-                            </div>
-
-                            {error && (
-                                <div className="p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">{error}</div>
-                            )}
-                        </div>
-
-                        <div className="px-5 py-3 border-t border-gray-200 flex justify-end gap-2">
-                            <button
-                                disabled={itemsSaving}
-                                onClick={() => setItemsEditing(null)}
-                                className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 rounded"
-                            >Cancel</button>
-                            <button
-                                disabled={itemsSaving}
-                                onClick={saveItems}
-                                className="px-3 py-1.5 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
-                            >{itemsSaving ? 'Saving…' : 'Save items'}</button>
-                        </div>
-                    </div>
-                </div>
+                <ItemsEditorDialog
+                    transactionId={itemsEditing.transactionId}
+                    draft={itemsDraft}
+                    setDraft={setItemsDraft}
+                    pickerSearch={pickerSearch}
+                    setPickerSearch={setPickerSearch}
+                    pickerItems={pickerItems}
+                    setPickerItems={setPickerItems}
+                    pickerLoading={pickerLoading}
+                    error={error}
+                    saving={itemsSaving}
+                    onClose={() => setItemsEditing(null)}
+                    onSave={saveItems}
+                    subtotalNote="Session/time charges stay untouched; discount still applies."
+                />
             )}
 
             {/* ── Delete confirmation ─────────────────────────────────── */}
             {deletingId != null && (
-                <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => !deleting && setDeletingId(null)}>
-                    <div className="bg-white rounded-lg shadow-xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
-                        <div className="px-5 py-3 border-b border-gray-200">
-                            <h3 className="font-semibold text-gray-800">Delete transaction #{deletingId}?</h3>
-                        </div>
-                        <div className="p-5 text-sm text-gray-700 space-y-2">
-                            <p>This will reverse the transaction and restore any stock consumed by it. This action is logged permanently in the audit log.</p>
-                            <p className="text-xs text-gray-500">Any associated F&amp;B ingredient consumption will be reversed automatically.</p>
-                            {error && (
-                                <div className="p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">{error}</div>
-                            )}
-                        </div>
-                        <div className="px-5 py-3 border-t border-gray-200 flex justify-end gap-2">
-                            <button
-                                disabled={deleting}
-                                onClick={() => setDeletingId(null)}
-                                className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 rounded"
-                            >Cancel</button>
-                            <button
-                                disabled={deleting}
-                                onClick={confirmDelete}
-                                className="px-3 py-1.5 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
-                            >{deleting ? 'Deleting…' : 'Delete'}</button>
-                        </div>
+                <TxDialog
+                    busy={deleting}
+                    onClose={() => setDeletingId(null)}
+                    title={<>Delete transaction #{deletingId}?</>}
+                    footer={<>
+                        <Button disabled={deleting} onClick={() => setDeletingId(null)}>Cancel</Button>
+                        <Button type="primary" danger disabled={deleting} loading={deleting} onClick={confirmDelete}>{deleting ? 'Deleting…' : 'Delete'}</Button>
+                    </>}
+                >
+                    <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+                        <p>This will reverse the transaction and restore any stock consumed by it. This action is logged permanently in the audit log.</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Any associated F&amp;B ingredient consumption will be reversed automatically.</p>
                     </div>
-                </div>
+                    {error && <TxError>{error}</TxError>}
+                </TxDialog>
             )}
         </div>
     );

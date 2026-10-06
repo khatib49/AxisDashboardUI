@@ -1,4 +1,18 @@
 import { useEffect, useState, useCallback } from "react";
+import { Button as AntButton, Dropdown, Empty, Input as AntInput, Skeleton, Table, Tooltip } from "antd";
+import type { ColumnsType } from "antd/es/table";
+import {
+    CheckCircleOutlined,
+    DeleteOutlined,
+    EditOutlined,
+    MoreOutlined,
+    PlusOutlined,
+    ReloadOutlined,
+    SearchOutlined,
+    StopOutlined,
+    TeamOutlined,
+    WarningOutlined,
+} from "@ant-design/icons";
 import Modal from "../../components/ui/Modal";
 import { useModal } from "../../hooks/useModal";
 import userService, { UserDto, RegisterRequest } from "../../services/userService";
@@ -10,74 +24,22 @@ import Select from "../../components/form/Select";
 import Button from "../../components/ui/button/Button";
 import { EyeCloseIcon, EyeIcon } from "../../icons";
 import { getRoles, roleLabel } from "../../services/roleService";
+import { PageHeader, Panel, Pill, StatTile } from "../../components/ui/PageKit";
+import PagerFooter from "../../components/inventory/PagerFooter";
+import PersonAvatar from "../../components/admin/people/PersonAvatar";
 
-const SearchIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-        <circle cx="11" cy="11" r="7" />
-        <path d="m20 20-3.5-3.5" />
-    </svg>
-);
+type PillTone = "gray" | "violet" | "purple" | "blue" | "emerald" | "amber" | "red";
 
-const PlusIconSm = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 5v14M5 12h14" />
-    </svg>
-);
+// statusId → label + tone. Text always shown next to the dot (never colour alone).
+const STATUS_META: Record<number, { label: string; tone: PillTone }> = {
+    1: { label: "Enabled", tone: "emerald" },
+    2: { label: "Disabled", tone: "amber" },
+    8: { label: "Suspended", tone: "red" },
+};
 
-const EditIconSm = () => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 20h9" />
-        <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
-    </svg>
-);
-
-const TrashIconSm = () => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-    </svg>
-);
-
-function avatarColor(seed: unknown) {
-    const colors = [
-        "from-violet-500 to-fuchsia-500",
-        "from-cyan-500 to-blue-500",
-        "from-emerald-500 to-teal-500",
-        "from-orange-500 to-rose-500",
-        "from-pink-500 to-purple-500",
-        "from-indigo-500 to-sky-500",
-    ];
-    const s = String(seed ?? "");
-    let h = 0;
-    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-    return colors[h % colors.length];
-}
-
-function StatusBadge({ statusId }: { statusId: number }) {
-    if (statusId === 1) {
-        return (
-            <span className="status-pill bg-success-50 text-success-700 dark:bg-success-500/10 dark:text-success-300 ring-1 ring-inset ring-success-200/50 dark:ring-success-500/20">
-                <span className="h-1.5 w-1.5 rounded-full bg-success-500" />
-                Enabled
-            </span>
-        );
-    }
-    if (statusId === 2) {
-        return (
-            <span className="status-pill bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-300 ring-1 ring-inset ring-orange-200/60 dark:ring-orange-500/20">
-                <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
-                Disabled
-            </span>
-        );
-    }
-    if (statusId === 8) {
-        return (
-            <span className="status-pill bg-gray-800 text-white dark:bg-gray-700">
-                <span className="h-1.5 w-1.5 rounded-full bg-gray-300" />
-                Suspended
-            </span>
-        );
-    }
-    return <span className="status-pill bg-gray-100 text-gray-700 dark:bg-white/5 dark:text-gray-300">Unknown</span>;
+function StatusPill({ statusId }: { statusId: number }) {
+    const meta = STATUS_META[statusId] ?? { label: "Unknown", tone: "gray" as const };
+    return <Pill tone={meta.tone} dot>{meta.label}</Pill>;
 }
 
 const DEFAULT_ROLE_OPTIONS = [
@@ -86,22 +48,18 @@ const DEFAULT_ROLE_OPTIONS = [
     { value: 'stock', label: 'Stock' }, { value: 'social_media', label: 'Social media' },
 ];
 
-function RoleChip({ role }: { role: string }) {
-    const map: Record<string, string> = {
-        admin: "bg-brand-50 text-brand-700 ring-brand-200 dark:bg-brand-500/15 dark:text-brand-300 dark:ring-brand-500/20",
-        cashier: "bg-cyan-50 text-cyan-700 ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-500/20",
-        gamecashier: "bg-fuchsia-50 text-fuchsia-700 ring-fuchsia-200 dark:bg-fuchsia-500/10 dark:text-fuchsia-300 dark:ring-fuchsia-500/20",
-        chef: "bg-orange-50 text-orange-700 ring-orange-200 dark:bg-orange-500/10 dark:text-orange-300 dark:ring-orange-500/20",
-        bartender: "bg-pink-50 text-pink-700 ring-pink-200 dark:bg-pink-500/10 dark:text-pink-300 dark:ring-pink-500/20",
-        admin_fnb: "bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20",
-        client: "bg-gray-100 text-gray-700 ring-gray-200 dark:bg-white/5 dark:text-gray-300 dark:ring-white/10",
-    };
-    const cls = map[role] || "bg-gray-100 text-gray-700 ring-gray-200 dark:bg-white/5 dark:text-gray-300 dark:ring-white/10";
-    return (
-        <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold ring-1 ring-inset ${cls}`}>
-            {role}
-        </span>
-    );
+const ROLE_TONE: Record<string, PillTone> = {
+    admin: "violet",
+    cashier: "blue",
+    gamecashier: "purple",
+    chef: "amber",
+    bartender: "red",
+    admin_fnb: "emerald",
+    client: "gray",
+};
+
+function RolePill({ role }: { role: string }) {
+    return <Pill tone={ROLE_TONE[role] ?? "gray"}>{roleLabel(role)}</Pill>;
 }
 
 export default function UsersManagement() {
@@ -115,6 +73,8 @@ export default function UsersManagement() {
     // What's actually been sent to the server. Kept separate from `search` so
     // the input stays instant while requests are debounced.
     const [appliedSearch, setAppliedSearch] = useState("");
+    // Presentation only: skeletons until the first response lands (no fake zeros).
+    const [loadedOnce, setLoadedOnce] = useState(false);
 
     // form
     const [email, setEmail] = useState("");
@@ -152,6 +112,7 @@ export default function UsersManagement() {
             setMessage(msg);
         } finally {
             setLoading(false);
+            setLoadedOnce(true);
         }
     }, [page, pageSize, appliedSearch]);
 
@@ -261,192 +222,196 @@ export default function UsersManagement() {
         }
     };
 
-    const initials = (name: string) =>
-        (name || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((s) => s[0]?.toUpperCase()).join("");
+    // KPIs — the total comes from the server; the rest count the page already loaded.
+    const firstLoad = !loadedOnce;
+    const enabledOnPage = filteredUsers.filter((u) => (u.statusId ?? 1) === 1).length;
+    const disabledOnPage = filteredUsers.filter((u) => u.statusId === 2).length;
+    const suspendedOnPage = filteredUsers.filter((u) => u.statusId === 8).length;
+
+    const columns: ColumnsType<UserDto> = [
+        {
+            title: "User",
+            key: "user",
+            width: 320,
+            render: (_, u) => (
+                <div className="flex min-w-0 items-center gap-3">
+                    <PersonAvatar name={u.displayName || u.email} seed={u.email} />
+                    <div className="min-w-0">
+                        <button
+                            type="button"
+                            onClick={() => handleEdit(u)}
+                            className="block max-w-full truncate text-left font-medium text-gray-900 hover:text-violet-700 dark:text-gray-100 dark:hover:text-violet-300"
+                        >
+                            {u.displayName || "—"}
+                        </button>
+                        <div className="truncate text-xs text-gray-500 dark:text-gray-400">{u.email}</div>
+                    </div>
+                </div>
+            ),
+        },
+        {
+            title: "Role",
+            key: "roles",
+            width: 220,
+            render: (_, u) => (u.roles || []).length ? (
+                <div className="flex flex-wrap gap-1.5">
+                    {(u.roles || []).map((r) => <RolePill key={r} role={r} />)}
+                </div>
+            ) : <span className="text-gray-400 dark:text-gray-500">—</span>,
+        },
+        {
+            title: "Status",
+            key: "status",
+            width: 130,
+            render: (_, u) => <StatusPill statusId={u.statusId ?? 1} />,
+        },
+        {
+            title: "ID",
+            key: "id",
+            width: 120,
+            render: (_, u) => (
+                <Tooltip title={String(u.id)}>
+                    <code className="text-xs text-gray-500 dark:text-gray-400">{String(u.id).slice(0, 8)}</code>
+                </Tooltip>
+            ),
+        },
+        {
+            title: <span className="sr-only">Actions</span>,
+            key: "actions",
+            width: 60,
+            align: "right",
+            fixed: "right",
+            render: (_, u) => (
+                <Dropdown
+                    trigger={["click"]}
+                    menu={{
+                        items: [
+                            { key: "edit", icon: <EditOutlined />, label: "Edit", onClick: () => handleEdit(u) },
+                            { key: "delete", icon: <DeleteOutlined />, label: "Delete", danger: true, onClick: () => handleDeleteClick(String(u.id)) },
+                        ],
+                    }}
+                >
+                    <AntButton type="text" size="small" icon={<MoreOutlined />} aria-label={`Actions for ${u.displayName || u.email}`} />
+                </Dropdown>
+            ),
+        },
+    ];
 
     return (
-        <div className="space-y-5">
-            {/* Page header */}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Users Management</h1>
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        {appliedSearch
-                            ? "Invite, edit and manage roles."
-                            : `${totalCount.toLocaleString()} total users · invite, edit and manage roles.`}
-                    </p>
-                </div>
-                <Button variant="gradient" size="md" startIcon={<PlusIconSm />} onClick={handleOpen}>
-                    Add User
-                </Button>
-            </div>
-
-            {/* Toolbar: search */}
-            <div className="data-table-shell">
-                <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between border-b border-gray-100 dark:border-white/5">
-                    <div className="relative w-full sm:max-w-sm">
-                        <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
-                            <SearchIcon />
-                        </span>
-                        <input
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Search name, email, username or phone…"
-                            className="h-11 w-full rounded-xl border border-gray-200 bg-white/70 pl-10 pr-4 text-sm text-gray-900 placeholder:text-gray-400 transition-all focus:border-brand-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-500/15 dark:border-white/10 dark:bg-white/[0.03] dark:text-white"
-                        />
-                        {search && (
-                            <button
-                                type="button"
-                                onClick={() => setSearch("")}
-                                className="absolute right-2.5 top-1/2 -translate-y-1/2 inline-flex h-6 w-6 items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-white/5 dark:hover:text-white"
-                                aria-label="Clear search"
-                            >
-                                ×
-                            </button>
-                        )}
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                        <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-semibold text-brand-700 dark:bg-brand-500/15 dark:text-brand-300">
-                            {totalCount}
-                        </span>
-                        <span>{appliedSearch ? "match" : "user"}{totalCount === 1 ? "" : "s"}</span>
-                        {appliedSearch && <span className="hidden sm:inline">for “{appliedSearch}”</span>}
-                    </div>
-                </div>
-
-                {loading ? (
-                    <div className="flex items-center justify-center py-16">
-                        <Loader />
-                    </div>
-                ) : (
+        <div className="mx-auto max-w-[1400px] space-y-6 p-4 sm:p-6">
+            <PageHeader
+                icon={<TeamOutlined />}
+                title="Users Management"
+                badge={!appliedSearch && loadedOnce ? `${totalCount.toLocaleString()} users` : undefined}
+                description="Invite, edit and manage roles. Page access for each role is set under Roles & Permissions."
+                actions={
                     <>
-                        <div className="overflow-x-auto">
-                            <table className="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>User</th>
-                                        <th>Email</th>
-                                        <th>Role</th>
-                                        <th>Status</th>
-                                        <th className="text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredUsers.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={5}>
-                                                <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
-                                                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100 dark:bg-white/5">
-                                                        <SearchIcon />
-                                                    </div>
-                                                    <p className="font-semibold text-gray-700 dark:text-gray-200">
-                                                        {appliedSearch ? "No users match your search" : "No users yet"}
-                                                    </p>
-                                                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                                                        {appliedSearch
-                                                            ? "Try a different name, email, username or phone number."
-                                                            : "Add your first user to get started."}
-                                                    </p>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ) : filteredUsers.map((u) => (
-                                        <tr key={String(u.id)}>
-                                            <td>
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br ${avatarColor(u.email)} text-white text-xs font-bold shadow-sm`}>
-                                                        {initials(u.displayName || u.email)}
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <div className="font-semibold text-gray-900 dark:text-white truncate">
-                                                            {u.displayName || "—"}
-                                                        </div>
-                                                        <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                                            ID · {String(u.id).slice(0, 8)}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="whitespace-nowrap text-gray-700 dark:text-gray-300">{u.email}</td>
-                                            <td>
-                                                <div className="flex flex-wrap gap-1.5">
-                                                    {(u.roles || []).map((r) => <RoleChip key={r} role={r} />)}
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <StatusBadge statusId={u.statusId ?? 1} />
-                                            </td>
-                                            <td>
-                                                <div className="flex items-center justify-end gap-1">
-                                                    <button
-                                                        onClick={() => handleEdit(u)}
-                                                        className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-50 dark:text-brand-300 dark:hover:bg-brand-500/10 transition-colors"
-                                                        title="Edit"
-                                                    >
-                                                        <EditIconSm />
-                                                        Edit
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteClick(String(u.id))}
-                                                        className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-error-600 hover:bg-error-50 dark:text-error-400 dark:hover:bg-error-500/10 transition-colors"
-                                                        title="Delete"
-                                                    >
-                                                        <TrashIconSm />
-                                                        Delete
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between border-t border-gray-100 dark:border-white/5">
-                            <div className="flex items-center gap-2">
-                                <label className="text-sm text-gray-500 dark:text-gray-400">Rows per page:</label>
-                                <Select
-                                    options={[{ value: 5, label: '5' }, { value: 10, label: '10' }, { value: 25, label: '25' }, { value: 50, label: '50' }]}
-                                    defaultValue={pageSize}
-                                    onChange={(v: string | number) => { setPageSize(Number(v)); setPage(1); }}
-                                    className="w-24"
-                                />
-                            </div>
-
-                            <div className="flex items-center gap-3">
-                                <div className="text-sm text-gray-500 dark:text-gray-400">
-                                    Showing <span className="font-semibold text-gray-900 dark:text-white">{Math.min((page - 1) * pageSize + 1, totalCount || 0)}</span>
-                                    {" – "}
-                                    <span className="font-semibold text-gray-900 dark:text-white">{Math.min(page * pageSize, totalCount || 0)}</span>
-                                    {" of "}
-                                    <span className="font-semibold text-gray-900 dark:text-white">{totalCount.toLocaleString()}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                    <button
-                                        className="inline-flex h-9 items-center gap-1 rounded-lg border border-gray-200 bg-white/70 px-3 text-sm font-medium text-gray-700 transition-all hover:border-brand-300 hover:text-brand-700 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-gray-200 disabled:hover:text-gray-700 disabled:hover:shadow-none dark:border-white/10 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:text-white"
-                                        onClick={() => setPage((p) => Math.max(1, p - 1))}
-                                        disabled={page <= 1}
-                                    >
-                                        ‹ Prev
-                                    </button>
-                                    <button
-                                        className="inline-flex h-9 items-center gap-1 rounded-lg border border-gray-200 bg-white/70 px-3 text-sm font-medium text-gray-700 transition-all hover:border-brand-300 hover:text-brand-700 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-gray-200 disabled:hover:text-gray-700 disabled:hover:shadow-none dark:border-white/10 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:text-white"
-                                        onClick={() => setPage((p) => p + 1)}
-                                        disabled={page * pageSize >= totalCount}
-                                    >
-                                        Next ›
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                        <Tooltip title="Refresh">
+                            <AntButton icon={<ReloadOutlined />} onClick={() => loadUsers()} loading={loading} aria-label="Refresh" />
+                        </Tooltip>
+                        <AntButton type="primary" icon={<PlusOutlined />} onClick={handleOpen}>Add user</AntButton>
                     </>
-                )}
+                }
+            >
+                <AntInput
+                    allowClear
+                    prefix={<SearchOutlined className="text-gray-400" />}
+                    placeholder="Search name, email, username or phone…"
+                    aria-label="Search users"
+                    className="w-full sm:max-w-sm"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                />
+            </PageHeader>
+
+            {/* KPIs — total from the server, the rest from the page already loaded (no extra requests) */}
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <StatTile
+                    label={appliedSearch ? "Matches" : "Users"}
+                    loading={firstLoad}
+                    value={<span className="tabular-nums">{totalCount.toLocaleString()}</span>}
+                    sub={appliedSearch ? <>For “{appliedSearch}”</> : "All accounts"}
+                    accent={<span className="rounded-lg bg-violet-50 p-1.5 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300"><TeamOutlined /></span>}
+                />
+                <StatTile
+                    label="Enabled"
+                    loading={firstLoad}
+                    value={<span className="tabular-nums">{enabledOnPage}</span>}
+                    sub="On this page"
+                    accent={<span className="text-emerald-500"><CheckCircleOutlined /></span>}
+                />
+                <StatTile
+                    label="Disabled"
+                    loading={firstLoad}
+                    value={<span className="tabular-nums">{disabledOnPage}</span>}
+                    sub="On this page"
+                    accent={disabledOnPage ? <span className="text-amber-500"><StopOutlined /></span> : undefined}
+                />
+                <StatTile
+                    label="Suspended"
+                    loading={firstLoad}
+                    value={<span className="tabular-nums">{suspendedOnPage}</span>}
+                    sub="On this page"
+                    accent={suspendedOnPage ? <span className="text-red-500"><WarningOutlined /></span> : undefined}
+                />
             </div>
+
+            <Panel
+                title={appliedSearch ? "Search results" : "All users"}
+                subtitle={loadedOnce ? `${totalCount.toLocaleString()} ${appliedSearch ? "match" : "user"}${totalCount === 1 ? "" : (appliedSearch ? "es" : "s")}${appliedSearch ? ` for “${appliedSearch}”` : ""}` : undefined}
+                bodyClassName="p-0"
+            >
+                {firstLoad ? (
+                    <div className="p-5"><Skeleton active avatar paragraph={{ rows: 6 }} /></div>
+                ) : (
+                    <Table
+                        rowKey={(u) => String(u.id)}
+                        size="middle"
+                        loading={loading}
+                        columns={columns}
+                        dataSource={filteredUsers}
+                        pagination={false}
+                        scroll={{ x: 860 }}
+                        locale={{
+                            emptyText: (
+                                <Empty
+                                    description={
+                                        <div className="space-y-1">
+                                            <div className="font-medium text-gray-700 dark:text-gray-200">
+                                                {appliedSearch ? "No users match your search" : "No users yet"}
+                                            </div>
+                                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                {appliedSearch
+                                                    ? "Try a different name, email, username or phone number."
+                                                    : "Add your first user to get started."}
+                                            </div>
+                                        </div>
+                                    }
+                                />
+                            ),
+                        }}
+                    />
+                )}
+
+                <PagerFooter
+                    shown={filteredUsers.length}
+                    total={loadedOnce ? totalCount : null}
+                    page={page}
+                    pageSize={pageSize}
+                    onPageSizeChange={(n) => { setPageSize(n); setPage(1); }}
+                    onPrev={() => setPage((p) => Math.max(1, p - 1))}
+                    onNext={() => setPage((p) => p + 1)}
+                    prevDisabled={page <= 1}
+                    nextDisabled={page * pageSize >= totalCount}
+                />
+            </Panel>
 
             <Modal
                 isOpen={isOpen}
                 onClose={closeModal}
                 title={editingId ? 'Edit User' : 'Create User'}
+                subtitle={editingId ? (displayName || email) : 'They sign in with this email and password.'}
+                className="sm:max-w-xl!"
                 footer={(
                     <>
                         <Button variant="outline" size="sm" onClick={closeModal} disabled={saving}>Cancel</Button>
@@ -471,13 +436,16 @@ export default function UsersManagement() {
 
                         <div className="relative">
                             <Input
+                                id="password"
                                 type={showPassword ? "text" : "password"}
                                 placeholder={editingId ? "Leave blank to keep current password" : "Enter password"}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                             />
-                            <span
+                            <button
+                                type="button"
                                 onClick={() => setShowPassword(!showPassword)}
+                                aria-label={showPassword ? "Hide password" : "Show password"}
                                 className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
                             >
                                 {showPassword ? (
@@ -485,38 +453,40 @@ export default function UsersManagement() {
                                 ) : (
                                     <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
                                 )}
-                            </span>
+                            </button>
                         </div>
                     </div>
                     <div>
                         <Label htmlFor="displayName">Display Name</Label>
                         <Input id="displayName" type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Display name" />
                     </div>
-                    <div>
-                        <Label>Role</Label>
-                        <Select
-                            options={roleOptions}
-                            placeholder="Select a role"
-                            defaultValue={roleName}
-                            onChange={(v: string | number) => setRoleName(String(v))}
-                        />
-                    </div>
-
-                    {editingId && (
+                    <div className={editingId ? "grid gap-4 sm:grid-cols-2" : undefined}>
                         <div>
-                            <Label>Status</Label>
+                            <Label>Role</Label>
                             <Select
-                                options={[
-                                    { value: 1, label: 'Enabled' },
-                                    { value: 2, label: 'Disabled' },
-                                    { value: 8, label: 'Suspended' }
-                                ]}
-                                placeholder="Select a status"
-                                defaultValue={statusId}
-                                onChange={(v: string | number) => setStatusId(Number(v))}
+                                options={roleOptions}
+                                placeholder="Select a role"
+                                defaultValue={roleName}
+                                onChange={(v: string | number) => setRoleName(String(v))}
                             />
                         </div>
-                    )}
+
+                        {editingId && (
+                            <div>
+                                <Label>Status</Label>
+                                <Select
+                                    options={[
+                                        { value: 1, label: 'Enabled' },
+                                        { value: 2, label: 'Disabled' },
+                                        { value: 8, label: 'Suspended' }
+                                    ]}
+                                    placeholder="Select a status"
+                                    defaultValue={statusId}
+                                    onChange={(v: string | number) => setStatusId(Number(v))}
+                                />
+                            </div>
+                        )}
+                    </div>
                 </div>
             </Modal>
 
@@ -528,6 +498,7 @@ export default function UsersManagement() {
                     setUserToDelete(null);
                 }}
                 title="Confirm Delete"
+                className="sm:max-w-md!"
                 footer={(
                     <>
                         <Button

@@ -88,7 +88,11 @@ export function StatTile({ label, value, sub, accent, loading, onClick, active }
       ) : (
         <div className="mt-2 text-[28px] font-semibold leading-tight tracking-tight text-gray-900 dark:text-white">{value}</div>
       )}
-      {sub && <div className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">{sub}</div>}
+      {/* While loading the sub-line is a placeholder too — it often holds
+          derived figures ("$0.00 open") that would be fake before data arrives. */}
+      {sub && (loading
+        ? <Skeleton.Input active size="small" style={{ marginTop: 8, width: 110, height: 12, minWidth: 0 }} />
+        : <div className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">{sub}</div>)}
     </div>
   );
 }

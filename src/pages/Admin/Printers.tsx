@@ -6,7 +6,23 @@
 // bytes to the printer described here. Deleting a printer just stops routing to
 // it — it doesn't touch past orders.
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Button, Empty, Input as AntInput, Skeleton, Tooltip } from "antd";
+import {
+  ApiOutlined,
+  CoffeeOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  FireOutlined,
+  GlobalOutlined,
+  PlusOutlined,
+  PrinterOutlined,
+  ReloadOutlined,
+  SearchOutlined,
+  SendOutlined,
+  StopOutlined,
+  UsbOutlined,
+} from "@ant-design/icons";
 import {
   getPrinters,
   createPrinter,
@@ -21,8 +37,9 @@ import Modal from "../../components/ui/Modal";
 import Input from "../../components/form/input/InputField";
 import Label from "../../components/form/Label";
 import Loader from "../../components/ui/Loader";
-import Alert from "../../components/ui/alert/Alert";
 import Switch from "../../components/form/switch/Switch";
+import { PageHeader, Panel, Pill, StatTile } from "../../components/ui/PageKit";
+import { ErrorNote, IconChip, RowMenu, Toast } from "../../components/admin/venue/VenueKit";
 
 const STATIONS = ["Kitchen", "Bar"] as const;
 const CONNECTION_TYPES = ["Network", "Usb"] as const;
@@ -35,6 +52,9 @@ type FormState = {
   copyCount: number;
   isEnabled: boolean;
 };
+
+// Tile filters over the loaded list (presentation only).
+type Filter = "all" | "Kitchen" | "Bar" | "disabled";
 
 const emptyForm: FormState = {
   name: "",
@@ -57,6 +77,8 @@ export default function Printers() {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [testingId, setTestingId] = useState<number | null>(null);
+  const [filter, setFilter] = useState<Filter>("all");
+  const [q, setQ] = useState("");
 
   const [notification, setNotification] = useState<{
     variant: "success" | "error" | "warning" | "info";
@@ -198,108 +220,194 @@ export default function Printers() {
     }
   }
 
+  // ── List presentation (derived from the list already loaded) ────────
+  const counts = {
+    all: printers.length,
+    Kitchen: printers.filter((p) => p.station === "Kitchen").length,
+    Bar: printers.filter((p) => p.station === "Bar").length,
+    disabled: printers.filter((p) => !p.isEnabled).length,
+  };
+
+  const visible = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    return printers.filter((p) => {
+      if (filter === "disabled" && p.isEnabled) return false;
+      if ((filter === "Kitchen" || filter === "Bar") && p.station !== filter) return false;
+      if (!s) return true;
+      return [p.name, p.station, p.connectionType, p.address].join(" ").toLowerCase().includes(s);
+    });
+  }, [printers, filter, q]);
+
+  const firstLoad = loading && printers.length === 0;
+
+  const tiles: { key: Filter; label: string; value: number; sub: string; accent: ReactNode }[] = [
+    { key: "all", label: "All printers", value: counts.all, sub: "Click a tile to filter", accent: <IconChip tone="blue"><PrinterOutlined /></IconChip> },
+    { key: "Kitchen", label: "Kitchen", value: counts.Kitchen, sub: "Food tickets", accent: <IconChip tone="amber"><FireOutlined /></IconChip> },
+    { key: "Bar", label: "Bar", value: counts.Bar, sub: "Drinks & tobacco tickets", accent: <IconChip tone="violet"><CoffeeOutlined /></IconChip> },
+    {
+      key: "disabled",
+      label: "Disabled",
+      value: counts.disabled,
+      sub: counts.disabled ? "Not receiving tickets" : "Every printer is routing",
+      accent: <IconChip tone="gray"><StopOutlined /></IconChip>,
+    },
+  ];
+
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-2">
-        <h1 className="text-2xl font-semibold">Printers</h1>
-        <button
-          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
-          onClick={openCreate}
-        >
-          + Add Printer
-        </button>
+    <div className="mx-auto max-w-[1400px] space-y-6 p-4 sm:p-6">
+      <PageHeader
+        tone="blue"
+        icon={<PrinterOutlined />}
+        title="Printers"
+        description={
+          <>
+            Food tickets route to <span className="font-medium">Kitchen</span> printers and
+            drink/tobacco tickets to <span className="font-medium">Bar</span> printers. An on-site
+            print agent must be running to forward jobs to these devices.
+          </>
+        }
+        actions={
+          <>
+            <Tooltip title="Refresh">
+              <Button icon={<ReloadOutlined />} onClick={() => loadPrinters()} loading={loading} aria-label="Refresh" />
+            </Tooltip>
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>Add printer</Button>
+          </>
+        }
+      />
+
+      {/* Tiles = filters */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {tiles.map((t) => (
+          <StatTile
+            key={t.key}
+            label={t.label}
+            value={<span className="tabular-nums">{t.value}</span>}
+            sub={t.sub}
+            accent={t.accent}
+            loading={firstLoad}
+            active={filter === t.key}
+            onClick={() => setFilter(t.key)}
+          />
+        ))}
       </div>
-      <p className="text-sm text-gray-500 mb-6">
-        Food tickets route to <span className="font-medium">Kitchen</span> printers and
-        drink/tobacco tickets to <span className="font-medium">Bar</span> printers. An on-site
-        print agent must be running to forward jobs to these devices.
-      </p>
 
-      {loading && (
-        <div className="flex items-center justify-center py-20">
-          <Loader />
-        </div>
-      )}
+      <Panel
+        title={tiles.find((t) => t.key === filter)!.label}
+        subtitle={`${visible.length} of ${printers.length}`}
+        bodyClassName="p-0"
+        extra={
+          <AntInput
+            allowClear
+            prefix={<SearchOutlined className="text-gray-400" />}
+            placeholder="Search name, address…"
+            aria-label="Search printers"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            className="w-full sm:w-64!"
+          />
+        }
+      >
+        {error ? (
+          <ErrorNote>{error}</ErrorNote>
+        ) : loading ? (
+          <div className="p-5"><Skeleton active paragraph={{ rows: 5 }} /></div>
+        ) : visible.length === 0 ? (
+          <div className="py-12">
+            <Empty description={printers.length === 0 ? "No printers configured yet" : q.trim() ? `Nothing matches “${q.trim()}”` : "No printers here"} />
+          </div>
+        ) : (
+          <ul className="divide-y divide-gray-100 dark:divide-white/[0.06]">
+            {visible.map((p) => {
+              const isUsb = p.connectionType === "Usb";
+              return (
+                <li
+                  key={p.id}
+                  className={`flex flex-wrap items-center gap-x-5 gap-y-3 px-5 py-4 transition hover:bg-gray-50/70 dark:hover:bg-white/[0.02] ${p.isEnabled ? "" : "bg-gray-50/50 dark:bg-white/[0.01]"}`}
+                >
+                  <span
+                    aria-hidden
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg ${
+                      p.isEnabled
+                        ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300"
+                        : "bg-gray-100 text-gray-400 dark:bg-white/5 dark:text-gray-500"
+                    }`}
+                  >
+                    <PrinterOutlined />
+                  </span>
 
-      {error && <div className="text-red-600 bg-red-50 p-3 rounded mb-4">{error}</div>}
+                  <div className="min-w-[200px] flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openEdit(p)}
+                        className={`text-left font-semibold hover:text-blue-700 dark:hover:text-blue-300 ${p.isEnabled ? "text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400"}`}
+                      >
+                        {p.name}
+                      </button>
+                      <Pill tone={p.station === "Kitchen" ? "amber" : "purple"} dot>{p.station}</Pill>
+                    </div>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+                      <Tooltip title={isUsb ? "USB / Windows printer" : "Network (IP)"}>
+                        <span className="inline-flex items-center gap-1">
+                          {isUsb ? <UsbOutlined /> : <GlobalOutlined />}
+                          {isUsb ? "USB" : p.connectionType}
+                        </span>
+                      </Tooltip>
+                      <code className="break-all rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[11px] text-gray-700 dark:bg-white/5 dark:text-gray-300">{p.address}</code>
+                      <span className="tabular-nums">
+                        {p.copyCount} cop{p.copyCount === 1 ? "y" : "ies"}
+                      </span>
+                    </div>
+                  </div>
 
-      {!loading && !error && (
-        <div className="bg-white rounded-lg shadow overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Station</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Connection</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Address</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Copies</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {printers.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-6 py-10 text-center text-gray-500">
-                    No printers configured yet
-                  </td>
-                </tr>
-              )}
-              {printers.map((p) => (
-                <tr key={p.id} className={`hover:bg-gray-50 ${p.isEnabled ? "" : "opacity-60"}`}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{p.name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        p.station === "Kitchen"
-                          ? "bg-orange-100 text-orange-800"
-                          : "bg-purple-100 text-purple-800"
-                      }`}
-                    >
-                      {p.station}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{p.connectionType}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-600">{p.address}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{p.copyCount}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  <div className="flex items-center gap-2">
                     {p.isEnabled ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Enabled
-                      </span>
+                      <Pill tone="emerald" dot>Enabled</Pill>
                     ) : (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-700">
-                        Disabled
-                      </span>
+                      <Pill tone="gray" dot>Disabled</Pill>
                     )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      className="text-emerald-600 hover:text-emerald-900 mr-3 disabled:opacity-50"
+                    {/* Fires a test ticket through the on-site agent */}
+                    <Button
+                      size="small"
+                      icon={<SendOutlined />}
                       onClick={() => handleTest(p)}
                       disabled={testingId === p.id}
+                      aria-label={`Send a test ticket to ${p.name}`}
                     >
                       {testingId === p.id ? "Sending..." : "Test"}
-                    </button>
-                    <button
-                      className="text-indigo-600 hover:text-indigo-900 mr-3"
-                      onClick={() => openEdit(p)}
-                    >
-                      Edit
-                    </button>
-                    <button className="text-red-600 hover:text-red-900" onClick={() => setDeleteId(p.id)}>
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+                    </Button>
+                    <RowMenu
+                      label={p.name}
+                      items={[
+                        { key: "edit", icon: <EditOutlined />, label: "Edit", onClick: () => openEdit(p) },
+                        { type: "divider" },
+                        { key: "delete", icon: <DeleteOutlined />, label: "Delete", danger: true, onClick: () => setDeleteId(p.id) },
+                      ]}
+                    />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Panel>
 
       {/* Create / Edit modal */}
-      <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} title={editing ? "Edit Printer" : "Add Printer"}>
+      <Modal
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
+        title={editing ? "Edit Printer" : "Add Printer"}
+        className="sm:max-w-xl!"
+        footer={
+          <>
+            <Button onClick={() => setIsFormOpen(false)}>Cancel</Button>
+            <Button type="primary" onClick={submitForm} disabled={submitting} icon={submitting ? <Loader size={16} /> : undefined}>
+              {editing ? "Save Changes" : "Add Printer"}
+            </Button>
+          </>
+        }
+      >
         <div className="flex flex-col gap-4">
           <div>
             <Label>Name *</Label>
@@ -310,37 +418,41 @@ export default function Printers() {
             />
           </div>
 
-          <div>
-            <Label>Station *</Label>
-            <select
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              value={form.station}
-              onChange={(e) => setForm((f) => ({ ...f, station: e.target.value }))}
-            >
-              {STATIONS.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-            <p className="mt-1 text-xs text-gray-400">
-              Kitchen = food items · Bar = drinks &amp; tobacco.
-            </p>
-          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="printer-station">Station *</Label>
+              <select
+                id="printer-station"
+                className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm text-gray-800 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                value={form.station}
+                onChange={(e) => setForm((f) => ({ ...f, station: e.target.value }))}
+              >
+                {STATIONS.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Kitchen = food items · Bar = drinks &amp; tobacco.
+              </p>
+            </div>
 
-          <div>
-            <Label>Connection type *</Label>
-            <select
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              value={form.connectionType}
-              onChange={(e) => setForm((f) => ({ ...f, connectionType: e.target.value }))}
-            >
-              {CONNECTION_TYPES.map((c) => (
-                <option key={c} value={c}>
-                  {c === "Usb" ? "USB / Windows printer" : "Network (IP)"}
-                </option>
-              ))}
-            </select>
+            <div>
+              <Label htmlFor="printer-connection">Connection type *</Label>
+              <select
+                id="printer-connection"
+                className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm text-gray-800 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                value={form.connectionType}
+                onChange={(e) => setForm((f) => ({ ...f, connectionType: e.target.value }))}
+              >
+                {CONNECTION_TYPES.map((c) => (
+                  <option key={c} value={c}>
+                    {c === "Usb" ? "USB / Windows printer" : "Network (IP)"}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div>
@@ -350,7 +462,10 @@ export default function Printers() {
               value={form.address}
               onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
             />
-            <p className="mt-1 text-xs text-gray-400">{addressHint}</p>
+            <p className="mt-1 flex items-start gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+              <ApiOutlined className="mt-0.5" />
+              {addressHint}
+            </p>
           </div>
 
           <div>
@@ -366,7 +481,7 @@ export default function Printers() {
           </div>
 
           {editing && (
-            <div>
+            <div className="rounded-lg border border-gray-200 p-3 dark:border-white/10">
               <Label>Enabled</Label>
               <Switch
                 key={String(form.isEnabled)}
@@ -374,54 +489,34 @@ export default function Printers() {
                 defaultChecked={form.isEnabled}
                 onChange={(checked) => setForm((f) => ({ ...f, isEnabled: checked }))}
               />
-              <p className="mt-1 text-xs text-gray-400">
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 Turn off to stop sending tickets to this printer without deleting it.
               </p>
             </div>
           )}
-
-          <div className="flex items-center gap-2 pt-2">
-            <button
-              className="px-4 py-2 bg-green-600 text-white rounded flex items-center gap-2 disabled:opacity-50"
-              onClick={submitForm}
-              disabled={submitting}
-            >
-              {submitting ? <Loader size={16} /> : editing ? "Save Changes" : "Add Printer"}
-            </button>
-            <button className="px-4 py-2 bg-gray-200 rounded" onClick={() => setIsFormOpen(false)}>
-              Cancel
-            </button>
-          </div>
         </div>
       </Modal>
 
       {/* Delete confirmation */}
-      <Modal isOpen={!!deleteId} onClose={() => setDeleteId(null)} title="Delete Printer">
-        <div className="space-y-4">
-          <p>Remove this printer? Tickets will stop routing to it. Past orders are unaffected.</p>
-          <div className="flex items-center gap-2">
-            <button
-              className="px-4 py-2 bg-red-600 text-white rounded flex items-center gap-2 disabled:opacity-50"
-              onClick={confirmDelete}
-              disabled={deleting}
-            >
-              {deleting ? <Loader size={16} /> : "Delete"}
-            </button>
-            <button className="px-4 py-2 bg-gray-200 rounded" onClick={() => setDeleteId(null)}>
-              Cancel
-            </button>
-          </div>
-        </div>
+      <Modal
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        title="Delete Printer"
+        className="sm:max-w-md!"
+        footer={
+          <>
+            <Button onClick={() => setDeleteId(null)}>Cancel</Button>
+            <Button danger type="primary" onClick={confirmDelete} disabled={deleting} icon={deleting ? <Loader size={16} /> : undefined}>
+              Delete
+            </Button>
+          </>
+        }
+      >
+        <p className="text-gray-700 dark:text-gray-300">Remove this printer? Tickets will stop routing to it. Past orders are unaffected.</p>
       </Modal>
 
       {/* Toast */}
-      <div className="fixed bottom-6 right-6 z-50">
-        {notification && (
-          <div className="max-w-sm">
-            <Alert variant={notification.variant} title={notification.title} message={notification.message} />
-          </div>
-        )}
-      </div>
+      <Toast notification={notification} />
     </div>
   );
 }
