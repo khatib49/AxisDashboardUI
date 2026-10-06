@@ -1,14 +1,19 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Card, Badge, Button, Row, Col, Typography, Space, notification, Spin, Pagination } from 'antd';
-import { 
-  CheckOutlined, 
-  PrinterOutlined,
-  SyncOutlined 
+import { notification, Pagination } from 'antd';
+import {
+  CheckOutlined,
+  FireOutlined
 } from '@ant-design/icons';
 import * as signalR from '@microsoft/signalr';
 import api, { patch, post } from '../../services/api'; // Import your existing api instance
+import {
+  StationTicketCard,
+  StationHeader,
+  StationGrid,
+  StationEmpty,
+  StationLoading,
+} from '../../components/till/kitchen/StationTicketCard';
 
-const { Title, Text } = Typography;
 // ✅ MOVE OUTSIDE COMPONENT - Define at module level
 const getSignalRUrl = (): string => {
   const envUrl = import.meta.env.VITE_API_BASE_URL;
@@ -267,134 +272,47 @@ const autoPrintOrder = async (order: KitchenBarOrder) => {
   };
 
   if (loading) {
-    return (
-      <div style={{ textAlign: 'center', padding: '100px' }}>
-        <Spin size="large" tip="Loading kitchen orders..." />
-      </div>
-    );
+    return <StationLoading label="Loading kitchen orders..." />;
   }
 
   return (
-    <div style={{ padding: '20px', backgroundColor: '#f0f2f5', minHeight: '100vh' }}>
+    <div className="min-h-screen space-y-4 p-4 sm:p-5">
       <audio ref={audioRef} src="/notification.mp3" preload="auto" />
 
-      <Row gutter={[16, 16]} style={{ marginBottom: '20px' }}>
-        <Col span={12}>
-          <Title level={2}>🍳 Kitchen Orders</Title>
-        </Col>
-        <Col span={12} style={{ textAlign: 'right' }}>
-          <Space>
-            <Badge count={total} showZero overflowCount={999}>
-              <Button 
-                icon={<SyncOutlined />} 
-                onClick={fetchPendingOrders}
-              >
-                Refresh
-              </Button>
-            </Badge>
-          </Space>
-        </Col>
-      </Row>
+      <StationHeader
+        icon={<FireOutlined />}
+        title="Kitchen Orders"
+        total={total}
+        onRefresh={fetchPendingOrders}
+      />
 
       {orders.length === 0 ? (
-        <Card>
-          <div style={{ textAlign: 'center', padding: '50px' }}>
-            <CheckOutlined style={{ fontSize: '48px', color: '#52c41a' }} />
-            <Title level={3}>All Caught Up!</Title>
-            <Text type="secondary">No pending orders</Text>
-          </div>
-        </Card>
+        <StationEmpty
+          icon={<CheckOutlined />}
+          title="All Caught Up!"
+          subtitle="No pending orders"
+        />
       ) : (
-        <Row gutter={[16, 16]}>
+        <StationGrid>
           {orders.map(order => (
-            <Col xs={24} sm={12} md={8} lg={6} key={order.id}>
-              <Card
-                hoverable
-                style={{
-                  borderLeft: order.status === 'Preparing' 
-                    ? '4px solid #1890ff' 
-                    : '4px solid #faad14'
-                }}
-                actions={[
-                  order.status === 'Pending' ? (
-                    <Button
-                      type="primary"
-                      size="small"
-                      onClick={() => updateOrderStatus(order.id, 'Preparing')}
-                    >
-                      Start Preparing
-                    </Button>
-                  ) : (
-                    <Button
-                      type="primary"
-                      size="small"
-                      style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
-                      icon={<CheckOutlined />}
-                      onClick={() => updateOrderStatus(order.id, 'Done')}
-                    >
-                      Mark Done
-                    </Button>
-                  ),
-                  <Button
-                    size="small"
-                    icon={<PrinterOutlined />}
-                    onClick={() => printOrder(order.id)}
-                  >
-                    Print
-                  </Button>
-                ]}
-              >
-                <Space direction="vertical" style={{ width: '100%' }}>
-                  <Badge 
-                    color={getTimeBadgeColor(order.orderedAt)} 
-                    text={getTimeElapsed(order.orderedAt)}
-                  />
-
-                  <Title level={4} style={{ margin: 0 }}>
-                    {order.quantity}x {order.itemName}
-                  </Title>
-
-                  {order.tableNumber && (
-                    <Text strong>Table: {order.tableNumber}</Text>
-                  )}
-                  {order.guestName && (
-                    <Text>Guest: {order.guestName}</Text>
-                  )}
-
-                  {order.itemComment && (
-                    <Card 
-                      size="small" 
-                      style={{ backgroundColor: '#fff7e6', border: '1px solid #ffa940' }}
-                    >
-                      <Text strong>NOTE:</Text>
-                      <br />
-                      <Text>{order.itemComment}</Text>
-                    </Card>
-                  )}
-
-                  <div style={{ marginTop: '10px' }}>
-                    <Badge 
-                      status={order.status === 'Preparing' ? 'processing' : 'default'} 
-                      text={order.status}
-                    />
-                    <br />
-                    <Text type="secondary" style={{ fontSize: '12px' }}>
-                      By: {order.createdByUsername}
-                    </Text>
-                    <br />
-                    <Text type="secondary" style={{ fontSize: '12px' }}>
-                      Order #{order.id}
-                    </Text>
-                  </div>
-                </Space>
-              </Card>
-            </Col>
+            <StationTicketCard
+              key={order.id}
+              order={order}
+              ageText={getTimeElapsed(order.orderedAt)}
+              ageColor={getTimeBadgeColor(order.orderedAt)}
+              noteLabel="NOTE"
+              startLabel="Start Preparing"
+              doneLabel="Mark Done"
+              onStart={() => updateOrderStatus(order.id, 'Preparing')}
+              onDone={() => updateOrderStatus(order.id, 'Done')}
+              onPrint={() => printOrder(order.id)}
+            />
           ))}
-        </Row>
+        </StationGrid>
       )}
 
       {total > PAGE_SIZE && (
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 20 }}>
+        <div className="flex justify-center rounded-2xl border border-gray-200/80 bg-white px-4 py-3 dark:border-white/[0.06] dark:bg-white/[0.03]">
           <Pagination
             current={page}
             pageSize={PAGE_SIZE}

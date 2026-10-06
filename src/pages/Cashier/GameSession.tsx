@@ -267,17 +267,25 @@ const GameSession: React.FC = () => {
     }, [showInvoicesSection, claims?.name]);
 
     return (
-        <div className="p-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-gray-900">Game Sessions</h1>
-                    <p className="text-sm text-gray-500 mt-0.5">Pick a game, choose a setting, hit Start.</p>
+        <div className="space-y-4 p-4 sm:p-6">
+            {/* Slim till header — title, quick find and calculator in one row */}
+            <div className="flex flex-col gap-3 rounded-2xl border border-gray-200/80 bg-white px-4 py-3 shadow-[0_1px_2px_rgba(16,24,40,0.04)] dark:border-white/[0.06] dark:bg-white/[0.03] md:flex-row md:items-center md:justify-between">
+                <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/25">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <rect x="2" y="7" width="20" height="12" rx="4" /><path d="M7 11v4M5 13h4" /><circle cx="15.5" cy="12" r="1" fill="currentColor" /><circle cx="18" cy="14.5" r="1" fill="currentColor" />
+                        </svg>
+                    </span>
+                    <div className="min-w-0">
+                        <h1 className="text-xl font-semibold tracking-tight text-gray-900 dark:text-white">Game Sessions</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Pick a game, choose a setting, hit Start.</p>
+                    </div>
                 </div>
                 <div className="flex items-center gap-2">
                     {/* Quick find — filters the loaded games as you type. */}
-                    <div className="relative">
+                    <div className="relative min-w-0 flex-1 md:w-72 md:flex-none">
                         <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" strokeLinecap="round" />
                             </svg>
                         </span>
@@ -285,12 +293,13 @@ const GameSession: React.FC = () => {
                             value={gameSearch}
                             onChange={(e) => setGameSearch(e.target.value)}
                             placeholder="Find a game or setting…"
-                            className="h-10 w-64 rounded-xl border border-gray-200 bg-white pl-9 pr-3 text-sm shadow-sm placeholder:text-gray-400 focus:border-indigo-400 focus:outline-none focus:ring-4 focus:ring-indigo-500/10"
+                            aria-label="Find a game or setting"
+                            className="h-11 w-full rounded-xl border border-gray-200 bg-white pl-9 pr-3 text-[15px] text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-indigo-400 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 dark:border-white/10 dark:bg-gray-900/60 dark:text-white dark:placeholder:text-gray-500"
                         />
                     </div>
                     <button
                         onClick={() => setCalculatorOpen(true)}
-                        className="h-10 px-4 bg-green-600 text-white rounded-xl shadow-sm hover:bg-green-700 hover:shadow transition flex items-center gap-2 text-sm font-medium"
+                        className="flex h-11 shrink-0 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.97] dark:bg-emerald-500 dark:hover:bg-emerald-400"
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -302,43 +311,35 @@ const GameSession: React.FC = () => {
 
             {/* Today's events — impossible to miss at the till */}
             {todayEvents.length > 0 && (
-                <Link to="/cashier/events" className="block mb-5">
-                    <div className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-500 text-white px-4 py-3 shadow-md hover:shadow-lg transition flex items-center gap-3 flex-wrap">
-                        <span className="text-lg">🎟</span>
+                <Link to="/cashier/events" className="block">
+                    <div className="flex min-h-[52px] flex-wrap items-center gap-2.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-500 px-4 py-3 text-white shadow-md transition hover:shadow-lg">
+                        <span className="text-lg" aria-hidden="true">🎟</span>
                         <span className="text-sm font-bold uppercase tracking-wide">Today:</span>
                         {todayEvents.map((e) => (
-                            <span key={e.id} className="text-sm font-medium bg-white/15 rounded-full px-3 py-1">
+                            <span key={e.id} className="rounded-full bg-white/15 px-3 py-1 text-sm font-medium tabular-nums">
                                 {e.title}
                                 {e.eventDate ? ` — ${new Date(e.eventDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}
                                 {e.capacity ? ` · ${e.paidCount}/${e.capacity} sold` : ` · ${e.paidCount} sold`}
                             </span>
                         ))}
-                        <span className="ml-auto text-xs text-indigo-100">View all →</span>
+                        <span className="ml-auto text-xs font-medium text-indigo-100">View all →</span>
                     </div>
                 </Link>
             )}
 
             {loading && (
-                <div className="flex items-center justify-center py-20">
-                    <Loader />
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4" aria-busy="true">
+                    {Array.from({ length: PAGE_SIZE }).map((_, i) => <GameCardSkeleton key={i} />)}
                 </div>
             )}
 
             {error && (
-                <div className="text-red-600 bg-red-50 p-3 rounded mb-4">{error}</div>
+                <div className="flex items-start gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300" role="alert">
+                    <span aria-hidden="true">⚠</span>{error}
+                </div>
             )}
 
             {!loading && !error && (() => {
-                // Category → consistent accent color, so PS5 always looks like
-                // PS5 and TCG like TCG across visits.
-                const accentFor = (cat?: string | null) => {
-                    const c = (cat || '').toLowerCase();
-                    if (c.includes('tcg')) return { bar: 'from-violet-500 to-purple-400', chip: 'bg-violet-50 text-violet-700', avatar: 'bg-violet-100 text-violet-700' };
-                    if (c.includes('ps5') || c.includes('play')) return { bar: 'from-blue-500 to-sky-400', chip: 'bg-blue-50 text-blue-700', avatar: 'bg-blue-100 text-blue-700' };
-                    if (c.includes('board')) return { bar: 'from-amber-500 to-orange-400', chip: 'bg-amber-50 text-amber-700', avatar: 'bg-amber-100 text-amber-700' };
-                    return { bar: 'from-emerald-500 to-teal-400', chip: 'bg-emerald-50 text-emerald-700', avatar: 'bg-emerald-100 text-emerald-700' };
-                };
-
                 const q = gameSearch.trim().toLowerCase();
                 const visibleGames = !q ? games : games.filter((g) =>
                     g.name.toLowerCase().includes(q) ||
@@ -347,106 +348,50 @@ const GameSession: React.FC = () => {
 
                 return (
                 <>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                        {visibleGames.map((g) => {
-                            const accent = accentFor(g.categoryName);
-                            const statusIdNum = g.statusId === null || g.statusId === undefined ? null : Number(g.statusId);
-                            const enabled = statusIdNum === STATUS_ENABLED || statusIdNum === STATUS_PROCESSED_PAID;
-                            return (
-                            <div key={g.id} className="group rounded-2xl bg-white shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 overflow-hidden border border-gray-100">
-                                {/* Category accent strip */}
-                                <div className={`h-1.5 bg-gradient-to-r ${accent.bar}`} />
-
-                                <div className="p-4">
-                                    <div className="flex items-start gap-3">
-                                        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-base font-bold ${accent.avatar}`}>
-                                            {g.name.slice(0, 2).toUpperCase()}
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <div className="text-[15px] font-semibold text-gray-900 leading-snug truncate" title={g.name}>{g.name}</div>
-                                            <span className={`mt-1 inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${accent.chip}`}>
-                                                {g.categoryName ?? '—'}
-                                            </span>
-                                        </div>
-                                        <span className={`mt-0.5 inline-flex items-center gap-1.5 text-[11px] font-medium ${enabled ? 'text-green-600' : 'text-red-500'}`}>
-                                            <span className={`h-1.5 w-1.5 rounded-full ${enabled ? 'bg-green-500' : 'bg-red-400'}`} />
-                                            {getStatusName(statusIdNum) ?? (g.statusId ?? '-')}
-                                        </span>
-                                    </div>
-
-                                    <div className="mt-4 space-y-1.5">
-                                        {(settingsByGame.get(g.id) || []).map((s) => (
-                                            <div key={s.id} className="flex items-center justify-between gap-2 rounded-xl px-3 py-2 bg-gray-50/80 hover:bg-indigo-50/60 transition-colors">
-                                                <div className="min-w-0">
-                                                    <div className="text-sm font-medium text-gray-800 flex items-center gap-1.5 truncate">
-                                                        <span className="truncate">{s.name}</span>
-                                                        {s.isEvent && (
-                                                            <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 text-indigo-700">
-                                                                🎟 Event
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div className="text-xs text-gray-500 mt-0.5">
-                                                        {s.hours === 0 ? '⏱ Open Hour' : (s.hours ? `⏱ ${s.hours} hrs` : '')}
-                                                    </div>
-                                                    {/* Bundle preview — the cashier sees exactly what to hand
-                                                        over. Deducted from stock automatically at start. */}
-                                                    {s.isEvent && (s.items?.length ?? 0) > 0 && (
-                                                        <div className="text-[11px] text-indigo-600 mt-0.5">
-                                                            Includes {s.items!.map(i => `${i.quantityPerPerson}x ${i.itemName}`).join(', ')} / person
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="flex shrink-0 items-center gap-2.5">
-                                                    {s.price ? <span className="text-sm font-bold text-gray-900">${s.price}</span> : null}
-                                                    <button
-                                                        className="px-3.5 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow-sm hover:bg-indigo-700 hover:shadow active:scale-95 transition-all"
-                                                        onClick={() => {
-                                                            setSelectedSetting(s);
-                                                            setStartHours(s.isDayPass ? 0 : (s.hours ?? 1));
-                                                            setNumberOfPersons(1);
-                                                            setSelectedRoomId(null);
-                                                            setSelectedSetId(null);
-                                                            setSetAvailability(null);
-                                                            setSelectedDiscountId(null);
-                                                            setStartModalOpen(true);
-                                                        }}
-                                                    >
-                                                        Start ▸
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                        {((settingsByGame.get(g.id) || []).length === 0) && (
-                                            <div className="rounded-xl border border-dashed border-gray-200 px-3 py-4 text-center text-sm text-gray-400">
-                                                No settings available
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                            );
-                        })}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+                        {visibleGames.map((g) => (
+                            <GameCard
+                                key={g.id}
+                                game={g}
+                                settings={settingsByGame.get(g.id) || []}
+                                onStart={(s) => {
+                                    setSelectedSetting(s);
+                                    setStartHours(s.isDayPass ? 0 : (s.hours ?? 1));
+                                    setNumberOfPersons(1);
+                                    setSelectedRoomId(null);
+                                    setSelectedSetId(null);
+                                    setSetAvailability(null);
+                                    setSelectedDiscountId(null);
+                                    setStartModalOpen(true);
+                                }}
+                            />
+                        ))}
                     </div>
 
+                    {!q && games.length === 0 && (
+                        <div className="rounded-2xl border border-dashed border-gray-200 px-4 py-12 text-center text-sm text-gray-500 dark:border-white/10 dark:text-gray-400">
+                            No games on this page.
+                        </div>
+                    )}
+
                     {q && visibleGames.length === 0 && (
-                        <div className="mt-8 text-center text-gray-500">
+                        <div className="rounded-2xl border border-dashed border-gray-200 px-4 py-12 text-center text-gray-500 dark:border-white/10 dark:text-gray-400">
                             <div className="text-3xl mb-2">🔍</div>
                             No games match “{gameSearch}” on this page — try the next page or clear the search.
                         </div>
                     )}
 
                     {/* Pagination */}
-                    <div className="mt-6 flex items-center justify-between">
-                        <div className="text-sm text-gray-500">{totalCount !== null ? `Showing ${games.length} of ${totalCount}` : ''}</div>
-                        <div className="flex items-center gap-1">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="text-sm tabular-nums text-gray-500 dark:text-gray-400">{totalCount !== null ? `Showing ${games.length} of ${totalCount}` : ''}</div>
+                        <div className="flex items-center gap-1.5">
                             <button
-                                className="h-9 px-4 rounded-lg border border-gray-200 bg-white text-sm font-medium shadow-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="h-11 rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:bg-white/[0.03] dark:text-gray-200 dark:hover:bg-white/[0.06]"
                                 onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}
                             >← Prev</button>
-                            <span className="px-3 text-sm text-gray-600">Page {page}</span>
+                            <span className="px-3 text-sm font-medium tabular-nums text-gray-600 dark:text-gray-300">Page {page}</span>
                             <button
-                                className="h-9 px-4 rounded-lg border border-gray-200 bg-white text-sm font-medium shadow-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="h-11 rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:bg-white/[0.03] dark:text-gray-200 dark:hover:bg-white/[0.06]"
                                 onClick={() => setPage((p) => p + 1)} disabled={totalCount !== null && page * PAGE_SIZE >= (totalCount || 0)}
                             >Next →</button>
                         </div>

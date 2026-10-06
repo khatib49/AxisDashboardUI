@@ -1,8 +1,17 @@
 import React, { useEffect, useState } from 'react';
+import { CoffeeOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { useAuth } from '../../context/AuthContext';
 import { getItemTransactions, ItemTransaction } from '../../services/transactionService';
 import { getStatusName, STATUS_PROCESSED_PAID } from '../../services/statuses';
-import Loader from '../../components/ui/Loader';
+import { Pill } from '../../components/ui/PageKit';
+import { CardSkeletons, DeskEmpty, DeskHeader } from '../../components/till/desk/DeskKit';
+import { deskBtn, deskCard } from '../../components/till/desk/deskStyles';
+
+// Status pill: Enabled / Processed & Paid read as done (green); everything else neutral.
+function OrderStatus({ statusId }: { statusId: number }) {
+    const done = statusId === 1 || statusId === STATUS_PROCESSED_PAID;
+    return <Pill tone={done ? 'emerald' : 'gray'} dot>{getStatusName(statusId) ?? statusId}</Pill>;
+}
 
 const CashierOrders: React.FC = () => {
     const auth = useAuth();
@@ -33,66 +42,83 @@ const CashierOrders: React.FC = () => {
         return () => { mounted = false; };
     }, [auth?.claims?.name, page, pageSize]);
 
-    return (
-        <div className="p-6">
-            <h1 className="text-2xl font-semibold mb-4">Coffee Shop Orders</h1>
+    const lastPage = Math.max(1, Math.ceil(total / pageSize));
 
-            {loading && <div className="text-gray-600"><Loader /></div>}
+    return (
+        <div className="mx-auto max-w-5xl space-y-4 p-3 sm:p-6">
+            <DeskHeader
+                icon={<CoffeeOutlined />}
+                title="Coffee Shop Orders"
+                badge={!loading && total > 0 ? <Pill tone="violet">{total} orders</Pill> : undefined}
+                description="Orders you rang up at the till."
+            />
+
+            {loading && <CardSkeletons count={4} className="space-y-3" height={96} />}
 
             {!loading && orders.length === 0 && (
-                <div className="text-sm text-gray-500">No orders found.</div>
+                <DeskEmpty icon={<CoffeeOutlined />} title="No orders found." />
             )}
 
             {!loading && orders.length > 0 && (
-                <div className="space-y-4">
-                    <div className="grid grid-cols-12 gap-2 font-medium text-sm border-b pb-2">
-                        <div className="col-span-3">Date/Time</div>
-                        <div className="col-span-5">Items</div>
-                        <div className="col-span-2">Total</div>
-                        <div className="col-span-2">Status</div>
-                    </div>
+                <div className="space-y-3">
                     {orders.map((o, idx) => (
-                        <div key={`${o.transactionId}-${idx}`} className="grid grid-cols-12 gap-2 items-center p-2 bg-white border rounded">
-                            <div className="col-span-3">
-                                <div className="font-medium text-sm">
-                                    {new Date(o.createdOn).toLocaleDateString()}
-                                </div>
-                                <div className="text-xs text-gray-500">
-                                    {new Date(o.createdOn).toLocaleTimeString()}
-                                </div>
-                            </div>
-                            <div className="col-span-5 text-sm">
-                                {o.items && o.items.length > 0 ? (
-                                    <div className="space-y-1">
-                                        {o.items.map((item, itemIdx) => (
-                                            <div key={itemIdx} className="flex items-center gap-2">
-                                                <span className="font-medium">{item.itemName}</span>
-                                                <span className="text-xs text-gray-500">x{item.quantity}</span>
-                                                <span className="text-xs text-gray-400">({item.categoryName})</span>
-                                            </div>
-                                        ))}
+                        <article
+                            key={`${o.transactionId}-${idx}`}
+                            className={`${deskCard} border-gray-200/80 p-4 dark:border-white/[0.06]`}
+                        >
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                                {/* Date / time */}
+                                <div className="min-w-[110px]">
+                                    <div className="text-sm font-semibold tabular-nums text-gray-900 dark:text-white">
+                                        {new Date(o.createdOn).toLocaleDateString()}
                                     </div>
-                                ) : (
-                                    <span className="text-gray-400">No items</span>
-                                )}
+                                    <div className="text-xs tabular-nums text-gray-500 dark:text-gray-400">
+                                        {new Date(o.createdOn).toLocaleTimeString()}
+                                    </div>
+                                </div>
+
+                                {/* Total + status — the key figure */}
+                                <div className="order-2 ml-auto flex flex-col items-end gap-1.5 sm:order-3">
+                                    <div className="text-2xl font-bold leading-none tabular-nums text-gray-900 dark:text-white">
+                                        ${o.totalPrice.toFixed(2)}
+                                    </div>
+                                    <OrderStatus statusId={o.statusId} />
+                                </div>
+
+                                {/* Items */}
+                                <div className="order-3 w-full min-w-0 sm:order-2 sm:w-auto sm:flex-1">
+                                    {o.items && o.items.length > 0 ? (
+                                        <ul className="flex flex-wrap gap-1.5">
+                                            {o.items.map((item, itemIdx) => (
+                                                <li
+                                                    key={itemIdx}
+                                                    className="inline-flex items-baseline gap-1.5 rounded-lg bg-gray-50 px-2.5 py-1 text-sm ring-1 ring-gray-200/70 dark:bg-white/[0.04] dark:ring-white/10"
+                                                >
+                                                    <span className="font-bold tabular-nums text-gray-900 dark:text-white">x{item.quantity}</span>
+                                                    <span className="font-medium text-gray-800 dark:text-gray-100">{item.itemName}</span>
+                                                    {item.categoryName && (
+                                                        <span className="text-xs text-gray-400 dark:text-gray-500">({item.categoryName})</span>
+                                                    )}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <span className="text-sm text-gray-400 dark:text-gray-500">No items</span>
+                                    )}
+                                </div>
                             </div>
-                            <div className="col-span-2 text-sm font-semibold">${o.totalPrice.toFixed(2)}</div>
-                            <div className="col-span-2 text-sm">
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${o.statusId === 1 ? 'bg-green-100 text-green-800' :
-                                        o.statusId === STATUS_PROCESSED_PAID ? 'bg-green-100 text-green-800' :
-                                            'bg-gray-100 text-gray-800'
-                                    }`}>
-                                    {getStatusName(o.statusId) ?? o.statusId}
-                                </span>
-                            </div>
-                        </div>
+                        </article>
                     ))}
 
-                    <div className="flex items-center justify-between">
-                        <div className="text-sm text-gray-600">Page {page} — {total} orders</div>
-                        <div className="space-x-2">
-                            <button className="px-2 py-1 bg-gray-200 rounded" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>Prev</button>
-                            <button className="px-2 py-1 bg-gray-200 rounded" disabled={page >= Math.max(1, Math.ceil(total / pageSize))} onClick={() => setPage(p => p + 1)}>Next</button>
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                        <div className="text-sm tabular-nums text-gray-600 dark:text-gray-400">Page {page} of {lastPage} — {total} orders</div>
+                        <div className="flex gap-2">
+                            <button className={deskBtn('outline')} disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>
+                                <LeftOutlined /> Prev
+                            </button>
+                            <button className={deskBtn('outline')} disabled={page >= Math.max(1, Math.ceil(total / pageSize))} onClick={() => setPage(p => p + 1)}>
+                                Next <RightOutlined />
+                            </button>
                         </div>
                     </div>
                 </div>
