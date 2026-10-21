@@ -813,9 +813,8 @@ export default function CashierItems() {
                                                 categoryName={categories.find(c => c.id === it.categoryId)?.name ?? '—'}
                                                 priceLabel={`$${it.price}`}
                                                 picked={picked}
-                                                outOfStock={isOutOfStock}
                                                 stock={
-                                                    isOutOfStock ? { label: 'Out of stock', tone: 'red' }
+                                                    isOutOfStock ? null
                                                     : hasRecipe ? { label: 'Recipe stock', tone: 'blue' }
                                                     : isLowStock ? { label: `Only ${it.quantity} left`, tone: 'amber' }
                                                     : { label: `${it.quantity} in stock`, tone: 'neutral' }
@@ -830,8 +829,8 @@ export default function CashierItems() {
                                                         onChange={(next) => setVariantPicks(String(it.id), next)}
                                                     />
                                                 ) : (
-                                                    /* Out-of-stock no longer blocks ordering — the badge warns,
-                                                        the counter goes negative, the sale goes through. */
+                                                    /* Out-of-stock doesn't block ordering — no badge, the counter
+                                                        goes negative, the sale goes through. */
                                                     <QtyStepper
                                                         fluid
                                                         label={it.name}

@@ -1,4 +1,4 @@
-// Admin panel for public event sign-ups.
+// Admin panel for public event sign-ups — every event, filterable by event.
 // Route: /admin/event-registrations  (admin only)
 //
 // Stripe and Whish auto-confirm via callback, so most rows land here
@@ -18,12 +18,10 @@ import type { ColumnsType } from "antd/es/table";
 import {
   listRegistrations, getRegistrationStats, listEvents,
   confirmRegistrationPayment, rejectRegistrationPayment,
-  EventRegistration, EventRegistrationStats,
+  EventRegistration, EventRegistrationStats, EventDto,
 } from "../../services/eventService";
 
 const { Text, Title } = Typography;
-const EVENT_KEY = "squid-game-x-axis";
-
 const money = (n: number, c = "USD") =>
   `${c === "USD" ? "$" : ""}${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -44,14 +42,18 @@ export default function EventRegistrations() {
   const [status, setStatus] = useState<string | undefined>();
   const [method, setMethod] = useState<string | undefined>();
   const [ticketType, setTicketType] = useState<string | undefined>();
-  const [typeNames, setTypeNames] = useState<string[]>([]);
+  const [events, setEvents] = useState<EventDto[]>([]);
+  // undefined = all events.
+  const [eventKey, setEventKey] = useState<string | undefined>();
 
-  // Ticket types of this event (hidden ones too — they can still have sales).
   useEffect(() => {
-    listEvents()
-      .then(evs => setTypeNames((evs.find(e => e.key === EVENT_KEY)?.ticketTypes ?? []).map(t => t.name)))
-      .catch(() => setTypeNames([]));
+    listEvents().then(setEvents).catch(() => setEvents([]));
   }, []);
+
+  const selectedEvent = events.find(e => e.key === eventKey);
+  const eventTitle = (key: string) => events.find(e => e.key === key)?.title ?? key;
+  // Ticket types of the selected event (hidden ones too — they can still have sales).
+  const typeNames = (selectedEvent?.ticketTypes ?? []).map(t => t.name);
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
 
@@ -65,10 +67,10 @@ export default function EventRegistrations() {
     try {
       const [list, s] = await Promise.all([
         listRegistrations({
-          eventKey: EVENT_KEY, paymentStatus: status, paymentMethod: method,
+          eventKey, paymentStatus: status, paymentMethod: method,
           ticketType, search: debounced || undefined, page, pageSize,
         }),
-        getRegistrationStats(EVENT_KEY),
+        getRegistrationStats(eventKey),
       ]);
       setRows(list.data ?? []);
       setTotal(list.totalCount ?? 0);
@@ -76,7 +78,7 @@ export default function EventRegistrations() {
     } catch {
       message.error("Failed to load registrations");
     } finally { setLoading(false); }
-  }, [status, method, ticketType, debounced, page, pageSize]);
+  }, [eventKey, status, method, ticketType, debounced, page, pageSize]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -112,9 +114,9 @@ export default function EventRegistrations() {
   };
 
   const exportCsv = () => {
-    const head = ["Id","First Name","Last Name","Phone","Email","Ticket","Method","Status","Amount","Currency","Registered","Confirmed By","Confirmed On"];
+    const head = ["Id","Event","First Name","Last Name","Phone","Email","Ticket","Method","Status","Amount","Currency","Registered","Confirmed By","Confirmed On"];
     const body = rows.map(r => [
-      r.id, r.firstName, r.lastName, r.phone, r.email ?? "",
+      r.id, eventTitle(r.eventKey), r.firstName, r.lastName, r.phone, r.email ?? "",
       r.ticketTypeName ?? "", r.paymentMethod, r.paymentStatus, r.amount, r.currency,
       new Date(r.createdOn).toLocaleString(),
       r.confirmedBy ?? "", r.confirmedOn ? new Date(r.confirmedOn).toLocaleString() : "",
@@ -124,7 +126,7 @@ export default function EventRegistrations() {
       .join("\n");
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
     const a = document.createElement("a");
-    a.href = url; a.download = `squid-game-registrations-${new Date().toISOString().slice(0,10)}.csv`;
+    a.href = url; a.download = `${eventKey ?? "all-events"}-registrations-${new Date().toISOString().slice(0,10)}.csv`;
     a.click(); URL.revokeObjectURL(url);
   };
 
@@ -140,6 +142,10 @@ export default function EventRegistrations() {
         </div>
       ),
     },
+    ...(!eventKey ? [{
+      title: "Event", key: "event", width: 170,
+      render: (_: unknown, r: EventRegistration) => <Tag color="blue">{eventTitle(r.eventKey)}</Tag>,
+    }] : []),
     ...(typeNames.length > 0 ? [{
       title: "Ticket", key: "ticketType", width: 120,
       render: (_: unknown, r: EventRegistration) => r.ticketTypeName
@@ -196,7 +202,9 @@ export default function EventRegistrations() {
 
   return (
     <div className="p-6">
-      <Title level={3} style={{ marginBottom: 4 }}>🦑 Squid Game X AXIS — Registrations</Title>
+      <Title level={3} style={{ marginBottom: 4 }}>
+        {selectedEvent ? `${selectedEvent.title} — Registrations` : "Event Registrations"}
+      </Title>
       <Text type="secondary">
         Card and Whish payments confirm automatically. Cash registrations need manual confirmation once the player pays at the store.
       </Text>
@@ -214,6 +222,12 @@ export default function EventRegistrations() {
       <Card size="small">
         <Space wrap style={{ marginBottom: 14, width: "100%", justifyContent: "space-between" }}>
           <Space wrap>
+            <Select
+              placeholder="All events" allowClear showSearch optionFilterProp="label" style={{ width: 220 }}
+              value={eventKey}
+              onChange={(v) => { setEventKey(v); setTicketType(undefined); setPage(1); }}
+              options={events.map(e => ({ value: e.key, label: e.title }))}
+            />
             <Input
               placeholder="Search name, phone, email…"
               prefix={<SearchOutlined />}

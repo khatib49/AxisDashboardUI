@@ -20,7 +20,6 @@ export default function PosItemCard({
     categoryName,
     priceLabel,
     picked,
-    outOfStock,
     stock,
     children,
 }: {
@@ -30,8 +29,8 @@ export default function PosItemCard({
     categoryName: string;
     priceLabel: string;
     picked: number;
-    outOfStock: boolean;
-    stock: { label: string; tone: PosStockTone };
+    /** null hides the badge (out-of-stock items show none). */
+    stock: { label: string; tone: PosStockTone } | null;
     children: ReactNode;
 }) {
     // A missing or broken image shows the same neutral placeholder.
@@ -43,9 +42,7 @@ export default function PosItemCard({
             className={`relative flex flex-col overflow-hidden rounded-2xl border bg-white transition-shadow dark:bg-white/[0.03] ${
                 picked > 0
                     ? "border-indigo-400 shadow-md ring-2 ring-indigo-200 dark:border-indigo-400/70 dark:ring-indigo-500/25"
-                    : outOfStock
-                        ? "border-red-200 shadow-[0_1px_2px_rgba(16,24,40,0.04)] dark:border-red-500/30"
-                        : "border-gray-200/80 shadow-[0_1px_2px_rgba(16,24,40,0.04)] hover:shadow-md dark:border-white/[0.06]"
+                    : "border-gray-200/80 shadow-[0_1px_2px_rgba(16,24,40,0.04)] hover:shadow-md dark:border-white/[0.06]"
             }`}
         >
             {/* Picked-count bubble */}
@@ -72,10 +69,12 @@ export default function PosItemCard({
                     </div>
                 )}
                 {/* Stock state, on the image where the eye lands first */}
-                <span className={`absolute bottom-2 left-2 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold shadow-sm ${STOCK_BADGE[stock.tone]}`}>
-                    <span className="h-1.5 w-1.5 rounded-full bg-white/90" aria-hidden />
-                    {stock.label}
-                </span>
+                {stock && (
+                    <span className={`absolute bottom-2 left-2 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold shadow-sm ${STOCK_BADGE[stock.tone]}`}>
+                        <span className="h-1.5 w-1.5 rounded-full bg-white/90" aria-hidden />
+                        {stock.label}
+                    </span>
+                )}
             </div>
 
             <div className="flex flex-1 flex-col p-3">
