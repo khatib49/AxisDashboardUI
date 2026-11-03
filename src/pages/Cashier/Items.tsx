@@ -23,6 +23,8 @@ import { searchClientsByPhone, ClientUserDto } from "../../services/clientServic
 import { printStationTickets } from "../../utils/autoPrint";
 import ChangeCalculator from "../../components/common/ChangeCalculator";
 import { getSets, SetDto } from '../../services/setService';
+import TenderDialog from '../Till/TenderDialog';
+import HappyHourBanner from '../../components/promotions/HappyHourBanner';
 
 
 export default function CashierItems() {
@@ -66,6 +68,8 @@ export default function CashierItems() {
 
     // Invoice states
     const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
+    // Multi-currency tender entry for the order that was just created
+    const [tenderOpen, setTenderOpen] = useState(false);
     const [currentInvoice, setCurrentInvoice] = useState<ItemTransaction | null>(null);
     const [userInvoices, setUserInvoices] = useState<ItemTransaction[]>([]);
     const [loadingInvoices, setLoadingInvoices] = useState(false);
@@ -339,6 +343,7 @@ export default function CashierItems() {
     return (
         <div className="p-6">
             <h1 className="text-2xl font-semibold mb-4">Items (Cashier)</h1>
+            <HappyHourBanner className="mb-4" />
 
             <div className="mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -1015,7 +1020,26 @@ export default function CashierItems() {
                 <div className="max-h-[80vh] overflow-y-auto">
                     {currentInvoice && <ItemInvoice transaction={currentInvoice} />}
                 </div>
+                {currentInvoice && (
+                    <div className="mt-3 flex justify-end border-t border-gray-200 pt-3 dark:border-gray-700">
+                        <button
+                            type="button"
+                            onClick={() => setTenderOpen(true)}
+                            className="rounded-lg border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-white/5"
+                        >
+                            Record tenders (USD / LBP)
+                        </button>
+                    </div>
+                )}
             </Modal>
+            {tenderOpen && currentInvoice && (
+                <TenderDialog
+                    isOpen={tenderOpen}
+                    onClose={() => setTenderOpen(false)}
+                    transactionId={currentInvoice.transactionId}
+                    total={currentInvoice.totalPrice}
+                />
+            )}
 
             <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} title={editing ? "Edit Item" : "Create Item"}>
                 <div className="flex flex-col gap-3">

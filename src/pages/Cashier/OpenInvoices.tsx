@@ -16,6 +16,8 @@ import Alert from '../../components/ui/alert/Alert';
 import ItemInvoice from '../../components/invoice/ItemInvoice';
 import { updateOpenInvoiceSet } from '../../services/transactionService';
 import { getSets, SetDto } from '../../services/setService';
+import CheckoutDialog from '../../components/till/CheckoutDialog';
+import HappyHourBanner from '../../components/promotions/HappyHourBanner';
 
 const OpenInvoices: React.FC = () => {
     const [editingSetInvoiceId, setEditingSetInvoiceId] = useState<number | null>(null);
@@ -54,6 +56,8 @@ const [, setLoadingSets] = useState(false);
     // Submitting state
     const [submitting, setSubmitting] = useState(false);
     const [closingInvoiceId, setClosingInvoiceId] = useState<number | null>(null);
+    // Checkout step (coupon / gift card / tenders) shown before an invoice is closed
+    const [checkoutInvoiceId, setCheckoutInvoiceId] = useState<number | null>(null);
 
     // Notifications
     const [notification, setNotification] = useState<{
@@ -240,8 +244,9 @@ const handlePrintInvoice = (invoice: OpenInvoiceDto) => {
 };
 
     // Handle close invoice - UPDATED WITH CORRECT PROPERTY NAMES
-const handleCloseInvoice = async (invoiceId: number) => {
-    if (!confirm(`Close invoice #${invoiceId} and mark as paid?`)) return;
+const handleCloseInvoice = async (invoiceId: number, viaCheckout = false) => {
+    if (!viaCheckout && !confirm(`Close invoice #${invoiceId} and mark as paid?`)) return;
+    setCheckoutInvoiceId(null);
 
     setClosingInvoiceId(invoiceId);
     try {
@@ -408,6 +413,7 @@ const handleCloseInvoice = async (invoiceId: number) => {
 
     return (
         <div className="p-6">
+            <HappyHourBanner className="mb-4" />
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-semibold">Open Invoices</h1>
                 <button
@@ -654,9 +660,9 @@ const handleCloseInvoice = async (invoiceId: number) => {
                             Print
                         </button>
 
-                        {/* Close & Pay Button */}
+                        {/* Close & Pay Button — opens the checkout step (coupon / gift card / tenders) */}
                         <button
-                            onClick={() => handleCloseInvoice(invoice.id)}
+                            onClick={() => setCheckoutInvoiceId(invoice.id)}
                             disabled={closingInvoiceId === invoice.id}
                             className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg text-sm"
                         >
@@ -917,6 +923,22 @@ const handleCloseInvoice = async (invoiceId: number) => {
                     </div>
                 </div>
             </Modal>
+
+            {/* Checkout step */}
+            {checkoutInvoiceId !== null && (() => {
+                const inv = openInvoices.find(i => i.id === checkoutInvoiceId);
+                return (
+                    <CheckoutDialog
+                        isOpen
+                        onClose={() => setCheckoutInvoiceId(null)}
+                        invoiceId={checkoutInvoiceId}
+                        total={inv?.totalPrice ?? 0}
+                        onInvoiceChanged={loadOpenInvoices}
+                        onConfirmClose={() => handleCloseInvoice(checkoutInvoiceId, true)}
+                        closing={closingInvoiceId === checkoutInvoiceId}
+                    />
+                );
+            })()}
 
             {/* Invoice Modal */}
             <Modal
