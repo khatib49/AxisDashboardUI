@@ -234,6 +234,16 @@ const AppSidebar: React.FC = () => {
             { name: "Leave", path: "/hr/leave" },
             { name: "Tip Pools", path: "/hr/tips" },
             { name: "Clock In / Out", path: "/hr/clock" },
+            { name: "Payroll", path: "/hr/payroll" },
+            { name: "Pay Components", path: "/hr/pay-components" },
+          ],
+        },
+        {
+          icon: <PageIcon />,
+          name: "Marketing",
+          subItems: [
+            { name: "Segments", path: "/admin/marketing/segments" },
+            { name: "Campaigns", path: "/admin/marketing/campaigns" },
           ],
         },
         {

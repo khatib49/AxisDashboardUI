@@ -116,6 +116,10 @@ import DisplaysAdmin from "./pages/CustomerDisplay/DisplaysAdmin";
 import WaiterHome from "./pages/Waiter/WaiterHome";
 import WaiterTable from "./pages/Waiter/WaiterTable";
 import WaiterOrder from "./pages/Waiter/WaiterOrder";
+import MarketingSegments from "./pages/Marketing/Segments";
+import MarketingCampaigns from "./pages/Marketing/Campaigns";
+import HrPayroll from "./pages/Hr/Payroll";
+import HrPayComponents from "./pages/Hr/PayComponents";
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { authenticated, loading } = useAuth();
@@ -360,6 +364,12 @@ export default function App() {
               <Route path="/hr/leave" element={<AdminRoute><HrLeave /></AdminRoute>} />
               <Route path="/hr/tips" element={<ProtectedRoute><HrTipPools /></ProtectedRoute>} />
               <Route path="/hr/clock" element={<ProtectedRoute><HrClockKiosk /></ProtectedRoute>} />
+              <Route path="/hr/payroll" element={<AdminRoute><HrPayroll /></AdminRoute>} />
+              <Route path="/hr/pay-components" element={<AdminRoute><HrPayComponents /></AdminRoute>} />
+
+              {/* ── Marketing ── */}
+              <Route path="/admin/marketing/segments" element={<AdminRoute><MarketingSegments /></AdminRoute>} />
+              <Route path="/admin/marketing/campaigns" element={<AdminRoute><MarketingCampaigns /></AdminRoute>} />
 
               {/* ── Promotions ── */}
               <Route path="/admin/promotions/gift-cards" element={<AdminRoute><GiftCards /></AdminRoute>} />

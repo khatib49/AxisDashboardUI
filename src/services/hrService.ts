@@ -249,3 +249,115 @@ export async function distributeTipPool(id: number): Promise<BaseResponse<HrTipP
 export async function deleteTipPool(id: number): Promise<void> {
   await api.delete(`/hr/tips/${id}`);
 }
+
+// ── Payroll ───────────────────────────────────────────────────────────────
+export type HrPayComponentType = {
+  id: number; name: string; kind: "Allowance" | "Deduction" | string; method: "Fixed" | "PercentOfGross" | string;
+  rate: number; isStatutory: boolean; isActive: boolean; defaultForAll: boolean;
+};
+export type HrPayComponentTypeUpsert = Omit<HrPayComponentType, "id">;
+export type HrEmployeePayComponent = {
+  componentTypeId: number; name: string; kind: string; method: string; defaultRate: number; isStatutory: boolean; defaultForAll: boolean;
+  hasOverride: boolean; amount?: number | null; rate?: number | null; overrideIsActive?: boolean | null; applies: boolean; effectiveRate: number;
+};
+export type HrEmployeePayComponentUpsert = { amount?: number | null; rate?: number | null; isActive: boolean };
+export type HrPayrollAdvance = {
+  id: number; employeeId: number; employeeName: string; amount: number; on: string; recoveredInRunId?: number | null; notes?: string | null;
+  createdBy?: string | null; createdOn: string;
+};
+export type HrPayrollAdvanceUpsert = { employeeId: number; amount: number; on: string; notes?: string | null };
+export type HrPayrollComponentLine = { name: string; kind: string; method: string; rate: number; amount: number; isStatutory: boolean; source: string };
+export type HrPayrollLine = {
+  id: number; runId: number; employeeId: number; employeeName: string; position?: string | null;
+  basePay: number; hoursWorked: number; hourlyRate?: number | null; monthlySalary?: number | null;
+  overtimeHours: number; overtimePay: number; allowances: number; deductions: number; statutoryDeductions: number;
+  advancesRecovered: number; manualAllowance: number; manualDeduction: number; gross: number; net: number;
+  components: HrPayrollComponentLine[]; notes?: string | null; isExcluded: boolean;
+};
+export type HrPayrollRun = {
+  id: number; year: number; month: number; status: "Draft" | "Approved" | "Paid" | string; generatedOn: string; generatedBy?: string | null;
+  approvedOn?: string | null; approvedBy?: string | null; paidOn?: string | null; paidBy?: string | null;
+  totalGross: number; totalDeductions: number; totalStatutory: number; totalNet: number;
+  journalEntryId?: number | null; paymentJournalEntryId?: number | null; notes?: string | null; branchId?: number | null;
+  employeeCount: number; excludedCount: number; lines?: HrPayrollLine[] | null;
+};
+export type HrPayrollLineAdjust = { notes?: string | null; isExcluded?: boolean | null; manualAllowance?: number | null; manualDeduction?: number | null };
+export type HrPayslip = {
+  runId: number; year: number; month: number; runStatus: string; employeeId: number; employeeName: string; position?: string | null; department?: string | null;
+  basePay: number; hoursWorked: number; hourlyRate?: number | null; monthlySalary?: number | null; overtimeHours: number; overtimePay: number;
+  allowances: HrPayrollComponentLine[]; deductions: HrPayrollComponentLine[];
+  totalAllowances: number; totalDeductions: number; gross: number; net: number; notes?: string | null; isExcluded: boolean;
+};
+
+const PAYROLL = "/hr/payroll";
+export async function getPayComponents(includeInactive = true): Promise<HrPayComponentType[]> {
+  return (await api.get<HrPayComponentType[]>(`${PAYROLL}/components?includeInactive=${includeInactive}`)).data;
+}
+export async function createPayComponent(p: HrPayComponentTypeUpsert): Promise<BaseResponse<HrPayComponentType>> {
+  return (await api.post<BaseResponse<HrPayComponentType>>(`${PAYROLL}/components`, p)).data;
+}
+export async function updatePayComponent(id: number, p: HrPayComponentTypeUpsert): Promise<BaseResponse<HrPayComponentType>> {
+  return (await api.put<BaseResponse<HrPayComponentType>>(`${PAYROLL}/components/${id}`, p)).data;
+}
+export async function deletePayComponent(id: number): Promise<BaseResponse<boolean>> {
+  return (await api.delete<BaseResponse<boolean>>(`${PAYROLL}/components/${id}`)).data;
+}
+export async function getEmployeePayComponents(employeeId: number): Promise<HrEmployeePayComponent[]> {
+  return (await api.get<HrEmployeePayComponent[]>(`${PAYROLL}/employees/${employeeId}/components`)).data;
+}
+export async function upsertEmployeePayComponent(employeeId: number, componentTypeId: number, p: HrEmployeePayComponentUpsert): Promise<BaseResponse<HrEmployeePayComponent>> {
+  return (await api.put<BaseResponse<HrEmployeePayComponent>>(`${PAYROLL}/employees/${employeeId}/components/${componentTypeId}`, p)).data;
+}
+export async function removeEmployeePayComponent(employeeId: number, componentTypeId: number): Promise<void> {
+  await api.delete(`${PAYROLL}/employees/${employeeId}/components/${componentTypeId}`);
+}
+export async function getPayrollAdvances(year?: number, month?: number, employeeId?: number): Promise<HrPayrollAdvance[]> {
+  const params = new URLSearchParams();
+  if (year) params.append("year", String(year));
+  if (month) params.append("month", String(month));
+  if (employeeId) params.append("employeeId", String(employeeId));
+  const qs = params.toString();
+  return (await api.get<HrPayrollAdvance[]>(`${PAYROLL}/advances${qs ? `?${qs}` : ""}`)).data;
+}
+export async function createPayrollAdvance(p: HrPayrollAdvanceUpsert): Promise<BaseResponse<HrPayrollAdvance>> {
+  return (await api.post<BaseResponse<HrPayrollAdvance>>(`${PAYROLL}/advances`, p)).data;
+}
+export async function updatePayrollAdvance(id: number, p: HrPayrollAdvanceUpsert): Promise<BaseResponse<HrPayrollAdvance>> {
+  return (await api.put<BaseResponse<HrPayrollAdvance>>(`${PAYROLL}/advances/${id}`, p)).data;
+}
+export async function deletePayrollAdvance(id: number): Promise<BaseResponse<boolean>> {
+  return (await api.delete<BaseResponse<boolean>>(`${PAYROLL}/advances/${id}`)).data;
+}
+export async function generatePayrollRun(year: number, month: number, notes?: string | null): Promise<BaseResponse<HrPayrollRun>> {
+  return (await api.post<BaseResponse<HrPayrollRun>>(`${PAYROLL}/runs/generate`, { year, month, notes: notes ?? null })).data;
+}
+export async function getPayrollRuns(year?: number): Promise<HrPayrollRun[]> {
+  return (await api.get<HrPayrollRun[]>(`${PAYROLL}/runs${year ? `?year=${year}` : ""}`)).data;
+}
+export async function getPayrollRun(id: number): Promise<HrPayrollRun> {
+  return (await api.get<HrPayrollRun>(`${PAYROLL}/runs/${id}`)).data;
+}
+export async function deletePayrollRun(id: number): Promise<BaseResponse<boolean>> {
+  return (await api.delete<BaseResponse<boolean>>(`${PAYROLL}/runs/${id}`)).data;
+}
+export async function adjustPayrollLine(runId: number, lineId: number, p: HrPayrollLineAdjust): Promise<BaseResponse<HrPayrollLine>> {
+  return (await api.put<BaseResponse<HrPayrollLine>>(`${PAYROLL}/runs/${runId}/lines/${lineId}`, p)).data;
+}
+export async function approvePayrollRun(id: number): Promise<BaseResponse<HrPayrollRun>> {
+  return (await api.post<BaseResponse<HrPayrollRun>>(`${PAYROLL}/runs/${id}/approve`)).data;
+}
+export async function markPayrollRunPaid(id: number, cashAccountNumber?: string | null, paidOn?: string | null): Promise<BaseResponse<HrPayrollRun>> {
+  return (await api.post<BaseResponse<HrPayrollRun>>(`${PAYROLL}/runs/${id}/mark-paid`, { cashAccountNumber: cashAccountNumber || null, paidOn: paidOn || null })).data;
+}
+export async function getPayslips(runId: number): Promise<HrPayslip[]> {
+  return (await api.get<HrPayslip[]>(`${PAYROLL}/runs/${runId}/payslips`)).data;
+}
+export async function getPayslip(runId: number, employeeId: number): Promise<HrPayslip> {
+  return (await api.get<HrPayslip>(`${PAYROLL}/runs/${runId}/payslip/${employeeId}`)).data;
+}
+export async function getPayslipHtml(runId: number, employeeId: number): Promise<string> {
+  return (await api.get<string>(`${PAYROLL}/runs/${runId}/payslip/${employeeId}.html`, { responseType: "text" })).data;
+}
+export async function downloadPayrollCsv(runId: number): Promise<Blob> {
+  return (await api.get<Blob>(`${PAYROLL}/runs/${runId}/export.csv`, { responseType: "blob" })).data;
+}
