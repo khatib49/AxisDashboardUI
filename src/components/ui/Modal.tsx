@@ -20,11 +20,11 @@ export default function Modal({ isOpen, onClose, title, children, className = ''
     return (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center overflow-auto bg-black/40 pointer-events-auto">
             <div className={`relative z-10 ${containerClasses} mx-4 ${className}`}>
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden max-h-[calc(100vh-4rem)]">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden max-h-[calc(100vh-4rem)] text-gray-800 dark:text-white/90">
                     <div className="flex items-center justify-between px-4 py-3 border-b dark:border-white/[0.03]">
-                        <h3 className="text-lg font-medium">{title}</h3>
+                        <h3 className="text-lg font-medium dark:text-white/90">{title}</h3>
                         {showCloseButton && (
-                            <button className="text-gray-500 hover:text-gray-700" onClick={onClose} aria-label="Close">✕</button>
+                            <button className="text-gray-500 dark:text-gray-400 hover:text-gray-700" onClick={onClose} aria-label="Close">✕</button>
                         )}
                     </div>
                     <div className="p-4 overflow-auto">{children}</div>

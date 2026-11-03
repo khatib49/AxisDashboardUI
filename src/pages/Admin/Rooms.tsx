@@ -188,13 +188,13 @@ export default function Rooms() {
     };
 
     return (
-        <div className="p-6">
+        <div className="p-6 text-gray-800 dark:text-white/90">
             <div className="flex items-center justify-between mb-4">
-                <h1 className="text-2xl font-semibold">Rooms</h1>
+                <h1 className="text-2xl font-semibold dark:text-white/90">Rooms</h1>
                 <button className="bg-green-600 text-white px-3 py-1 rounded" onClick={openCreate}>Add Room</button>
             </div>
 
-            {loading && <div className="text-gray-600">Loading rooms...</div>}
+            {loading && <div className="text-gray-600 dark:text-gray-400">Loading rooms...</div>}
 
             {!loading && (
                 <div>
@@ -206,28 +206,28 @@ export default function Rooms() {
                             const isPc = lower.includes('pc');
                             const isPlay = lower.includes('play') || lower.includes('playstation');
                             return (
-                                <div key={r.id} className="bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition flex flex-col justify-between">
+                                <div key={r.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 hover:shadow-md transition flex flex-col justify-between text-gray-800 dark:text-white/90">
                                     <div className="flex items-start justify-between">
                                         <div>
                                             <div className="text-lg font-medium">{r.name}</div>
-                                            <div className="text-sm text-gray-500">{r.categoryName ?? r.categoryId}</div>
+                                            <div className="text-sm text-gray-500 dark:text-gray-400">{r.categoryName ?? r.categoryId}</div>
                                         </div>
                                         <div className="ml-4">
-                                            {isPc && <PcIcon className="w-6 h-6 text-gray-600" />}
-                                            {(!isPc && isPlay) && <PlayStationIcon className="w-6 h-6 text-gray-600" />}
+                                            {isPc && <PcIcon className="w-6 h-6 text-gray-600 dark:text-gray-400" />}
+                                            {(!isPc && isPlay) && <PlayStationIcon className="w-6 h-6 text-gray-600 dark:text-gray-400" />}
                                         </div>
                                     </div>
                                     <div className="mt-4 flex items-center justify-between">
-                                        <div className="text-sm text-gray-600">
+                                        <div className="text-sm text-gray-600 dark:text-gray-400">
                                             {r.isOpenSet ? (
-                                                <span className="text-green-600 font-semibold">Open Set</span>
+                                                <span className="text-green-600 dark:text-green-400 font-semibold">Open Set</span>
                                             ) : (
                                                 <>Sets: <span className="font-semibold">{r.sets}</span></>
                                             )}
                                         </div>
                                         <div className="flex items-center gap-2">
                                             {!r.isOpenSet && <button className="text-xs px-2 py-1 bg-blue-500 text-white rounded" onClick={() => openSetsManagement(r.id, r.name)}>Manage Sets</button>}
-                                            <button className="text-sm px-2 py-1 bg-gray-200 rounded" onClick={() => {
+                                            <button className="text-sm px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded" onClick={() => {
                                                 setEditingId(r.id);
                                                 setName(r.name);
                                                 setCategoryId(r.categoryId);
@@ -244,12 +244,12 @@ export default function Rooms() {
 
                     {/* Pagination controls */}
                     <div className="mt-4 p-2 flex items-center justify-between">
-                        <div className="text-sm text-gray-600">{totalCount !== null ? `Showing ${rooms.length} of ${totalCount}` : ''}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">{totalCount !== null ? `Showing ${rooms.length} of ${totalCount}` : ''}</div>
                         <div className="flex items-center gap-2">
-                            <label className="text-sm text-gray-600">Page size</label>
+                            <label className="text-sm text-gray-600 dark:text-gray-400">Page size</label>
                             <Select options={[{ value: 5, label: '5' }, { value: 10, label: '10' }, { value: 25, label: '25' }]} defaultValue={pageSize} onChange={(v: string | number) => { setPageSize(Number(v)); setPage(1); }} className="w-24" />
-                            <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>Prev</button>
-                            <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setPage((p) => p + 1)} disabled={totalCount !== null && page * pageSize >= (totalCount || 0)}>Next</button>
+                            <button className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>Prev</button>
+                            <button className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded" onClick={() => setPage((p) => p + 1)} disabled={totalCount !== null && page * pageSize >= (totalCount || 0)}>Next</button>
                         </div>
                     </div>
                 </div>
@@ -261,7 +261,7 @@ export default function Rooms() {
                 title={editingId ? 'Edit Room' : 'Create Room'}
                 footer={(
                     <>
-                        <button className="bg-gray-200 px-3 py-1 rounded" onClick={() => setIsOpen(false)}>Cancel</button>
+                        <button className="bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded" onClick={() => setIsOpen(false)}>Cancel</button>
                         <button className="bg-blue-600 text-white px-3 py-1 rounded" onClick={handleSave} disabled={submitting}>{submitting ? 'Saving...' : (editingId ? 'Save' : 'Create')}</button>
                     </>
                 )}
@@ -281,7 +281,7 @@ export default function Rooms() {
                             <Switch key={String(isOpenSet)} label="Is this an open set room?" defaultChecked={isOpenSet} onChange={(checked) => setIsOpenSet(checked)} />
                         </div>
                         {isOpenSet && (
-                            <div className="text-xs text-gray-500 mt-1">Open set rooms do not require set selection.</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Open set rooms do not require set selection.</div>
                         )}
                     </div>
                     {/* Sets field removed - manage sets via "Manage Sets" button on room cards */}
@@ -298,7 +298,7 @@ export default function Rooms() {
                         <button className="px-3 py-1 bg-red-600 text-white rounded flex items-center gap-2" onClick={handleDelete}>
                             {deleting ? 'Deleting...' : 'Delete'}
                         </button>
-                        <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setDeleteId(null)}>Cancel</button>
+                        <button className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded" onClick={() => setDeleteId(null)}>Cancel</button>
                     </>
                 )}
             >
@@ -315,18 +315,18 @@ export default function Rooms() {
                 footer={(
                     <>
                         <button className="bg-green-600 text-white px-3 py-1 rounded" onClick={openCreateSet}>Add Set</button>
-                        <button className="bg-gray-200 px-3 py-1 rounded" onClick={() => setSetsModalOpen(false)}>Close</button>
+                        <button className="bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded" onClick={() => setSetsModalOpen(false)}>Close</button>
                     </>
                 )}
             >
                 {/* Scrollable content area to keep footer actions visible */}
                 <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-                    {setsLoading && <div className="text-gray-600">Loading sets...</div>}
-                    {!setsLoading && sets_list.length === 0 && <div className="text-gray-500">No sets found for this room.</div>}
+                    {setsLoading && <div className="text-gray-600 dark:text-gray-400">Loading sets...</div>}
+                    {!setsLoading && sets_list.length === 0 && <div className="text-gray-500 dark:text-gray-400">No sets found for this room.</div>}
                     {!setsLoading && sets_list.length > 0 && (
                         <div className="space-y-2">
                             {sets_list.map(s => (
-                                <div key={s.id} className="bg-gray-50 p-3 rounded flex items-center justify-between">
+                                <div key={s.id} className="bg-gray-50 dark:bg-white/[0.03] p-3 rounded flex items-center justify-between text-gray-800 dark:text-white/90">
                                     <div className="font-medium">{s.name}</div>
                                     <div className="flex items-center gap-2">
                                         <button className="text-sm px-2 py-1 bg-blue-500 text-white rounded" onClick={() => openEditSet(s)}>Edit</button>
@@ -339,10 +339,10 @@ export default function Rooms() {
                     {/* Sets pagination */}
                     {setsTotalCount !== null && setsTotalCount > setsPageSize && (
                         <div className="mt-4 flex items-center justify-between">
-                            <div className="text-sm text-gray-600">Showing {sets_list.length} of {setsTotalCount}</div>
+                            <div className="text-sm text-gray-600 dark:text-gray-400">Showing {sets_list.length} of {setsTotalCount}</div>
                             <div className="flex items-center gap-2">
-                                <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => { setSetsPage(p => Math.max(1, p - 1)); if (selectedRoomId) loadSets(selectedRoomId, Math.max(1, setsPage - 1), setsPageSize); }} disabled={setsPage <= 1}>Prev</button>
-                                <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => { setSetsPage(p => p + 1); if (selectedRoomId) loadSets(selectedRoomId, setsPage + 1, setsPageSize); }} disabled={setsPage * setsPageSize >= (setsTotalCount || 0)}>Next</button>
+                                <button className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded" onClick={() => { setSetsPage(p => Math.max(1, p - 1)); if (selectedRoomId) loadSets(selectedRoomId, Math.max(1, setsPage - 1), setsPageSize); }} disabled={setsPage <= 1}>Prev</button>
+                                <button className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded" onClick={() => { setSetsPage(p => p + 1); if (selectedRoomId) loadSets(selectedRoomId, setsPage + 1, setsPageSize); }} disabled={setsPage * setsPageSize >= (setsTotalCount || 0)}>Next</button>
                             </div>
                         </div>
                     )}
@@ -356,7 +356,7 @@ export default function Rooms() {
                 title={editingSetId ? 'Edit Set' : 'Create Set'}
                 footer={(
                     <>
-                        <button className="bg-gray-200 px-3 py-1 rounded" onClick={() => setSetModalOpen(false)}>Cancel</button>
+                        <button className="bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded" onClick={() => setSetModalOpen(false)}>Cancel</button>
                         <button className="bg-blue-600 text-white px-3 py-1 rounded" onClick={handleSaveSet} disabled={setFormSubmitting}>{setFormSubmitting ? 'Saving...' : (editingSetId ? 'Save' : 'Create')}</button>
                     </>
                 )}
@@ -379,7 +379,7 @@ export default function Rooms() {
                         <button className="px-3 py-1 bg-red-600 text-white rounded" onClick={handleDeleteSet}>
                             {deletingSet ? 'Deleting...' : 'Delete'}
                         </button>
-                        <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setDeleteSetId(null)}>Cancel</button>
+                        <button className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded" onClick={() => setDeleteSetId(null)}>Cancel</button>
                     </>
                 )}
             >

@@ -31,10 +31,13 @@ getAccountTypes
 } from '../../services/accountsApi';
 
 import type { TrialBalance , TrialBalanceLine, AccountType } from '../../services/accounting';
+import { useTheme } from '../../context/ThemeContext';
 
 
 
 const TrialBalance: React.FC = () => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [loading, setLoading] = useState(false);
   const [trialBalance, setTrialBalance] = useState<TrialBalance | null>(null);
   const [selectedDate, setSelectedDate] = useState<dayjs.Dayjs>(dayjs());
@@ -274,7 +277,7 @@ const TrialBalance: React.FC = () => {
 
             return (
               <>
-                <Table.Summary.Row style={{ backgroundColor: '#fafafa' }}>
+                <Table.Summary.Row style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#fafafa' }}>
                   <Table.Summary.Cell index={0} colSpan={3}>
                     <strong>Total (Displayed)</strong>
                   </Table.Summary.Cell>
@@ -290,7 +293,7 @@ const TrialBalance: React.FC = () => {
                   </Table.Summary.Cell>
                 </Table.Summary.Row>
                 {filterType && (
-                  <Table.Summary.Row style={{ backgroundColor: '#e6f7ff' }}>
+                  <Table.Summary.Row style={{ backgroundColor: isDark ? 'rgba(24,144,255,0.15)' : '#e6f7ff' }}>
                     <Table.Summary.Cell index={0} colSpan={3}>
                       <strong>Grand Total (All Accounts)</strong>
                     </Table.Summary.Cell>

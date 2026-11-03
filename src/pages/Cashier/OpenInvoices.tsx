@@ -447,10 +447,10 @@ const handleCloseInvoice = async (invoiceId: number, viaCheckout = false) => {
     );
 
     return (
-        <div className="p-6">
+        <div className="p-6 text-gray-800 dark:text-white/90">
             <HappyHourBanner className="mb-4" />
             <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-semibold">Open Invoices</h1>
+                <h1 className="text-2xl font-semibold dark:text-white/90">Open Invoices</h1>
                 <button
                     onClick={loadOpenInvoices}
                     className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition flex items-center gap-2"
@@ -474,13 +474,13 @@ const handleCloseInvoice = async (invoiceId: number, viaCheckout = false) => {
             )}
 
             {error && !loading && (
-                <div className="text-red-600 bg-red-50 p-4 rounded-lg border border-red-200">
+                <div className="text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 p-4 rounded-lg border border-red-200">
                     {error}
                 </div>
             )}
 
             {!loading && !error && openInvoices.length === 0 && (
-                <div className="text-center py-20 text-gray-500">
+                <div className="text-center py-20 text-gray-500 dark:text-gray-400">
                     <svg
                         className="w-16 h-16 mx-auto mb-4 text-gray-400"
                         fill="none"
@@ -505,11 +505,11 @@ const handleCloseInvoice = async (invoiceId: number, viaCheckout = false) => {
                      <div
                 key={invoice.id}
                 id={`invoice-${invoice.id}`}
-                className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-orange-200 hover:border-orange-400"
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-orange-200 hover:border-orange-400 text-gray-800 dark:text-white/90"
             >
                 <div className="bg-gradient-to-r from-orange-600 to-orange-700 p-4 text-white">
                     <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold">Invoice #{invoice.id}</h3>
+                        <h3 className="text-lg font-semibold dark:text-white/90">Invoice #{invoice.id}</h3>
                         <span className="px-3 py-1 bg-white/20 rounded-full text-xs font-medium">
                             OPEN
                         </span>
@@ -518,23 +518,23 @@ const handleCloseInvoice = async (invoiceId: number, viaCheckout = false) => {
 
                 <div className="p-4 space-y-3">
                     <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600">Created:</span>
-                        <span className="font-medium text-gray-900">
+                        <span className="text-gray-600 dark:text-gray-400">Created:</span>
+                        <span className="font-medium text-gray-900 dark:text-white/90">
                             {new Date(invoice.createdOn).toLocaleDateString()}
                         </span>
                     </div>
 
                     <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600">Time:</span>
-                        <span className="font-medium text-gray-900">
+                        <span className="text-gray-600 dark:text-gray-400">Time:</span>
+                        <span className="font-medium text-gray-900 dark:text-white/90">
                             {new Date(invoice.createdOn).toLocaleTimeString()}
                         </span>
                     </div>
 
                     <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600">Created By:</span>
+                        <span className="text-gray-600 dark:text-gray-400">Created By:</span>
                         <span
-                            className="font-medium text-gray-900 text-xs truncate max-w-[150px]"
+                            className="font-medium text-gray-900 dark:text-white/90 text-xs truncate max-w-[150px]"
                             title={invoice.createdBy}
                         >
                             {invoice.createdBy}
@@ -543,24 +543,24 @@ const handleCloseInvoice = async (invoiceId: number, viaCheckout = false) => {
 
                     {/* CLIENT NAME - NEW */}
                     {invoice.userName && (
-                        <div className="flex items-center justify-between text-sm bg-blue-50 p-2 rounded">
-                            <span className="text-blue-600 font-medium">Client:</span>
-                            <span className="font-semibold text-blue-900 truncate max-w-[150px]" title={invoice.userName}>
+                        <div className="flex items-center justify-between text-sm bg-blue-50 dark:bg-blue-500/10 p-2 rounded">
+                            <span className="text-blue-600 dark:text-blue-400 font-medium">Client:</span>
+                            <span className="font-semibold text-blue-900 dark:text-blue-300 truncate max-w-[150px]" title={invoice.userName}>
                                 {invoice.userName}
                             </span>
                         </div>
                     )}
 
                     <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600">Items:</span>
-                        <span className="font-medium text-gray-900">
+                        <span className="text-gray-600 dark:text-gray-400">Items:</span>
+                        <span className="font-medium text-gray-900 dark:text-white/90">
                             {invoice.items?.length || 0}
                         </span>
                     </div>
 
                       {/* SET NUMBER - NEW */}
-<div className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded">
-    <span className="text-gray-600 font-medium">Set/Table:</span>
+<div className="flex items-center justify-between text-sm bg-gray-50 dark:bg-white/[0.03] p-2 rounded text-gray-800 dark:text-white/90">
+    <span className="text-gray-600 dark:text-gray-400 font-medium">Set/Table:</span>
     {editingSetInvoiceId === invoice.id ? (
         <div className="flex items-center gap-2">
             <Select
@@ -593,7 +593,7 @@ const handleCloseInvoice = async (invoiceId: number, viaCheckout = false) => {
         </div>
     ) : (
         <div className="flex items-center gap-2">
-            <span className="font-semibold text-gray-900">
+            <span className="font-semibold text-gray-900 dark:text-white/90">
                 {invoice.set || 'Not Assigned'}
             </span>
             <button
@@ -601,7 +601,7 @@ const handleCloseInvoice = async (invoiceId: number, viaCheckout = false) => {
                     setEditingSetInvoiceId(invoice.id);
                     setEditSetValue(invoice.setId || null);
                 }}
-                className="text-blue-600 hover:text-blue-800 text-xs"
+                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 text-xs"
             >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -613,16 +613,16 @@ const handleCloseInvoice = async (invoiceId: number, viaCheckout = false) => {
 
                     {invoice.discountName && (
                         <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-600">Discount:</span>
-                            <span className="font-medium text-green-600">
+                            <span className="text-gray-600 dark:text-gray-400">Discount:</span>
+                            <span className="font-medium text-green-600 dark:text-green-400">
                                 {invoice.discountName}
                             </span>
                         </div>
                     )}
 
                     {/* Items Preview */}
-                    <div className="border-t border-gray-200 pt-3">
-                        <p className="text-xs font-medium text-gray-600 mb-2">
+                    <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
+                        <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
                             Items in Invoice:
                         </p>
                         <div className="space-y-1 max-h-32 overflow-y-auto">
@@ -631,10 +631,10 @@ const handleCloseInvoice = async (invoiceId: number, viaCheckout = false) => {
                                     key={item.itemId}
                                     className="flex justify-between text-xs"
                                 >
-                                    <span className="text-gray-700 truncate max-w-[150px]">
+                                    <span className="text-gray-700 dark:text-gray-300 truncate max-w-[150px]">
                                         {item.itemName}
                                     </span>
-                                    <span className="text-gray-600">
+                                    <span className="text-gray-600 dark:text-gray-400">
                                         {item.quantity} × ${item.price.toFixed(2)}
                                     </span>
                                 </div>
@@ -644,9 +644,9 @@ const handleCloseInvoice = async (invoiceId: number, viaCheckout = false) => {
 
                     <AppliedPromotionChips applied={appliedPromos[invoice.id]} className="pt-1" />
 
-                    <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200">
-                        <span className="text-gray-600">Total:</span>
-                        <span className="font-bold text-lg text-orange-600">
+                    <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200 dark:border-gray-700">
+                        <span className="text-gray-600 dark:text-gray-400">Total:</span>
+                        <span className="font-bold text-lg text-orange-600 dark:text-orange-400">
                             ${invoice.totalPrice.toFixed(2)}
                         </span>
                     </div>
@@ -753,7 +753,7 @@ const handleCloseInvoice = async (invoiceId: number, viaCheckout = false) => {
                     {/* Filters */}
                     <div className="flex items-center gap-3">
                         <div className="flex-1">
-                            <label className="text-sm text-gray-600 mb-1 block">Category</label>
+                            <label className="text-sm text-gray-600 dark:text-gray-400 mb-1 block">Category</label>
                             <Select
                                 options={[
                                     { value: '', label: 'All Categories' },
@@ -767,7 +767,7 @@ const handleCloseInvoice = async (invoiceId: number, viaCheckout = false) => {
                             />
                         </div>
                         <div className="flex-1">
-                            <label className="text-sm text-gray-600 mb-1 block">Search</label>
+                            <label className="text-sm text-gray-600 dark:text-gray-400 mb-1 block">Search</label>
                             <Input
                                 placeholder="Search items..."
                                 value={search}
@@ -781,19 +781,19 @@ const handleCloseInvoice = async (invoiceId: number, viaCheckout = false) => {
 
                     {/* Selected Items Summary */}
                     {selectedItemsCount > 0 && (
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 rounded-lg p-3">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-sm font-medium text-blue-800">
+                                    <p className="text-sm font-medium text-blue-800 dark:text-blue-300">
                                         {selectedItemsCount} item(s) selected
                                     </p>
-                                    <p className="text-xs text-blue-600">
+                                    <p className="text-xs text-blue-600 dark:text-blue-400">
                                         Subtotal: ${selectedItemsTotal.toFixed(2)}
                                     </p>
                                 </div>
                                 <button
                                     onClick={() => setSelectedItems({})}
-                                    className="text-sm text-blue-600 hover:text-blue-800"
+                                    className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800"
                                 >
                                     Clear All
                                 </button>
@@ -809,7 +809,7 @@ const handleCloseInvoice = async (invoiceId: number, viaCheckout = false) => {
                     )}
 
                     {!loadingItems && items.length === 0 && (
-                        <div className="text-center py-10 text-gray-500">
+                        <div className="text-center py-10 text-gray-500 dark:text-gray-400">
                             <p>No items found</p>
                         </div>
                     )}
@@ -823,12 +823,12 @@ const handleCloseInvoice = async (invoiceId: number, viaCheckout = false) => {
                                     return (
                                         <div
                                             key={item.id}
-                                            className={`border rounded p-3 bg-white ${
+                                            className={`border rounded p-3 bg-white dark:bg-gray-800 text-gray-800 dark:text-white/90 ${
                                                 isOutOfStock
-                                                    ? 'opacity-60 border-gray-200'
+                                                    ? 'opacity-60 border-gray-200 dark:border-gray-700'
                                                     : selected > 0
                                                     ? 'border-blue-500 ring-2 ring-blue-100'
-                                                    : 'border-gray-200'
+                                                    : 'border-gray-200 dark:border-gray-700'
                                             }`}
                                         >
                                             <div className="flex items-center gap-2 mb-2">
@@ -846,10 +846,10 @@ const handleCloseInvoice = async (invoiceId: number, viaCheckout = false) => {
                                                     }}
                                                 />
                                                 <div className="flex-1 min-w-0">
-                                                    <div className="font-medium text-sm text-gray-800 truncate">
+                                                    <div className="font-medium text-sm text-gray-800 dark:text-white/90 truncate">
                                                         {item.name}
                                                     </div>
-                                                    <div className="text-xs text-gray-500">
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400">
                                                         ${item.price}
                                                     </div>
                                                 </div>
@@ -857,8 +857,8 @@ const handleCloseInvoice = async (invoiceId: number, viaCheckout = false) => {
                                             <div
                                                 className={`text-xs mb-2 ${
                                                     isOutOfStock
-                                                        ? 'text-red-600 font-medium'
-                                                        : 'text-gray-500'
+                                                        ? 'text-red-600 dark:text-red-400 font-medium'
+                                                        : 'text-gray-500 dark:text-gray-400'
                                                 }`}
                                             >
                                                 Stock: {item.quantity}{' '}
@@ -866,7 +866,7 @@ const handleCloseInvoice = async (invoiceId: number, viaCheckout = false) => {
                                             </div>
                                             <div className="flex items-center gap-1">
                                                 <button
-                                                    className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                                                    className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                                                     disabled={isOutOfStock}
                                                     onClick={() =>
                                                         setSelectedItems((s) => {
@@ -886,7 +886,7 @@ const handleCloseInvoice = async (invoiceId: number, viaCheckout = false) => {
                                                     {selected}
                                                 </div>
                                                 <button
-                                                    className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                                                    className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                                                     disabled={isOutOfStock}
                                                     onClick={() =>
                                                         setSelectedItems((s) => {
@@ -906,19 +906,19 @@ const handleCloseInvoice = async (invoiceId: number, viaCheckout = false) => {
 
                             {/* Pagination */}
                             <div className="flex items-center justify-between pt-3 border-t">
-                                <div className="text-sm text-gray-600">
+                                <div className="text-sm text-gray-600 dark:text-gray-400">
                                     Page {page} — {total} items
                                 </div>
                                 <div className="space-x-2">
                                     <button
-                                        className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50 text-sm"
+                                        className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded disabled:opacity-50 text-sm"
                                         disabled={page <= 1}
                                         onClick={() => setPage((p) => Math.max(1, p - 1))}
                                     >
                                         Prev
                                     </button>
                                     <button
-                                        className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50 text-sm"
+                                        className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded disabled:opacity-50 text-sm"
                                         disabled={page >= Math.max(1, Math.ceil(total / pageSize))}
                                         onClick={() => setPage((p) => p + 1)}
                                     >
@@ -932,7 +932,7 @@ const handleCloseInvoice = async (invoiceId: number, viaCheckout = false) => {
                     {/* Action Buttons */}
                     <div className="flex items-center gap-2 pt-4 border-t">
                         <button
-                            className="flex-1 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition"
+                            className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 transition"
                             onClick={() => {
                                 setIsAddItemsModalOpen(false);
                                 setSelectedInvoice(null);

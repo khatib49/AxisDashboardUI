@@ -9,6 +9,7 @@ import {
 } from '../../services/accountsApi';
 
 import type { Account, AccountType, AccountCreate, AccountUpdate } from '../../services/accounting';
+import { useTheme } from '../../context/ThemeContext';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -28,6 +29,8 @@ const AccountForm: React.FC<AccountFormProps> = ({
   onSuccess,
   onCancel
 }) => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [selectedTypeId, setSelectedTypeId] = useState<number | undefined>(account?.accountTypeId);
@@ -203,7 +206,7 @@ const AccountForm: React.FC<AccountFormProps> = ({
       </Form.Item>
 
       {account?.isSystemAccount && (
-        <div style={{ padding: '12px', background: '#fff7e6', border: '1px solid #ffd591', borderRadius: '4px' }}>
+        <div style={{ padding: '12px', background: isDark ? 'rgba(250,140,22,0.15)' : '#fff7e6', border: isDark ? '1px solid #593815' : '1px solid #ffd591', borderRadius: '4px' }}>
           <strong>Note:</strong> This is a system account. Some properties cannot be modified.
         </div>
       )}

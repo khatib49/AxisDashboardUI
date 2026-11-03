@@ -105,12 +105,12 @@ export default function KitchenOrders() {
 
     const getStatusBadge = (statusId: number, statusName: string) => {
         const statusConfig: Record<number, { bg: string; text: string; label: string }> = {
-            11: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Pending' }, // Food Pending
-            12: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'In Progress' },     // Food InProgress
-            13: { bg: 'bg-green-100', text: 'text-green-800', label: 'Ready' },   // Food Ready
-            14: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Served' },    // Food Served
+            11: { bg: 'bg-yellow-100 dark:bg-yellow-500/15', text: 'text-yellow-800 dark:text-yellow-300', label: 'Pending' }, // Food Pending
+            12: { bg: 'bg-blue-100 dark:bg-blue-500/15', text: 'text-blue-800 dark:text-blue-300', label: 'In Progress' },     // Food InProgress
+            13: { bg: 'bg-green-100 dark:bg-green-500/15', text: 'text-green-800 dark:text-green-300', label: 'Ready' },   // Food Ready
+            14: { bg: 'bg-gray-100 dark:bg-white/10', text: 'text-gray-800 dark:text-white/90', label: 'Served' },    // Food Served
         };
-        const config = statusConfig[statusId] || { bg: 'bg-gray-100', text: 'text-gray-800', label: statusName };
+        const config = statusConfig[statusId] || { bg: 'bg-gray-100 dark:bg-white/10', text: 'text-gray-800 dark:text-white/90', label: statusName };
         return (
             <span className={`inline-flex items-center px-2 py-1 rounded-full ${config.bg} ${config.text} text-xs font-medium`}>
                 {config.label}
@@ -155,9 +155,9 @@ export default function KitchenOrders() {
     return (
         <>
             <PageMeta title="Kitchen Orders - AXIS" description="Kitchen order management" />
-            <div className="p-6">
+            <div className="p-6 text-gray-800 dark:text-white/90">
                 <div className="flex items-center justify-between mb-6">
-                    <h1 className="text-2xl font-semibold">Kitchen Orders</h1>
+                    <h1 className="text-2xl font-semibold dark:text-white/90">Kitchen Orders</h1>
                     <button
                         onClick={loadOrders}
                         className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
@@ -189,7 +189,7 @@ export default function KitchenOrders() {
                 </div>
 
                 {error && (
-                    <div className="mb-4 text-red-600 bg-red-50 p-4 rounded-lg">
+                    <div className="mb-4 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 p-4 rounded-lg">
                         {error}
                     </div>
                 )}
@@ -201,14 +201,14 @@ export default function KitchenOrders() {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {orders.length === 0 ? (
-                            <div className="col-span-full text-center py-10 text-gray-500">
+                            <div className="col-span-full text-center py-10 text-gray-500 dark:text-gray-400">
                                 No orders found
                             </div>
                         ) : (
                             orders.map((order) => (
                                 <div
                                     key={order.transactionId}
-                                    className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border-l-4"
+                                    className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border-l-4 text-gray-800 dark:text-white/90"
                                     style={{
                                         borderLeftColor:
                                             order.foodStatusId === 11 ? '#FCD34D' : // Food Pending - yellow
@@ -219,7 +219,7 @@ export default function KitchenOrders() {
                                 >
                                     <div className="flex justify-between items-start mb-3">
                                         <div>
-                                            <h3 className="text-lg font-semibold">Order #{order.transactionId}</h3>
+                                            <h3 className="text-lg font-semibold dark:text-white/90">Order #{order.transactionId}</h3>
                                             <p className="text-sm text-gray-600 dark:text-gray-400">
                                                 {new Date(order.orderTime).toLocaleString('en-US', {
                                                     timeZone: 'Asia/Beirut',
@@ -250,7 +250,7 @@ export default function KitchenOrders() {
                                                 <li key={idx}>
                                                     {item.quantity}x {item.itemName}
                                                     {item.specialInstructions && (
-                                                        <span className="text-xs text-gray-500 italic ml-1">
+                                                        <span className="text-xs text-gray-500 dark:text-gray-400 italic ml-1">
                                                             ({item.specialInstructions})
                                                         </span>
                                                     )}
@@ -291,7 +291,7 @@ export default function KitchenOrders() {
                 footer={
                     <>
                         <button
-                            className="bg-gray-200 text-gray-800 px-3 py-1 rounded"
+                            className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white/90 px-3 py-1 rounded"
                             onClick={closeModal}
                             disabled={actionLoading}
                         >
@@ -361,11 +361,11 @@ export default function KitchenOrders() {
                             <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Items</p>
                             <div className="space-y-2">
                                 {selectedOrder.items.map((item, idx) => (
-                                    <div key={idx} className="flex justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
+                                    <div key={idx} className="flex justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded text-gray-800 dark:text-white/90">
                                         <div>
                                             <p className="font-medium">{item.itemName}</p>
                                             {item.categoryName && (
-                                                <p className="text-xs text-gray-500">{item.categoryName}</p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">{item.categoryName}</p>
                                             )}
                                             {item.specialInstructions && (
                                                 <p className="text-xs text-yellow-700 dark:text-yellow-400 font-medium italic mt-1">⚠ {item.specialInstructions}</p>
@@ -374,7 +374,7 @@ export default function KitchenOrders() {
                                         <div className="text-right">
                                             <p className="font-semibold">x{item.quantity}</p>
                                             {item.price !== null && item.price !== undefined && (
-                                                <p className="text-sm text-gray-600">${item.price.toFixed(2)}</p>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">${item.price.toFixed(2)}</p>
                                             )}
                                         </div>
                                     </div>

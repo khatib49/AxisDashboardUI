@@ -110,7 +110,7 @@ export default function Cards() {
     }
 
     return (
-        <div className="p-6">
+        <div className="p-6 text-gray-800 dark:text-white/90">
             <h1 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">Cards</h1>
 
             <div className="mb-4 flex items-center gap-3">
@@ -119,12 +119,12 @@ export default function Cards() {
                 </button>
             </div>
 
-            {loading && <div className="text-gray-600">Loading cards...</div>}
+            {loading && <div className="text-gray-600 dark:text-gray-400">Loading cards...</div>}
 
-            {error && <div className="text-red-600 bg-red-50 p-3 rounded">{error}</div>}
+            {error && <div className="text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 p-3 rounded">{error}</div>}
 
             {!loading && !error && (
-                <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+                <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
                     <div className="max-w-full overflow-x-auto">
                         <Table>
                             <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
@@ -148,7 +148,7 @@ export default function Cards() {
                                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{c.createdOn}</TableCell>
                                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                                             <div className="flex items-center gap-2">
-                                                <button className="text-sm px-2 py-1 bg-gray-200 rounded" onClick={() => openEdit(c)}>Edit</button>
+                                                <button className="text-sm px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded" onClick={() => openEdit(c)}>Edit</button>
                                                 <DeleteIconButton onClick={() => setDeleteId(c.id)} />
                                             </div>
                                         </TableCell>
@@ -169,7 +169,7 @@ export default function Cards() {
                         <button className="px-3 py-1 bg-green-600 text-white rounded flex items-center gap-2" onClick={submitForm}>
                             {submitting ? <Loader size={16} /> : (editing ? 'Save' : 'Create')}
                         </button>
-                        <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setIsFormOpen(false)}>Cancel</button>
+                        <button className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded" onClick={() => setIsFormOpen(false)}>Cancel</button>
                     </>
                 )}
             >
@@ -209,7 +209,7 @@ export default function Cards() {
                         }}>
                             {deleting ? <Loader size={16} /> : 'Delete'}
                         </button>
-                        <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setDeleteId(null)}>Cancel</button>
+                        <button className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded" onClick={() => setDeleteId(null)}>Cancel</button>
                     </>
                 )}
             >

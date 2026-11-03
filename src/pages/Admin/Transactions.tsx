@@ -59,9 +59,9 @@ export default function Transactions() {
     const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
     return (
-        <div className="p-6">
+        <div className="p-6 text-gray-800 dark:text-white/90">
             <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">Item Transactions</h2>
+                <h2 className="text-xl font-semibold dark:text-white/90">Item Transactions</h2>
                 <div className="w-64">
                     <input
                         type="text"
@@ -71,17 +71,17 @@ export default function Transactions() {
                             setSearch(e.target.value);
                             setPage(1); // Reset to first page on search
                         }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     />
                 </div>
             </div>
 
-            <div className="bg-white shadow rounded-md overflow-hidden">
+            <div className="bg-white dark:bg-gray-800 shadow rounded-md overflow-hidden text-gray-800 dark:text-white/90">
                 <div className="space-y-4 p-4">
                     {loading ? (
-                        <div className="px-4 py-6 text-center text-sm text-gray-500">Loading...</div>
+                        <div className="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">Loading...</div>
                     ) : items.length === 0 ? (
-                        <div className="px-4 py-6 text-center text-sm text-gray-500">No transactions found</div>
+                        <div className="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">No transactions found</div>
                     ) : (
                         items.map((t) => {
                             const isExpanded = expandedIds.has(t.transactionId);
@@ -94,47 +94,47 @@ export default function Transactions() {
                                         <div className="flex items-start justify-between">
                                             <div className="flex-1 grid grid-cols-2 gap-4">
                                                 <div>
-                                                    <div className="text-xs text-gray-500">Transaction ID</div>
-                                                    <div className="text-sm font-medium text-gray-900">#{t.transactionId}</div>
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400">Transaction ID</div>
+                                                    <div className="text-sm font-medium text-gray-900 dark:text-white/90">#{t.transactionId}</div>
                                                 </div>
                                                 <div>
-                                                    <div className="text-xs text-gray-500">Date</div>
-                                                    <div className="text-sm text-gray-900">{new Date(t.createdOn).toLocaleString()}</div>
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400">Date</div>
+                                                    <div className="text-sm text-gray-900 dark:text-white/90">{new Date(t.createdOn).toLocaleString()}</div>
                                                 </div>
                                                 <div>
-                                                    <div className="text-xs text-gray-500">Created By</div>
-                                                    <div className="text-sm text-gray-900">{t.createdBy}</div>
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400">Created By</div>
+                                                    <div className="text-sm text-gray-900 dark:text-white/90">{t.createdBy}</div>
                                                 </div>
                                                 <div>
-                                                    <div className="text-xs text-gray-500">Total Paid</div>
-                                                    <div className="text-sm font-semibold text-gray-900">${t.totalPrice.toFixed(2)}</div>
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400">Total Paid</div>
+                                                    <div className="text-sm font-semibold text-gray-900 dark:text-white/90">${t.totalPrice.toFixed(2)}</div>
                                                 </div>
                                                 {t.roomName && (
                                                     <div>
-                                                        <div className="text-xs text-gray-500">Room</div>
-                                                        <div className="text-sm text-gray-900">{t.roomName}</div>
+                                                        <div className="text-xs text-gray-500 dark:text-gray-400">Room</div>
+                                                        <div className="text-sm text-gray-900 dark:text-white/90">{t.roomName}</div>
                                                     </div>
                                                 )}
                                                 {t.setName && (
                                                     <div>
-                                                        <div className="text-xs text-gray-500">Set</div>
-                                                        <div className="text-sm text-gray-900">{t.setName}</div>
+                                                        <div className="text-xs text-gray-500 dark:text-gray-400">Set</div>
+                                                        <div className="text-sm text-gray-900 dark:text-white/90">{t.setName}</div>
                                                     </div>
                                                 )}
                                                 <div>
-                                                    <div className="text-xs text-gray-500">Status</div>
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400">Status</div>
                                                     <span
                                                         className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${t.statusId === STATUS_ENABLED || t.statusId === STATUS_PROCESSED_PAID
-                                                            ? 'bg-green-100 text-green-800'
-                                                            : 'bg-gray-100 text-gray-800'
+                                                            ? 'bg-green-100 dark:bg-green-500/15 text-green-800 dark:text-green-300'
+                                                            : 'bg-gray-100 dark:bg-white/10 text-gray-800 dark:text-white/90'
                                                             }`}
                                                     >
                                                         {getStatusName(t.statusId) || t.statusId}
                                                     </span>
                                                 </div>
                                                 <div>
-                                                    <div className="text-xs text-gray-500">Items Count</div>
-                                                    <div className="text-sm text-gray-900">{t.items.length} item(s)</div>
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400">Items Count</div>
+                                                    <div className="text-sm text-gray-900 dark:text-white/90">{t.items.length} item(s)</div>
                                                 </div>
                                             </div>
                                             <div className="ml-4 flex-shrink-0">
@@ -151,11 +151,11 @@ export default function Transactions() {
                                     </div>
 
                                     {isExpanded && (
-                                        <div className="border-t bg-gray-50 p-4">
-                                            <div className="text-xs font-medium text-gray-700 mb-3">Items Detail</div>
+                                        <div className="border-t bg-gray-50 dark:bg-white/[0.03] p-4 text-gray-800 dark:text-white/90">
+                                            <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-3">Items Detail</div>
                                             <div className="space-y-2">
                                                 {t.items.map((item, idx) => (
-                                                    <div key={idx} className="flex items-center justify-between bg-white p-3 rounded border">
+                                                    <div key={idx} className="flex items-center justify-between bg-white dark:bg-gray-800 p-3 rounded border text-gray-800 dark:text-white/90">
                                                         <div className="flex items-center gap-3">
                                                             {item.imagePath && (
                                                                 <img
@@ -168,18 +168,18 @@ export default function Transactions() {
                                                                 />
                                                             )}
                                                             <div>
-                                                                <div className="text-sm font-medium text-gray-900">{item.itemName}</div>
-                                                                <div className="text-xs text-gray-500">
+                                                                <div className="text-sm font-medium text-gray-900 dark:text-white/90">{item.itemName}</div>
+                                                                <div className="text-xs text-gray-500 dark:text-gray-400">
                                                                     <span className="font-medium">Category:</span> {item.categoryName}
                                                                 </div>
-                                                                <div className="text-xs text-gray-500">
+                                                                <div className="text-xs text-gray-500 dark:text-gray-400">
                                                                     <span className="font-medium">Unit Price:</span> ${item.unitPrice.toFixed(2)} × {item.quantity}
                                                                 </div>
                                                             </div>
                                                         </div>
                                                         <div>
-                                                            <div className="text-xs text-gray-500">Line Total</div>
-                                                            <div className="text-sm font-semibold text-gray-900">${item.lineTotal.toFixed(2)}</div>
+                                                            <div className="text-xs text-gray-500 dark:text-gray-400">Line Total</div>
+                                                            <div className="text-sm font-semibold text-gray-900 dark:text-white/90">${item.lineTotal.toFixed(2)}</div>
                                                         </div>
                                                     </div>
                                                 ))}
@@ -194,17 +194,17 @@ export default function Transactions() {
             </div>
 
             <div className="mt-4 flex items-center justify-between">
-                <div className="text-sm text-gray-600">Showing page {page} of {totalPages} — {total} items</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Showing page {page} of {totalPages} — {total} items</div>
                 <div className="space-x-2">
                     <button
-                        className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+                        className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded disabled:opacity-50"
                         disabled={page <= 1}
                         onClick={() => setPage((p) => Math.max(1, p - 1))}
                     >
                         Prev
                     </button>
                     <button
-                        className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+                        className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded disabled:opacity-50"
                         disabled={page >= totalPages}
                         onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     >

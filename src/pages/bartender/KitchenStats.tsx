@@ -34,9 +34,9 @@ export default function KitchenStats() {
     return (
         <>
             <PageMeta title="Kitchen Statistics - AXIS" description="Kitchen performance statistics" />
-            <div className="p-6">
+            <div className="p-6 text-gray-800 dark:text-white/90">
                 <div className="flex items-center justify-between mb-6">
-                    <h1 className="text-2xl font-semibold">Kitchen Statistics</h1>
+                    <h1 className="text-2xl font-semibold dark:text-white/90">Kitchen Statistics</h1>
                     <button
                         onClick={loadStats}
                         className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
@@ -46,7 +46,7 @@ export default function KitchenStats() {
                 </div>
 
                 {error && (
-                    <div className="mb-4 text-red-600 bg-red-50 p-4 rounded-lg">
+                    <div className="mb-4 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 p-4 rounded-lg">
                         {error}
                     </div>
                 )}
@@ -58,7 +58,7 @@ export default function KitchenStats() {
                 ) : stats ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {/* Pending Orders */}
-                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-yellow-500">
+                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-yellow-500 text-gray-800 dark:text-white/90">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-sm text-gray-600 dark:text-gray-400">Pending Orders</p>
@@ -75,7 +75,7 @@ export default function KitchenStats() {
                         </div>
 
                         {/* In Progress Orders */}
-                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-blue-500">
+                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-blue-500 text-gray-800 dark:text-white/90">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-sm text-gray-600 dark:text-gray-400">In Progress</p>
@@ -92,7 +92,7 @@ export default function KitchenStats() {
                         </div>
 
                         {/* Ready Orders */}
-                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-green-500">
+                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-green-500 text-gray-800 dark:text-white/90">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-sm text-gray-600 dark:text-gray-400">Ready for Pickup</p>
@@ -109,7 +109,7 @@ export default function KitchenStats() {
                         </div>
 
                         {/* Served Today */}
-                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-purple-500">
+                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-purple-500 text-gray-800 dark:text-white/90">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-sm text-gray-600 dark:text-gray-400">Served Today</p>
@@ -127,7 +127,7 @@ export default function KitchenStats() {
 
                         {/* Average Preparation Time */}
                         {stats.averagePreparationTime !== null && stats.averagePreparationTime !== undefined && (
-                            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-indigo-500 md:col-span-2 lg:col-span-4">
+                            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-indigo-500 md:col-span-2 lg:col-span-4 text-gray-800 dark:text-white/90">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-sm text-gray-600 dark:text-gray-400">Average Preparation Time</p>
@@ -146,29 +146,29 @@ export default function KitchenStats() {
 
                         {/* Summary Card */}
                         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 rounded-lg shadow p-6 md:col-span-2 lg:col-span-4">
-                            <h2 className="text-xl font-semibold mb-4">Quick Summary</h2>
+                            <h2 className="text-xl font-semibold mb-4 dark:text-white/90">Quick Summary</h2>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                                 <div>
-                                    <p className="text-2xl font-bold text-yellow-600">{stats.pendingOrders}</p>
+                                    <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{stats.pendingOrders}</p>
                                     <p className="text-sm text-gray-600 dark:text-gray-400">Waiting</p>
                                 </div>
                                 <div>
-                                    <p className="text-2xl font-bold text-blue-600">{stats.inProgressOrders}</p>
+                                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.inProgressOrders}</p>
                                     <p className="text-sm text-gray-600 dark:text-gray-400">Cooking</p>
                                 </div>
                                 <div>
-                                    <p className="text-2xl font-bold text-green-600">{stats.readyOrders}</p>
+                                    <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.readyOrders}</p>
                                     <p className="text-sm text-gray-600 dark:text-gray-400">Ready</p>
                                 </div>
                                 <div>
-                                    <p className="text-2xl font-bold text-purple-600">{stats.servedToday}</p>
+                                    <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{stats.servedToday}</p>
                                     <p className="text-sm text-gray-600 dark:text-gray-400">Completed</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 ) : (
-                    <div className="text-center py-10 text-gray-500">
+                    <div className="text-center py-10 text-gray-500 dark:text-gray-400">
                         No statistics available
                     </div>
                 )}

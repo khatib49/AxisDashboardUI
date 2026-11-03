@@ -97,9 +97,9 @@ const Ps5Sessions: React.FC = () => {
     };
 
     return (
-        <div className="p-6">
+        <div className="p-6 text-gray-800 dark:text-white/90">
             <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-semibold">Open PS5 Sessions</h1>
+                <h1 className="text-2xl font-semibold dark:text-white/90">Open PS5 Sessions</h1>
                 <button
                     onClick={loadSessions}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
@@ -112,7 +112,7 @@ const Ps5Sessions: React.FC = () => {
             </div>
 
             {toast && (
-                <div className={`mb-4 p-4 rounded-lg ${toast.variant === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
+                <div className={`mb-4 p-4 rounded-lg ${toast.variant === 'success' ? 'bg-green-50 dark:bg-green-500/10 text-green-800 dark:text-green-300 border border-green-200' : 'bg-red-50 dark:bg-red-500/10 text-red-800 dark:text-red-300 border border-red-200'}`}>
                     <p className="font-medium">{toast.title}</p>
                     <p className="text-sm">{toast.message}</p>
                 </div>
@@ -125,13 +125,13 @@ const Ps5Sessions: React.FC = () => {
             )}
 
             {error && !loading && (
-                <div className="text-red-600 bg-red-50 p-4 rounded-lg border border-red-200">
+                <div className="text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 p-4 rounded-lg border border-red-200">
                     {error}
                 </div>
             )}
 
             {!loading && !error && sessions.length === 0 && (
-                <div className="text-center py-20 text-gray-500">
+                <div className="text-center py-20 text-gray-500 dark:text-gray-400">
                     <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                     </svg>
@@ -145,11 +145,11 @@ const Ps5Sessions: React.FC = () => {
                     {sessions.map((session) => (
                         <div
                             key={session.id}
-                            className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-200 hover:border-blue-300"
+                            className="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-blue-300 text-gray-800 dark:text-white/90"
                         >
                             <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 text-white">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="text-lg font-semibold">
+                                    <h3 className="text-lg font-semibold dark:text-white/90">
                                         {session.game || 'PS5 Session'}
                                     </h3>
                                     <span className="px-3 py-1 bg-white/20 rounded-full text-xs font-medium">
@@ -163,46 +163,46 @@ const Ps5Sessions: React.FC = () => {
 
                             <div className="p-4 space-y-3">
                                 <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-600">Room:</span>
-                                    <span className="font-medium text-gray-900">{session.room || '—'}</span>
+                                    <span className="text-gray-600 dark:text-gray-400">Room:</span>
+                                    <span className="font-medium text-gray-900 dark:text-white/90">{session.room || '—'}</span>
                                 </div>
 
                                 {session.set && (
                                     <div className="flex items-center justify-between text-sm">
-                                        <span className="text-gray-600">Set:</span>
-                                        <span className="font-medium text-gray-900">{session.set}</span>
+                                        <span className="text-gray-600 dark:text-gray-400">Set:</span>
+                                        <span className="font-medium text-gray-900 dark:text-white/90">{session.set}</span>
                                     </div>
                                 )}
 
                                 <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-600">Persons:</span>
-                                    <span className="font-medium text-gray-900">{session.numberOfPersons || 1}</span>
+                                    <span className="text-gray-600 dark:text-gray-400">Persons:</span>
+                                    <span className="font-medium text-gray-900 dark:text-white/90">{session.numberOfPersons || 1}</span>
                                 </div>
 
                                 <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-600">Duration:</span>
-                                    <span className="font-medium text-blue-600">
+                                    <span className="text-gray-600 dark:text-gray-400">Duration:</span>
+                                    <span className="font-medium text-blue-600 dark:text-blue-400">
                                         {session.isDayPass ? 'Day Pass' : (session.hours === 0 ? 'Open Hour' : `${session.hours}h`)}
                                     </span>
                                 </div>
 
                                 <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-600">Time Running:</span>
-                                    <span className="font-medium text-orange-600">
+                                    <span className="text-gray-600 dark:text-gray-400">Time Running:</span>
+                                    <span className="font-medium text-orange-600 dark:text-orange-400">
                                         {getSessionDuration(session.createdOn)}
                                     </span>
                                 </div>
 
                                 <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-600">Started By:</span>
-                                    <span className="font-medium text-gray-900 text-xs truncate max-w-[150px]" title={session.createdBy}>
+                                    <span className="text-gray-600 dark:text-gray-400">Started By:</span>
+                                    <span className="font-medium text-gray-900 dark:text-white/90 text-xs truncate max-w-[150px]" title={session.createdBy}>
                                         {session.createdBy}
                                     </span>
                                 </div>
 
-                                <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200">
-                                    <span className="text-gray-600">Price:</span>
-                                    <span className="font-bold text-lg text-green-600">${session.totalPrice.toFixed(2)}</span>
+                                <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200 dark:border-gray-700">
+                                    <span className="text-gray-600 dark:text-gray-400">Price:</span>
+                                    <span className="font-bold text-lg text-green-600 dark:text-green-400">${session.totalPrice.toFixed(2)}</span>
                                 </div>
 
                                 <button

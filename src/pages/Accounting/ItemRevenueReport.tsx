@@ -17,13 +17,13 @@ const pct = (n: number | null | undefined) =>
 
 const marginColor = (v: number | null | undefined) => {
     if (v == null) return "text-gray-400";
-    if (v >= 50) return "text-emerald-600 font-semibold";
-    if (v >= 20) return "text-yellow-600 font-semibold";
+    if (v >= 50) return "text-emerald-600 dark:text-emerald-400 font-semibold";
+    if (v >= 20) return "text-yellow-600 dark:text-yellow-400 font-semibold";
     return "text-red-500 font-semibold";
 };
 
 const profitColor = (v: number) =>
-    v >= 0 ? "text-emerald-600" : "text-red-500";
+    v >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500";
 
 // ─── types ──────────────────────────────────────────────────────────────────
 type SortKey =
@@ -45,18 +45,18 @@ type CategoryOption = { id: number; name: string };
 
 function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
     return (
-        <span className={`ml-1 text-xs ${active ? "text-indigo-600" : "text-gray-300"}`}>
+        <span className={`ml-1 text-xs ${active ? "text-indigo-600 dark:text-indigo-400" : "text-gray-300"}`}>
             {active ? (dir === "asc" ? "↑" : "↓") : "↕"}
         </span>
     );
 }
 
 function SummaryCard({
-    label, value, sub, color = "text-gray-900",
+    label, value, sub, color = "text-gray-900 dark:text-white/90",
 }: { label: string; value: string; sub?: string; color?: string }) {
     return (
-        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">{label}</p>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm text-gray-800 dark:text-white/90">
+            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide mb-1">{label}</p>
             <p className={`text-2xl font-bold ${color}`}>{value}</p>
             {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
         </div>
@@ -69,7 +69,7 @@ function TcgHighlightCard({ report }: { report: ItemRevenueReportDto }) {
         <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-xl p-5 text-white shadow-lg">
             <div className="flex items-center gap-2 mb-4">
                 <span className="text-2xl">🃏</span>
-                <h3 className="text-lg font-bold">TCG Summary</h3>
+                <h3 className="text-lg font-bold dark:text-white/90">TCG Summary</h3>
                 <span className="ml-auto text-xs bg-white/20 px-2 py-1 rounded-full">TCG + TCG Retail</span>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -96,38 +96,38 @@ function ItemRow({
 }: { item: ItemRevenueLineDto; expanded: boolean }) {
     if (!expanded) return null;
     return (
-        <tr className="bg-gray-50 border-b border-gray-100 hover:bg-indigo-50/30 transition">
+        <tr className="bg-gray-50 dark:bg-white/[0.03] border-b border-gray-100 dark:border-gray-800 hover:bg-indigo-50/30 transition text-gray-800 dark:text-white/90">
             <td className="pl-12 pr-4 py-3">
                 <div className="flex items-center gap-3">
                     {item.imagePath ? (
                         <img
                             src={item.imagePath}
                             alt={item.itemName}
-                            className="w-8 h-8 rounded-lg object-cover border border-gray-200"
+                            className="w-8 h-8 rounded-lg object-cover border border-gray-200 dark:border-gray-700"
                         />
                     ) : (
-                        <div className="w-8 h-8 rounded-lg bg-gray-200 flex items-center justify-center text-gray-400 text-xs">
+                        <div className="w-8 h-8 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-400 dark:text-gray-300 text-xs">
                             📦
                         </div>
                     )}
-                    <span className="text-sm font-medium text-gray-800">{item.itemName}</span>
+                    <span className="text-sm font-medium text-gray-800 dark:text-white/90">{item.itemName}</span>
                 </div>
             </td>
             <td className="px-4 py-3 text-center">
-                <span className="text-sm text-gray-500">{fmt(item.sellPrice)}</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">{fmt(item.sellPrice)}</span>
             </td>
             <td className="px-4 py-3 text-center">
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-gray-500 dark:text-gray-400">
                     {item.buyPrice != null ? fmt(item.buyPrice) : <span className="text-gray-300">—</span>}
                 </span>
             </td>
             <td className="px-4 py-3 text-center">
-                <span className={`text-sm font-semibold ${item.unitsSold > 0 ? "text-gray-800" : "text-gray-300"}`}>
+                <span className={`text-sm font-semibold ${item.unitsSold > 0 ? "text-gray-800 dark:text-white/90" : "text-gray-300"}`}>
                     {item.unitsSold}
                 </span>
             </td>
             <td className="px-4 py-3 text-right">
-                <span className="text-sm font-semibold text-gray-800">{fmt(item.revenue)}</span>
+                <span className="text-sm font-semibold text-gray-800 dark:text-white/90">{fmt(item.revenue)}</span>
             </td>
             <td className="px-4 py-3 text-right">
                 <span className="text-sm text-red-500">{fmt(item.cogs)}</span>
@@ -144,19 +144,19 @@ function ItemRow({
             </td>
             <td className="px-4 py-3 text-center">
                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${item.stockOnHand === 0
-                    ? "bg-red-100 text-red-700"
+                    ? "bg-red-100 dark:bg-red-500/15 text-red-700 dark:text-red-400"
                     : item.stockOnHand <= 5
-                        ? "bg-yellow-100 text-yellow-700"
-                        : "bg-emerald-100 text-emerald-700"
+                        ? "bg-yellow-100 dark:bg-yellow-500/15 text-yellow-700 dark:text-yellow-400"
+                        : "bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
                     }`}>
                     {item.stockOnHand}
                 </span>
             </td>
             <td className="px-4 py-3 text-right">
-                <span className="text-sm text-gray-600">{fmt(item.stockBuyValue)}</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">{fmt(item.stockBuyValue)}</span>
             </td>
             <td className="px-4 py-3 text-right">
-                <span className="text-sm text-gray-600">{fmt(item.stockSellValue)}</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">{fmt(item.stockSellValue)}</span>
             </td>
         </tr>
     );
@@ -184,7 +184,7 @@ function CategoryGroup({
 
     const th = (key: SortKey, label: string, align = "text-right") => (
         <th
-            className={`px-4 py-3 ${align} text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer select-none hover:text-indigo-600 transition whitespace-nowrap`}
+            className={`px-4 py-3 ${align} text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide cursor-pointer select-none hover:text-indigo-600 transition whitespace-nowrap`}
             onClick={() => onSort(key)}
         >
             {label}
@@ -193,7 +193,7 @@ function CategoryGroup({
     );
 
     return (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden mb-4 text-gray-800 dark:text-white/90">
             {/* Category header */}
             <button
                 className={`w-full flex items-center justify-between px-5 py-4 text-left transition hover:bg-gray-50 ${isTcg ? "border-l-4 border-indigo-500" : "border-l-4 border-blue-400"}`}
@@ -202,7 +202,7 @@ function CategoryGroup({
                 <div className="flex items-center gap-3">
                     <span className="text-lg">{isTcg ? "🃏" : "📦"}</span>
                     <div>
-                        <h3 className="text-base font-bold text-gray-900">{group.categoryName}</h3>
+                        <h3 className="text-base font-bold text-gray-900 dark:text-white/90">{group.categoryName}</h3>
                         <p className="text-xs text-gray-400 mt-0.5">
                             {group.items.length} item{group.items.length !== 1 ? "s" : ""}
                             {" · "}
@@ -215,7 +215,7 @@ function CategoryGroup({
                 <div className="hidden md:flex items-center gap-6 mr-4">
                     <div className="text-right">
                         <p className="text-xs text-gray-400">Revenue</p>
-                        <p className="text-sm font-bold text-gray-900">{fmt(group.totalRevenue)}</p>
+                        <p className="text-sm font-bold text-gray-900 dark:text-white/90">{fmt(group.totalRevenue)}</p>
                     </div>
                     <div className="text-right">
                         <p className="text-xs text-gray-400">COGS</p>
@@ -235,7 +235,7 @@ function CategoryGroup({
                     </div>
                     <div className="text-right">
                         <p className="text-xs text-gray-400">Stock Value</p>
-                        <p className="text-sm font-semibold text-gray-700">{fmt(group.totalStockSellValue)}</p>
+                        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">{fmt(group.totalStockSellValue)}</p>
                     </div>
                 </div>
 
@@ -246,11 +246,11 @@ function CategoryGroup({
             {expanded && (
                 <div className="overflow-x-auto">
                     <table className="min-w-full">
-                        <thead className="bg-gray-50 border-t border-gray-100">
+                        <thead className="bg-gray-50 dark:bg-white/[0.03] border-t border-gray-100 dark:border-gray-800 text-gray-800 dark:text-white/90">
                             <tr>
-                                <th className="pl-12 pr-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Item</th>
+                                <th className="pl-12 pr-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Item</th>
                                 {th("itemName" as SortKey, "Sell $", "text-center")}
-                                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Buy $</th>
+                                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Buy $</th>
                                 {th("unitsSold", "Sold", "text-center")}
                                 {th("revenue", "Revenue", "text-right")}
                                 {th("cogs", "COGS", "text-right")}
@@ -268,16 +268,16 @@ function CategoryGroup({
                         </tbody>
                         {/* Category subtotal footer */}
                         <tfoot>
-                            <tr className={`${isTcg ? "bg-indigo-50" : "bg-blue-50"} border-t-2 border-gray-200`}>
-                                <td className="pl-12 pr-4 py-3 text-sm font-bold text-gray-800">
+                            <tr className={`${isTcg ? "bg-indigo-50 dark:bg-indigo-500/10" : "bg-blue-50 dark:bg-blue-500/10"} border-t-2 border-gray-200 dark:border-gray-700`}>
+                                <td className="pl-12 pr-4 py-3 text-sm font-bold text-gray-800 dark:text-white/90">
                                     Subtotal — {group.categoryName}
                                 </td>
                                 <td className="px-4 py-3" />
                                 <td className="px-4 py-3" />
-                                <td className="px-4 py-3 text-center text-sm font-bold text-gray-800">
+                                <td className="px-4 py-3 text-center text-sm font-bold text-gray-800 dark:text-white/90">
                                     {group.totalUnitsSold}
                                 </td>
-                                <td className="px-4 py-3 text-right text-sm font-bold text-gray-900">
+                                <td className="px-4 py-3 text-right text-sm font-bold text-gray-900 dark:text-white/90">
                                     {fmt(group.totalRevenue)}
                                 </td>
                                 <td className="px-4 py-3 text-right text-sm font-bold text-red-500">
@@ -290,10 +290,10 @@ function CategoryGroup({
                                     {pct(group.grossMarginPct)}
                                 </td>
                                 <td className="px-4 py-3" />
-                                <td className="px-4 py-3 text-right text-sm font-bold text-gray-700">
+                                <td className="px-4 py-3 text-right text-sm font-bold text-gray-700 dark:text-gray-300">
                                     {fmt(group.totalStockBuyValue)}
                                 </td>
-                                <td className="px-4 py-3 text-right text-sm font-bold text-gray-700">
+                                <td className="px-4 py-3 text-right text-sm font-bold text-gray-700 dark:text-gray-300">
                                     {fmt(group.totalStockSellValue)}
                                 </td>
                             </tr>
@@ -456,15 +456,15 @@ export default function ItemRevenueReport() {
             {/* ── Page header ── */}
             <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Item Revenue Report</h1>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white/90">Item Revenue Report</h1>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                         Sales revenue, cost of goods, gross profit and stock analysis per item
                     </p>
                 </div>
                 <button
                     onClick={exportCsv}
                     disabled={!report || loading}
-                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition disabled:opacity-40"
+                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition disabled:opacity-50"
                 >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -474,10 +474,10 @@ export default function ItemRevenueReport() {
             </div>
 
             {/* ── Filters ── */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5 mb-6 text-gray-800 dark:text-white/90">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
-                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                        <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">
                             From Date
                         </label>
                         <input
@@ -488,7 +488,7 @@ export default function ItemRevenueReport() {
                         />
                     </div>
                     <div>
-                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                        <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">
                             To Date
                         </label>
                         <input
@@ -519,7 +519,7 @@ export default function ItemRevenueReport() {
                                         setFromDate(f);
                                         setToDate(t);
                                     }}
-                                    className="px-2.5 py-1.5 bg-gray-100 hover:bg-indigo-100 hover:text-indigo-700 rounded-lg text-xs font-medium transition"
+                                    className="px-2.5 py-1.5 bg-gray-100 dark:bg-white/10 hover:bg-indigo-100 hover:text-indigo-700 rounded-lg text-xs font-medium transition"
                                 >
                                     {label}
                                 </button>
@@ -530,7 +530,7 @@ export default function ItemRevenueReport() {
 
                 {/* Category multi-select */}
                 <div className="mb-4">
-                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
                         Categories
                         {selectedCategoryIds.length > 0 && (
                             <button
@@ -549,7 +549,7 @@ export default function ItemRevenueReport() {
                                 className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
                                     selectedCategoryIds.includes(cat.id)
                                         ? "bg-indigo-600 text-white shadow-sm"
-                                        : "bg-gray-100 text-gray-600 hover:bg-indigo-50 hover:text-indigo-600"
+                                        : "bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-400 hover:bg-indigo-50 hover:text-indigo-600"
                                 }`}
                             >
                                 {cat.name}
@@ -569,7 +569,7 @@ export default function ItemRevenueReport() {
                     </button>
                     <button
                         onClick={clearFilters}
-                        className="px-5 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
+                        className="px-5 py-2 bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
                     >
                         Reset
                     </button>
@@ -580,15 +580,15 @@ export default function ItemRevenueReport() {
                             className={`w-9 h-5 rounded-full transition ${showZeroSales ? "bg-indigo-600" : "bg-gray-300"}`}
                             onClick={() => setShowZeroSales((v) => !v)}
                         >
-                            <div className={`w-4 h-4 bg-white rounded-full shadow mt-0.5 transition-transform ${showZeroSales ? "translate-x-4" : "translate-x-0.5"}`} />
+                            <div className={`w-4 h-4 bg-white dark:bg-gray-800 rounded-full shadow mt-0.5 transition-transform text-gray-800 dark:text-white/90 ${showZeroSales ? "translate-x-4" : "translate-x-0.5"}`} />
                         </div>
-                        <span className="text-xs text-gray-600">Show items with 0 sales</span>
+                        <span className="text-xs text-gray-600 dark:text-gray-400">Show items with 0 sales</span>
                     </label>
                 </div>
             </div>
 
             {error && (
-                <div className="bg-red-50 text-red-700 border border-red-200 rounded-xl px-5 py-4 mb-6 text-sm">
+                <div className="bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 border border-red-200 rounded-xl px-5 py-4 mb-6 text-sm">
                     {error}
                 </div>
             )}
@@ -596,7 +596,7 @@ export default function ItemRevenueReport() {
             {loading && (
                 <div className="flex justify-center items-center py-24">
                     <Loader />
-                    <span className="ml-3 text-gray-500 text-sm">Loading report…</span>
+                    <span className="ml-3 text-gray-500 dark:text-gray-400 text-sm">Loading report…</span>
                 </div>
             )}
 
@@ -604,21 +604,21 @@ export default function ItemRevenueReport() {
                 <>
                     {/* ── Grand total summary cards ── */}
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
-                        <SummaryCard label="Total Revenue" value={fmt(report.grandTotalRevenue)} color="text-indigo-700" />
-                        <SummaryCard label="Total COGS" value={fmt(report.grandTotalCogs)} color="text-red-600" />
+                        <SummaryCard label="Total Revenue" value={fmt(report.grandTotalRevenue)} color="text-indigo-700 dark:text-indigo-400" />
+                        <SummaryCard label="Total COGS" value={fmt(report.grandTotalCogs)} color="text-red-600 dark:text-red-400" />
                         <SummaryCard
                             label="Gross Profit"
                             value={fmt(report.grandTotalGrossProfit)}
                             sub={pct(report.grandGrossMarginPct) + " margin"}
-                            color={report.grandTotalGrossProfit >= 0 ? "text-emerald-700" : "text-red-600"}
+                            color={report.grandTotalGrossProfit >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}
                         />
-                        <SummaryCard label="Units Sold" value={String(report.grandTotalUnitsSold)} color="text-gray-900" />
-                        <SummaryCard label="Stock Buy Value" value={fmt(report.grandTotalStockBuyValue)} color="text-gray-700" />
-                        <SummaryCard label="Stock Sell Value" value={fmt(report.grandTotalStockSellValue)} color="text-blue-700" />
+                        <SummaryCard label="Units Sold" value={String(report.grandTotalUnitsSold)} color="text-gray-900 dark:text-white/90" />
+                        <SummaryCard label="Stock Buy Value" value={fmt(report.grandTotalStockBuyValue)} color="text-gray-700 dark:text-gray-300" />
+                        <SummaryCard label="Stock Sell Value" value={fmt(report.grandTotalStockSellValue)} color="text-blue-700 dark:text-blue-400" />
                         <SummaryCard
                             label="Potential Profit"
                             value={fmt(report.grandTotalStockPotentialProfit)}
-                            color={report.grandTotalStockPotentialProfit >= 0 ? "text-emerald-700" : "text-red-600"}
+                            color={report.grandTotalStockPotentialProfit >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}
                         />
                     </div>
 
@@ -628,7 +628,7 @@ export default function ItemRevenueReport() {
                     </div>
 
                     {/* ── Tab bar ── */}
-                    <div className="flex items-center gap-1 mb-4 bg-gray-100 rounded-lg p-1 w-fit">
+                    <div className="flex items-center gap-1 mb-4 bg-gray-100 dark:bg-white/10 rounded-lg p-1 w-fit">
                         {([
                             { key: "all", label: "All Categories" },
                             { key: "tcg", label: "🃏 TCG Only" },
@@ -640,7 +640,7 @@ export default function ItemRevenueReport() {
                                 className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
                                     activeTab === key
                                         ? "bg-white text-indigo-700 shadow-sm"
-                                        : "text-gray-600 hover:text-gray-900"
+                                        : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
                                 }`}
                             >
                                 {label}
@@ -672,7 +672,7 @@ export default function ItemRevenueReport() {
                                 <div className="flex items-center justify-between flex-wrap gap-4">
                                     <div>
                                         <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Grand Total</p>
-                                        <p className="text-xs text-gray-500">
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
                                             {appliedFrom} → {appliedTo}
                                             {appliedCategoryIds.length > 0 && ` · ${appliedCategoryIds.length} categories`}
                                         </p>

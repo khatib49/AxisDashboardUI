@@ -121,7 +121,7 @@ export default function RevenueTrendChart() {
     const totalFnb = data.reduce((s, d) => s + d.itemsTotal, 0);
 
     return (
-        <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-5 md:p-6">
+        <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-5 md:p-6 text-gray-800 dark:text-white/90">
             <div className="flex items-center justify-between mb-2 flex-wrap gap-3">
                 <div>
                     <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">Revenue Trend</h3>
@@ -163,11 +163,11 @@ export default function RevenueTrendChart() {
                 </div>
                 <div className="text-center">
                     <p className="text-xs text-gray-400">🎮 Gaming</p>
-                    <p className="font-bold text-emerald-600">${totalGaming.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                    <p className="font-bold text-emerald-600 dark:text-emerald-400">${totalGaming.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                 </div>
                 <div className="text-center">
                     <p className="text-xs text-gray-400">🍔 F&B</p>
-                    <p className="font-bold text-amber-600">${totalFnb.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                    <p className="font-bold text-amber-600 dark:text-amber-400">${totalFnb.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                 </div>
                 <div className="text-center">
                     <p className="text-xs text-gray-400">Days tracked</p>

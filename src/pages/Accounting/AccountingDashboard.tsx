@@ -47,6 +47,7 @@ import {
 import type { JournalEntry } from '../../services/accounting';
 // Add this import at the top with the other service imports
 import { backfillTransactions, backfillExpenses, BackfillResultDto } from '../../services/accountingService';
+import { useTheme } from '../../context/ThemeContext';
 
 const { RangePicker } = DatePicker;
 
@@ -54,6 +55,8 @@ const fmt = (n: number) =>
   `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const AccountingDashboard: React.FC = () => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const navigate = useNavigate();
   const [backfillLoading, setBackfillLoading] = useState(false);
   const [backfillResult, setBackfillResult] = useState<BackfillResultDto | null>(null);
@@ -275,7 +278,7 @@ const AccountingDashboard: React.FC = () => {
         >
           <Row gutter={16}>
             <Col span={8}>
-              <Card size="small" style={{ background: '#f6ffed', borderColor: '#b7eb8f' }}>
+              <Card size="small" style={{ background: isDark ? 'rgba(82,196,26,0.15)' : '#f6ffed', borderColor: isDark ? '#274916' : '#b7eb8f' }}>
                 <Statistic
                   title="🎮 Gaming Revenue"
                   value={revenue?.gaming ?? 0}
@@ -294,7 +297,7 @@ const AccountingDashboard: React.FC = () => {
               </Card>
             </Col>
             <Col span={8}>
-              <Card size="small" style={{ background: '#fff7e6', borderColor: '#ffd591' }}>
+              <Card size="small" style={{ background: isDark ? 'rgba(250,140,22,0.15)' : '#fff7e6', borderColor: isDark ? '#593815' : '#ffd591' }}>
                 <Statistic
                   title="🍔 F&B Revenue"
                   value={revenue?.fnb ?? 0}
@@ -313,7 +316,7 @@ const AccountingDashboard: React.FC = () => {
               </Card>
             </Col>
             <Col span={8}>
-              <Card size="small" style={{ background: '#e6f7ff', borderColor: '#91d5ff' }}>
+              <Card size="small" style={{ background: isDark ? 'rgba(24,144,255,0.15)' : '#e6f7ff', borderColor: isDark ? '#15395b' : '#91d5ff' }}>
                 <Statistic
                   title="🃏 TCG Retail Revenue"
                   value={revenue?.tcg ?? 0}
@@ -598,7 +601,7 @@ const AccountingDashboard: React.FC = () => {
   }
 >
   <Space direction="vertical" style={{ width: '100%' }}>
-    <div style={{ color: '#666', fontSize: 13 }}>
+    <div style={{ color: isDark ? '#a6a6a6' : '#666', fontSize: 13 }}>
       Use these buttons to create missing journal entries for historical
       transactions and expenses. Safe to run multiple times — already-posted
       entries are skipped automatically.
@@ -651,7 +654,7 @@ const AccountingDashboard: React.FC = () => {
     {/* Result summary */}
     {backfillResult && (
       <div style={{
-        background: '#f5f5f5',
+        background: isDark ? 'rgba(255,255,255,0.06)' : '#f5f5f5',
         borderRadius: 8,
         padding: 16,
         marginTop: 8
@@ -694,7 +697,7 @@ const AccountingDashboard: React.FC = () => {
                 overflowY: 'auto',
                 marginTop: 8,
                 padding: 8,
-                background: '#fff2f0',
+                background: isDark ? 'rgba(255,77,79,0.15)' : '#fff2f0',
                 borderRadius: 4,
                 fontSize: 12,
                 fontFamily: 'monospace'

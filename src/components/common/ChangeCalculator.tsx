@@ -95,8 +95,8 @@ const ChangeCalculator: React.FC<ChangeCalculatorProps> = ({ isOpen, onClose, to
         <Modal isOpen={isOpen} onClose={handleClose} title="Change Calculator">
             <div className="space-y-6 p-2">
                 {/* Total Section */}
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <h3 className="text-sm font-semibold text-gray-700 mb-3">Total Amount</h3>
+                <div className="bg-gray-50 dark:bg-white/[0.03] rounded-lg p-4 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-white/90">
+                    <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Total Amount</h3>
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <Label>USD</Label>
@@ -122,8 +122,8 @@ const ChangeCalculator: React.FC<ChangeCalculatorProps> = ({ isOpen, onClose, to
                 </div>
 
                 {/* Paid Section */}
-                <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                    <h3 className="text-sm font-semibold text-blue-700 mb-3">Amount Paid</h3>
+                <div className="bg-blue-50 dark:bg-blue-500/10 rounded-lg p-4 border border-blue-200">
+                    <h3 className="text-sm font-semibold text-blue-700 dark:text-blue-400 mb-3">Amount Paid</h3>
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <Label>USD</Label>
@@ -150,55 +150,55 @@ const ChangeCalculator: React.FC<ChangeCalculatorProps> = ({ isOpen, onClose, to
 
                 {/* Result Section */}
                 <div className={`rounded-lg p-4 border-2 ${result.status === 'exact'
-                    ? 'bg-green-50 border-green-500'
+                    ? 'bg-green-50 dark:bg-green-500/10 border-green-500'
                     : result.status === 'change'
-                        ? 'bg-indigo-50 border-indigo-500'
+                        ? 'bg-indigo-50 dark:bg-indigo-500/10 border-indigo-500'
                         : result.status === 'remaining'
-                            ? 'bg-orange-50 border-orange-500'
-                            : 'bg-gray-50 border-gray-300'
+                            ? 'bg-orange-50 dark:bg-orange-500/10 border-orange-500'
+                            : 'bg-gray-50 dark:bg-white/[0.03] border-gray-300 dark:border-gray-700 text-gray-800 dark:text-white/90'
                     }`}>
                     <h3 className={`text-sm font-semibold mb-2 ${result.status === 'exact'
-                        ? 'text-green-700'
+                        ? 'text-green-700 dark:text-green-400'
                         : result.status === 'change'
-                            ? 'text-indigo-700'
+                            ? 'text-indigo-700 dark:text-indigo-400'
                             : result.status === 'remaining'
-                                ? 'text-orange-700'
-                                : 'text-gray-600'
+                                ? 'text-orange-700 dark:text-orange-400'
+                                : 'text-gray-600 dark:text-gray-400'
                         }`}>
                         Result
                     </h3>
 
                     {result.status === 'empty' && (
-                        <p className="text-gray-500 text-center py-4">Enter amounts to calculate</p>
+                        <p className="text-gray-500 dark:text-gray-400 text-center py-4">Enter amounts to calculate</p>
                     )}
 
                     {result.status === 'exact' && (
                         <div className="text-center py-4">
-                            <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-full mb-2">
-                                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 dark:bg-green-500/15 rounded-full mb-2">
+                                <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                 </svg>
                             </div>
-                            <p className="text-green-700 font-semibold">{result.message}</p>
+                            <p className="text-green-700 dark:text-green-400 font-semibold">{result.message}</p>
                         </div>
                     )}
 
                     {(result.status === 'change' || result.status === 'remaining') && (
                         <div>
-                            <p className={`font-medium mb-3 ${result.status === 'change' ? 'text-indigo-700' : 'text-orange-700'
+                            <p className={`font-medium mb-3 ${result.status === 'change' ? 'text-indigo-700 dark:text-indigo-400' : 'text-orange-700 dark:text-orange-400'
                                 }`}>
                                 {result.message}
                             </p>
                             <div className="space-y-2">
-                                <div className="flex justify-between items-center bg-white rounded p-3">
-                                    <span className="text-sm font-medium text-gray-600">USD:</span>
-                                    <span className="text-xl font-bold text-gray-900">
+                                <div className="flex justify-between items-center bg-white dark:bg-gray-800 rounded p-3 text-gray-800 dark:text-white/90">
+                                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">USD:</span>
+                                    <span className="text-xl font-bold text-gray-900 dark:text-white/90">
                                         ${result.amountUsd.toFixed(2)}
                                     </span>
                                 </div>
-                                <div className="flex justify-between items-center bg-white rounded p-3">
-                                    <span className="text-sm font-medium text-gray-600">LBP:</span>
-                                    <span className="text-xl font-bold text-gray-900">
+                                <div className="flex justify-between items-center bg-white dark:bg-gray-800 rounded p-3 text-gray-800 dark:text-white/90">
+                                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">LBP:</span>
+                                    <span className="text-xl font-bold text-gray-900 dark:text-white/90">
                                         {result.amountLbp.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} LBP
                                     </span>
                                 </div>
@@ -211,7 +211,7 @@ const ChangeCalculator: React.FC<ChangeCalculatorProps> = ({ isOpen, onClose, to
                 <div className="flex gap-2 pt-2">
                     <button
                         onClick={handleReset}
-                        className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium"
+                        className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 transition font-medium"
                     >
                         Reset
                     </button>
@@ -224,7 +224,7 @@ const ChangeCalculator: React.FC<ChangeCalculatorProps> = ({ isOpen, onClose, to
                 </div>
 
                 {/* Exchange Rate Info */}
-                <div className="text-center text-xs text-gray-500 pt-2 border-t">
+                <div className="text-center text-xs text-gray-500 dark:text-gray-400 pt-2 border-t">
                     Exchange Rate: 1 USD = {EXCHANGE_RATE.toLocaleString()} LBP
                 </div>
             </div>

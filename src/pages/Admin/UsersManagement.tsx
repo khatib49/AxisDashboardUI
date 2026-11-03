@@ -144,28 +144,28 @@ export default function UsersManagement() {
     };
 
     return (
-        <div className="p-6">
+        <div className="p-6 text-gray-800 dark:text-white/90">
             <div className="flex items-center justify-between mb-4">
-                <h1 className="text-xl font-semibold">Users Management</h1>
+                <h1 className="text-xl font-semibold dark:text-white/90">Users Management</h1>
                 <button className="bg-green-600 text-white px-3 py-1 rounded" onClick={handleOpen}>Add User</button>
             </div>
 
             {loading ? (
                 <Loader />
             ) : (
-                <div className="bg-white rounded shadow">
+                <div className="bg-white dark:bg-gray-800 rounded shadow text-gray-800 dark:text-white/90">
                     <div className="overflow-x-auto">
                         <table className="min-w-full divide-y">
-                            <thead className="bg-gray-50">
+                            <thead className="bg-gray-50 dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Display Name</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Roles</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Display Name</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Roles</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                                     <th className="px-6 py-3" />
                                 </tr>
                             </thead>
-                            <tbody className="bg-white divide-y">
+                            <tbody className="bg-white dark:bg-gray-800 divide-y text-gray-800 dark:text-white/90">
                                 {users.map((u) => (
                                     <tr key={u.id}>
                                         <td className="px-6 py-4 whitespace-nowrap">{u.email}</td>
@@ -175,21 +175,21 @@ export default function UsersManagement() {
                                             {(() => {
                                                 const statusId = u.statusId ?? 1;
                                                 if (statusId === 1) {
-                                                    return <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">Enabled</span>;
+                                                    return <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 dark:bg-green-500/15 text-green-800 dark:text-green-300 text-xs font-medium">Enabled</span>;
                                                 }
                                                 if (statusId === 2) {
-                                                    return <span className="inline-flex items-center px-2 py-1 rounded-full bg-orange-100 text-orange-800 text-xs font-medium">Disabled</span>;
+                                                    return <span className="inline-flex items-center px-2 py-1 rounded-full bg-orange-100 dark:bg-orange-500/15 text-orange-800 dark:text-orange-300 text-xs font-medium">Disabled</span>;
                                                 }
                                                 if (statusId === 8) {
                                                     return <span className="inline-flex items-center px-2 py-1 rounded-full bg-gray-700 text-white text-xs font-medium">Suspended</span>;
                                                 }
-                                                return <span className="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 text-gray-800 text-xs">Unknown</span>;
+                                                return <span className="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 dark:bg-white/10 text-gray-800 dark:text-white/90 text-xs">Unknown</span>;
                                             })()}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center gap-2">
-                                                <button className="text-sm text-blue-600 hover:text-blue-800" onClick={() => handleEdit(u)}>Edit</button>
-                                                <button className="text-sm text-red-600 hover:text-red-800" onClick={() => handleDeleteClick(u.id)}>Delete</button>
+                                                <button className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800" onClick={() => handleEdit(u)}>Edit</button>
+                                                <button className="text-sm text-red-600 dark:text-red-400 hover:text-red-800" onClick={() => handleDeleteClick(u.id)}>Delete</button>
                                             </div>
                                         </td>
                                     </tr>
@@ -200,12 +200,12 @@ export default function UsersManagement() {
 
                     <div className="flex items-center justify-between px-4 py-3 border-t">
                         <div className="flex items-center gap-2">
-                            <label className="text-sm text-gray-600">Rows:</label>
+                            <label className="text-sm text-gray-600 dark:text-gray-400">Rows:</label>
                             <Select options={[{ value: 5, label: '5' }, { value: 10, label: '10' }, { value: 25, label: '25' }, { value: 50, label: '50' }]} defaultValue={pageSize} onChange={(v: string | number) => { setPageSize(Number(v)); setPage(1); }} className="w-24" />
                         </div>
 
                         <div className="flex items-center gap-3">
-                            <div className="text-sm text-gray-600">Showing {Math.min((page - 1) * pageSize + 1, totalCount || 0)} - {Math.min(page * pageSize, totalCount || 0)} of {totalCount}</div>
+                            <div className="text-sm text-gray-600 dark:text-gray-400">Showing {Math.min((page - 1) * pageSize + 1, totalCount || 0)} - {Math.min(page * pageSize, totalCount || 0)} of {totalCount}</div>
                             <div className="flex items-center gap-2">
                                 <button className="px-2 py-1 border rounded disabled:opacity-50" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>Prev</button>
                                 <button className="px-2 py-1 border rounded disabled:opacity-50" onClick={() => setPage((p) => p + 1)} disabled={page * pageSize >= totalCount}>Next</button>
@@ -221,13 +221,13 @@ export default function UsersManagement() {
                 title={editingId ? 'Edit User' : 'Create User'}
                 footer={(
                     <>
-                        <button className="bg-gray-200 text-gray-800 px-3 py-1 rounded" onClick={closeModal} disabled={saving}>Cancel</button>
+                        <button className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white/90 px-3 py-1 rounded" onClick={closeModal} disabled={saving}>Cancel</button>
                         <button className="bg-blue-600 text-white px-3 py-1 rounded" onClick={handleRegister} disabled={saving}>{saving ? 'Saving...' : (editingId ? 'Save' : 'Create')}</button>
                     </>
                 )}
             >
                 <div className="space-y-4">
-                    {message && <div className="text-sm text-red-600">{message}</div>}
+                    {message && <div className="text-sm text-red-600 dark:text-red-400">{message}</div>}
                     <div>
                         <Label htmlFor="email">Email</Label>
                         <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="info@gmail.com" />
@@ -299,7 +299,7 @@ export default function UsersManagement() {
                 footer={(
                     <>
                         <button
-                            className="bg-gray-200 text-gray-800 px-3 py-1 rounded"
+                            className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white/90 px-3 py-1 rounded"
                             onClick={() => {
                                 setDeleteModalOpen(false);
                                 setUserToDelete(null);

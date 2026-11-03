@@ -8,6 +8,7 @@ import {
 } from '@ant-design/icons';
 import * as signalR from '@microsoft/signalr';
 import { get, post, patch } from '../../services/api'; // Use API helpers
+import { useTheme } from '../../context/ThemeContext';
 
 const { Title, Text } = Typography;
 
@@ -69,6 +70,8 @@ interface KitchenBarOrder {
 }
 
 const BarDisplay: React.FC = () => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [orders, setOrders] = useState<KitchenBarOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [connection, setConnection] = useState<signalR.HubConnection | null>(null);
@@ -289,7 +292,7 @@ const BarDisplay: React.FC = () => {
   }
 
   return (
-    <div style={{ padding: '20px', backgroundColor: '#f0f2f5', minHeight: '100vh' }}>
+    <div style={{ padding: '20px', backgroundColor: isDark ? '#0c111d' : '#f0f2f5', minHeight: '100vh' }}>
       <audio ref={audioRef} src="/notification.mp3" preload="auto" />
 
       <Row gutter={[16, 16]} style={{ marginBottom: '20px' }}>
@@ -379,7 +382,7 @@ const BarDisplay: React.FC = () => {
                   {order.itemComment && (
                     <Card 
                       size="small" 
-                      style={{ backgroundColor: '#fff7e6', border: '1px solid #ffa940' }}
+                      style={{ backgroundColor: isDark ? 'rgba(250,140,22,0.15)' : '#fff7e6', border: '1px solid #ffa940' }}
                     >
                       <Text strong>SPECIAL REQUEST:</Text>
                       <br />

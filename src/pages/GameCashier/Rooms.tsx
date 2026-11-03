@@ -71,12 +71,12 @@ export default function GameCashierRooms() {
     }, [selectedRoom]);
 
     return (
-        <div className="p-6">
+        <div className="p-6 text-gray-800 dark:text-white/90">
             <div className="flex items-center justify-between mb-4">
-                <h1 className="text-2xl font-semibold">Rooms</h1>
+                <h1 className="text-2xl font-semibold dark:text-white/90">Rooms</h1>
             </div>
 
-            {loading && <div className="text-gray-600">Loading rooms...</div>}
+            {loading && <div className="text-gray-600 dark:text-gray-400">Loading rooms...</div>}
 
             {!loading && (
                 <div>
@@ -88,22 +88,22 @@ export default function GameCashierRooms() {
                             const isPlay = lower.includes('play') || lower.includes('playstation');
                             const availableCount = roomAvailability[r.id] ?? 0;
                             return (
-                                <div key={r.id} className="bg-white rounded-lg shadow-sm p-3 hover:shadow-md transition flex flex-col justify-between cursor-pointer" onClick={() => setSelectedRoom(r)}>
+                                <div key={r.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 hover:shadow-md transition flex flex-col justify-between cursor-pointer text-gray-800 dark:text-white/90" onClick={() => setSelectedRoom(r)}>
                                     <div className="flex items-start justify-between">
                                         <div>
                                             <div className="text-base font-medium">{r.name}</div>
-                                            <div className="text-xs text-gray-500">{r.categoryName ?? r.categoryId}</div>
+                                            <div className="text-xs text-gray-500 dark:text-gray-400">{r.categoryName ?? r.categoryId}</div>
                                         </div>
                                         <div className="ml-2">
-                                            {isPc && <PcIcon className="w-5 h-5 text-gray-600" />}
-                                            {(!isPc && isPlay) && <PlayStationIcon className="w-5 h-5 text-gray-600" />}
+                                            {isPc && <PcIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />}
+                                            {(!isPc && isPlay) && <PlayStationIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />}
                                         </div>
                                     </div>
-                                    <div className="mt-3 text-sm text-gray-600">
+                                    <div className="mt-3 text-sm text-gray-600 dark:text-gray-400">
                                         {r.isOpenSet ? (
-                                            <span className="font-semibold text-green-600">Open Set</span>
+                                            <span className="font-semibold text-green-600 dark:text-green-400">Open Set</span>
                                         ) : (
-                                            <>Available Sets: <span className="font-semibold text-green-600">{availableCount}</span></>
+                                            <>Available Sets: <span className="font-semibold text-green-600 dark:text-green-400">{availableCount}</span></>
                                         )}
                                     </div>
                                 </div>
@@ -112,12 +112,12 @@ export default function GameCashierRooms() {
                     </div>
 
                     <div className="mt-4 p-2 flex items-center justify-between">
-                        <div className="text-sm text-gray-600">{totalCount !== null ? `Showing ${rooms.length} of ${totalCount}` : ''}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">{totalCount !== null ? `Showing ${rooms.length} of ${totalCount}` : ''}</div>
                         <div className="flex items-center gap-2">
-                            <label className="text-sm text-gray-600">Page size</label>
+                            <label className="text-sm text-gray-600 dark:text-gray-400">Page size</label>
                             <Select options={[{ value: 6, label: '6' }, { value: 12, label: '12' }, { value: 24, label: '24' }]} defaultValue={pageSize} onChange={(v: string | number) => { setPageSize(Number(v)); setPage(1); }} className="w-24" />
-                            <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>Prev</button>
-                            <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setPage((p) => p + 1)} disabled={totalCount !== null && page * pageSize >= (totalCount || 0)}>Next</button>
+                            <button className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>Prev</button>
+                            <button className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded" onClick={() => setPage((p) => p + 1)} disabled={totalCount !== null && page * pageSize >= (totalCount || 0)}>Next</button>
                         </div>
                     </div>
                 </div>
@@ -125,34 +125,34 @@ export default function GameCashierRooms() {
 
             <Modal isOpen={!!selectedRoom} onClose={() => setSelectedRoom(null)} title={selectedRoom ? selectedRoom.name : 'Room'}>
                 <div className="space-y-4">
-                    <div className="text-sm text-gray-600">Category: {selectedRoom?.categoryName ?? selectedRoom?.categoryId}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Category: {selectedRoom?.categoryName ?? selectedRoom?.categoryId}</div>
                     {selectedRoom?.isOpenSet && (
-                        <div className="text-sm text-green-600 bg-green-50 p-3 rounded">
+                        <div className="text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-500/10 p-3 rounded">
                             This is an open set room — no set management required.
                         </div>
                     )}
-                    {!selectedRoom?.isOpenSet && loadingAvailability && <div className="text-sm text-gray-500">Loading sets...</div>}
+                    {!selectedRoom?.isOpenSet && loadingAvailability && <div className="text-sm text-gray-500 dark:text-gray-400">Loading sets...</div>}
                     {!selectedRoom?.isOpenSet && !loadingAvailability && setAvailability && (
                         <>
-                            <div className="text-sm font-medium text-gray-700">Sets Availability:</div>
+                            <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Sets Availability:</div>
                             <div className="flex gap-4 text-xs mb-2">
                                 <div className="flex items-center gap-1">
-                                    <div className="w-4 h-4 bg-green-100 border-2 border-green-500 rounded"></div>
+                                    <div className="w-4 h-4 bg-green-100 dark:bg-green-500/15 border-2 border-green-500 rounded"></div>
                                     <span>Available ({setAvailability.availableCount})</span>
                                 </div>
                                 <div className="flex items-center gap-1">
-                                    <div className="w-4 h-4 bg-red-100 border-2 border-red-500 rounded"></div>
+                                    <div className="w-4 h-4 bg-red-100 dark:bg-red-500/15 border-2 border-red-500 rounded"></div>
                                     <span>Occupied ({setAvailability.unavailableCount})</span>
                                 </div>
                             </div>
                             <div className="grid grid-cols-6 gap-2">
                                 {setAvailability.available.map((set) => (
-                                    <div key={set.id} className="px-2 py-2 rounded-lg border-2 border-green-500 bg-green-50 text-center text-sm font-medium text-green-700 cursor-default">
+                                    <div key={set.id} className="px-2 py-2 rounded-lg border-2 border-green-500 bg-green-50 dark:bg-green-500/10 text-center text-sm font-medium text-green-700 dark:text-green-400 cursor-default">
                                         {set.name}
                                     </div>
                                 ))}
                                 {setAvailability.unavailable.map((set) => (
-                                    <div key={set.id} className="px-2 py-2 rounded-lg border-2 border-red-500 bg-red-50 text-center text-sm font-medium text-red-700 cursor-not-allowed opacity-60">
+                                    <div key={set.id} className="px-2 py-2 rounded-lg border-2 border-red-500 bg-red-50 dark:bg-red-500/10 text-center text-sm font-medium text-red-700 dark:text-red-400 cursor-not-allowed opacity-60">
                                         {set.name}
                                     </div>
                                 ))}

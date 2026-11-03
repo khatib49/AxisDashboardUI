@@ -124,7 +124,7 @@ const LoyaltyLeaderboard: React.FC = () => {
 
             {/* Leaderboard Display */}
             {!loading && currentData.length === 0 && (
-                <div className="text-center py-20 bg-white dark:bg-gray-800 rounded-lg shadow">
+                <div className="text-center py-20 bg-white dark:bg-gray-800 rounded-lg shadow text-gray-800 dark:text-white/90">
                     <p className="text-gray-500 dark:text-gray-400 text-lg">
                         No data available for {activeTab} leaderboard
                     </p>
@@ -140,13 +140,13 @@ const LoyaltyLeaderboard: React.FC = () => {
                             <div className="pt-12">
                                 <div className="bg-gradient-to-br from-gray-200 to-gray-400 rounded-lg p-6 text-center shadow-lg">
                                     <div className="text-4xl mb-2">🥈</div>
-                                    <div className="text-xl font-bold text-gray-800 mb-1">
+                                    <div className="text-xl font-bold text-gray-800 dark:text-white/90 mb-1">
                                         {currentData[1].customerName || currentData[1].customerPhone}
                                     </div>
-                                    <div className="text-3xl font-bold text-gray-900">
+                                    <div className="text-3xl font-bold text-gray-900 dark:text-white/90">
                                         {currentData[1].totalTickets}
                                     </div>
-                                    <div className="text-sm text-gray-600">tickets</div>
+                                    <div className="text-sm text-gray-600 dark:text-gray-400">tickets</div>
                                 </div>
                             </div>
 
@@ -181,10 +181,10 @@ const LoyaltyLeaderboard: React.FC = () => {
                     )}
 
                     {/* Rest of the List */}
-                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden text-gray-800 dark:text-white/90">
                         <div className="overflow-x-auto">
                             <table className="w-full">
-                                <thead className="bg-gray-50 dark:bg-gray-700">
+                                <thead className="bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white/90">
                                     <tr>
                                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                                             Rank

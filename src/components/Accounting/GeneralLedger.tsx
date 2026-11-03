@@ -34,12 +34,15 @@ import {
 } from '../../services/accountsApi';
 
 import type { Account, GeneralLedger, GeneralLedgerLine } from '../../services/accounting';
+import { useTheme } from '../../context/ThemeContext';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
 const { Title, Text } = Typography;
 
 const GeneralLedger: React.FC = () => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [loading, setLoading] = useState(false);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<number | undefined>();
@@ -316,8 +319,8 @@ const GeneralLedger: React.FC = () => {
             <div
               style={{
                 padding: '12px',
-                background: '#fafafa',
-                border: '1px solid #d9d9d9',
+                background: isDark ? 'rgba(255,255,255,0.04)' : '#fafafa',
+                border: isDark ? '1px solid #424242' : '1px solid #d9d9d9',
                 borderRadius: '4px',
                 marginBottom: '16px'
               }}
@@ -362,8 +365,8 @@ const GeneralLedger: React.FC = () => {
             <div
               style={{
                 padding: '12px',
-                background: '#e6f7ff',
-                border: '1px solid #91d5ff',
+                background: isDark ? 'rgba(24,144,255,0.15)' : '#e6f7ff',
+                border: isDark ? '1px solid #15395b' : '1px solid #91d5ff',
                 borderRadius: '4px',
                 marginTop: '16px'
               }}

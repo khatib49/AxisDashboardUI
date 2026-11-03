@@ -158,9 +158,9 @@ export default function ExpenseCategories() {
     }
 
     return (
-        <div className="p-6">
+        <div className="p-6 text-gray-800 dark:text-white/90">
             <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-semibold">Expense Categories</h1>
+                <h1 className="text-2xl font-semibold dark:text-white/90">Expense Categories</h1>
                 <button
                     className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
                     onClick={openCreateForm}
@@ -176,56 +176,56 @@ export default function ExpenseCategories() {
             )}
 
             {error && (
-                <div className="text-red-600 bg-red-50 p-3 rounded mb-4">{error}</div>
+                <div className="text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 p-3 rounded mb-4">{error}</div>
             )}
 
             {!loading && !error && (
                 <>
-                    <div className="bg-white rounded-lg shadow overflow-hidden">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden text-gray-800 dark:text-white/90">
+                        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead className="bg-gray-50 dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mapped Account</th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Description</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Mapped Account</th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
+                            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700 text-gray-800 dark:text-white/90">
                                 {categories.length === 0 && (
                                     <tr>
-                                        <td colSpan={6} className="px-6 py-10 text-center text-gray-500">
+                                        <td colSpan={6} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
                                             No categories found
                                         </td>
                                     </tr>
                                 )}
                                 {categories.map((category) => (
                                     <tr key={category.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white/90">
                                             {category.id}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white/90">
                                             {category.name}
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500">
+                                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                                             {category.description || "-"}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                                             {category.isCapital ? (
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-500/15 text-purple-800 dark:text-purple-300">
                                                     🏗️ Capital
                                                 </span>
                                             ) : (
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-500/15 text-blue-800 dark:text-blue-300">
                                                     📋 Operating
                                                 </span>
                                             )}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                                             {category.accountNumber ? (
-                                                <span className="text-blue-600 font-mono">
+                                                <span className="text-blue-600 dark:text-blue-400 font-mono">
                                                     {category.accountNumber} - {category.accountName}
                                                 </span>
                                             ) : (
@@ -234,13 +234,13 @@ export default function ExpenseCategories() {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <button
-                                                className="text-indigo-600 hover:text-indigo-900 mr-3"
+                                                className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 mr-3"
                                                 onClick={() => openEditForm(category)}
                                             >
                                                 Edit
                                             </button>
                                             <button
-                                                className="text-red-600 hover:text-red-900"
+                                                className="text-red-600 dark:text-red-400 hover:text-red-900"
                                                 onClick={() => setDeleteId(category.id)}
                                             >
                                                 Delete
@@ -252,13 +252,13 @@ export default function ExpenseCategories() {
                         </table>
                     </div>
 
-                    <div className="mt-4 text-sm text-gray-600">
+                    <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
                         Total: {categories.length} categories &nbsp;·&nbsp;
-                        <span className="text-purple-700 font-medium">
+                        <span className="text-purple-700 dark:text-purple-400 font-medium">
                             {categories.filter(c => c.isCapital).length} Capital
                         </span>
                         &nbsp;·&nbsp;
-                        <span className="text-blue-700 font-medium">
+                        <span className="text-blue-700 dark:text-blue-400 font-medium">
                             {categories.filter(c => !c.isCapital).length} Operating
                         </span>
                     </div>
@@ -284,7 +284,7 @@ export default function ExpenseCategories() {
                     <div>
                         <Label>Description</Label>
                         <textarea
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             rows={3}
                             placeholder="Optional description..."
                             value={form.description}
@@ -302,9 +302,9 @@ export default function ExpenseCategories() {
                                     name="expenseType"
                                     checked={!form.isCapital}
                                     onChange={() => setForm((f) => ({ ...f, isCapital: false }))}
-                                    className="w-4 h-4 text-blue-600"
+                                    className="w-4 h-4 text-blue-600 dark:text-blue-400"
                                 />
-                                <span className="text-sm font-medium text-gray-700">
+                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                     📋 Operating
                                 </span>
                                 <span className="text-xs text-gray-400">
@@ -317,9 +317,9 @@ export default function ExpenseCategories() {
                                     name="expenseType"
                                     checked={form.isCapital}
                                     onChange={() => setForm((f) => ({ ...f, isCapital: true }))}
-                                    className="w-4 h-4 text-purple-600"
+                                    className="w-4 h-4 text-purple-600 dark:text-purple-400"
                                 />
-                                <span className="text-sm font-medium text-gray-700">
+                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                     🏗️ Capital
                                 </span>
                                 <span className="text-xs text-gray-400">
@@ -333,7 +333,7 @@ export default function ExpenseCategories() {
                     <div>
                         <Label>Map to Expense Account (Optional)</Label>
                         <select
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             value={form.accountId || ""}
                             onChange={(e) =>
                                 setForm((f) => ({
@@ -349,7 +349,7 @@ export default function ExpenseCategories() {
                                 </option>
                             ))}
                         </select>
-                        <p className="mt-1 text-xs text-gray-500">
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                             If set, all expenses in this category will use this account for journal entries.
                             Changing this will automatically backfill missing journal entries.
                         </p>
@@ -370,7 +370,7 @@ export default function ExpenseCategories() {
                             )}
                         </button>
                         <button
-                            className="px-4 py-2 bg-gray-200 rounded"
+                            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded"
                             onClick={() => setIsFormOpen(false)}
                         >
                             Cancel
@@ -391,7 +391,7 @@ export default function ExpenseCategories() {
                         >
                             {deleting ? <Loader size={16} /> : "Delete"}
                         </button>
-                        <button className="px-4 py-2 bg-gray-200 rounded" onClick={() => setDeleteId(null)}>
+                        <button className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded" onClick={() => setDeleteId(null)}>
                             Cancel
                         </button>
                     </div>

@@ -12,14 +12,14 @@ export default function StatusToggle({ value, onChange }: StatusToggleProps) {
         <div className="flex items-center gap-2">
             <button
                 type="button"
-                className={`px-3 py-1 rounded ${isEnabled ? 'bg-green-600 text-white' : 'bg-gray-200'}`}
+                className={`px-3 py-1 rounded ${isEnabled ? 'bg-green-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
                 onClick={() => onChange(STATUS_ENABLED)}
             >
                 Enabled
             </button>
             <button
                 type="button"
-                className={`px-3 py-1 rounded ${isDisabled ? 'bg-red-600 text-white' : 'bg-gray-200'}`}
+                className={`px-3 py-1 rounded ${isDisabled ? 'bg-red-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
                 onClick={() => onChange(STATUS_DISABLED)}
             >
                 Disabled

@@ -222,9 +222,9 @@ export default function Expenses() {
     }
 
     return (
-        <div className="p-6">
+        <div className="p-6 text-gray-800 dark:text-white/90">
             <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-semibold">Expenses</h1>
+                <h1 className="text-2xl font-semibold dark:text-white/90">Expenses</h1>
                 <button
                     className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
                     onClick={openCreateForm}
@@ -234,7 +234,7 @@ export default function Expenses() {
             </div>
 
             {/* Filters */}
-            <div className="bg-white rounded-lg shadow p-4 mb-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6 text-gray-800 dark:text-white/90">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <Label>Category</Label>
@@ -276,7 +276,7 @@ export default function Expenses() {
                 {(filterCategoryId || filterFromDate || filterToDate) && (
                     <div className="mt-3">
                         <button
-                            className="text-sm text-indigo-600 hover:text-indigo-800"
+                            className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800"
                             onClick={() => {
                                 setFilterCategoryId(null);
                                 setFilterFromDate("");
@@ -315,83 +315,83 @@ export default function Expenses() {
                 </div>
             )}
 
-            {error && <div className="text-red-600 bg-red-50 p-3 rounded mb-4">{error}</div>}
+            {error && <div className="text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 p-3 rounded mb-4">{error}</div>}
 
             {!loading && !error && (
                 <>
-                    <div className="bg-white rounded-lg shadow overflow-hidden">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden text-gray-800 dark:text-white/90">
+                        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead className="bg-gray-50 dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                         ID
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                         Category
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                         Amount
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                         Payment Method
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                         Period
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                         Comment
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                         Created
                                     </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                         Actions
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
+                            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700 text-gray-800 dark:text-white/90">
                                 {expenses.length === 0 && (
                                     <tr>
-                                        <td colSpan={8} className="px-6 py-10 text-center text-gray-500">
+                                        <td colSpan={8} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
                                             No expenses found
                                         </td>
                                     </tr>
                                 )}
                                 {expenses.map((expense) => (
                                     <tr key={expense.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white/90">
                                             {expense.id}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white/90">
                                             {expense.categoryName}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white/90">
                                             ${expense.amount.toFixed(2)}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                             {expense.paymentMethod || "-"}
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500">
+                                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                                             <div className="space-y-1">
                                                 <div>From: {new Date(expense.fromDate).toLocaleString()}</div>
                                                 <div>To: {new Date(expense.toDate).toLocaleString()}</div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">
                                             {expense.comment || "-"}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                             {new Date(expense.createdOn).toLocaleDateString()}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <button
-                                                className="text-indigo-600 hover:text-indigo-900 mr-3"
+                                                className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 mr-3"
                                                 onClick={() => openEditForm(expense)}
                                             >
                                                 Edit
                                             </button>
                                             <button
-                                                className="text-red-600 hover:text-red-900"
+                                                className="text-red-600 dark:text-red-400 hover:text-red-900"
                                                 onClick={() => setDeleteId(expense.id)}
                                             >
                                                 Delete
@@ -405,20 +405,20 @@ export default function Expenses() {
 
                     {/* Pagination */}
                     <div className="mt-6 flex items-center justify-between">
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
                             Showing page {page} of {Math.max(1, Math.ceil(totalCount / pageSize))} — {totalCount} total
                         </div>
                         <div className="flex items-center gap-2">
                             <button
-                                className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+                                className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded disabled:opacity-50"
                                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                                 disabled={page <= 1}
                             >
                                 Prev
                             </button>
-                            <div className="text-sm">Page {page}</div>
+                            <div className="text-sm text-gray-700 dark:text-gray-300">Page {page}</div>
                             <button
-                                className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+                                className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded disabled:opacity-50"
                                 onClick={() => setPage((p) => p + 1)}
                                 disabled={page >= Math.ceil(totalCount / pageSize)}
                             >
@@ -487,7 +487,7 @@ export default function Expenses() {
                     <div>
                         <Label>Comment</Label>
                         <textarea
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             rows={3}
                             placeholder="Additional notes..."
                             value={form.comment}
@@ -503,7 +503,7 @@ export default function Expenses() {
                             {submitting ? <Loader size={16} /> : editing ? "Save Changes" : "Create Expense"}
                         </button>
                         <button
-                            className="px-4 py-2 bg-gray-200 rounded"
+                            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded"
                             onClick={() => setIsFormOpen(false)}
                         >
                             Cancel
@@ -524,7 +524,7 @@ export default function Expenses() {
                         >
                             {deleting ? <Loader size={16} /> : "Delete"}
                         </button>
-                        <button className="px-4 py-2 bg-gray-200 rounded" onClick={() => setDeleteId(null)}>
+                        <button className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded" onClick={() => setDeleteId(null)}>
                             Cancel
                         </button>
                     </div>

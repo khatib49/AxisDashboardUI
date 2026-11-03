@@ -155,7 +155,7 @@ const LoyaltyDraws: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 {/* Weekly Draw Card */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-4 sm:p-6 border-t-4 border-blue-600">
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-4 sm:p-6 border-t-4 border-blue-600 text-gray-800 dark:text-white/90">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                             <span className="text-2xl sm:text-3xl">📆</span>
@@ -212,7 +212,7 @@ const LoyaltyDraws: React.FC = () => {
                 </div>
 
                 {/* Monthly Draw Card */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-4 sm:p-6 border-t-4 border-purple-600">
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-4 sm:p-6 border-t-4 border-purple-600 text-gray-800 dark:text-white/90">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                             <span className="text-2xl sm:text-3xl">📅</span>
@@ -293,7 +293,7 @@ const LoyaltyDraws: React.FC = () => {
                         {animationPhase === 'countdown' && (
                             <div className="text-center animate-fade-in">
                                 <div className="mb-6 sm:mb-8">
-                                    <h1 className="text-4xl sm:text-5xl md:text-7xl font-black bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent mb-3 sm:mb-4 animate-pulse-slow">
+                                    <h1 className="text-4xl sm:text-5xl md:text-7xl font-black bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent mb-3 sm:mb-4 animate-pulse-slow dark:text-white/90">
                                         AXIS GAMING
                                     </h1>
                                     <div className="h-1.5 sm:h-2 w-48 sm:w-64 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 mx-auto rounded-full mb-4 sm:mb-6"></div>
@@ -316,7 +316,7 @@ const LoyaltyDraws: React.FC = () => {
                         {animationPhase === 'reveal' && winnerData?.winner && (
                             <div className="text-center animate-scale-in px-4">
                                 <div className="mb-4 sm:mb-6">
-                                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-black bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text text-transparent mb-3 sm:mb-4 animate-pulse">
+                                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-black bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text text-transparent mb-3 sm:mb-4 animate-pulse dark:text-white/90">
                                         AXIS GAMING
                                     </h1>
                                     <div className="h-1.5 sm:h-2 w-36 sm:w-48 bg-gradient-to-r from-yellow-600 via-orange-600 to-red-600 mx-auto rounded-full mb-3 sm:mb-4"></div>
@@ -337,7 +337,7 @@ const LoyaltyDraws: React.FC = () => {
                         {animationPhase === 'celebrate' && winnerData?.winner && (
                             <div className="text-center animate-fade-in px-4">
                                 <div className="text-6xl sm:text-7xl md:text-9xl mb-6 sm:mb-8 animate-bounce-in">🎉</div>
-                                <h1 className="text-5xl sm:text-6xl md:text-8xl font-black bg-gradient-to-r from-purple-400 via-pink-400 to-yellow-400 bg-clip-text text-transparent animate-pulse-slow">
+                                <h1 className="text-5xl sm:text-6xl md:text-8xl font-black bg-gradient-to-r from-purple-400 via-pink-400 to-yellow-400 bg-clip-text text-transparent animate-pulse-slow dark:text-white/90">
                                     WINNER!
                                 </h1>
                                 <p className="text-xl sm:text-2xl md:text-3xl text-white mt-4 sm:mt-6 font-bold">AXIS PLUS Rewards</p>
@@ -363,7 +363,7 @@ const LoyaltyDraws: React.FC = () => {
                         <div className="text-center bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 rounded-lg sm:rounded-xl p-6 sm:p-8 text-white relative overflow-hidden">
                             <div className="absolute inset-0 bg-white/10"></div>
                             <div className="relative z-10">
-                                <h1 className="text-2xl sm:text-3xl md:text-4xl font-black mb-2">AXIS GAMING</h1>
+                                <h1 className="text-2xl sm:text-3xl md:text-4xl font-black mb-2 dark:text-white/90">AXIS GAMING</h1>
                                 <div className="h-0.5 sm:h-1 w-24 sm:w-32 bg-white/50 mx-auto rounded-full mb-2 sm:mb-3"></div>
                                 <p className="text-base sm:text-lg md:text-xl font-bold">AXIS PLUS Rewards</p>
                                 <p className="text-xs sm:text-sm opacity-90 mt-1">Winner Announcement</p>

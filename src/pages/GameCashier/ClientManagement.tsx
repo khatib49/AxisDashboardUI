@@ -218,7 +218,7 @@ export default function ClientManagement() {
     }
 
     return (
-        <div className="p-6">
+        <div className="p-6 text-gray-800 dark:text-white/90">
             <h1 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
                 Client Management
             </h1>
@@ -268,10 +268,10 @@ export default function ClientManagement() {
                 </div>
             )}
 
-            {error && <div className="text-red-600 bg-red-50 p-3 rounded mb-4">{error}</div>}
+            {error && <div className="text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 p-3 rounded mb-4">{error}</div>}
 
             {!loading && !error && (
-                <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+                <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
                     <div className="max-w-full overflow-x-auto">
                         <Table>
                             <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
@@ -306,7 +306,7 @@ export default function ClientManagement() {
                             <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                                 {clients.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={4} className="px-5 py-10 text-center text-gray-500">
+                                        <TableCell colSpan={4} className="px-5 py-10 text-center text-gray-500 dark:text-gray-400">
                                             <div>No clients found</div>
                                         </TableCell>
                                     </TableRow>

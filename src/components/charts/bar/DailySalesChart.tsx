@@ -234,7 +234,7 @@ export default function DailySalesChart({ categoryType = 'all' }: DailySalesChar
 
     if (error) {
         return (
-            <div className="text-red-600 bg-red-50 p-4 rounded">
+            <div className="text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 p-4 rounded">
                 {error}
             </div>
         );
@@ -334,7 +334,7 @@ export default function DailySalesChart({ categoryType = 'all' }: DailySalesChar
 
             {/* Category Filter - Only show for 'all' or 'item' types */}
             {categoryType !== 'game' && itemCategories.length > 0 && (
-                <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg text-gray-800 dark:text-white/90">
                     <h3 className="text-sm font-semibold mb-3 text-gray-700 dark:text-gray-300">
                         Filter by {categoryType === 'item' ? 'F&B' : 'Item'} Category:
                     </h3>
@@ -342,13 +342,13 @@ export default function DailySalesChart({ categoryType = 'all' }: DailySalesChar
                         {itemCategories.map((cat) => (
                             <label
                                 key={cat.id}
-                                className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 rounded-md cursor-pointer hover:shadow-md transition-shadow"
+                                className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 rounded-md cursor-pointer hover:shadow-md transition-shadow text-gray-800 dark:text-white/90"
                             >
                                 <input
                                     type="checkbox"
                                     checked={selectedCategories.includes(cat.id)}
                                     onChange={() => toggleCategory(cat.id)}
-                                    className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                                    className="w-4 h-4 text-indigo-600 dark:text-indigo-400 border-gray-300 dark:border-gray-700 rounded focus:ring-indigo-500"
                                 />
                                 <span className="text-sm text-gray-700 dark:text-gray-200">{cat.name}</span>
                             </label>

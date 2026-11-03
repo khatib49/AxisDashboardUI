@@ -34,13 +34,13 @@ const CashierOrders: React.FC = () => {
     }, [auth?.claims?.name, page, pageSize]);
 
     return (
-        <div className="p-6">
-            <h1 className="text-2xl font-semibold mb-4">Coffee Shop Orders</h1>
+        <div className="p-6 text-gray-800 dark:text-white/90">
+            <h1 className="text-2xl font-semibold mb-4 dark:text-white/90">Coffee Shop Orders</h1>
 
-            {loading && <div className="text-gray-600"><Loader /></div>}
+            {loading && <div className="text-gray-600 dark:text-gray-400"><Loader /></div>}
 
             {!loading && orders.length === 0 && (
-                <div className="text-sm text-gray-500">No orders found.</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">No orders found.</div>
             )}
 
             {!loading && orders.length > 0 && (
@@ -52,12 +52,12 @@ const CashierOrders: React.FC = () => {
                         <div className="col-span-2">Status</div>
                     </div>
                     {orders.map((o, idx) => (
-                        <div key={`${o.transactionId}-${idx}`} className="grid grid-cols-12 gap-2 items-center p-2 bg-white border rounded">
+                        <div key={`${o.transactionId}-${idx}`} className="grid grid-cols-12 gap-2 items-center p-2 bg-white dark:bg-gray-800 border rounded text-gray-800 dark:text-white/90">
                             <div className="col-span-3">
                                 <div className="font-medium text-sm">
                                     {new Date(o.createdOn).toLocaleDateString()}
                                 </div>
-                                <div className="text-xs text-gray-500">
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
                                     {new Date(o.createdOn).toLocaleTimeString()}
                                 </div>
                             </div>
@@ -67,7 +67,7 @@ const CashierOrders: React.FC = () => {
                                         {o.items.map((item, itemIdx) => (
                                             <div key={itemIdx} className="flex items-center gap-2">
                                                 <span className="font-medium">{item.itemName}</span>
-                                                <span className="text-xs text-gray-500">x{item.quantity}</span>
+                                                <span className="text-xs text-gray-500 dark:text-gray-400">x{item.quantity}</span>
                                                 <span className="text-xs text-gray-400">({item.categoryName})</span>
                                             </div>
                                         ))}
@@ -78,9 +78,9 @@ const CashierOrders: React.FC = () => {
                             </div>
                             <div className="col-span-2 text-sm font-semibold">${o.totalPrice.toFixed(2)}</div>
                             <div className="col-span-2 text-sm">
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${o.statusId === 1 ? 'bg-green-100 text-green-800' :
-                                        o.statusId === STATUS_PROCESSED_PAID ? 'bg-green-100 text-green-800' :
-                                            'bg-gray-100 text-gray-800'
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${o.statusId === 1 ? 'bg-green-100 dark:bg-green-500/15 text-green-800 dark:text-green-300' :
+                                        o.statusId === STATUS_PROCESSED_PAID ? 'bg-green-100 dark:bg-green-500/15 text-green-800 dark:text-green-300' :
+                                            'bg-gray-100 dark:bg-white/10 text-gray-800 dark:text-white/90'
                                     }`}>
                                     {getStatusName(o.statusId) ?? o.statusId}
                                 </span>
@@ -89,10 +89,10 @@ const CashierOrders: React.FC = () => {
                     ))}
 
                     <div className="flex items-center justify-between">
-                        <div className="text-sm text-gray-600">Page {page} — {total} orders</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">Page {page} — {total} orders</div>
                         <div className="space-x-2">
-                            <button className="px-2 py-1 bg-gray-200 rounded" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>Prev</button>
-                            <button className="px-2 py-1 bg-gray-200 rounded" disabled={page >= Math.max(1, Math.ceil(total / pageSize))} onClick={() => setPage(p => p + 1)}>Next</button>
+                            <button className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>Prev</button>
+                            <button className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded" disabled={page >= Math.max(1, Math.ceil(total / pageSize))} onClick={() => setPage(p => p + 1)}>Next</button>
                         </div>
                     </div>
                 </div>

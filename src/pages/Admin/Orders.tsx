@@ -162,26 +162,26 @@ const Orders: React.FC = () => {
     // ── Status badge helper ───────────────────────────────────────────────────
     const StatusBadge = ({ statusId }: { statusId: number }) => {
         if (statusId === STATUS_PROCESSED_PAID)
-            return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">✓ Processed & Paid</span>;
+            return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-500/15 text-green-800 dark:text-green-300">✓ Processed & Paid</span>;
         if (statusId === STATUS_OPEN_INVOICE)
-            return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">● Open Invoice</span>;
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">{getStatusName(statusId) ?? statusId}</span>;
+            return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-300">● Open Invoice</span>;
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300">{getStatusName(statusId) ?? statusId}</span>;
     };
 
     return (
-        <div className="p-6 space-y-10">
+        <div className="p-6 space-y-10 text-gray-800 dark:text-white/90">
             {/* ── Page Header ─────────────────────────────────────────── */}
             <div>
-                <h1 className="text-2xl font-bold text-gray-900">Orders Management</h1>
-                <p className="text-sm text-gray-500 mt-1">Coffee shop, FNB, and game session orders</p>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white/90">Orders Management</h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Coffee shop, FNB, and game session orders</p>
             </div>
 
             {/* ── Global message banner ────────────────────────────────── */}
             {message && (
                 <div className={`px-4 py-3 rounded-lg text-sm font-medium border ${
                     message.type === 'success'
-                        ? 'bg-green-50 text-green-800 border-green-200'
-                        : 'bg-red-50 text-red-800 border-red-200'
+                        ? 'bg-green-50 dark:bg-green-500/10 text-green-800 dark:text-green-300 border-green-200'
+                        : 'bg-red-50 dark:bg-red-500/10 text-red-800 dark:text-red-300 border-red-200'
                 }`}>
                     {message.text}
                 </div>
@@ -194,7 +194,7 @@ const Orders: React.FC = () => {
                 {/* Section header */}
                 <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
                     <div>
-                        <h2 className="text-lg font-semibold text-gray-800">Coffee Shop Orders</h2>
+                        <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">Coffee Shop Orders</h2>
                         <p className="text-xs text-gray-400 mt-0.5">Includes open invoices and completed orders</p>
                     </div>
                     <div className="flex items-center gap-3 flex-wrap">
@@ -203,7 +203,7 @@ const Orders: React.FC = () => {
                             <span className="px-3 py-1.5 bg-slate-100 rounded-lg text-xs font-medium text-slate-600">
                                 {itemTotal} orders
                             </span>
-                            <span className="px-3 py-1.5 bg-indigo-50 rounded-lg text-xs font-medium text-indigo-700">
+                            <span className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg text-xs font-medium text-indigo-700 dark:text-indigo-400">
                                 ${itemTotalRevenue.toFixed(2)} revenue
                             </span>
                         </div>
@@ -217,7 +217,7 @@ const Orders: React.FC = () => {
                                 placeholder="Search orders..."
                                 value={itemSearch}
                                 onChange={(e) => { setItemSearch(e.target.value); setItemPage(1); }}
-                                className="pl-9 pr-3 py-2 w-56 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+                                className="pl-9 pr-3 py-2 w-56 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
                             />
                         </div>
                     </div>
@@ -233,9 +233,9 @@ const Orders: React.FC = () => {
 
                 {/* Table */}
                 {!loadingItems && itemOrders.length > 0 && (
-                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm text-gray-800 dark:text-white/90">
                         {/* Table header */}
-                        <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-gray-50 dark:bg-white/[0.03] border-b border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                             <div className="col-span-1">Invoice</div>
                             <div className="col-span-2">Date / Time</div>
                             <div className="col-span-2">Cashier</div>
@@ -253,22 +253,22 @@ const Orders: React.FC = () => {
                                 <React.Fragment key={`${o.transactionId}-${idx}`}>
                                     {/* Main row */}
                                     <div
-                                        className={`grid grid-cols-12 gap-2 px-4 py-3.5 items-center cursor-pointer border-b border-gray-100 transition-colors
-                                            ${isOpen ? 'bg-amber-50 hover:bg-amber-100' : 'bg-white hover:bg-gray-50'}
+                                        className={`grid grid-cols-12 gap-2 px-4 py-3.5 items-center cursor-pointer border-b border-gray-100 dark:border-gray-800 transition-colors
+                                            ${isOpen ? 'bg-amber-50 dark:bg-amber-500/10 hover:bg-amber-100' : 'bg-white dark:bg-gray-800 hover:bg-gray-50 text-gray-800 dark:text-white/90'}
                                             ${isExpanded ? 'border-l-4 border-l-indigo-400' : ''}`}
                                         onClick={() => setExpandedRow(isExpanded ? null : (o.transactionId ?? null))}
                                     >
                                         {/* Invoice # */}
                                         <div className="col-span-1">
-                                            <span className="font-bold text-gray-900 text-sm">#{o.transactionId}</span>
+                                            <span className="font-bold text-gray-900 dark:text-white/90 text-sm">#{o.transactionId}</span>
                                             {isOpen && (
-                                                <div className="text-[10px] text-amber-600 font-medium mt-0.5">OPEN</div>
+                                                <div className="text-[10px] text-amber-600 dark:text-amber-400 font-medium mt-0.5">OPEN</div>
                                             )}
                                         </div>
 
                                         {/* Date/Time */}
                                         <div className="col-span-2">
-                                            <div className="text-sm font-medium text-gray-800">
+                                            <div className="text-sm font-medium text-gray-800 dark:text-white/90">
                                                 {new Date(o.createdOn).toLocaleDateString('en-GB')}
                                             </div>
                                             <div className="text-xs text-gray-400">
@@ -278,7 +278,7 @@ const Orders: React.FC = () => {
 
                                         {/* Cashier */}
                                         <div className="col-span-2">
-                                            <div className="text-sm font-medium text-gray-800 truncate">
+                                            <div className="text-sm font-medium text-gray-800 dark:text-white/90 truncate">
                                                 {o.createdBy?.split('@')[0] ?? '—'}
                                             </div>
                                             <div className="text-xs text-gray-400 truncate">{o.createdBy}</div>
@@ -289,9 +289,9 @@ const Orders: React.FC = () => {
                                             {o.items && o.items.length > 0 ? (
                                                 <div className="flex flex-wrap gap-1">
                                                     {o.items.slice(0, 2).map((item, ii) => (
-                                                        <span key={ii} className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded-md text-xs text-gray-700">
+                                                        <span key={ii} className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 dark:bg-white/10 rounded-md text-xs text-gray-700 dark:text-gray-300">
                                                             <span className="font-medium">{item.itemName}</span>
-                                                            <span className="text-indigo-500 font-semibold">×{item.quantity}</span>
+                                                            <span className="text-indigo-500 dark:text-indigo-300 font-semibold">×{item.quantity}</span>
                                                             {item.categoryName && (
                                                                 <span className="text-gray-400">({item.categoryName})</span>
                                                             )}
@@ -308,7 +308,7 @@ const Orders: React.FC = () => {
 
                                         {/* Total */}
                                         <div className="col-span-1">
-                                            <span className="text-sm font-bold text-gray-900">${o.totalPrice.toFixed(2)}</span>
+                                            <span className="text-sm font-bold text-gray-900 dark:text-white/90">${o.totalPrice.toFixed(2)}</span>
                                         </div>
 
                                         {/* Status */}
@@ -352,9 +352,9 @@ const Orders: React.FC = () => {
 
                                     {/* ── Expanded item detail row ── */}
                                     {isExpanded && (
-                                        <div className={`px-6 py-4 border-b border-gray-100 ${isOpen ? 'bg-amber-50/60' : 'bg-gray-50/60'}`}>
+                                        <div className={`px-6 py-4 border-b border-gray-100 dark:border-gray-800 ${isOpen ? 'bg-amber-50/60 dark:bg-amber-500/10' : 'bg-gray-50/60 dark:bg-white/[0.03]'}`}>
                                             {isOpen && (
-                                                <div className="flex items-center gap-2 mb-3 text-xs font-medium text-amber-700 bg-amber-100 px-3 py-1.5 rounded-lg w-fit">
+                                                <div className="flex items-center gap-2 mb-3 text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/15 px-3 py-1.5 rounded-lg w-fit">
                                                     <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                                                         <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                                                     </svg>
@@ -372,7 +372,7 @@ const Orders: React.FC = () => {
                                                         {isOpen && <th className="text-right pb-2 font-semibold">Remove</th>}
                                                     </tr>
                                                 </thead>
-                                                <tbody className="divide-y divide-gray-100">
+                                                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                                                     {(o.items || []).map((item, ii) => {
                                                         const rmKey = `${o.transactionId}-${item.itemId}`;
                                                         const isRemoving = removingItem === rmKey;
@@ -383,21 +383,21 @@ const Orders: React.FC = () => {
                                                                         {item.imagePath && (
                                                                             <img src={item.imagePath} alt="" className="w-8 h-8 rounded-md object-cover" />
                                                                         )}
-                                                                        <span className="font-medium text-gray-800">{item.itemName}</span>
+                                                                        <span className="font-medium text-gray-800 dark:text-white/90">{item.itemName}</span>
                                                                     </div>
                                                                 </td>
                                                                 <td className="py-2 pr-4">
-                                                                    <span className="px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-600">
+                                                                    <span className="px-2 py-0.5 bg-gray-100 dark:bg-white/10 rounded text-xs text-gray-600 dark:text-gray-400">
                                                                         {item.categoryName ?? '—'}
                                                                     </span>
                                                                 </td>
                                                                 <td className="py-2 text-center">
-                                                                    <span className="font-semibold text-indigo-600">×{item.quantity}</span>
+                                                                    <span className="font-semibold text-indigo-600 dark:text-indigo-400">×{item.quantity}</span>
                                                                 </td>
-                                                                <td className="py-2 text-right text-gray-600">
+                                                                <td className="py-2 text-right text-gray-600 dark:text-gray-400">
                                                                     ${item.unitPrice?.toFixed(2) ?? '—'}
                                                                 </td>
-                                                                <td className="py-2 text-right font-semibold text-gray-800">
+                                                                <td className="py-2 text-right font-semibold text-gray-800 dark:text-white/90">
                                                                     ${item.lineTotal?.toFixed(2) ?? '—'}
                                                                 </td>
                                                                 {isOpen && (
@@ -405,7 +405,7 @@ const Orders: React.FC = () => {
                                                                         <button
                                                                             disabled={isRemoving}
                                                                             onClick={() => handleRemoveItem(o, item.itemId)}
-                                                                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                                                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 border border-red-200 rounded-lg hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                                                         >
                                                                             {isRemoving ? (
                                                                                 <span>Removing…</span>
@@ -435,26 +435,26 @@ const Orders: React.FC = () => {
 
                 {/* Pagination */}
                 {!loadingItems && itemTotal > pageSize && (
-                    <div className="flex items-center justify-between mt-4 text-sm text-gray-500">
+                    <div className="flex items-center justify-between mt-4 text-sm text-gray-500 dark:text-gray-400">
                         <span>Page {itemPage} of {totalItemPages} — {itemTotal} orders</span>
                         <div className="flex gap-1.5">
                             <button
-                                className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium"
+                                className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium text-gray-800 dark:text-white/90"
                                 disabled={itemPage <= 1}
                                 onClick={() => setItemPage(1)}
                             >«</button>
                             <button
-                                className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium"
+                                className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium text-gray-800 dark:text-white/90"
                                 disabled={itemPage <= 1}
                                 onClick={() => setItemPage(p => p - 1)}
                             >Prev</button>
                             <button
-                                className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium"
+                                className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium text-gray-800 dark:text-white/90"
                                 disabled={itemPage >= totalItemPages}
                                 onClick={() => setItemPage(p => p + 1)}
                             >Next</button>
                             <button
-                                className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium"
+                                className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium text-gray-800 dark:text-white/90"
                                 disabled={itemPage >= totalItemPages}
                                 onClick={() => setItemPage(totalItemPages)}
                             >»</button>
@@ -469,7 +469,7 @@ const Orders: React.FC = () => {
             <section>
                 <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
                     <div>
-                        <h2 className="text-lg font-semibold text-gray-800">Game Session Orders</h2>
+                        <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">Game Session Orders</h2>
                         <p className="text-xs text-gray-400 mt-0.5">{gameTotal} sessions</p>
                     </div>
                     <div className="relative">
@@ -481,7 +481,7 @@ const Orders: React.FC = () => {
                             placeholder="Search sessions..."
                             value={gameSearch}
                             onChange={(e) => { setGameSearch(e.target.value); setGamePage(1); }}
-                            className="pl-9 pr-3 py-2 w-56 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                            className="pl-9 pr-3 py-2 w-56 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
                         />
                     </div>
                 </div>
@@ -492,8 +492,8 @@ const Orders: React.FC = () => {
                 )}
 
                 {!loadingGames && gameOrders.length > 0 && (
-                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                        <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm text-gray-800 dark:text-white/90">
+                        <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-gray-50 dark:bg-white/[0.03] border-b border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                             <div className="col-span-1">Invoice</div>
                             <div className="col-span-2">Date / Time</div>
                             <div className="col-span-2">Cashier</div>
@@ -506,31 +506,31 @@ const Orders: React.FC = () => {
                         </div>
 
                         {gameOrders.map((o, idx) => (
-                            <div key={`${o.transactionId}-${idx}`} className="grid grid-cols-12 gap-2 px-4 py-3.5 items-center border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                            <div key={`${o.transactionId}-${idx}`} className="grid grid-cols-12 gap-2 px-4 py-3.5 items-center border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 transition-colors">
                                 <div className="col-span-1">
-                                    <span className="font-bold text-gray-900 text-sm">#{o.transactionId}</span>
+                                    <span className="font-bold text-gray-900 dark:text-white/90 text-sm">#{o.transactionId}</span>
                                 </div>
                                 <div className="col-span-2">
-                                    <div className="text-sm font-medium text-gray-800">{new Date(o.createdOn).toLocaleDateString('en-GB')}</div>
+                                    <div className="text-sm font-medium text-gray-800 dark:text-white/90">{new Date(o.createdOn).toLocaleDateString('en-GB')}</div>
                                     <div className="text-xs text-gray-400">{new Date(o.createdOn).toLocaleTimeString()}</div>
                                 </div>
                                 <div className="col-span-2">
-                                    <div className="text-sm font-medium text-gray-800 truncate">{o.createdBy?.split('@')[0]}</div>
+                                    <div className="text-sm font-medium text-gray-800 dark:text-white/90 truncate">{o.createdBy?.split('@')[0]}</div>
                                     {o.setName && <div className="text-xs text-gray-400">Set: {o.setName}</div>}
                                 </div>
                                 <div className="col-span-2">
-                                    <div className="text-sm font-medium text-gray-800">{o.roomName || '—'}</div>
+                                    <div className="text-sm font-medium text-gray-800 dark:text-white/90">{o.roomName || '—'}</div>
                                     <div className="text-xs text-gray-400">{o.gameName || '—'}</div>
                                 </div>
-                                <div className="col-span-1 text-sm text-gray-600">
+                                <div className="col-span-1 text-sm text-gray-600 dark:text-gray-400">
                                     <div>{o.gameSettingName || '—'}</div>
                                     {o.gameCategoryName && <div className="text-xs text-gray-400">{o.gameCategoryName}</div>}
                                 </div>
-                                <div className="col-span-1 text-sm text-gray-600">
-                                    {o.hours === 0 ? <span className="text-xs text-amber-600 font-medium">Open</span> : `${o.hours}h`}
+                                <div className="col-span-1 text-sm text-gray-600 dark:text-gray-400">
+                                    {o.hours === 0 ? <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">Open</span> : `${o.hours}h`}
                                 </div>
                                 <div className="col-span-1">
-                                    <span className="text-sm font-bold text-gray-900">${o.totalPrice.toFixed(2)}</span>
+                                    <span className="text-sm font-bold text-gray-900 dark:text-white/90">${o.totalPrice.toFixed(2)}</span>
                                 </div>
                                 <div className="col-span-1">
                                     <StatusBadge statusId={o.statusId} />
@@ -551,13 +551,13 @@ const Orders: React.FC = () => {
                 )}
 
                 {!loadingGames && gameTotal > pageSize && (
-                    <div className="flex items-center justify-between mt-4 text-sm text-gray-500">
+                    <div className="flex items-center justify-between mt-4 text-sm text-gray-500 dark:text-gray-400">
                         <span>Page {gamePage} of {totalGamePages} — {gameTotal} sessions</span>
                         <div className="flex gap-1.5">
-                            <button className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 text-xs font-medium" disabled={gamePage <= 1} onClick={() => setGamePage(1)}>«</button>
-                            <button className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 text-xs font-medium" disabled={gamePage <= 1} onClick={() => setGamePage(p => p - 1)}>Prev</button>
-                            <button className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 text-xs font-medium" disabled={gamePage >= totalGamePages} onClick={() => setGamePage(p => p + 1)}>Next</button>
-                            <button className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 text-xs font-medium" disabled={gamePage >= totalGamePages} onClick={() => setGamePage(totalGamePages)}>»</button>
+                            <button className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 disabled:opacity-50 text-xs font-medium text-gray-800 dark:text-white/90" disabled={gamePage <= 1} onClick={() => setGamePage(1)}>«</button>
+                            <button className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 disabled:opacity-50 text-xs font-medium text-gray-800 dark:text-white/90" disabled={gamePage <= 1} onClick={() => setGamePage(p => p - 1)}>Prev</button>
+                            <button className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 disabled:opacity-50 text-xs font-medium text-gray-800 dark:text-white/90" disabled={gamePage >= totalGamePages} onClick={() => setGamePage(p => p + 1)}>Next</button>
+                            <button className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 disabled:opacity-50 text-xs font-medium text-gray-800 dark:text-white/90" disabled={gamePage >= totalGamePages} onClick={() => setGamePage(totalGamePages)}>»</button>
                         </div>
                     </div>
                 )}
@@ -566,7 +566,7 @@ const Orders: React.FC = () => {
             {/* ── Edit Modal (unchanged) ─────────────────────────────── */}
             <Modal isOpen={editModalOpen} onClose={() => { setEditModalOpen(false); setEditingTransaction(null); setMessage(null); }} title="Edit Transaction"
                 footer={(<>
-                    <button className="bg-gray-200 text-gray-800 px-3 py-1 rounded" onClick={() => { setEditModalOpen(false); setEditingTransaction(null); setMessage(null); }} disabled={saving}>Cancel</button>
+                    <button className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white/90 px-3 py-1 rounded" onClick={() => { setEditModalOpen(false); setEditingTransaction(null); setMessage(null); }} disabled={saving}>Cancel</button>
                     <button className="bg-blue-600 text-white px-3 py-1 rounded" onClick={handleSaveEdit} disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
                 </>)}
             >
@@ -585,7 +585,7 @@ const Orders: React.FC = () => {
             {/* ── Delete Modal (unchanged) ───────────────────────────── */}
             <Modal isOpen={deleteModalOpen} onClose={() => { setDeleteModalOpen(false); setDeletingTransaction(null); }} title="Confirm Delete"
                 footer={(<>
-                    <button className="bg-gray-200 text-gray-800 px-3 py-1 rounded" onClick={() => { setDeleteModalOpen(false); setDeletingTransaction(null); }} disabled={deleting}>Cancel</button>
+                    <button className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white/90 px-3 py-1 rounded" onClick={() => { setDeleteModalOpen(false); setDeletingTransaction(null); }} disabled={deleting}>Cancel</button>
                     <button className="bg-red-600 text-white px-3 py-1 rounded flex items-center gap-2" onClick={handleDeleteConfirm} disabled={deleting}>{deleting ? <Loader size={16} /> : 'Delete'}</button>
                 </>)}
             >

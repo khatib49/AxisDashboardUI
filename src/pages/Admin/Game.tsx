@@ -88,8 +88,8 @@ export default function Game() {
     }, [page, pageSize]);
 
     return (
-        <div className="p-6">
-            <h1 className="text-2xl font-semibold mb-4">Games</h1>
+        <div className="p-6 text-gray-800 dark:text-white/90">
+            <h1 className="text-2xl font-semibold mb-4 dark:text-white/90">Games</h1>
 
             <div className="mb-4 flex items-center gap-3">
                 <button
@@ -157,7 +157,7 @@ export default function Game() {
                             >
                                 {submitting ? <Loader size={16} /> : (editingId ? 'Save' : 'Create')}
                             </button>
-                            <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setShowForm(false)}>Cancel</button>
+                            <button className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded" onClick={() => setShowForm(false)}>Cancel</button>
                         </>
                     )}
                 >
@@ -176,7 +176,7 @@ export default function Game() {
                             />
                         </div>
                         <div>
-                            <label className="text-sm text-gray-600">Status</label>
+                            <label className="text-sm text-gray-600 dark:text-gray-400">Status</label>
                             <StatusToggle value={statusId} onChange={(id) => setStatusId(id)} />
                         </div>
 
@@ -185,14 +185,14 @@ export default function Game() {
                 </Modal>
             </div>
 
-            {loading && <div className="text-gray-600">Loading games...</div>}
+            {loading && <div className="text-gray-600 dark:text-gray-400">Loading games...</div>}
 
             {error && (
-                <div className="text-red-600 bg-red-50 p-3 rounded">{error}</div>
+                <div className="text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 p-3 rounded">{error}</div>
             )}
 
             {!loading && !error && (
-                <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+                <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
                     <div className="max-w-full overflow-x-auto">
                         <Table>
                             <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
@@ -218,17 +218,17 @@ export default function Game() {
                                                 const id = g.statusId;
                                                 const name = getStatusName(id) ?? id ?? '-';
                                                 if (id === STATUS_ENABLED) {
-                                                    return <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">{name}</span>;
+                                                    return <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 dark:bg-green-500/15 text-green-800 dark:text-green-300 text-xs font-medium">{name}</span>;
                                                 }
                                                 if (id === STATUS_DISABLED) {
-                                                    return <span className="inline-flex items-center px-2 py-1 rounded-full bg-red-100 text-red-800 text-xs font-medium">{name}</span>;
+                                                    return <span className="inline-flex items-center px-2 py-1 rounded-full bg-red-100 dark:bg-red-500/15 text-red-800 dark:text-red-300 text-xs font-medium">{name}</span>;
                                                 }
-                                                return <span className="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 text-gray-800 text-xs">{name}</span>;
+                                                return <span className="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 dark:bg-white/10 text-gray-800 dark:text-white/90 text-xs">{name}</span>;
                                             })()}
                                         </TableCell>
                                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                                             <div className="flex items-center gap-2">
-                                                <button className="text-sm px-2 py-1 bg-gray-200 rounded" onClick={() => {
+                                                <button className="text-sm px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded" onClick={() => {
                                                     // open edit
                                                     setEditingId(g.id);
                                                     setName(g.name);
@@ -249,12 +249,12 @@ export default function Game() {
 
             {/* Pagination controls */}
             <div className="mt-4 flex items-center justify-between">
-                <div className="text-sm text-gray-600">{totalCount !== null ? `Showing ${games.length} of ${totalCount}` : ''}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">{totalCount !== null ? `Showing ${games.length} of ${totalCount}` : ''}</div>
                 <div className="flex items-center gap-2">
-                    <label className="text-sm text-gray-600">Page size</label>
+                    <label className="text-sm text-gray-600 dark:text-gray-400">Page size</label>
                     <Select options={[{ value: 5, label: '5' }, { value: 10, label: '10' }, { value: 25, label: '25' }, { value: 50, label: '50' }]} defaultValue={pageSize} onChange={(v: string | number) => { setPageSize(Number(v)); setPage(1); }} className="w-24" />
-                    <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>Prev</button>
-                    <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setPage((p) => p + 1)} disabled={totalCount !== null && page * pageSize >= (totalCount || 0)}>Next</button>
+                    <button className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>Prev</button>
+                    <button className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded" onClick={() => setPage((p) => p + 1)} disabled={totalCount !== null && page * pageSize >= (totalCount || 0)}>Next</button>
                 </div>
             </div>
 
@@ -287,7 +287,7 @@ export default function Game() {
                         }}>
                             {deleting ? <Loader size={16} /> : 'Delete'}
                         </button>
-                        <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setDeleteId(null)}>Cancel</button>
+                        <button className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded" onClick={() => setDeleteId(null)}>Cancel</button>
                     </>
                 )}
             >

@@ -136,17 +136,17 @@ export default function GameSettings() {
     };
 
     return (
-        <div className="p-6">
-            <h1 className="text-2xl font-semibold mb-4">Game Settings</h1>
+        <div className="p-6 text-gray-800 dark:text-white/90">
+            <h1 className="text-2xl font-semibold mb-4 dark:text-white/90">Game Settings</h1>
 
             <div className="mb-4 flex items-center justify-end">
                 <button className="bg-green-600 text-white px-3 py-1 rounded" onClick={openModal}>Add Setting</button>
             </div>
 
-            {loading && <div className="text-gray-600">Loading settings...</div>}
+            {loading && <div className="text-gray-600 dark:text-gray-400">Loading settings...</div>}
 
             {!loading && (
-                <div className="bg-white rounded shadow">
+                <div className="bg-white dark:bg-gray-800 rounded shadow text-gray-800 dark:text-white/90">
                     <div className="p-4">
                         <table className="min-w-full">
                             <thead>
@@ -176,7 +176,7 @@ export default function GameSettings() {
                                         <td className="px-4 py-2 align-top">{s.modifiedOn ? new Date(s.modifiedOn).toLocaleString() : '-'}</td>
                                         <td className="px-4 py-2 text-right">
                                             <div className="flex justify-end items-center gap-2">
-                                                <button className="text-sm px-2 py-1 bg-gray-200 rounded" onClick={() => {
+                                                <button className="text-sm px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded" onClick={() => {
                                                     // open edit modal
                                                     setEditingId(s.id);
                                                     setNewName(s.name);
@@ -200,12 +200,12 @@ export default function GameSettings() {
                     </div>
 
                     <div className="p-4 flex items-center justify-between">
-                        <div className="text-sm text-gray-600">{totalCount !== null ? `Showing ${settings.length} of ${totalCount}` : ''}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">{totalCount !== null ? `Showing ${settings.length} of ${totalCount}` : ''}</div>
                         <div className="flex items-center gap-2">
-                            <label className="text-sm text-gray-600">Page size</label>
+                            <label className="text-sm text-gray-600 dark:text-gray-400">Page size</label>
                             <Select options={[{ value: 5, label: '5' }, { value: 10, label: '10' }, { value: 25, label: '25' }]} defaultValue={pageSize} onChange={(v: string | number) => { setPageSize(Number(v)); setPage(1); }} className="w-24" />
-                            <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>Prev</button>
-                            <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setPage((p) => p + 1)} disabled={totalCount !== null && page * pageSize >= (totalCount || 0)}>Next</button>
+                            <button className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>Prev</button>
+                            <button className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded" onClick={() => setPage((p) => p + 1)} disabled={totalCount !== null && page * pageSize >= (totalCount || 0)}>Next</button>
                         </div>
                     </div>
                 </div>
@@ -217,7 +217,7 @@ export default function GameSettings() {
                 title={editingId ? "Edit Setting" : "Create Setting"}
                 footer={(
                     <>
-                        <button className="bg-gray-200 px-3 py-1 rounded" onClick={() => setIsOpen(false)}>Cancel</button>
+                        <button className="bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded" onClick={() => setIsOpen(false)}>Cancel</button>
                         <button className="bg-blue-600 text-white px-3 py-1 rounded" onClick={handleCreateOrUpdate} disabled={creating}>{creating ? 'Saving...' : (editingId ? 'Save' : 'Create')}</button>
                     </>
                 )}
@@ -301,7 +301,7 @@ export default function GameSettings() {
                         <button className="px-3 py-1 bg-red-600 text-white rounded flex items-center gap-2" onClick={handleDelete}>
                             {deleting ? 'Deleting...' : 'Delete'}
                         </button>
-                        <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setDeleteId(null)}>Cancel</button>
+                        <button className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded" onClick={() => setDeleteId(null)}>Cancel</button>
                     </>
                 )}
             >

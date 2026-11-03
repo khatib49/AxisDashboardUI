@@ -247,7 +247,7 @@ export default function DiscountManagement() {
     }
 
     return (
-        <div className="p-6">
+        <div className="p-6 text-gray-800 dark:text-white/90">
             <h1 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
                 Discount Management
             </h1>
@@ -279,10 +279,10 @@ export default function DiscountManagement() {
                 </div>
             )}
 
-            {error && <div className="text-red-600 bg-red-50 p-3 rounded mb-4">{error}</div>}
+            {error && <div className="text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 p-3 rounded mb-4">{error}</div>}
 
             {!loading && !error && (
-                <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+                <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
                     <div className="max-w-full overflow-x-auto">
                         <Table>
                             <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
@@ -329,7 +329,7 @@ export default function DiscountManagement() {
                             <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                                 {discounts.length === 0 && (
                                     <TableRow>
-                                        <TableCell className="px-5 py-10 text-center text-gray-500">
+                                        <TableCell className="px-5 py-10 text-center text-gray-500 dark:text-gray-400">
                                             <div className="col-span-6">No discounts found</div>
                                         </TableCell>
                                     </TableRow>
@@ -482,7 +482,7 @@ export default function DiscountManagement() {
                             onChange={(e) =>
                                 setForm((f) => ({ ...f, isActive: e.target.checked }))
                             }
-                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            className="w-4 h-4 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-700 rounded focus:ring-blue-500"
                         />
                         <Label htmlFor="isActive" className="mb-0 cursor-pointer">
                             Active
