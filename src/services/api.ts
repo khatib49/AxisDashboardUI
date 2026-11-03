@@ -66,7 +66,7 @@ api.interceptors.request.use(
           set?: (key: string, value: string) => void;
         } & Record<string, string>;
         if (typeof h.set === "function") h.set("X-Branch-Id", branchId);
-        else config.headers = { ...(h as Record<string, string>), "X-Branch-Id": branchId } as AxiosRequestHeaders;
+        else config.headers = { ...(h as Record<string, string>), "X-Branch-Id": branchId } as unknown as AxiosRequestHeaders;
       }
     } catch {
       /* ignore */
