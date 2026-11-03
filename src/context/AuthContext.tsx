@@ -33,7 +33,6 @@ const AuthContext = createContext<AuthState | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [token, setToken] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
-    const [claims, setClaims] = useState<UserClaims | null>(null);
 
     // Base64URL decode helper
     function decodeSegment(seg: string): string {
@@ -110,15 +109,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         init();
     }, []);
 
-    // derive claims when token changes
-    useEffect(() => {
-        if (token) {
-            const c = decodeJwt(token);
-            setClaims(c);
-        } else {
-            setClaims(null);
-        }
-    }, [token, decodeJwt]);
+    // Derive claims synchronously from the token. Doing this in an effect
+    // left one render where `authenticated` was true but `roles` empty, so a
+    // hard load of a guarded route bounced to "/" before the roles arrived.
+    const claims = useMemo<UserClaims | null>(() => (token ? decodeJwt(token) : null), [token, decodeJwt]);
 
     const login = useCallback(async (req: LoginRequest) => {
         try {
