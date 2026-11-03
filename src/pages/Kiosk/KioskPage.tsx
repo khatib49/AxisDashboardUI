@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { getKioskMenu, KioskOrderResultDto, placeKioskOrder } from "../../services/kioskService";
 import type { MenuItemDto, PublicMenuDto } from "../../services/selfOrderService";
+import WhishPayPanel from "../SelfOrder/WhishPayPanel";
 
 const RESET_SECONDS = 20;
 const money = (n: number) => n.toFixed(2);
@@ -21,6 +22,8 @@ export default function KioskPage() {
   const [done, setDone] = useState<KioskOrderResultDto | null>(null);
   const [countdown, setCountdown] = useState(RESET_SECONDS);
   const [toast, setToast] = useState<string | null>(null);
+  const [paying, setPaying] = useState(false);
+  const [paidOnline, setPaidOnline] = useState(false);
   const mounted = useRef(true);
 
   useEffect(() => {
@@ -42,14 +45,14 @@ export default function KioskPage() {
 
   // Order-number screen auto-resets for the next customer.
   useEffect(() => {
-    if (!done) return;
+    if (!done || paying) return;
     setCountdown(RESET_SECONDS);
     const t = setInterval(() => setCountdown((c) => {
-      if (c <= 1) { clearInterval(t); setDone(null); return RESET_SECONDS; }
+      if (c <= 1) { clearInterval(t); setDone(null); setPaidOnline(false); return RESET_SECONDS; }
       return c - 1;
     }), 1000);
     return () => clearInterval(t);
-  }, [done]);
+  }, [done, paying]);
 
   const lines = useMemo(() => Object.values(cart), [cart]);
   const total = lines.reduce((s, l) => s + l.item.price * l.qty, 0);
@@ -77,9 +80,25 @@ export default function KioskPage() {
       <div className="min-h-screen bg-blue-600 text-white flex flex-col items-center justify-center p-8 text-center select-none">
         <div className="text-2xl mb-4">Thank you{done.deviceName ? "" : ""}! Your order number is</div>
         <div className="text-[140px] leading-none font-black tracking-tight">{done.orderNumber}</div>
-        <div className="text-2xl mt-6">Total to pay at the counter: <span className="font-bold">{money(done.total)}</span></div>
-        <div className="text-lg mt-2 opacity-80">Please pay at the counter and wait for your number.</div>
-        <button onClick={() => setDone(null)} className="mt-10 px-8 py-4 rounded-2xl bg-white text-blue-700 text-xl font-semibold">New order ({countdown})</button>
+        <div className="text-2xl mt-6">{paidOnline ? "Paid online: " : "Total to pay at the counter: "}<span className="font-bold">{money(done.total)}</span></div>
+        <div className="text-lg mt-2 opacity-80">{paidOnline ? "Please wait for your number." : "Please pay at the counter and wait for your number."}</div>
+        {token && done.transactionId > 0 && !paidOnline && (
+          <div className="mt-8 w-full max-w-xl text-left text-gray-900">
+            <WhishPayPanel
+              token={token}
+              transactionId={done.transactionId}
+              amount={done.total}
+              size="kiosk"
+              returnUrl={`${window.location.origin}/kiosk?token=${encodeURIComponent(token)}`}
+              onActiveChange={setPaying}
+              onPaid={() => { setPaidOnline(true); setPaying(false); }}
+            />
+          </div>
+        )}
+        {paidOnline && <div className="mt-6 rounded-2xl bg-white/15 px-6 py-4 text-xl">Receipt: order {done.orderNumber} · invoice #{done.transactionId} · {money(done.total)} · paid with Whish</div>}
+        <button onClick={() => { setDone(null); setPaidOnline(false); }} className="mt-10 px-8 py-4 rounded-2xl bg-white text-blue-700 text-xl font-semibold">
+          New order{paying ? "" : ` (${countdown})`}
+        </button>
       </div>
     );
   }

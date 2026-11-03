@@ -18,6 +18,9 @@ import { updateOpenInvoiceSet } from '../../services/transactionService';
 import { getSets, SetDto } from '../../services/setService';
 import CheckoutDialog from '../../components/till/CheckoutDialog';
 import HappyHourBanner from '../../components/promotions/HappyHourBanner';
+import AppliedPromotionChips from '../../components/promotions/AppliedPromotionChips';
+import { describeAutoApply } from '../../components/promotions/cartPromotions';
+import { autoApply, getApplied, type AppliedPromotionsDto } from '../../services/promotionsService';
 
 const OpenInvoices: React.FC = () => {
     const [editingSetInvoiceId, setEditingSetInvoiceId] = useState<number | null>(null);
@@ -58,6 +61,8 @@ const [, setLoadingSets] = useState(false);
     const [closingInvoiceId, setClosingInvoiceId] = useState<number | null>(null);
     // Checkout step (coupon / gift card / tenders) shown before an invoice is closed
     const [checkoutInvoiceId, setCheckoutInvoiceId] = useState<number | null>(null);
+    // Promotions currently booked per invoice (loaded once per invoice-list load; missing = none / endpoint unavailable).
+    const [appliedPromos, setAppliedPromos] = useState<Record<number, AppliedPromotionsDto>>({});
 
     // Notifications
     const [notification, setNotification] = useState<{
@@ -73,6 +78,17 @@ const [, setLoadingSets] = useState(false);
         return () => clearTimeout(t);
     }, [notification]);
 
+    // One getApplied per card, cached for this load; a 404/403 (endpoint not deployed, no role) just means no chips.
+    const loadAppliedPromotions = async (ids: number[]) => {
+        if (ids.length === 0) { setAppliedPromos({}); return; }
+        const results = await Promise.allSettled(ids.map(id => getApplied(id)));
+        const next: Record<number, AppliedPromotionsDto> = {};
+        results.forEach((r, idx) => {
+            if (r.status === 'fulfilled' && r.value?.success && r.value.data) next[ids[idx]] = r.value.data;
+        });
+        setAppliedPromos(next);
+    };
+
     // Load open invoices
     const loadOpenInvoices = async () => {
         setLoading(true);
@@ -80,7 +96,9 @@ const [, setLoadingSets] = useState(false);
         try {
             const response = await getOpenFnbInvoices();
             if (response.success) {
-                setOpenInvoices(response.data || []);
+                const list = response.data || [];
+                setOpenInvoices(list);
+                void loadAppliedPromotions(list.map(i => i.id));
             } else {
                 setError(response.message || 'Failed to load open invoices');
             }
@@ -277,7 +295,7 @@ const handleCloseInvoice = async (invoiceId: number, viaCheckout = false) => {
                         name: response.data.discountName || '',
                         percentage: response.data.discountPercentage || 0
                     } : null,
-                    items: response.data.items?.map((item: any) => ({
+                    items: response.data.items?.map((item: { itemId: number; itemName: string; quantity: number; price: number; type?: string }) => ({
                         itemId: item.itemId,
                         itemName: item.itemName,
                         quantity: item.quantity,
@@ -345,10 +363,18 @@ const handleCloseInvoice = async (invoiceId: number, viaCheckout = false) => {
             );
 
             if (response.success) {
+                // Phase 2: re-evaluate happy hour / combos now that the lines changed (idempotent).
+                let promoNote: string | null = null;
+                try {
+                    const promo = await autoApply(selectedInvoice.id);
+                    if (promo?.success && promo.data) promoNote = describeAutoApply(promo.data);
+                } catch {
+                    // Promotions endpoint unavailable — items are already added; the list reload below still reflects the invoice.
+                }
                 setNotification({
                     variant: 'success',
                     title: 'Items Added',
-                    message: `Items added to invoice #${selectedInvoice.id}`,
+                    message: promoNote ? `Items added to invoice #${selectedInvoice.id}. ${promoNote}` : `Items added to invoice #${selectedInvoice.id}`,
                 });
 
                 // Reset and close modal
@@ -605,6 +631,8 @@ const handleCloseInvoice = async (invoiceId: number, viaCheckout = false) => {
                             ))}
                         </div>
                     </div>
+
+                    <AppliedPromotionChips applied={appliedPromos[invoice.id]} className="pt-1" />
 
                     <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200">
                         <span className="text-gray-600">Total:</span>

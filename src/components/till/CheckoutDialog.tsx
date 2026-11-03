@@ -5,6 +5,12 @@ import TenderDialog from "../../pages/Till/TenderDialog";
 import GiftCardRedeem from "../../pages/Promotions/GiftCardRedeem";
 import CouponApplyDialog from "../promotions/CouponApplyDialog";
 import { getTenderSummary, type TenderSummaryDto } from "../../services/tillService";
+import { autoApply, getApplied, type AppliedPromotionsDto } from "../../services/promotionsService";
+import AppliedPromotionChips from "../promotions/AppliedPromotionChips";
+import { describeAutoApply } from "../promotions/cartPromotions";
+import { QRCodeSVG } from "qrcode.react";
+import { getDisplayRegister, requestDisplayWhish } from "../../services/displayService";
+import { getWhishStatus, isWhishNotConfigured, startWhishPayment, type WhishStartResultDto } from "../../services/whishPayService";
 
 type Props = {
   isOpen: boolean;
@@ -31,6 +37,50 @@ export default function CheckoutDialog({ isOpen, onClose, invoiceId, total, onIn
   const [tenderOpen, setTenderOpen] = useState(false);
   const [summary, setSummary] = useState<TenderSummaryDto | null>(null);
   const [loadingSummary, setLoadingSummary] = useState(false);
+  const [applied, setApplied] = useState<AppliedPromotionsDto | null>(null);
+  const [recheck, setRecheck] = useState<{ busy: boolean; note: string | null }>({ busy: false, note: null });
+  const [whish, setWhish] = useState<WhishStartResultDto | null>(null);
+  const [whishStatus, setWhishStatus] = useState<string | null>(null);
+  const [whishError, setWhishError] = useState<string | null>(null);
+  const [whishBusy, setWhishBusy] = useState(false);
+
+  async function payWithWhish() {
+    setWhishBusy(true); setWhishError(null);
+    try {
+      const register = getDisplayRegister();
+      // With a display attached the QR also shows on the customer screen; otherwise a plain till request.
+      const r = register ? await requestDisplayWhish(register, invoiceId) : await startWhishPayment(invoiceId, "Till");
+      setWhish(r); setWhishStatus(r.status);
+    } catch (e) {
+      setWhishError(isWhishNotConfigured(e) ? "Whish not configured" : ((e as { message?: string })?.message ?? "Could not start Whish"));
+    } finally { setWhishBusy(false); }
+  }
+
+  async function refreshApplied() {
+    try {
+      const res = await getApplied(invoiceId);
+      setApplied(res.success && res.data ? res.data : null);
+    } catch {
+      setApplied(null); // endpoint unavailable (404/403) → no chips, nothing else changes
+    }
+  }
+
+  async function recheckPromotions() {
+    setRecheck({ busy: true, note: null });
+    try {
+      const res = await autoApply(invoiceId);
+      if (res.success && res.data) {
+        const changed = (res.data.happyHour?.delta ?? 0) !== 0 || res.data.combos.some((c) => c.delta !== 0);
+        setRecheck({ busy: false, note: changed ? (describeAutoApply(res.data) ?? "Promotions updated.") : "Promotions are up to date." });
+        if (changed) await onInvoiceChanged?.();
+      } else {
+        setRecheck({ busy: false, note: res.message || "Could not re-check promotions." });
+      }
+    } catch {
+      setRecheck({ busy: false, note: "Promotions are not available right now." });
+    }
+    void refreshApplied();
+  }
 
   async function refreshSummary() {
     setLoadingSummary(true);
@@ -47,8 +97,23 @@ export default function CheckoutDialog({ isOpen, onClose, invoiceId, total, onIn
   useEffect(() => {
     if (!isOpen) return;
     void refreshSummary();
+    void refreshApplied();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, invoiceId, total]);
+
+  useEffect(() => {
+    if (!isOpen) { setWhish(null); setWhishStatus(null); setWhishError(null); return; }
+    if (!whish || whishStatus === "Paid" || whishStatus === "Failed" || whishStatus === "Expired") return;
+    const t = setInterval(async () => {
+      try {
+        const s = await getWhishStatus(whish.requestId);
+        setWhishStatus(s.status);
+        if (s.status === "Paid") { void refreshSummary(); if (s.invoiceClosed) void onInvoiceChanged?.(); }
+      } catch { /* keep polling */ }
+    }, 3000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, whish, whishStatus]);
 
   const paid = summary?.paidInBase ?? 0;
   const remaining = summary ? summary.remainingInBase : total;
@@ -80,7 +145,7 @@ export default function CheckoutDialog({ isOpen, onClose, invoiceId, total, onIn
             )}
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <button type="button" onClick={() => setCouponOpen(true)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-white/5">
               Coupon
             </button>
@@ -90,11 +155,51 @@ export default function CheckoutDialog({ isOpen, onClose, invoiceId, total, onIn
             <button type="button" onClick={() => setTenderOpen(true)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-white/5">
               Tenders (USD / LBP)
             </button>
+            <button type="button" onClick={() => void payWithWhish()} disabled={whishBusy || remaining <= 0} className="rounded-lg border border-emerald-500 px-3 py-2 text-sm text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 dark:text-emerald-400 dark:hover:bg-white/5">
+              {whishBusy ? "Starting…" : "Pay with Whish (QR)"}
+            </button>
           </div>
+          {whishError && <p className="text-xs text-red-600">{whishError}</p>}
+          {whish && (
+            <div className="rounded-xl border border-gray-200 p-3 text-center dark:border-gray-700">
+              {whishStatus === "Paid" ? (
+                <p className="text-sm font-medium text-green-600">Whish payment received (${whish.amount.toFixed(2)}). Tender recorded{summary && summary.remainingInBase <= 0 ? "; invoice closed." : "."}</p>
+              ) : (
+                <>
+                  <div className="inline-block rounded-lg bg-white p-2"><QRCodeSVG value={whish.qrPayload} size={160} /></div>
+                  <p className="mt-2 text-xs text-gray-500">Customer scans with Whish · ${whish.amount.toFixed(2)} · {whishStatus ?? "Pending"}{getDisplayRegister() ? " · also on the customer display" : ""}</p>
+                </>
+              )}
+            </div>
+          )}
 
           <p className="text-xs text-gray-500">
             Coupons and gift cards reduce the invoice total. Tenders record what the customer handed over and the change due. Closing marks the invoice paid, exactly as before.
           </p>
+
+          {/* Promotions currently booked (happy hour / combos / coupons) */}
+          <div className="rounded-lg border border-dashed border-gray-200 px-3 py-2 text-xs dark:border-gray-700" data-testid="checkout-promotions">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-gray-500">
+                Promotions
+                {applied && applied.totalDiscount > 0 ? (
+                  <span className="ml-1 font-medium text-success-700 dark:text-success-400">−${applied.totalDiscount.toFixed(2)}</span>
+                ) : (
+                  <span className="ml-1 text-gray-400">none applied</span>
+                )}
+              </span>
+              <button
+                type="button"
+                onClick={() => void recheckPromotions()}
+                disabled={recheck.busy}
+                className="text-brand-600 underline-offset-2 hover:underline disabled:opacity-50 dark:text-brand-400"
+              >
+                {recheck.busy ? "Checking…" : "Re-check promotions"}
+              </button>
+            </div>
+            <AppliedPromotionChips applied={applied} className="mt-1" />
+            {recheck.note && <p className="mt-1 text-gray-500">{recheck.note}</p>}
+          </div>
 
           <div className="flex justify-end gap-2 border-t border-gray-200 pt-3 dark:border-gray-700">
             <button type="button" onClick={onClose} disabled={closing} className="rounded-lg border px-4 py-2 text-sm dark:border-gray-700">Cancel</button>

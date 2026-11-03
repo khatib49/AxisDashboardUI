@@ -4,6 +4,7 @@ import {
   getSelfOrderMenu, getSelfOrderStatus, MenuItemDto, PublicMenuDto, SelfOrderSessionStatusDto,
   startSelfOrderSession, submitSelfOrder,
 } from "../../services/selfOrderService";
+import WhishPayPanel from "./WhishPayPanel";
 
 const POLL_MS = 8000;
 const money = (n: number) => n.toFixed(2);
@@ -81,6 +82,7 @@ export default function SelfOrderPage() {
 
   useEffect(() => {
     if (status && status.status !== "Open" && status.items.length > 0 && Object.keys(cart).length === 0) setView("status");
+    if (status && status.items.length > 0 && /[?&]whish=/.test(window.location.search)) setView("status");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status?.status]);
 
@@ -169,6 +171,17 @@ export default function SelfOrderPage() {
             {status.guestNote && <p className="text-xs text-gray-500 mt-2">Note: {status.guestNote}</p>}
             <p className="text-xs text-gray-500 mt-3">{closed ? "Thank you! Scan the QR again to start a new order." : "Pay at the counter when you are done. This page refreshes automatically."}</p>
           </div>
+          {!closed && token && status.transactionId && status.total > 0 && (
+            <div className="mt-4">
+              <WhishPayPanel
+                token={token}
+                transactionId={status.transactionId}
+                amount={status.total}
+                returnUrl={`${window.location.origin}/order/${encodeURIComponent(tableCode)}`}
+                onPaid={() => { void refreshStatus(token); setToast("Payment received – thank you!"); }}
+              />
+            </div>
+          )}
           {!closed && <button onClick={() => setView("menu")} className="mt-4 w-full py-3 rounded-xl bg-blue-600 text-white font-medium">Order more</button>}
         </section>
       ) : menu ? (

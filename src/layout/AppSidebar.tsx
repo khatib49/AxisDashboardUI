@@ -154,6 +154,7 @@ const AppSidebar: React.FC = () => {
   subItems: [
     { name: "Dashboard", path: "/accounting" },
     { name: "Item Revenue", path: "/accounting/item-revenue" },
+    { name: "Menu Engineering", path: "/accounting/menu-engineering" },
     { name: "Chart of Accounts", path: "/accounting/accounts" },
     { name: "Journal Entries", path: "/accounting/journal" },
     { name: "Trial Balance", path: "/accounting/trial-balance" },
@@ -185,6 +186,7 @@ const AppSidebar: React.FC = () => {
             { name: "Void Requests", path: "/till/void-requests" },
             { name: "Void Reasons", path: "/admin/till/void-reasons" },
             { name: "Tenders", path: "/till/tenders" },
+            { name: "Customer Displays", path: "/admin/till/displays" },
             { name: "Offline Status", path: "/offline" },
           ],
         },
@@ -272,6 +274,7 @@ const AppSidebar: React.FC = () => {
         },
         { icon: <DollarLineIcon />, name: "Profit", path: "/admin-fnb/profit" },
         { icon: <GridIcon />, name: "Owner View", path: "/owner" },
+        { icon: <PieChartIcon />, name: "Menu Engineering", path: "/accounting/menu-engineering" },
         { icon: <TableIcon />, name: "Floor", path: "/cashier/floor" },
         { icon: <CalenderIcon />, name: "Reservations", path: "/floor/reservations" },
         { icon: <TableIcon />, name: "Till", subItems: [

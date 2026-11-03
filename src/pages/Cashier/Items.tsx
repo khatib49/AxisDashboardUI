@@ -25,7 +25,14 @@ import ChangeCalculator from "../../components/common/ChangeCalculator";
 import { getSets, SetDto } from '../../services/setService';
 import TenderDialog from '../Till/TenderDialog';
 import HappyHourBanner from '../../components/promotions/HappyHourBanner';
+import CartPromoHint from '../../components/promotions/CartPromoHint';
+import { describeAutoApply, type CartPromoLine } from '../../components/promotions/cartPromotions';
+import { autoApply } from '../../services/promotionsService';
+import { getDisplayRegister, pushDisplayState } from '../../services/displayService';
 
+
+/** Line shape of the existing CreateCoffeeShopOrder response (untyped upstream). */
+type OrderResponseLine = { itemId: number; itemName: string; quantity: number; price: number; type?: string; categoryName?: string };
 
 export default function CashierItems() {
     const [sets, setSets] = useState<SetDto[]>([]);
@@ -101,6 +108,19 @@ export default function CashierItems() {
         title: string;
         message: string;
     } | null>(null);
+
+    // Customer-facing display: mirror the cart when this till has a display register attached.
+    useEffect(() => {
+        const register = getDisplayRegister();
+        if (!register) return;
+        const cart = Object.entries(selectedItems)
+            .filter(([, qty]) => (qty || 0) > 0)
+            .map(([id, qty]) => {
+                const it = itemLookup[String(id)];
+                return { name: it?.name ?? `Item ${id}`, qty: Number(qty), price: Number(it?.price ?? 0) };
+            });
+        pushDisplayState(register, cart, undefined, currentInvoice?.transactionId ?? null);
+    }, [selectedItems, itemLookup, currentInvoice?.transactionId]);
 
     useEffect(() => {
         if (!notification) return;
@@ -275,6 +295,14 @@ export default function CashierItems() {
         });
 
     const orderSubtotal = orderLines.reduce((s, l) => s + l.lineTotal, 0);
+
+    // Cart as the client-side promotion estimate sees it (happy hour / combo hint).
+    const promoLines: CartPromoLine[] = orderLines.map((l) => ({
+        itemId: Number(l.itemId),
+        categoryId: itemLookup[String(l.itemId)]?.categoryId ?? null,
+        qty: l.qty,
+        unit: l.unit,
+    }));
 
     // Calculate discount amount
     const selectedDiscount = discounts.find(d => d.id === selectedDiscountId);
@@ -633,6 +661,7 @@ export default function CashierItems() {
                                                 )}
                                                 <div className="flex items-center justify-between mt-1"><div>Tax</div><div>$0.00</div></div>
                                                 <div className="flex items-center justify-between mt-2 font-semibold"><div>Total</div><div>${orderTotal.toFixed(2)}</div></div>
+                                                <CartPromoHint lines={promoLines} className="mt-2" />
                                             </div>
                                         </div>
 
@@ -689,7 +718,7 @@ export default function CashierItems() {
                                                                     name: response.data.discountName || '',
                                                                     percentage: response.data.discountPercentage || 0
                                                                 } : null,
-                                                                items: response.data.items?.map((item: any) => ({
+                                                                items: response.data.items?.map((item: OrderResponseLine) => ({
                                                                     itemId: item.itemId,
                                                                     itemName: item.itemName,
                                                                     quantity: item.quantity,
@@ -706,7 +735,7 @@ export default function CashierItems() {
                                                             // Auto-print station tickets (kitchen / bar)
                                                             printStationTickets(
                                                                 response.data.id,
-                                                                response.data.items?.map((item: any) => ({
+                                                                response.data.items?.map((item: OrderResponseLine) => ({
                                                                     itemName: item.itemName,
                                                                     quantity: item.quantity,
                                                                     itemType: item.type || '',
@@ -722,6 +751,7 @@ export default function CashierItems() {
                                                         }
 
                                                         setSelectedItems({});
+                                                        { const r = getDisplayRegister(); if (r) pushDisplayState(r, [], "Idle"); }
                                                         setSelectedDiscountId(null);
                                                         setSelectedClient(null);
                                                         setClientResults([]);
@@ -767,6 +797,7 @@ export default function CashierItems() {
                                                     if (orderItems.length === 0) return;
 
                                                     setOrderSubmitting(true);
+                                                    let promoNote: string | null = null;
                                                     try {
                                                         const response = await createCoffeeShopOrder(
                                                             orderItems,
@@ -806,7 +837,7 @@ export default function CashierItems() {
                                                                     name: response.data.discountName || '',
                                                                     percentage: response.data.discountPercentage || 0
                                                                 } : null,
-                                                                items: response.data.items?.map((item: any) => ({
+                                                                items: response.data.items?.map((item: OrderResponseLine) => ({
                                                                     itemId: item.itemId,
                                                                     itemName: item.itemName,
                                                                     quantity: item.quantity,
@@ -817,13 +848,24 @@ export default function CashierItems() {
                                                                 })) || []
                                                             };
 
+                                                            // Phase 2: happy hour / combos apply automatically on the open invoice.
+                                                            try {
+                                                                const promo = await autoApply(response.data.id);
+                                                                if (promo?.success && promo.data) {
+                                                                    promoNote = describeAutoApply(promo.data);
+                                                                    if (promoNote) invoiceData.totalPrice = promo.data.totalAfter;
+                                                                }
+                                                            } catch {
+                                                                // Promotions endpoint unavailable (404/403) — the invoice is already created; nothing to undo.
+                                                            }
+                                                            
                                                             setCurrentInvoice(invoiceData);
                                                             setInvoiceModalOpen(true);
 
                                                             // Auto-print station tickets (kitchen / bar)
                                                             printStationTickets(
                                                                 response.data.id,
-                                                                response.data.items?.map((item: any) => ({
+                                                                response.data.items?.map((item: OrderResponseLine) => ({
                                                                     itemName: item.itemName,
                                                                     quantity: item.quantity,
                                                                     itemType: item.type || '',
@@ -839,6 +881,7 @@ export default function CashierItems() {
                                                         }
 
                                                         setSelectedItems({});
+                                                        { const r = getDisplayRegister(); if (r) pushDisplayState(r, [], "Idle"); }
                                                         setSelectedDiscountId(null);
                                                         setSelectedClient(null);
                                                         setClientResults([]);
@@ -850,7 +893,7 @@ export default function CashierItems() {
                                                         setNotification({
                                                             variant: 'success',
                                                             title: 'Open Invoice Created',
-                                                            message: 'Invoice created. Customer can pay later.'
+                                                            message: promoNote ? `Invoice created. ${promoNote}` : 'Invoice created. Customer can pay later.'
                                                         });
                                                     } catch (err) {
                                                         let message = 'Failed to create open invoice';

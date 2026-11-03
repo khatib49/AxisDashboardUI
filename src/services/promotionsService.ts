@@ -375,6 +375,59 @@ export async function sellCombo(comboId: number, transactionId?: number | null, 
   })).data;
 }
 
+// ─────────────────────────── automatic apply (phase 2) ───────────────
+/** Happy-hour state on an invoice; delta = signed change booked by THIS call (0 = unchanged). */
+export type AutoApplyHappyHourDto = {
+  ruleId: number;
+  ruleName: string;
+  amount: number;
+  delta: number;
+  matchedLines: number;
+};
+
+export type AutoApplyComboDto = {
+  comboId: number;
+  comboName: string;
+  quantity: number;
+  amount: number;
+  delta: number;
+};
+
+export type AutoApplyResultDto = {
+  transactionId: number;
+  happyHour?: AutoApplyHappyHourDto | null;
+  combos: AutoApplyComboDto[];
+  totalBefore: number;
+  totalAfter: number;
+  messages: string[];
+};
+
+export type AppliedCouponDto = { couponId: number; code: string; name: string; amount: number };
+
+/** What is currently booked on an invoice (read-only; no evaluation). */
+export type AppliedPromotionsDto = {
+  transactionId: number;
+  isOpen: boolean;
+  invoiceTotal: number;
+  happyHour?: AutoApplyHappyHourDto | null;
+  combos: AutoApplyComboDto[];
+  coupons: AppliedCouponDto[];
+  totalDiscount: number;
+};
+
+/**
+ * Re-evaluate happy hour + combos on an OPEN invoice. Idempotent: only the
+ * difference with what is already booked is applied, so call it after every
+ * order / add-items / remove-item.
+ */
+export async function autoApply(transactionId: number) {
+  return (await api.post<BaseResponse<AutoApplyResultDto>>("/promotions/auto-apply", { transactionId })).data;
+}
+
+export async function getApplied(transactionId: number) {
+  return (await api.get<BaseResponse<AppliedPromotionsDto>>(`/promotions/applied/${transactionId}`)).data;
+}
+
 export default {
   issueGiftCard, listGiftCards, getGiftCard, getGiftCardTransactions, disableGiftCard, adjustGiftCard,
   loadGiftCard, refundGiftCard, lookupGiftCard, redeemGiftCard,
@@ -382,4 +435,5 @@ export default {
   listHappyHourRules, createHappyHourRule, updateHappyHourRule, deleteHappyHourRule, getHappyHourActiveNow,
   getHappyHourPricePreview, applyHappyHour,
   listCombos, getCombo, createCombo, updateCombo, deleteCombo, sellCombo,
+  autoApply, getApplied,
 };

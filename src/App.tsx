@@ -110,6 +110,9 @@ import SelfOrderTablesAdmin from "./pages/SelfOrder/SelfOrderTablesAdmin";
 import SelfOrderPage from "./pages/SelfOrder/SelfOrderPage";
 import KioskPage from "./pages/Kiosk/KioskPage";
 import KioskDevicesAdmin from "./pages/Kiosk/KioskDevicesAdmin";
+import MenuEngineering from "./pages/MenuEngineering/MenuEngineering";
+import CustomerDisplayPage from "./pages/CustomerDisplay/CustomerDisplayPage";
+import DisplaysAdmin from "./pages/CustomerDisplay/DisplaysAdmin";
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { authenticated, loading } = useAuth();
@@ -203,6 +206,7 @@ export default function App() {
             <Route path="/reserve" element={<ReservationRequest />} />
             <Route path="/order/:tableCode" element={<SelfOrderPage />} />
             <Route path="/kiosk" element={<KioskPage />} />
+            <Route path="/display" element={<CustomerDisplayPage />} />
 
             {/* Dashboard Layout */}
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
@@ -324,6 +328,7 @@ export default function App() {
               <Route path="/admin/till/shifts" element={<AdminRoute><ShiftsAdmin /></AdminRoute>} />
               <Route path="/admin/till/void-reasons" element={<AdminRoute><VoidReasons /></AdminRoute>} />
               <Route path="/admin/currencies" element={<AdminRoute><Currencies /></AdminRoute>} />
+              <Route path="/admin/till/displays" element={<AdminRoute><DisplaysAdmin /></AdminRoute>} />
 
               {/* ── Delivery, self-order & kiosk admin ── */}
               <Route path="/delivery/board" element={<ProtectedRoute><DeliveryBoard /></ProtectedRoute>} />
@@ -339,6 +344,7 @@ export default function App() {
               <Route path="/accounting-plus/vat-report" element={<AdminRoute><VatReport /></AdminRoute>} />
               <Route path="/accounting-plus/fixed-assets" element={<AdminRoute><FixedAssets /></AdminRoute>} />
               <Route path="/accounting-plus/periods" element={<AdminRoute><Periods /></AdminRoute>} />
+              <Route path="/accounting/menu-engineering" element={<ProtectedRoute><MenuEngineering /></ProtectedRoute>} />
 
               {/* ── HR ── */}
               <Route path="/hr/employees" element={<AdminRoute><HrEmployees /></AdminRoute>} />

@@ -236,8 +236,8 @@ export async function rejectVoidRequest(id: number, note?: string) {
 }
 
 // ───────────── Tenders ─────────────
-export type TenderMethod = "Cash" | "Card" | "Wallet" | "Transfer" | "GiftCard" | "Other";
-export const TENDER_METHODS: TenderMethod[] = ["Cash", "Card", "Wallet", "Transfer", "GiftCard", "Other"];
+export type TenderMethod = "Cash" | "Card" | "Wallet" | "Whish" | "Transfer" | "GiftCard" | "Other";
+export const TENDER_METHODS: TenderMethod[] = ["Cash", "Card", "Wallet", "Whish", "Transfer", "GiftCard", "Other"];
 
 export type TenderLineDto = { currencyCode: string; amount: number; method?: TenderMethod; reference?: string | null };
 
