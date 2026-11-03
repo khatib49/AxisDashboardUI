@@ -5,6 +5,7 @@ import PageMeta from "../../components/common/PageMeta";
 import Loader from "../../components/ui/Loader";
 import { useAuth } from "../../context/AuthContext";
 import { OwnerSummaryDto, getOwnerSummary } from "../../services/biService";
+import { BranchDto, getMyBranches } from "../../services/branchService";
 
 const REFRESH_MS = 60_000;
 const LINE = "#465FFF"; // single series: brand hue, no legend needed
@@ -52,10 +53,21 @@ export default function OwnerView() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
+  const [branches, setBranches] = useState<BranchDto[]>([]);
+  // null = all branches (server default)
+  const [branchId, setBranchId] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getMyBranches()
+      .then((me) => { if (!cancelled) setBranches(me.branches ?? []); })
+      .catch(() => { if (!cancelled) setBranches([]); });
+    return () => { cancelled = true; };
+  }, []);
 
   const load = useCallback(async () => {
     try {
-      const d = await getOwnerSummary();
+      const d = await getOwnerSummary(undefined, branchId);
       setData(d);
       setError(null);
       setUpdatedAt(new Date());
@@ -67,13 +79,16 @@ export default function OwnerView() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [branchId]);
 
   useEffect(() => {
+    setLoading(true);
     void load();
     const t = setInterval(() => void load(), REFRESH_MS);
     return () => clearInterval(t);
   }, [load]);
+
+  const branchName = branchId ? branches.find((b) => b.id === branchId)?.name ?? `#${branchId}` : "All branches";
 
   if (authLoading) return <div className="p-6 text-center">Loading...</div>;
   if (!authenticated) return <Navigate to="/signin" replace />;
@@ -96,6 +111,24 @@ export default function OwnerView() {
         </div>
         <button onClick={() => void load()} className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm dark:border-gray-700 dark:text-gray-300" aria-label="Refresh">↻</button>
       </div>
+
+      {branches.length > 0 && (
+        <div className="mb-4 flex items-center gap-2">
+          <label htmlFor="owner-branch" className="text-xs text-gray-500">Branch</label>
+          <select
+            id="owner-branch"
+            value={branchId ?? ""}
+            onChange={(e) => setBranchId(e.target.value ? Number(e.target.value) : null)}
+            className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+          >
+            <option value="">All branches</option>
+            {branches.map((b) => (
+              <option key={b.id} value={b.id}>{b.name} ({b.code})</option>
+            ))}
+          </select>
+          <span className="text-xs text-gray-400">{branchName}</span>
+        </div>
+      )}
 
       {loading && <div className="flex justify-center py-10"><Loader /></div>}
       {error && !data && <div className="rounded bg-red-50 p-3 text-red-600">{error}</div>}

@@ -69,7 +69,10 @@ export type BranchKpiDto = {
   openInvoicesValue: number;
 };
 
-/** attribution: "default-branch" while transactions carry no branch, "branch" afterwards. */
+/**
+ * attribution: "default-branch" while no transaction carries a branch,
+ * "transaction" once at least one does (legacy rows still count towards the default branch).
+ */
 export type ConsolidatedDashboardDto = {
   from: string;
   to: string;
@@ -178,6 +181,21 @@ export async function getConsolidated(from?: string, to?: string): Promise<Conso
   return res.data;
 }
 
+export type BackfillResult = {
+  success: boolean;
+  error?: string | null;
+  message: string;
+  /** Number of transactions that received a BranchId. */
+  data: number;
+};
+
+/** Admin one-off: stamp BranchId on every transaction that has none (default: the default branch). */
+export async function backfillTransactions(branchId?: number | null): Promise<BackfillResult> {
+  const qs = branchId && branchId > 0 ? `?branchId=${branchId}` : "";
+  const res = await api.post<BackfillResult>(`/branches/backfill-transactions${qs}`);
+  return res.data;
+}
+
 /** Staff list for the assignment picker (existing /users endpoint, unchanged). */
 export async function listStaffUsers(pageSize = 200): Promise<BranchUserPick[]> {
   const res = await api.get<{ data?: BranchUserPick[] }>(`/users?Page=1&PageSize=${pageSize}`);
@@ -197,6 +215,7 @@ export default {
   getBranchSettings,
   setBranchSettings,
   getConsolidated,
+  backfillTransactions,
   listStaffUsers,
   getSelectedBranchId,
   setSelectedBranchId,

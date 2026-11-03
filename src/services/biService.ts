@@ -117,8 +117,13 @@ export async function previewReport(id: number, day?: string): Promise<ReportPre
   return res.data;
 }
 
-export async function getOwnerSummary(day?: string): Promise<OwnerSummaryDto> {
-  const res = await api.get<OwnerSummaryDto>(`/bi/owner-summary${day ? `?day=${day}` : ""}`);
+/** day: "yyyy-MM-dd" (default today); branchId: undefined/null = all branches. */
+export async function getOwnerSummary(day?: string, branchId?: number | null): Promise<OwnerSummaryDto> {
+  const params = new URLSearchParams();
+  if (day) params.set("day", day);
+  if (branchId && branchId > 0) params.set("branchId", String(branchId));
+  const qs = params.toString();
+  const res = await api.get<OwnerSummaryDto>(`/bi/owner-summary${qs ? `?${qs}` : ""}`);
   return res.data;
 }
 
