@@ -278,7 +278,7 @@ export default function TableOrderPicker({ transactionId, guestCount, tableLabel
       {/* header */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-200 dark:border-gray-700">
         <div className="flex-1 min-w-0">
-          <div className="font-semibold text-gray-900 dark:text-white truncate">Order · {tableLabel}</div>
+          <h1 className="font-semibold text-gray-900 dark:text-white truncate text-base" data-page-title>Order · {tableLabel}</h1>
           <div className="text-xs text-gray-500 dark:text-gray-400">Invoice #{transactionId} · {guestCount} guest{guestCount === 1 ? "" : "s"}</div>
         </div>
         <button type="button" className={chip} onClick={onClose} aria-label="Close">✕</button>

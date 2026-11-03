@@ -65,7 +65,7 @@ export default function WaiterShell({
           <Link to={back} className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg text-xl" aria-label="Back">‹</Link>
         )}
         <div className="flex-1 min-w-0">
-          <div className="font-semibold truncate">{title}</div>
+          <h1 className="font-semibold truncate text-base" data-page-title>{title}</h1>
           {subtitle && <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{subtitle}</div>}
         </div>
         {headerRight}
