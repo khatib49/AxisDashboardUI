@@ -150,6 +150,30 @@ export type DailyTipsReportDto = {
   byStaff: { staffUserId?: number | null; staffName: string; count: number; total: number }[];
 };
 
+// ── Seat lines / bill by seat (phase 2) ──────────────────────────────
+export type LineAssignmentDto = { itemId: number; seatNumber: number | null; quantity: number; courseNumber?: number | null };
+export type SeatLineDto = {
+  itemId: number;
+  itemName: string;
+  seatNumber: number | null;
+  quantity: number;
+  courseNumber: number;
+  unitPrice: number;
+  extrasPerUnit: number;
+  lineTotal: number;
+  firedOn?: string | null;
+};
+export type SeatBillDto = { seatNumber: number | null; label: string; lines: SeatLineDto[]; subtotal: number; net: number };
+export type BillBySeatDto = {
+  transactionId: number;
+  totalPrice: number;
+  discountPercentage: number;
+  guestCount: number;
+  seats: SeatBillDto[];
+  assignedTotal: number;
+  unassignedTotal: number;
+};
+
 export const PAYMENT_METHODS = ["Cash", "Card", "Wallet", "Other"] as const;
 
 // ── Areas ────────────────────────────────────────────────────────────
@@ -238,6 +262,21 @@ export async function fireCourse(transactionId: number, courseNumber: number): P
   return res.data;
 }
 
+// ── Seat lines / bill by seat ────────────────────────────────────────
+/** Append=true (default) adds the quantities to what the seat already has; false sets them (0 removes). */
+export async function setLines(transactionId: number, lines: LineAssignmentDto[], append = true): Promise<BaseResponse<BillBySeatDto>> {
+  const res = await api.put<BaseResponse<BillBySeatDto>>(`/floor/sessions/${transactionId}/lines`, { lines, append });
+  return res.data;
+}
+export async function getBillBySeat(transactionId: number): Promise<BaseResponse<BillBySeatDto>> {
+  const res = await api.get<BaseResponse<BillBySeatDto>>(`/floor/sessions/${transactionId}/bill?bySeat=true`);
+  return res.data;
+}
+export async function splitBySeat(transactionId: number): Promise<BaseResponse<BillSplitListDto>> {
+  const res = await api.post<BaseResponse<BillSplitListDto>>(`/floor/sessions/splits/${transactionId}/by-seat`);
+  return res.data;
+}
+
 // ── Splits ───────────────────────────────────────────────────────────
 export async function getSplits(transactionId: number): Promise<BaseResponse<BillSplitListDto>> {
   const res = await api.get<BaseResponse<BillSplitListDto>>(`/floor/sessions/splits/${transactionId}`);
@@ -293,6 +332,7 @@ export default {
   getTables, createTable, updateTable, deleteTable, saveLayout, getLayout,
   getOpenSessions, openTable, seatInvoice, transferSession, mergeInvoices, closeSessionByTransaction,
   getCourses, setCourses, fireCourse,
+  setLines, getBillBySeat, splitBySeat,
   getSplits, splitEqual, splitCustom, paySplit, deleteSplit,
   getTips, addTip, deleteTip, getDailyTipsReport,
 };

@@ -27,7 +27,11 @@ export type ReservationDto = {
   confirmedOn?: string | null;
   seatedTransactionId?: number | null;
   branchId?: number | null;
+  /** Phase 2: WhatsApp stamps (null = not sent). */
+  reminderSentOn?: string | null;
+  confirmationSentOn?: string | null;
 };
+export type ReservationNotificationResultDto = { reservationId: number; kind: string; sent: boolean; sentOn?: string | null; detail?: string | null };
 
 export type ReservationUpsertDto = {
   customerName: string;
@@ -160,6 +164,11 @@ export async function completeReservation(id: number): Promise<BaseResponse<Rese
   const res = await api.post<BaseResponse<ReservationDto>>(`${base}/${id}/complete`);
   return res.data;
 }
+/** Manual WhatsApp reminder (needs IntegrationSettings "Reservations.WhatsAppReminderTemplate"). */
+export async function sendReservationReminder(id: number): Promise<BaseResponse<ReservationNotificationResultDto>> {
+  const res = await api.post<BaseResponse<ReservationNotificationResultDto>>(`${base}/${id}/send-reminder`);
+  return res.data;
+}
 
 // Public (no auth)
 export async function submitPublicReservation(dto: PublicReservationRequestDto): Promise<BaseResponse<ReservationDto>> {
@@ -174,6 +183,6 @@ export async function getPublicTables(): Promise<PublicTableDto[]> {
 export default {
   listReservations, getReservationBoard, getReservation, checkAvailability,
   createReservation, updateReservation, deleteReservation,
-  confirmReservation, seatReservation, noShowReservation, cancelReservation, completeReservation,
+  confirmReservation, seatReservation, noShowReservation, cancelReservation, completeReservation, sendReservationReminder,
   submitPublicReservation, getPublicTables,
 };

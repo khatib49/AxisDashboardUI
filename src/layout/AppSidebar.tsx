@@ -174,6 +174,7 @@ const AppSidebar: React.FC = () => {
           subItems: [
             { name: "Floor Plan", path: "/admin/floor-plan" },
             { name: "Floor", path: "/cashier/floor" },
+            { name: "Waiter mode (phone)", path: "/waiter" },
             { name: "Reservations", path: "/floor/reservations" },
           ],
         },
@@ -277,6 +278,7 @@ const AppSidebar: React.FC = () => {
         { icon: <PieChartIcon />, name: "Menu Engineering", path: "/accounting/menu-engineering" },
         { icon: <TableIcon />, name: "Floor", path: "/cashier/floor" },
         { icon: <CalenderIcon />, name: "Reservations", path: "/floor/reservations" },
+        { icon: <TableIcon />, name: "Waiter mode", path: "/waiter" },
         { icon: <TableIcon />, name: "Till", subItems: [
           { name: "My Shift", path: "/till/shift" },
           { name: "Void / Refund Requests", path: "/till/void-requests" },
@@ -306,6 +308,7 @@ const AppSidebar: React.FC = () => {
         { icon: <UserCircleIcon />, name: "Clients", path: "/gamecashier/clients" },
         { icon: <TicketIcon />, name: "AXIS PLUS Check", path: "/cashier/loyalty-check" },
         { icon: <CalenderIcon />, name: "Reservations", path: "/floor/reservations" },
+        { icon: <TableIcon />, name: "Waiter mode", path: "/waiter" },
         { icon: <TableIcon />, name: "Till", subItems: [
           { name: "My Shift", path: "/till/shift" },
           { name: "Void / Refund Requests", path: "/till/void-requests" },
@@ -330,6 +333,7 @@ const AppSidebar: React.FC = () => {
         { icon: <TicketIcon />, name: "AXIS PLUS Check", path: "/cashier/loyalty-check" },
         { icon: <TableIcon />, name: "Floor", path: "/cashier/floor" },
         { icon: <CalenderIcon />, name: "Reservations", path: "/floor/reservations" },
+        { icon: <TableIcon />, name: "Waiter mode", path: "/waiter" },
         { icon: <TableIcon />, name: "Till", subItems: [
           { name: "My Shift", path: "/till/shift" },
           { name: "Void / Refund Requests", path: "/till/void-requests" },

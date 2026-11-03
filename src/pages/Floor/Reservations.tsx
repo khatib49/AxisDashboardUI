@@ -21,6 +21,7 @@ import {
   noShowReservation,
   cancelReservation,
   completeReservation,
+  sendReservationReminder,
   checkAvailability,
 } from "../../services/reservationService";
 import { getTables, DiningTableDto, errorMessage } from "../../services/floorService";
@@ -361,6 +362,12 @@ export default function Reservations() {
                     <TableCell className={td}>{r.partySize}</TableCell>
                     <TableCell className={td}>
                       <span className={`inline-block rounded px-2 py-0.5 text-xs ${STATUS_TONE[r.status] ?? ""}`}>{r.status}</span>
+                      {r.reminderSentOn && (
+                        <span className="ml-1 inline-block rounded px-2 py-0.5 text-xs bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200" title={`Reminder sent ${new Date(r.reminderSentOn).toLocaleString()}`}>reminded</span>
+                      )}
+                      {r.confirmationSentOn && !r.reminderSentOn && (
+                        <span className="ml-1 inline-block rounded px-2 py-0.5 text-xs bg-sky-100 text-sky-800 dark:bg-sky-500/20 dark:text-sky-200" title={`Confirmation sent ${new Date(r.confirmationSentOn).toLocaleString()}`}>confirmed via WhatsApp</span>
+                      )}
                       {r.seatedTransactionId && <div className="text-xs text-gray-500">#{r.seatedTransactionId}</div>}
                     </TableCell>
                     <TableCell className={td}>{r.source}</TableCell>
@@ -373,6 +380,9 @@ export default function Reservations() {
                             <button className="text-red-600 hover:underline" disabled={busy} onClick={() => act("No-show", () => noShowReservation(r.id))}>No-show</button>
                             <button className="text-gray-600 hover:underline" disabled={busy} onClick={() => act("Cancel", () => cancelReservation(r.id))}>Cancel</button>
                             <button className="text-gray-600 hover:underline" onClick={() => openEdit(r)}>Edit</button>
+                            <button className="text-emerald-600 hover:underline" disabled={busy} title="Send a WhatsApp reminder now" onClick={() => act("Remind", () => sendReservationReminder(r.id))}>
+                              {r.reminderSentOn ? "Remind again" : "Remind"}
+                            </button>
                           </>
                         )}
                         {r.status === "Seated" && <button className="text-emerald-600 hover:underline" disabled={busy} onClick={() => act("Complete", () => completeReservation(r.id))}>Complete</button>}

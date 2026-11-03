@@ -113,6 +113,9 @@ import KioskDevicesAdmin from "./pages/Kiosk/KioskDevicesAdmin";
 import MenuEngineering from "./pages/MenuEngineering/MenuEngineering";
 import CustomerDisplayPage from "./pages/CustomerDisplay/CustomerDisplayPage";
 import DisplaysAdmin from "./pages/CustomerDisplay/DisplaysAdmin";
+import WaiterHome from "./pages/Waiter/WaiterHome";
+import WaiterTable from "./pages/Waiter/WaiterTable";
+import WaiterOrder from "./pages/Waiter/WaiterOrder";
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { authenticated, loading } = useAuth();
@@ -207,6 +210,10 @@ export default function App() {
             <Route path="/order/:tableCode" element={<SelfOrderPage />} />
             <Route path="/kiosk" element={<KioskPage />} />
             <Route path="/display" element={<CustomerDisplayPage />} />
+            {/* Handheld waiter mode: phone app shell without the sidebar layout */}
+            <Route path="/waiter" element={<ProtectedRoute><WaiterHome /></ProtectedRoute>} />
+            <Route path="/waiter/table/:tableId" element={<ProtectedRoute><WaiterTable /></ProtectedRoute>} />
+            <Route path="/waiter/order/:tableId" element={<ProtectedRoute><WaiterOrder /></ProtectedRoute>} />
 
             {/* Dashboard Layout */}
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import {
     getOpenFnbInvoices,
     addItemsToOpenInvoice,
@@ -90,6 +91,10 @@ const [, setLoadingSets] = useState(false);
     };
 
     // Load open invoices
+    // Deep link from waiter mode: /cashier/open-invoices?invoice=ID opens that invoice's checkout.
+    const [searchParams] = useSearchParams();
+    const linkedInvoice = Number(searchParams.get('invoice')) || null;
+
     const loadOpenInvoices = async () => {
         setLoading(true);
         setError(null);
@@ -99,6 +104,10 @@ const [, setLoadingSets] = useState(false);
                 const list = response.data || [];
                 setOpenInvoices(list);
                 void loadAppliedPromotions(list.map(i => i.id));
+                if (linkedInvoice && list.some(i => i.id === linkedInvoice)) {
+                    setCheckoutInvoiceId(linkedInvoice);
+                    setTimeout(() => document.getElementById(`invoice-${linkedInvoice}`)?.scrollIntoView({ block: 'center' }), 50);
+                }
             } else {
                 setError(response.message || 'Failed to load open invoices');
             }
@@ -495,6 +504,7 @@ const handleCloseInvoice = async (invoiceId: number, viaCheckout = false) => {
                     {openInvoices.map((invoice) => (
                      <div
                 key={invoice.id}
+                id={`invoice-${invoice.id}`}
                 className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-orange-200 hover:border-orange-400"
             >
                 <div className="bg-gradient-to-r from-orange-600 to-orange-700 p-4 text-white">
