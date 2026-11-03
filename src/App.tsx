@@ -65,6 +65,51 @@ import KitchenDisplay from "./pages/Chef/KitchenDisplay";
 import BarDisplay from "./pages/bartender/BarDisplay";
 import { TransactionAuditLogsPage } from "./pages/Admin/TransactionAuditLogsPage";
 import ItemRevenueReport from "./pages/Accounting/ItemRevenueReport";
+// ── Gap-closing modules ──
+import StockLocations from "./pages/StockOps/Locations";
+import StockCounts from "./pages/StockOps/StockCounts";
+import StockTransfers from "./pages/StockOps/StockTransfers";
+import ReorderSuggestions from "./pages/StockOps/ReorderSuggestions";
+import StockBatches from "./pages/StockOps/Batches";
+import FloorPlanAdmin from "./pages/Floor/FloorPlanAdmin";
+import FloorView from "./pages/Floor/FloorView";
+import Reservations from "./pages/Floor/Reservations";
+import ReservationRequest from "./pages/Floor/ReservationRequest";
+import BankReconciliation from "./pages/AccountingPlus/BankReconciliation";
+import SupplierBills from "./pages/AccountingPlus/SupplierBills";
+import Aging from "./pages/AccountingPlus/Aging";
+import VatReport from "./pages/AccountingPlus/VatReport";
+import FixedAssets from "./pages/AccountingPlus/FixedAssets";
+import Periods from "./pages/AccountingPlus/Periods";
+import Branches from "./pages/Branches/Branches";
+import Consolidated from "./pages/Branches/Consolidated";
+import ScheduledReports from "./pages/Bi/ScheduledReports";
+import OwnerView from "./pages/Bi/OwnerView";
+import OfflineStatus from "./pages/Offline/OfflineStatus";
+import ShiftPanel from "./pages/Till/ShiftPanel";
+import ShiftsAdmin from "./pages/Till/ShiftsAdmin";
+import VoidRequests from "./pages/Till/VoidRequests";
+import VoidReasons from "./pages/Till/VoidReasons";
+import Currencies from "./pages/Till/Currencies";
+import Tenders from "./pages/Till/Tenders";
+import GiftCards from "./pages/Promotions/GiftCards";
+import Coupons from "./pages/Promotions/Coupons";
+import HappyHours from "./pages/Promotions/HappyHours";
+import Combos from "./pages/Promotions/Combos";
+import CouponApply from "./pages/Promotions/CouponApply";
+import HrEmployees from "./pages/Hr/Employees";
+import HrSchedule from "./pages/Hr/Schedule";
+import HrAttendance from "./pages/Hr/Attendance";
+import HrClockKiosk from "./pages/Hr/ClockKiosk";
+import HrLeave from "./pages/Hr/Leave";
+import HrTipPools from "./pages/Hr/TipPools";
+import DeliveryBoard from "./pages/Delivery/DeliveryBoard";
+import NewDeliveryOrder from "./pages/Delivery/NewDeliveryOrder";
+import ZonesDrivers from "./pages/Delivery/ZonesDrivers";
+import SelfOrderTablesAdmin from "./pages/SelfOrder/SelfOrderTablesAdmin";
+import SelfOrderPage from "./pages/SelfOrder/SelfOrderPage";
+import KioskPage from "./pages/Kiosk/KioskPage";
+import KioskDevicesAdmin from "./pages/Kiosk/KioskDevicesAdmin";
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { authenticated, loading } = useAuth();
@@ -154,6 +199,10 @@ export default function App() {
           <Routes>
             {/* Public Menu Page - Standalone without layout */}
             <Route path="/menu" element={<Menu />} />
+            {/* Public guest pages (no layout): reservation request, QR self-order, kiosk */}
+            <Route path="/reserve" element={<ReservationRequest />} />
+            <Route path="/order/:tableCode" element={<SelfOrderPage />} />
+            <Route path="/kiosk" element={<KioskPage />} />
 
             {/* Dashboard Layout */}
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
@@ -255,6 +304,65 @@ export default function App() {
               {/* Make Cashier Items also available to game cashier roles */}
               <Route path="/gamecashier/items" element={<GameCashieRoute><CashierItems /></GameCashieRoute>} />
               <Route path="/gamecashier/clients" element={<GameCashieRoute><ClientManagement /></GameCashieRoute>} />
+
+              {/* ── Stock operations (API enforces admin/stock/chef/admin_fnb) ── */}
+              <Route path="/stock/locations" element={<ProtectedRoute><StockLocations /></ProtectedRoute>} />
+              <Route path="/stock/counts" element={<ProtectedRoute><StockCounts /></ProtectedRoute>} />
+              <Route path="/stock/transfers" element={<ProtectedRoute><StockTransfers /></ProtectedRoute>} />
+              <Route path="/stock/reorder" element={<ProtectedRoute><ReorderSuggestions /></ProtectedRoute>} />
+              <Route path="/stock/batches" element={<ProtectedRoute><StockBatches /></ProtectedRoute>} />
+
+              {/* ── Floor, tables & reservations ── */}
+              <Route path="/admin/floor-plan" element={<AdminRoute><FloorPlanAdmin /></AdminRoute>} />
+              <Route path="/cashier/floor" element={<ProtectedRoute><FloorView /></ProtectedRoute>} />
+              <Route path="/floor/reservations" element={<ProtectedRoute><Reservations /></ProtectedRoute>} />
+
+              {/* ── Till controls & currency ── */}
+              <Route path="/till/shift" element={<ProtectedRoute><ShiftPanel /></ProtectedRoute>} />
+              <Route path="/till/void-requests" element={<ProtectedRoute><VoidRequests /></ProtectedRoute>} />
+              <Route path="/till/tenders" element={<ProtectedRoute><Tenders /></ProtectedRoute>} />
+              <Route path="/admin/till/shifts" element={<AdminRoute><ShiftsAdmin /></AdminRoute>} />
+              <Route path="/admin/till/void-reasons" element={<AdminRoute><VoidReasons /></AdminRoute>} />
+              <Route path="/admin/currencies" element={<AdminRoute><Currencies /></AdminRoute>} />
+
+              {/* ── Delivery, self-order & kiosk admin ── */}
+              <Route path="/delivery/board" element={<ProtectedRoute><DeliveryBoard /></ProtectedRoute>} />
+              <Route path="/delivery/new" element={<ProtectedRoute><NewDeliveryOrder /></ProtectedRoute>} />
+              <Route path="/admin/delivery/zones-drivers" element={<AdminRoute><ZonesDrivers /></AdminRoute>} />
+              <Route path="/admin/selforder/tables" element={<AdminRoute><SelfOrderTablesAdmin /></AdminRoute>} />
+              <Route path="/admin/kiosk/devices" element={<AdminRoute><KioskDevicesAdmin /></AdminRoute>} />
+
+              {/* ── Accounting depth ── */}
+              <Route path="/accounting-plus/bank-reconciliation" element={<AdminRoute><BankReconciliation /></AdminRoute>} />
+              <Route path="/accounting-plus/supplier-bills" element={<AdminRoute><SupplierBills /></AdminRoute>} />
+              <Route path="/accounting-plus/aging" element={<AdminRoute><Aging /></AdminRoute>} />
+              <Route path="/accounting-plus/vat-report" element={<AdminRoute><VatReport /></AdminRoute>} />
+              <Route path="/accounting-plus/fixed-assets" element={<AdminRoute><FixedAssets /></AdminRoute>} />
+              <Route path="/accounting-plus/periods" element={<AdminRoute><Periods /></AdminRoute>} />
+
+              {/* ── HR ── */}
+              <Route path="/hr/employees" element={<AdminRoute><HrEmployees /></AdminRoute>} />
+              <Route path="/hr/schedule" element={<AdminRoute><HrSchedule /></AdminRoute>} />
+              <Route path="/hr/attendance" element={<AdminRoute><HrAttendance /></AdminRoute>} />
+              <Route path="/hr/leave" element={<AdminRoute><HrLeave /></AdminRoute>} />
+              <Route path="/hr/tips" element={<ProtectedRoute><HrTipPools /></ProtectedRoute>} />
+              <Route path="/hr/clock" element={<ProtectedRoute><HrClockKiosk /></ProtectedRoute>} />
+
+              {/* ── Promotions ── */}
+              <Route path="/admin/promotions/gift-cards" element={<AdminRoute><GiftCards /></AdminRoute>} />
+              <Route path="/admin/promotions/coupons" element={<AdminRoute><Coupons /></AdminRoute>} />
+              <Route path="/admin/promotions/happy-hours" element={<AdminRoute><HappyHours /></AdminRoute>} />
+              <Route path="/admin/promotions/combos" element={<AdminRoute><Combos /></AdminRoute>} />
+              <Route path="/cashier/coupon" element={<ProtectedRoute><CouponApply /></ProtectedRoute>} />
+
+              {/* ── Branches, BI & owner view ── */}
+              <Route path="/admin/branches" element={<AdminRoute><Branches /></AdminRoute>} />
+              <Route path="/admin/branches/consolidated" element={<AdminRoute><Consolidated /></AdminRoute>} />
+              <Route path="/admin/bi/reports" element={<AdminRoute><ScheduledReports /></AdminRoute>} />
+              <Route path="/owner" element={<ProtectedRoute><OwnerView /></ProtectedRoute>} />
+
+              {/* ── Offline queue status ── */}
+              <Route path="/offline" element={<ProtectedRoute><OfflineStatus /></ProtectedRoute>} />
             </Route>
 
             {/* Auth Layout */}

@@ -158,9 +158,92 @@ const AppSidebar: React.FC = () => {
     { name: "Journal Entries", path: "/accounting/journal" },
     { name: "Trial Balance", path: "/accounting/trial-balance" },
     { name: "General Ledger", path: "/accounting/general-ledger" },
+    { name: "Bank Reconciliation", path: "/accounting-plus/bank-reconciliation" },
+    { name: "Supplier Bills", path: "/accounting-plus/supplier-bills" },
+    { name: "AP / AR Aging", path: "/accounting-plus/aging" },
+    { name: "VAT Report", path: "/accounting-plus/vat-report" },
+    { name: "Fixed Assets", path: "/accounting-plus/fixed-assets" },
+    { name: "Accounting Periods", path: "/accounting-plus/periods" },
+    { name: "Currencies & Rates", path: "/admin/currencies" },
   ],
 },
-{
+        {
+          icon: <TableIcon />,
+          name: "Floor & Reservations",
+          subItems: [
+            { name: "Floor Plan", path: "/admin/floor-plan" },
+            { name: "Floor", path: "/cashier/floor" },
+            { name: "Reservations", path: "/floor/reservations" },
+          ],
+        },
+        {
+          icon: <TableIcon />,
+          name: "Till Controls",
+          subItems: [
+            { name: "Cashier Shifts", path: "/admin/till/shifts" },
+            { name: "My Shift", path: "/till/shift" },
+            { name: "Void Requests", path: "/till/void-requests" },
+            { name: "Void Reasons", path: "/admin/till/void-reasons" },
+            { name: "Tenders", path: "/till/tenders" },
+            { name: "Offline Status", path: "/offline" },
+          ],
+        },
+        {
+          icon: <PlugInIcon />,
+          name: "Delivery & Self-Service",
+          subItems: [
+            { name: "Delivery Board", path: "/delivery/board" },
+            { name: "New Delivery Order", path: "/delivery/new" },
+            { name: "Zones & Drivers", path: "/admin/delivery/zones-drivers" },
+            { name: "Self-Order Tables (QR)", path: "/admin/selforder/tables" },
+            { name: "Kiosk Devices", path: "/admin/kiosk/devices" },
+          ],
+        },
+        {
+          icon: <BoxCubeIcon />,
+          name: "Stock Management",
+          subItems: [
+            { name: "Stock Locations", path: "/stock/locations" },
+            { name: "Stocktakes", path: "/stock/counts" },
+            { name: "Stock Transfers", path: "/stock/transfers" },
+            { name: "Reorder Suggestions", path: "/stock/reorder" },
+            { name: "Batches & Expiry", path: "/stock/batches" },
+          ],
+        },
+        {
+          icon: <PieChartIcon />,
+          name: "Promotions",
+          subItems: [
+            { name: "Gift Cards", path: "/admin/promotions/gift-cards" },
+            { name: "Coupons", path: "/admin/promotions/coupons" },
+            { name: "Happy Hours", path: "/admin/promotions/happy-hours" },
+            { name: "Combos", path: "/admin/promotions/combos" },
+            { name: "Apply Coupon", path: "/cashier/coupon" },
+          ],
+        },
+        {
+          icon: <UserCircleIcon />,
+          name: "HR",
+          subItems: [
+            { name: "Employees", path: "/hr/employees" },
+            { name: "Shift Schedule", path: "/hr/schedule" },
+            { name: "Attendance", path: "/hr/attendance" },
+            { name: "Leave", path: "/hr/leave" },
+            { name: "Tip Pools", path: "/hr/tips" },
+            { name: "Clock In / Out", path: "/hr/clock" },
+          ],
+        },
+        {
+          icon: <GridIcon />,
+          name: "Branches & BI",
+          subItems: [
+            { name: "Branches", path: "/admin/branches" },
+            { name: "Consolidated", path: "/admin/branches/consolidated" },
+            { name: "Scheduled Reports", path: "/admin/bi/reports" },
+            { name: "Owner View", path: "/owner" },
+          ],
+        },
+        {
           icon: <DollarLineIcon />,
           name: "Entries Management",
           subItems: [
@@ -188,6 +271,22 @@ const AppSidebar: React.FC = () => {
           ],
         },
         { icon: <DollarLineIcon />, name: "Profit", path: "/admin-fnb/profit" },
+        { icon: <GridIcon />, name: "Owner View", path: "/owner" },
+        { icon: <TableIcon />, name: "Floor", path: "/cashier/floor" },
+        { icon: <CalenderIcon />, name: "Reservations", path: "/floor/reservations" },
+        { icon: <TableIcon />, name: "Till", subItems: [
+          { name: "My Shift", path: "/till/shift" },
+          { name: "Void / Refund Requests", path: "/till/void-requests" },
+          { name: "Tenders", path: "/till/tenders" },
+          { name: "Offline Status", path: "/offline" },
+        ] },
+        { icon: <PlugInIcon />, name: "Delivery", subItems: [
+          { name: "Delivery & Takeaway", path: "/delivery/board" },
+          { name: "New Delivery Order", path: "/delivery/new" },
+        ] },
+        { icon: <PieChartIcon />, name: "Apply Coupon", path: "/cashier/coupon" },
+        { icon: <PieChartIcon />, name: "Tip Pools", path: "/hr/tips" },
+        { icon: <UserCircleIcon />, name: "Clock In / Out", path: "/hr/clock" },
       ];
     }
 
@@ -203,6 +302,20 @@ const AppSidebar: React.FC = () => {
         { icon: <TableIcon />, name: "Rooms", path: "/gamecashier/rooms" },
         { icon: <UserCircleIcon />, name: "Clients", path: "/gamecashier/clients" },
         { icon: <TicketIcon />, name: "AXIS PLUS Check", path: "/cashier/loyalty-check" },
+        { icon: <CalenderIcon />, name: "Reservations", path: "/floor/reservations" },
+        { icon: <TableIcon />, name: "Till", subItems: [
+          { name: "My Shift", path: "/till/shift" },
+          { name: "Void / Refund Requests", path: "/till/void-requests" },
+          { name: "Tenders", path: "/till/tenders" },
+          { name: "Offline Status", path: "/offline" },
+        ] },
+        { icon: <PlugInIcon />, name: "Delivery", subItems: [
+          { name: "Delivery & Takeaway", path: "/delivery/board" },
+          { name: "New Delivery Order", path: "/delivery/new" },
+        ] },
+        { icon: <PieChartIcon />, name: "Apply Coupon", path: "/cashier/coupon" },
+        { icon: <PieChartIcon />, name: "Tip Pools", path: "/hr/tips" },
+        { icon: <UserCircleIcon />, name: "Clock In / Out", path: "/hr/clock" },
       ];
     }
 
@@ -212,6 +325,21 @@ const AppSidebar: React.FC = () => {
         { icon: <BoxCubeIcon />, name: "Items", path: "/cashier/items" },
         { icon: <TableIcon />, name: "Orders", path: "/cashier/orders" },
         { icon: <TicketIcon />, name: "AXIS PLUS Check", path: "/cashier/loyalty-check" },
+        { icon: <TableIcon />, name: "Floor", path: "/cashier/floor" },
+        { icon: <CalenderIcon />, name: "Reservations", path: "/floor/reservations" },
+        { icon: <TableIcon />, name: "Till", subItems: [
+          { name: "My Shift", path: "/till/shift" },
+          { name: "Void / Refund Requests", path: "/till/void-requests" },
+          { name: "Tenders", path: "/till/tenders" },
+          { name: "Offline Status", path: "/offline" },
+        ] },
+        { icon: <PlugInIcon />, name: "Delivery", subItems: [
+          { name: "Delivery & Takeaway", path: "/delivery/board" },
+          { name: "New Delivery Order", path: "/delivery/new" },
+        ] },
+        { icon: <PieChartIcon />, name: "Apply Coupon", path: "/cashier/coupon" },
+        { icon: <PieChartIcon />, name: "Tip Pools", path: "/hr/tips" },
+        { icon: <UserCircleIcon />, name: "Clock In / Out", path: "/hr/clock" },
       ];
     }
 
@@ -219,6 +347,14 @@ const AppSidebar: React.FC = () => {
     if (hasRole("chef")) {
       return [
         { icon: <ListIcon />, name: "Kitchen Orders", path: "/chef/kitchen-display", element: <KitchenDisplay />, subItems: undefined },
+        { icon: <BoxCubeIcon />, name: "Stock", subItems: [
+          { name: "Stocktakes", path: "/stock/counts" },
+          { name: "Stock Transfers", path: "/stock/transfers" },
+          { name: "Reorder Suggestions", path: "/stock/reorder" },
+          { name: "Batches & Expiry", path: "/stock/batches" },
+          { name: "Stock Locations", path: "/stock/locations" },
+        ] },
+        { icon: <UserCircleIcon />, name: "Clock In / Out", path: "/hr/clock" },
       ];
     }
 
@@ -226,6 +362,7 @@ const AppSidebar: React.FC = () => {
     if (hasRole("bartender")) {
       return [
         { icon: <ListIcon />, name: "Bar Orders", path: '/bartender/bar-display', element: <BarDisplay />, subItems: undefined },
+        { icon: <UserCircleIcon />, name: "Clock In / Out", path: "/hr/clock" },
       ];
     }
 
