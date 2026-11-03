@@ -149,7 +149,7 @@ export default function OfflineStatus() {
       )}
 
       <div className="mb-6 grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
           <p className="text-sm text-gray-500 dark:text-gray-400">Connection</p>
           <p className={`mt-1 text-lg font-semibold ${online ? "text-success-600 dark:text-success-400" : "text-error-600 dark:text-error-400"}`}>
             {online ? "Online" : "Offline"}
@@ -158,7 +158,7 @@ export default function OfflineStatus() {
           {lastError && <p className="mt-1 text-xs text-error-600 dark:text-error-400">{lastError}</p>}
         </div>
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
           <p className="text-sm text-gray-500 dark:text-gray-400">Queued operations</p>
           <p className="mt-1 text-lg font-semibold text-gray-800 dark:text-white/90">
             {queueLength}
@@ -174,7 +174,7 @@ export default function OfflineStatus() {
           </button>
         </div>
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
           <p className="text-sm text-gray-500 dark:text-gray-400">Menu snapshot</p>
           {snapshot ? (
             <>
@@ -199,7 +199,7 @@ export default function OfflineStatus() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
         <div className="border-b border-gray-200 px-5 py-4 dark:border-gray-800">
           <h3 className="text-base font-semibold text-gray-800 dark:text-white/90">Queued orders</h3>
           <p className="text-xs text-gray-500 dark:text-gray-400">Sent in order, oldest first. Each is applied exactly once on the server even if it is retried.</p>

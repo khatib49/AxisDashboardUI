@@ -72,7 +72,7 @@ export default function ShiftsAdmin() {
 
       {error && <div className="mb-4"><Alert variant="error" title="Error" message={error} /></div>}
 
-      <div className="mb-4 grid grid-cols-1 gap-3 rounded-lg border border-gray-200 bg-white p-4 md:grid-cols-5 dark:border-gray-700 dark:bg-gray-800">
+      <div className="mb-4 grid grid-cols-1 gap-3 rounded-lg border border-gray-200 bg-white p-4 md:grid-cols-5 dark:border-gray-700 dark:bg-gray-800 text-gray-800 dark:text-white/90">
         <div>
           <Label>Status</Label>
           <select value={status} onChange={(e) => { setPage(1); setStatus(e.target.value); }} className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-600 dark:text-white">
@@ -84,21 +84,21 @@ export default function ShiftsAdmin() {
         <div><Label>Register</Label><Input value={register} onChange={(e) => { setPage(1); setRegister(e.target.value); }} placeholder="Any" /></div>
         <div><Label>From</Label><Input type="date" value={from} onChange={(e) => { setPage(1); setFrom(e.target.value); }} /></div>
         <div><Label>To</Label><Input type="date" value={to} onChange={(e) => { setPage(1); setTo(e.target.value); }} /></div>
-        <div className="flex items-end"><p className="text-sm text-gray-500">{total} shift(s)</p></div>
+        <div className="flex items-end"><p className="text-sm text-gray-500 dark:text-gray-400">{total} shift(s)</p></div>
       </div>
 
-      <div className="rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+      <div className="rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 text-gray-800 dark:text-white/90">
         {loading ? (
           <div className="flex justify-center py-10"><Loader /></div>
         ) : rows.length === 0 ? (
-          <p className="px-4 py-10 text-center text-sm text-gray-500">No shifts match these filters.</p>
+          <p className="px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400">No shifts match these filters.</p>
         ) : (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader className="bg-gray-50 dark:bg-gray-900/40">
                 <TableRow>
                   {["#", "Register", "Cashier", "Opened", "Closed", "Float", "Expected", "Counted", "Variance", "Status", ""].map((h) => (
-                    <TableCell key={h} isHeader className="px-4 py-2 text-left text-xs uppercase text-gray-500">{h}</TableCell>
+                    <TableCell key={h} isHeader className="px-4 py-2 text-left text-xs uppercase text-gray-500 dark:text-gray-400">{h}</TableCell>
                   ))}
                 </TableRow>
               </TableHeader>
@@ -118,7 +118,7 @@ export default function ShiftsAdmin() {
                       <span className={`rounded px-2 py-0.5 text-xs ${s.status === "Open" ? "bg-success-50 text-success-700" : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200"}`}>{s.status}</span>
                     </TableCell>
                     <TableCell className="px-4 py-2">
-                      <button onClick={() => openReport(s.id)} className="text-brand-500 hover:underline">{s.status === "Open" ? "X report" : "Z report"}</button>
+                      <button onClick={() => openReport(s.id)} className="text-brand-500 dark:text-brand-400 hover:underline">{s.status === "Open" ? "X report" : "Z report"}</button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -128,7 +128,7 @@ export default function ShiftsAdmin() {
         )}
         <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3 text-sm dark:border-gray-700">
           <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="rounded border px-3 py-1 disabled:opacity-40 dark:border-gray-600 dark:text-white">Prev</button>
-          <span className="text-gray-500">Page {page} / {pages}</span>
+          <span className="text-gray-500 dark:text-gray-400">Page {page} / {pages}</span>
           <button disabled={page >= pages} onClick={() => setPage((p) => p + 1)} className="rounded border px-3 py-1 disabled:opacity-40 dark:border-gray-600 dark:text-white">Next</button>
         </div>
       </div>

@@ -49,7 +49,7 @@ export default function ShiftReportView({ report, rate = 0, onPrint }: Props) {
         {onPrint && (
           <button
             onClick={onPrint}
-            className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700 print:hidden"
+            className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700 print:hidden text-gray-700 dark:text-gray-300"
           >
             Print
           </button>
@@ -58,14 +58,14 @@ export default function ShiftReportView({ report, rate = 0, onPrint }: Props) {
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <div>
-          <h4 className="mb-1 border-b border-gray-200 pb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:border-gray-700">Sales by payment method</h4>
+          <h4 className="mb-1 border-b border-gray-200 pb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 dark:border-gray-700">Sales by payment method</h4>
           {report.salesByMethod.length === 0 && <p className="py-2 text-sm text-gray-400">No tenders recorded on this shift.</p>}
           {report.salesByMethod.map((m) => (
             <Row key={m.method} label={`${m.method} (${m.count})`} value={money(m.amountInBase)} />
           ))}
           <Row label="Total tendered" value={money(report.tenderedTotalInBase)} strong />
 
-          <h4 className="mb-1 mt-4 border-b border-gray-200 pb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:border-gray-700">Tenders by currency</h4>
+          <h4 className="mb-1 mt-4 border-b border-gray-200 pb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 dark:border-gray-700">Tenders by currency</h4>
           {report.tendersByCurrency.length === 0 && <p className="py-2 text-sm text-gray-400">—</p>}
           {report.tendersByCurrency.map((c) => (
             <Row
@@ -75,7 +75,7 @@ export default function ShiftReportView({ report, rate = 0, onPrint }: Props) {
             />
           ))}
 
-          <h4 className="mb-1 mt-4 border-b border-gray-200 pb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:border-gray-700">Transactions</h4>
+          <h4 className="mb-1 mt-4 border-b border-gray-200 pb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 dark:border-gray-700">Transactions</h4>
           <Row label="Paid transactions" value={String(report.transactionCount)} />
           <Row label="Transactions total" value={money(report.transactionTotal)} />
           <Row label="Voids pending / approved" value={`${report.voidsPending} / ${report.voidsApproved}`} />
@@ -84,7 +84,7 @@ export default function ShiftReportView({ report, rate = 0, onPrint }: Props) {
         </div>
 
         <div>
-          <h4 className="mb-1 border-b border-gray-200 pb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:border-gray-700">Cash drawer</h4>
+          <h4 className="mb-1 border-b border-gray-200 pb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 dark:border-gray-700">Cash drawer</h4>
           <Row label="Opening float" value={money(report.openingFloat)} />
           <Row label="+ Cash tendered" value={money(report.cashTenderedInBase)} />
           <Row label={`+ Pay-ins (${report.payInCount})`} value={money(report.payInTotal)} />

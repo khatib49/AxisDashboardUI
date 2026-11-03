@@ -158,7 +158,7 @@ export default function TenderDialog({ isOpen, onClose, transactionId, total, on
             <Tile label="Total" value={formatUsd(preview.txTotal)} />
             <Tile label="Paid (incl. typed)" value={formatUsd(preview.paid)} />
             <Tile label="Remaining" value={formatUsd(preview.remaining)} tone={preview.remaining > 0 ? "text-warning-600" : "text-success-600"} />
-            <Tile label="Change" value={formatUsd(preview.change)} tone={preview.change > 0 ? "text-brand-500" : ""} />
+            <Tile label="Change" value={formatUsd(preview.change)} tone={preview.change > 0 ? "text-brand-500 dark:text-brand-400" : ""} />
           </div>
 
           {preview.change > 0 && (
@@ -197,21 +197,21 @@ export default function TenderDialog({ isOpen, onClose, transactionId, total, on
                   {lines.length > 1 && <button onClick={() => setLines((ls) => ls.filter((x) => x.key !== l.key))} className="text-error-500" title="Remove line">✕</button>}
                 </div>
                 {l.currencyCode !== baseCode && parseFloat(l.amount) > 0 && rateOf(l.currencyCode) > 0 && (
-                  <p className="col-span-12 -mt-1 text-xs text-gray-500">= {formatUsd(parseFloat(l.amount) / rateOf(l.currencyCode))} @ {rateOf(l.currencyCode).toLocaleString()}</p>
+                  <p className="col-span-12 -mt-1 text-xs text-gray-500 dark:text-gray-400">= {formatUsd(parseFloat(l.amount) / rateOf(l.currencyCode))} @ {rateOf(l.currencyCode).toLocaleString()}</p>
                 )}
               </div>
             ))}
             <div className="flex gap-2">
-              <button onClick={() => setLines((ls) => [...ls, { key: Date.now(), currencyCode: baseCode, amount: "", method: "Cash", reference: "" }])} className="text-sm text-brand-500 hover:underline">+ Add line</button>
+              <button onClick={() => setLines((ls) => [...ls, { key: Date.now(), currencyCode: baseCode, amount: "", method: "Cash", reference: "" }])} className="text-sm text-brand-500 dark:text-brand-400 hover:underline">+ Add line</button>
               {preview.remaining > 0 && (
-                <button onClick={() => setLines((ls) => ls.map((l, i) => (i === ls.length - 1 ? { ...l, amount: l.currencyCode === baseCode ? preview.remaining.toFixed(2) : String(roundToStep(preview.remaining * rateOf(l.currencyCode), currencies.find((c) => c.code === l.currencyCode)?.roundingStep ?? 1, currencies.find((c) => c.code === l.currencyCode)?.decimalPlaces ?? 0)) } : l)))} className="text-sm text-gray-500 hover:underline">Fill remaining</button>
+                <button onClick={() => setLines((ls) => ls.map((l, i) => (i === ls.length - 1 ? { ...l, amount: l.currencyCode === baseCode ? preview.remaining.toFixed(2) : String(roundToStep(preview.remaining * rateOf(l.currencyCode), currencies.find((c) => c.code === l.currencyCode)?.roundingStep ?? 1, currencies.find((c) => c.code === l.currencyCode)?.decimalPlaces ?? 0)) } : l)))} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">Fill remaining</button>
               )}
             </div>
           </div>
 
           {summary && summary.tenders.length > 0 && (
             <div>
-              <h5 className="mb-1 text-xs font-semibold uppercase text-gray-500">Recorded tenders</h5>
+              <h5 className="mb-1 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Recorded tenders</h5>
               <ul className="divide-y divide-gray-100 rounded-lg border border-gray-200 text-sm dark:divide-gray-700 dark:border-gray-700 dark:text-gray-200">
                 {summary.tenders.map((t) => (
                   <li key={t.id} className="flex items-center justify-between px-3 py-2">
@@ -231,7 +231,7 @@ export default function TenderDialog({ isOpen, onClose, transactionId, total, on
 function Tile({ label, value, tone = "" }: { label: string; value: string; tone?: string }) {
   return (
     <div className="rounded-lg border border-gray-200 p-2 dark:border-gray-700">
-      <p className="text-[10px] uppercase tracking-wide text-gray-500">{label}</p>
+      <p className="text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400">{label}</p>
       <p className={`text-base font-semibold tabular-nums dark:text-white ${tone}`}>{value}</p>
     </div>
   );

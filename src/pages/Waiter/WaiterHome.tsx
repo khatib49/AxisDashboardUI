@@ -75,10 +75,10 @@ export default function WaiterHome() {
 
       {!loading && tab === "tables" && layout && (
         <div className="p-3 space-y-4">
-          {layout.areas.length === 0 && <p className="text-sm text-gray-500 text-center py-8">No floor areas configured.</p>}
+          {layout.areas.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">No floor areas configured.</p>}
           {layout.areas.map((a) => (
             <section key={a.id}>
-              <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">{a.name}</h2>
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">{a.name}</h2>
               <div className="grid grid-cols-2 gap-2">
                 {[...a.tables].sort((x, y) => x.posY - y.posY || x.posX - y.posX).map((t) => (
                   <button key={t.id} type="button" onClick={() => navigate(`/waiter/table/${t.id}`)}
@@ -106,22 +106,22 @@ export default function WaiterHome() {
 
       {!loading && tab === "orders" && (
         <div className="p-3 space-y-2">
-          {sessions.length === 0 && <p className="text-sm text-gray-500 text-center py-8">No open tables right now.</p>}
+          {sessions.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">No open tables right now.</p>}
           {sessions.map((s) => {
             const mins = Math.max(0, Math.round((Date.now() - new Date(s.openedOn).getTime()) / 60000));
             const total = tableById.get(s.tableId)?.openSession?.total;
             return (
               <button key={s.id} type="button" onClick={() => navigate(`/waiter/table/${s.tableId}`)}
-                className="w-full min-h-[64px] rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-3 text-left active:bg-gray-100 dark:active:bg-gray-800">
+                className="w-full min-h-[64px] rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-3 text-left active:bg-gray-100 dark:active:bg-gray-800 text-gray-800 dark:text-white/90">
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold text-lg">{s.tableCode} <span className="text-sm font-normal text-gray-500">{s.tableName}</span></span>
+                  <span className="font-semibold text-lg">{s.tableCode} <span className="text-sm font-normal text-gray-500 dark:text-gray-400">{s.tableName}</span></span>
                   <span className="text-sm">#{s.transactionId}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300">
                   <span>{s.guestCount} guest{s.guestCount === 1 ? "" : "s"} · {mins} min · {s.openedBy}</span>
                   {total !== undefined && <span className="font-semibold">{money(total)}</span>}
                 </div>
-                {s.notes && <div className="text-xs text-gray-500 mt-1">{s.notes}</div>}
+                {s.notes && <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{s.notes}</div>}
               </button>
             );
           })}
@@ -131,18 +131,18 @@ export default function WaiterHome() {
       {!loading && tab === "reservations" && board && (
         <div className="p-3 space-y-2">
           <div className="grid grid-cols-4 gap-1 text-center text-xs">
-            <div className="rounded bg-white dark:bg-gray-900 p-2"><div className="text-gray-500">Pending</div><div className="font-semibold text-base">{board.pending}</div></div>
-            <div className="rounded bg-white dark:bg-gray-900 p-2"><div className="text-gray-500">Confirmed</div><div className="font-semibold text-base">{board.confirmed}</div></div>
-            <div className="rounded bg-white dark:bg-gray-900 p-2"><div className="text-gray-500">Seated</div><div className="font-semibold text-base">{board.seated}</div></div>
-            <div className="rounded bg-white dark:bg-gray-900 p-2"><div className="text-gray-500">No-show</div><div className="font-semibold text-base">{board.noShow}</div></div>
+            <div className="rounded bg-white dark:bg-gray-900 p-2 text-gray-800 dark:text-white/90"><div className="text-gray-500 dark:text-gray-400">Pending</div><div className="font-semibold text-base">{board.pending}</div></div>
+            <div className="rounded bg-white dark:bg-gray-900 p-2 text-gray-800 dark:text-white/90"><div className="text-gray-500 dark:text-gray-400">Confirmed</div><div className="font-semibold text-base">{board.confirmed}</div></div>
+            <div className="rounded bg-white dark:bg-gray-900 p-2 text-gray-800 dark:text-white/90"><div className="text-gray-500 dark:text-gray-400">Seated</div><div className="font-semibold text-base">{board.seated}</div></div>
+            <div className="rounded bg-white dark:bg-gray-900 p-2 text-gray-800 dark:text-white/90"><div className="text-gray-500 dark:text-gray-400">No-show</div><div className="font-semibold text-base">{board.noShow}</div></div>
           </div>
-          {board.reservations.length === 0 && <p className="text-sm text-gray-500 text-center py-8">No reservations today.</p>}
+          {board.reservations.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">No reservations today.</p>}
           {board.reservations.map((r: ReservationDto) => (
-            <div key={r.id} className="rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-3 space-y-2">
+            <div key={r.id} className="rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-3 space-y-2 text-gray-800 dark:text-white/90">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="font-semibold truncate">{fmtTime(r.startOn)} · {r.customerName}</div>
-                  <div className="text-xs text-gray-500">{r.partySize} guests · {r.resourceType} {r.resourceName ?? ""} · {r.phone}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{r.partySize} guests · {r.resourceType} {r.resourceName ?? ""} · {r.phone}</div>
                 </div>
                 <span className="shrink-0 text-xs rounded px-2 py-1 bg-gray-100 dark:bg-gray-800">{r.status}{r.reminderSentOn ? " · reminded" : ""}</span>
               </div>

@@ -64,7 +64,7 @@ export default function Aging() {
       </div>
 
       <h3 className="mb-2 text-base font-semibold text-gray-800 dark:text-white/90">Accounts payable (supplier bills by due date)</h3>
-      <div className="mb-6 overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+      <div className="mb-6 overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
         <StateBlock loading={loading} error={error} empty={!ap || ap.rows.length === 0} emptyText="No open supplier bills.">
           <div className="max-w-full overflow-x-auto">
             <Table>
@@ -81,7 +81,7 @@ export default function Aging() {
       </div>
 
       <h3 className="mb-2 text-base font-semibold text-gray-800 dark:text-white/90">Accounts receivable (open invoices by invoice date)</h3>
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
         <StateBlock loading={loading} error={error} empty={!ar || ar.rows.length === 0} emptyText="No open invoices.">
           <div className="max-w-full overflow-x-auto">
             <Table>

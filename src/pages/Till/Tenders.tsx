@@ -39,7 +39,7 @@ export default function Tenders() {
       <PageMeta title="Tenders | Axis" description="Record multi-currency payments against a transaction" />
       <PageBreadcrumb pageTitle="Tenders" />
       <div className="max-w-xl space-y-4">
-        <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+        <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800 text-gray-800 dark:text-white/90">
           <Label htmlFor="tx">Transaction id</Label>
           <div className="flex gap-2">
             <Input id="tx" type="number" min="1" value={txInput} onChange={(e) => setTxInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") void lookup(); }} />
@@ -53,15 +53,15 @@ export default function Tenders() {
         {summary && (
           <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
             <div className="mb-3 grid grid-cols-2 gap-2 md:grid-cols-4">
-              <div><p className="text-xs text-gray-500">Total</p><p className="font-semibold">{formatUsd(summary.totalPrice)}</p></div>
-              <div><p className="text-xs text-gray-500">Paid</p><p className="font-semibold">{formatUsd(summary.paidInBase)}</p></div>
-              <div><p className="text-xs text-gray-500">Remaining</p><p className={`font-semibold ${summary.remainingInBase > 0 ? "text-warning-600" : "text-success-600"}`}>{formatUsd(summary.remainingInBase)}</p></div>
-              <div><p className="text-xs text-gray-500">Change</p><p className="font-semibold">{formatUsd(summary.changeInBase)}</p></div>
+              <div><p className="text-xs text-gray-500 dark:text-gray-400">Total</p><p className="font-semibold">{formatUsd(summary.totalPrice)}</p></div>
+              <div><p className="text-xs text-gray-500 dark:text-gray-400">Paid</p><p className="font-semibold">{formatUsd(summary.paidInBase)}</p></div>
+              <div><p className="text-xs text-gray-500 dark:text-gray-400">Remaining</p><p className={`font-semibold ${summary.remainingInBase > 0 ? "text-warning-600" : "text-success-600"}`}>{formatUsd(summary.remainingInBase)}</p></div>
+              <div><p className="text-xs text-gray-500 dark:text-gray-400">Change</p><p className="font-semibold">{formatUsd(summary.changeInBase)}</p></div>
             </div>
             {summary.changeInBase > 0 && (
-              <p className="mb-3 text-xs text-gray-500">Change due: {summary.changeByCurrency.map((c) => `${c.amount.toLocaleString()} ${c.currencyCode}`).join(" · ")}</p>
+              <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">Change due: {summary.changeByCurrency.map((c) => `${c.amount.toLocaleString()} ${c.currencyCode}`).join(" · ")}</p>
             )}
-            <p className="mb-3 text-xs text-gray-500">{summary.tenders.length} tender(s) recorded.</p>
+            <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{summary.tenders.length} tender(s) recorded.</p>
             <button onClick={() => setDialogOpen(true)} className="rounded-lg bg-brand-500 px-4 py-2 text-sm text-white hover:bg-brand-600">Record payment</button>
           </div>
         )}

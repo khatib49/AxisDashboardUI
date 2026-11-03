@@ -88,11 +88,11 @@ export default function WhishPayPanel({ token, transactionId, amount, returnUrl,
     } finally { setStarting(false); }
   };
 
-  const box = `rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 ${kiosk ? "p-6" : "p-4"}`;
+  const box = `rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-800 dark:text-white/90 ${kiosk ? "p-6" : "p-4"}`;
   const btn = `w-full rounded-xl bg-emerald-600 text-white font-semibold disabled:opacity-50 ${kiosk ? "py-5 text-2xl" : "py-3"}`;
 
   if (notConfigured) {
-    return <div className={`${box} ${kiosk ? "text-xl" : "text-sm"} text-gray-500`}>Online payment (Whish) is not configured. Please pay at the counter.</div>;
+    return <div className={`${box} ${kiosk ? "text-xl" : "text-sm"} text-gray-500 dark:text-gray-400`}>Online payment (Whish) is not configured. Please pay at the counter.</div>;
   }
 
   if (paid && status) {
@@ -113,17 +113,17 @@ export default function WhishPayPanel({ token, transactionId, amount, returnUrl,
     return (
       <div className={`${box} text-center`}>
         <div className={`font-semibold ${kiosk ? "text-2xl" : "text-base"}`}>Scan with the Whish app</div>
-        <div className={`text-gray-500 ${kiosk ? "text-xl" : "text-sm"}`}>{money(req.amount || amount)} {req.currency}</div>
+        <div className={`text-gray-500 dark:text-gray-400 ${kiosk ? "text-xl" : "text-sm"}`}>{money(req.amount || amount)} {req.currency}</div>
         {req.qrPayload ? (
           <div className="mt-3 inline-block rounded-xl bg-white p-3">
             <QRCodeSVG value={req.qrPayload} size={kiosk ? 260 : 180} level="M" />
           </div>
         ) : null}
-        <div className={`mt-3 text-gray-500 ${kiosk ? "text-lg" : "text-xs"}`}>
+        <div className={`mt-3 text-gray-500 dark:text-gray-400 ${kiosk ? "text-lg" : "text-xs"}`}>
           Waiting for Whish to confirm{status ? ` · ${status.status}` : ""}… this updates automatically.
         </div>
         {req.collectUrl && (
-          <button type="button" onClick={() => openCollectUrl(req.collectUrl)} className={`mt-3 text-blue-600 underline ${kiosk ? "text-lg" : "text-sm"}`}>Open the payment page again</button>
+          <button type="button" onClick={() => openCollectUrl(req.collectUrl)} className={`mt-3 text-blue-600 dark:text-blue-400 underline ${kiosk ? "text-lg" : "text-sm"}`}>Open the payment page again</button>
         )}
       </div>
     );
@@ -138,7 +138,7 @@ export default function WhishPayPanel({ token, transactionId, amount, returnUrl,
       <button type="button" onClick={start} disabled={starting} className={btn}>
         {starting ? "Starting…" : `Pay now with Whish · ${money(amount)}`}
       </button>
-      <p className={`text-gray-500 mt-2 text-center ${kiosk ? "text-base" : "text-xs"}`}>Or pay at the counter (default).</p>
+      <p className={`text-gray-500 dark:text-gray-400 mt-2 text-center ${kiosk ? "text-base" : "text-xs"}`}>Or pay at the counter (default).</p>
     </div>
   );
 }

@@ -197,14 +197,14 @@ export default function Employees() {
       {loading ? (
         <div className="flex justify-center py-10"><Loader /></div>
       ) : rows.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-gray-300 p-10 text-center text-gray-500 dark:border-gray-700">No employees yet.</div>
+        <div className="rounded-lg border border-dashed border-gray-300 p-10 text-center text-gray-500 dark:text-gray-400 dark:border-gray-700">No employees yet.</div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+        <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
           <Table>
             <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
               <TableRow>
                 {["Name", "Position", "Department", "Phone", "Rate / Salary", "PIN", "User", "Status", ""].map((h) => (
-                  <TableCell key={h} isHeader className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">{h}</TableCell>
+                  <TableCell key={h} isHeader className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400">{h}</TableCell>
                 ))}
               </TableRow>
             </TableHeader>
@@ -213,7 +213,7 @@ export default function Employees() {
                 <TableRow key={e.id}>
                   <TableCell className="px-4 py-3 text-sm text-gray-800 dark:text-white/90">
                     <button className="font-medium hover:underline" onClick={() => openEdit(e)}>{e.fullName}</button>
-                    {e.email && <div className="text-xs text-gray-500">{e.email}</div>}
+                    {e.email && <div className="text-xs text-gray-500 dark:text-gray-400">{e.email}</div>}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{e.position || "—"}</TableCell>
                   <TableCell className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{e.department || "—"}</TableCell>
@@ -222,17 +222,17 @@ export default function Employees() {
                     {e.hourlyRate != null ? `${e.hourlyRate}/h` : e.monthlySalary != null ? `${e.monthlySalary}/mo` : "—"}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-sm">
-                    <button className="text-brand-500 hover:underline" onClick={() => { setPinFor(e); setPin(""); setPin2(""); }}>
+                    <button className="text-brand-500 dark:text-brand-400 hover:underline" onClick={() => { setPinFor(e); setPin(""); setPin2(""); }}>
                       {e.hasPin ? "Reset PIN" : "Set PIN"}
                     </button>
                   </TableCell>
                   <TableCell className="px-4 py-3 text-sm">
-                    <button className="text-brand-500 hover:underline" onClick={() => { setLinkFor(e); setLinkUserId(e.userId != null ? String(e.userId) : ""); }}>
+                    <button className="text-brand-500 dark:text-brand-400 hover:underline" onClick={() => { setLinkFor(e); setLinkUserId(e.userId != null ? String(e.userId) : ""); }}>
                       {e.userId != null ? `#${e.userId}` : "Link"}
                     </button>
                   </TableCell>
                   <TableCell className="px-4 py-3 text-sm">
-                    <span className={`rounded-full px-2 py-0.5 text-xs ${e.isActive ? "bg-success-50 text-success-600 dark:bg-success-500/15" : "bg-gray-100 text-gray-500 dark:bg-white/10"}`}>
+                    <span className={`rounded-full px-2 py-0.5 text-xs ${e.isActive ? "bg-success-50 text-success-600 dark:bg-success-500/15" : "bg-gray-100 text-gray-500 dark:text-gray-400 dark:bg-white/10"}`}>
                       {e.isActive ? "Active" : "Inactive"}
                     </span>
                   </TableCell>
@@ -272,7 +272,7 @@ export default function Employees() {
 
       <Modal isOpen={!!pinFor} onClose={() => setPinFor(null)} title={`Set PIN — ${pinFor?.fullName ?? ""}`} className="max-w-md"
         footer={<><button className={btnGhost} onClick={() => setPinFor(null)}>Cancel</button><button className={btnPrimary} disabled={saving} onClick={savePin}>Save PIN</button></>}>
-        <p className="mb-3 text-sm text-gray-500">The PIN is used at the till to clock in and out. It is stored hashed and cannot be read back.</p>
+        <p className="mb-3 text-sm text-gray-500 dark:text-gray-400">The PIN is used at the till to clock in and out. It is stored hashed and cannot be read back.</p>
         <div className="grid gap-3">
           <div><Label>PIN (4-6 digits)</Label><Input type="password" value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))} /></div>
           <div><Label>Confirm PIN</Label><Input type="password" value={pin2} onChange={(e) => setPin2(e.target.value.replace(/\D/g, "").slice(0, 6))} /></div>
@@ -281,7 +281,7 @@ export default function Employees() {
 
       <Modal isOpen={!!linkFor} onClose={() => setLinkFor(null)} title={`Link user — ${linkFor?.fullName ?? ""}`} className="max-w-md"
         footer={<><button className={btnGhost} onClick={() => setLinkFor(null)}>Cancel</button><button className={btnPrimary} disabled={saving} onClick={saveLink}>Save</button></>}>
-        <p className="mb-3 text-sm text-gray-500">Enter the id of an existing login (Users Management) so this person can see their own schedule and request leave. Leave empty to unlink.</p>
+        <p className="mb-3 text-sm text-gray-500 dark:text-gray-400">Enter the id of an existing login (Users Management) so this person can see their own schedule and request leave. Leave empty to unlink.</p>
         <Label>User id</Label>
         <Input type="number" value={linkUserId} onChange={(e) => setLinkUserId(e.target.value)} />
       </Modal>

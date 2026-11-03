@@ -179,7 +179,7 @@ export default function GiftCards() {
 
       {notice && <div className="mb-4"><Alert variant={notice.variant} title={notice.title} message={notice.message} /></div>}
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <div className="w-64">
             <Input placeholder="Search code / issued to" value={search} onChange={(e) => { setPage(1); setSearch(e.target.value); }} />
@@ -193,7 +193,7 @@ export default function GiftCards() {
             {["Active", "Depleted", "Expired", "Disabled"].map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
           <div className="ml-auto flex gap-2">
-            <button className="rounded border px-4 py-2 text-sm dark:border-gray-700" onClick={() => setRedeemOpen(true)}>Redeem on invoice</button>
+            <button className="rounded border px-4 py-2 text-sm dark:border-gray-700 text-gray-700 dark:text-gray-300" onClick={() => setRedeemOpen(true)}>Redeem on invoice</button>
             <button className="rounded bg-brand-500 px-4 py-2 text-sm text-white" onClick={() => { setIssued(null); setIssueForm({ amount: "", currencyCode: "USD", expiresOn: "", issuedTo: "", notes: "" }); setIssueOpen(true); }}>
               Issue gift card
             </button>
@@ -205,14 +205,14 @@ export default function GiftCards() {
         {loading ? (
           <div className="flex justify-center py-10"><Loader /></div>
         ) : cards.length === 0 ? (
-          <div className="py-10 text-center text-gray-500">No gift cards found.</div>
+          <div className="py-10 text-center text-gray-500 dark:text-gray-400">No gift cards found.</div>
         ) : (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
                 <TableRow>
                   {["Code", "Issued to", "Balance", "Initial", "Status", "Issued", "Expires", ""].map((h) => (
-                    <TableCell key={h} isHeader className="px-4 py-3 text-left text-xs font-medium text-gray-500">{h}</TableCell>
+                    <TableCell key={h} isHeader className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{h}</TableCell>
                   ))}
                 </TableRow>
               </TableHeader>
@@ -227,7 +227,7 @@ export default function GiftCards() {
                     <TableCell className="px-4 py-3 text-sm">{new Date(c.issuedOn).toLocaleDateString()}</TableCell>
                     <TableCell className="px-4 py-3 text-sm">{c.expiresOn ? new Date(c.expiresOn).toLocaleDateString() : "—"}</TableCell>
                     <TableCell className="px-4 py-3 text-right text-sm">
-                      <button className="text-brand-500 hover:underline" onClick={() => void openDetail(c)}>Manage</button>
+                      <button className="text-brand-500 dark:text-brand-400 hover:underline" onClick={() => void openDetail(c)}>Manage</button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -237,11 +237,11 @@ export default function GiftCards() {
         )}
 
         <div className="mt-4 flex items-center justify-between text-sm">
-          <span className="text-gray-500">{total} card(s)</span>
+          <span className="text-gray-500 dark:text-gray-400">{total} card(s)</span>
           <div className="flex gap-2">
-            <button className="rounded border px-3 py-1 disabled:opacity-40 dark:border-gray-700" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Prev</button>
+            <button className="rounded border px-3 py-1 disabled:opacity-50 dark:border-gray-700 text-gray-700 dark:text-gray-300" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Prev</button>
             <span className="px-2 py-1">{page} / {pages}</span>
-            <button className="rounded border px-3 py-1 disabled:opacity-40 dark:border-gray-700" disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>Next</button>
+            <button className="rounded border px-3 py-1 disabled:opacity-50 dark:border-gray-700 text-gray-700 dark:text-gray-300" disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>Next</button>
           </div>
         </div>
       </div>
@@ -251,7 +251,7 @@ export default function GiftCards() {
         {issued ? (
           <div className="space-y-3 text-sm">
             <div className="rounded-lg border p-4 text-center dark:border-gray-700">
-              <div className="text-xs text-gray-500">Gift card code</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">Gift card code</div>
               <div className="font-mono text-2xl tracking-widest">{issued.code}</div>
               <div className="mt-1">{issued.balance.toFixed(2)} {issued.currencyCode}</div>
             </div>
@@ -265,7 +265,7 @@ export default function GiftCards() {
             <div><Label>Expires on</Label><Input type="date" value={issueForm.expiresOn} onChange={(e) => setIssueForm({ ...issueForm, expiresOn: e.target.value })} /></div>
             <div className="col-span-2"><Label>Notes</Label><Input value={issueForm.notes} onChange={(e) => setIssueForm({ ...issueForm, notes: e.target.value })} /></div>
             <div className="col-span-2 flex justify-end gap-2">
-              <button className="rounded border px-4 py-2 text-sm dark:border-gray-700" onClick={() => setIssueOpen(false)}>Cancel</button>
+              <button className="rounded border px-4 py-2 text-sm dark:border-gray-700 text-gray-700 dark:text-gray-300" onClick={() => setIssueOpen(false)}>Cancel</button>
               <button className="rounded bg-brand-500 px-4 py-2 text-sm text-white disabled:opacity-50" disabled={submitting} onClick={submitIssue}>{submitting ? "Issuing…" : "Issue"}</button>
             </div>
           </div>
@@ -277,17 +277,17 @@ export default function GiftCards() {
         {detail && (
           <div className="space-y-4 text-sm">
             <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-              <div><div className="text-xs text-gray-500">Balance</div><div className="text-lg font-semibold">{detail.balance.toFixed(2)} {detail.currencyCode}</div></div>
-              <div><div className="text-xs text-gray-500">Status</div><div><span className={`rounded px-2 py-0.5 text-xs ${statusClass[detail.status] ?? ""}`}>{detail.status}</span></div></div>
-              <div><div className="text-xs text-gray-500">Issued to</div><div>{detail.issuedTo || "—"}</div></div>
-              <div><div className="text-xs text-gray-500">Expires</div><div>{detail.expiresOn ? new Date(detail.expiresOn).toLocaleDateString() : "never"}</div></div>
+              <div><div className="text-xs text-gray-500 dark:text-gray-400">Balance</div><div className="text-lg font-semibold">{detail.balance.toFixed(2)} {detail.currencyCode}</div></div>
+              <div><div className="text-xs text-gray-500 dark:text-gray-400">Status</div><div><span className={`rounded px-2 py-0.5 text-xs ${statusClass[detail.status] ?? ""}`}>{detail.status}</span></div></div>
+              <div><div className="text-xs text-gray-500 dark:text-gray-400">Issued to</div><div>{detail.issuedTo || "—"}</div></div>
+              <div><div className="text-xs text-gray-500 dark:text-gray-400">Expires</div><div>{detail.expiresOn ? new Date(detail.expiresOn).toLocaleDateString() : "never"}</div></div>
             </div>
-            {detail.notes && <div className="text-gray-500">{detail.notes}</div>}
+            {detail.notes && <div className="text-gray-500 dark:text-gray-400">{detail.notes}</div>}
 
             <div className="flex flex-wrap gap-2">
-              <button className="rounded border px-3 py-1 dark:border-gray-700" disabled={detail.status === "Disabled"} onClick={() => setAction({ kind: "load", amount: "", txId: "", note: "" })}>Load value</button>
-              <button className="rounded border px-3 py-1 dark:border-gray-700" disabled={detail.status === "Disabled"} onClick={() => setAction({ kind: "adjust", amount: "", txId: "", note: "" })}>Adjust (±)</button>
-              <button className="rounded border px-3 py-1 dark:border-gray-700" disabled={detail.status === "Disabled"} onClick={() => setAction({ kind: "refund", amount: "", txId: "", note: "" })}>Refund to card</button>
+              <button className="rounded border px-3 py-1 dark:border-gray-700 text-gray-700 dark:text-gray-300" disabled={detail.status === "Disabled"} onClick={() => setAction({ kind: "load", amount: "", txId: "", note: "" })}>Load value</button>
+              <button className="rounded border px-3 py-1 dark:border-gray-700 text-gray-700 dark:text-gray-300" disabled={detail.status === "Disabled"} onClick={() => setAction({ kind: "adjust", amount: "", txId: "", note: "" })}>Adjust (±)</button>
+              <button className="rounded border px-3 py-1 dark:border-gray-700 text-gray-700 dark:text-gray-300" disabled={detail.status === "Disabled"} onClick={() => setAction({ kind: "refund", amount: "", txId: "", note: "" })}>Refund to card</button>
               <button className="rounded border border-error-500 px-3 py-1 text-error-500" disabled={detail.status === "Disabled" || submitting} onClick={disable}>Disable</button>
             </div>
 
@@ -297,7 +297,7 @@ export default function GiftCards() {
                 {action.kind === "refund" && <div><Label>Invoice # (optional)</Label><Input type="number" value={action.txId} onChange={(e) => setAction({ ...action, txId: e.target.value })} /></div>}
                 <div className={action.kind === "refund" ? "" : "col-span-2"}><Label>Note</Label><Input value={action.note} onChange={(e) => setAction({ ...action, note: e.target.value })} /></div>
                 <div className="col-span-3 flex justify-end gap-2">
-                  <button className="rounded border px-3 py-1 dark:border-gray-700" onClick={() => setAction(null)}>Cancel</button>
+                  <button className="rounded border px-3 py-1 dark:border-gray-700 text-gray-700 dark:text-gray-300" onClick={() => setAction(null)}>Cancel</button>
                   <button className="rounded bg-brand-500 px-3 py-1 text-white disabled:opacity-50" disabled={submitting} onClick={runAction}>Apply</button>
                 </div>
               </div>
@@ -305,9 +305,9 @@ export default function GiftCards() {
 
             <div>
               <div className="mb-2 font-medium">History</div>
-              {ledgerLoading ? <Loader /> : ledger.length === 0 ? <div className="text-gray-500">No movements.</div> : (
+              {ledgerLoading ? <Loader /> : ledger.length === 0 ? <div className="text-gray-500 dark:text-gray-400">No movements.</div> : (
                 <Table>
-                  <TableHeader><TableRow>{["When", "Type", "Amount", "Balance after", "Invoice", "By", "Note"].map((h) => <TableCell key={h} isHeader className="px-2 py-1 text-left text-xs text-gray-500">{h}</TableCell>)}</TableRow></TableHeader>
+                  <TableHeader><TableRow>{["When", "Type", "Amount", "Balance after", "Invoice", "By", "Note"].map((h) => <TableCell key={h} isHeader className="px-2 py-1 text-left text-xs text-gray-500 dark:text-gray-400">{h}</TableCell>)}</TableRow></TableHeader>
                   <TableBody>
                     {ledger.map((t) => (
                       <TableRow key={t.id} className="border-t border-gray-100 dark:border-white/[0.05]">
@@ -317,7 +317,7 @@ export default function GiftCards() {
                         <TableCell className="px-2 py-1">{t.balanceAfter.toFixed(2)}</TableCell>
                         <TableCell className="px-2 py-1">{t.transactionId ? `#${t.transactionId}` : "—"}</TableCell>
                         <TableCell className="px-2 py-1">{t.by}</TableCell>
-                        <TableCell className="px-2 py-1 text-gray-500">{t.note || ""}</TableCell>
+                        <TableCell className="px-2 py-1 text-gray-500 dark:text-gray-400">{t.note || ""}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

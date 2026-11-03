@@ -95,19 +95,19 @@ export default function VoidReasons() {
         <button onClick={() => { setEditing(null); setForm({ name: "", requiresApproval: true, isActive: true }); }} className="rounded-lg bg-brand-500 px-4 py-2 text-sm text-white hover:bg-brand-600">+ New reason</button>
       </div>
 
-      <div className="rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+      <div className="rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 text-gray-800 dark:text-white/90">
         {loading ? (
           <div className="flex justify-center py-10"><Loader /></div>
         ) : rows.length === 0 ? (
-          <p className="px-4 py-10 text-center text-sm text-gray-500">No reasons yet. Add e.g. "Wrong item" (no approval) and "Customer complaint" (needs approval).</p>
+          <p className="px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400">No reasons yet. Add e.g. "Wrong item" (no approval) and "Customer complaint" (needs approval).</p>
         ) : (
           <Table>
             <TableHeader className="bg-gray-50 dark:bg-gray-900/40">
               <TableRow>
-                <TableCell isHeader className="px-4 py-2 text-left text-xs uppercase text-gray-500">Name</TableCell>
-                <TableCell isHeader className="px-4 py-2 text-left text-xs uppercase text-gray-500">Approval</TableCell>
-                <TableCell isHeader className="px-4 py-2 text-left text-xs uppercase text-gray-500">Active</TableCell>
-                <TableCell isHeader className="px-4 py-2 text-right text-xs uppercase text-gray-500">Actions</TableCell>
+                <TableCell isHeader className="px-4 py-2 text-left text-xs uppercase text-gray-500 dark:text-gray-400">Name</TableCell>
+                <TableCell isHeader className="px-4 py-2 text-left text-xs uppercase text-gray-500 dark:text-gray-400">Approval</TableCell>
+                <TableCell isHeader className="px-4 py-2 text-left text-xs uppercase text-gray-500 dark:text-gray-400">Active</TableCell>
+                <TableCell isHeader className="px-4 py-2 text-right text-xs uppercase text-gray-500 dark:text-gray-400">Actions</TableCell>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -120,7 +120,7 @@ export default function VoidReasons() {
                   <TableCell className="px-4 py-2">{r.isActive ? "Yes" : "No"}</TableCell>
                   <TableCell className="px-4 py-2 text-right">
                     <div className="flex justify-end gap-3">
-                      <button onClick={() => { setEditing(r); setForm({ name: r.name, requiresApproval: r.requiresApproval, isActive: r.isActive }); }} className="text-brand-500 hover:underline">Edit</button>
+                      <button onClick={() => { setEditing(r); setForm({ name: r.name, requiresApproval: r.requiresApproval, isActive: r.isActive }); }} className="text-brand-500 dark:text-brand-400 hover:underline">Edit</button>
                       <DeleteIconButton onClick={() => setDeleteId(r.id)} />
                     </div>
                   </TableCell>

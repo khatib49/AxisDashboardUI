@@ -344,7 +344,7 @@ export default function FloorView() {
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Floor</h1>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
             {stats.occupied}/{stats.total} tables busy · {stats.guests} guests · {money(stats.open)} open
             {lastRefresh ? ` · refreshed ${lastRefresh.toLocaleTimeString()}` : ""}
           </p>
@@ -370,7 +370,7 @@ export default function FloorView() {
       )}
 
       {layout && layout.areas.length === 0 && (
-        <div className="rounded-xl border border-dashed border-gray-300 p-8 text-center text-gray-500">
+        <div className="rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-8 text-center text-gray-500 dark:text-gray-400">
           No floor areas configured yet. An admin can set them up under Floor Plan.
         </div>
       )}
@@ -378,7 +378,7 @@ export default function FloorView() {
       {layout?.areas.map((area) => (
         <div key={area.id} className="mb-6">
           <h2 className="font-semibold text-gray-800 dark:text-white/90 mb-2">{area.name}</h2>
-          {area.tables.length === 0 && <p className="text-sm text-gray-500">No tables in this area.</p>}
+          {area.tables.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400">No tables in this area.</p>}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-3">
             {[...area.tables]
               .sort((a, b) => a.posY - b.posY || a.posX - b.posX)
@@ -423,12 +423,12 @@ export default function FloorView() {
         {selected?.openSession && (
           <div className="space-y-3">
             <div className="rounded-lg bg-gray-50 dark:bg-white/[0.03] p-3 text-sm grid grid-cols-2 gap-y-1">
-              <span className="text-gray-500">Invoice</span><span className="font-medium">#{selected.openSession.transactionId}</span>
-              <span className="text-gray-500">Total</span><span className="font-medium">{money(selected.openSession.total)}</span>
-              <span className="text-gray-500">Guests</span><span>{selected.openSession.guestCount}</span>
-              <span className="text-gray-500">Items</span><span>{selected.openSession.itemsCount}</span>
-              <span className="text-gray-500">Opened</span><span>{selected.openSession.openedMinutes} min ago by {selected.openSession.openedBy}</span>
-              {selected.openSession.notes && (<><span className="text-gray-500">Notes</span><span>{selected.openSession.notes}</span></>)}
+              <span className="text-gray-500 dark:text-gray-400">Invoice</span><span className="font-medium">#{selected.openSession.transactionId}</span>
+              <span className="text-gray-500 dark:text-gray-400">Total</span><span className="font-medium">{money(selected.openSession.total)}</span>
+              <span className="text-gray-500 dark:text-gray-400">Guests</span><span>{selected.openSession.guestCount}</span>
+              <span className="text-gray-500 dark:text-gray-400">Items</span><span>{selected.openSession.itemsCount}</span>
+              <span className="text-gray-500 dark:text-gray-400">Opened</span><span>{selected.openSession.openedMinutes} min ago by {selected.openSession.openedBy}</span>
+              {selected.openSession.notes && (<><span className="text-gray-500 dark:text-gray-400">Notes</span><span>{selected.openSession.notes}</span></>)}
             </div>
             <div className="grid grid-cols-2 gap-2">
               <button className={primary} onClick={startOrder}>Order</button>
@@ -440,7 +440,7 @@ export default function FloorView() {
               <button className={neutral} onClick={() => { setTargetTableId(null); setDialog("merge"); }}>Merge into…</button>
               <button className={neutral} onClick={doReleaseOnly} disabled={busy} title="Only release the table; invoice stays open">Release table</button>
             </div>
-            <p className="text-xs text-gray-500">"Order" adds items per seat to invoice #{selected.openSession.transactionId}; the F&amp;B till (Orders page) still works too.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">"Order" adds items per seat to invoice #{selected.openSession.transactionId}; the F&amp;B till (Orders page) still works too.</p>
             <button className={`${danger} w-full`} onClick={doPayAndClose} disabled={busy}>
               Pay &amp; close invoice ({money(selected.openSession.total)})
             </button>
@@ -465,7 +465,7 @@ export default function FloorView() {
             <Label>Notes</Label>
             <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Birthday, allergy, high chair…" />
           </div>
-          <p className="text-xs text-gray-500">An empty open invoice is created; add items from the F&amp;B till.</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">An empty open invoice is created; add items from the F&amp;B till.</p>
         </div>
       </Modal>
 
@@ -488,7 +488,7 @@ export default function FloorView() {
                 </option>
               ))}
             </select>
-            {openInvoices.length === 0 && <p className="text-xs text-gray-500 mt-1">No open F&amp;B invoices.</p>}
+            {openInvoices.length === 0 && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">No open F&amp;B invoices.</p>}
           </div>
           <div>
             <Label>Guests</Label>
@@ -510,7 +510,7 @@ export default function FloorView() {
           <option value="">— choose —</option>
           {freeTables.map((t) => (<option key={t.id} value={t.id}>{t.code} — {t.name} ({t.capacity})</option>))}
         </select>
-        {freeTables.length === 0 && <p className="text-xs text-gray-500 mt-1">No free tables.</p>}
+        {freeTables.length === 0 && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">No free tables.</p>}
       </Modal>
 
       {/* Merge */}
@@ -529,7 +529,7 @@ export default function FloorView() {
           <option value="">— choose —</option>
           {occupiedTables.map((t) => (<option key={t.id} value={t.id}>{t.code} — #{t.openSession?.transactionId} · {money(t.openSession?.total ?? 0)}</option>))}
         </select>
-        {occupiedTables.length === 0 && <p className="text-xs text-gray-500 mt-1">No other occupied tables.</p>}
+        {occupiedTables.length === 0 && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">No other occupied tables.</p>}
       </Modal>
 
       {/* Split bill */}
@@ -539,10 +539,10 @@ export default function FloorView() {
         {splits && (
           <div className="space-y-4">
             <div className="grid grid-cols-4 gap-2 text-sm text-center">
-              <div className="rounded bg-gray-50 dark:bg-white/[0.03] p-2"><div className="text-xs text-gray-500">Total</div><div className="font-semibold">{money(splits.totalPrice)}</div></div>
-              <div className="rounded bg-gray-50 dark:bg-white/[0.03] p-2"><div className="text-xs text-gray-500">Split</div><div className="font-semibold">{money(splits.splitTotal)}</div></div>
-              <div className="rounded bg-gray-50 dark:bg-white/[0.03] p-2"><div className="text-xs text-gray-500">Paid</div><div className="font-semibold text-green-600">{money(splits.paidTotal)}</div></div>
-              <div className="rounded bg-gray-50 dark:bg-white/[0.03] p-2"><div className="text-xs text-gray-500">Remaining</div><div className="font-semibold text-red-600">{money(splits.remaining)}</div></div>
+              <div className="rounded bg-gray-50 dark:bg-white/[0.03] p-2"><div className="text-xs text-gray-500 dark:text-gray-400">Total</div><div className="font-semibold">{money(splits.totalPrice)}</div></div>
+              <div className="rounded bg-gray-50 dark:bg-white/[0.03] p-2"><div className="text-xs text-gray-500 dark:text-gray-400">Split</div><div className="font-semibold">{money(splits.splitTotal)}</div></div>
+              <div className="rounded bg-gray-50 dark:bg-white/[0.03] p-2"><div className="text-xs text-gray-500 dark:text-gray-400">Paid</div><div className="font-semibold text-green-600">{money(splits.paidTotal)}</div></div>
+              <div className="rounded bg-gray-50 dark:bg-white/[0.03] p-2"><div className="text-xs text-gray-500 dark:text-gray-400">Remaining</div><div className="font-semibold text-red-600">{money(splits.remaining)}</div></div>
             </div>
             <div className="flex flex-wrap items-end gap-2">
               <div className="w-24">
@@ -564,13 +564,13 @@ export default function FloorView() {
               <button className={neutral} disabled={busy || !trxId} title="One split per seat with the seat's amount (replaces unpaid splits)" onClick={() => doSplitBySeat("split")}>Split by seat</button>
             </div>
             <div className="divide-y divide-gray-100 dark:divide-white/[0.05] border rounded border-gray-200 dark:border-white/[0.05]">
-              {splits.splits.length === 0 && <p className="p-3 text-sm text-gray-500">No splits yet.</p>}
+              {splits.splits.length === 0 && <p className="p-3 text-sm text-gray-500 dark:text-gray-400">No splits yet.</p>}
               {splits.splits.map((s) => (
                 <div key={s.id} className="flex items-center justify-between p-2 text-sm">
                   <div>
                     <span className="font-medium">#{s.splitNumber}</span> · {money(s.amount)} · {s.method}
                     {s.paidOn ? <span className="ml-2 text-green-600">paid by {s.paidBy}</span> : <span className="ml-2 text-amber-600">unpaid</span>}
-                    {s.note && <span className="ml-2 text-gray-500">{s.note}</span>}
+                    {s.note && <span className="ml-2 text-gray-500 dark:text-gray-400">{s.note}</span>}
                   </div>
                   <div className="flex items-center gap-2">
                     {!s.paidOn && (
@@ -589,7 +589,7 @@ export default function FloorView() {
                 </div>
               ))}
             </div>
-            <p className="text-xs text-gray-500">Splits track who paid what; when remaining is 0 use "Pay &amp; close invoice" on the table.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Splits track who paid what; when remaining is 0 use "Pay &amp; close invoice" on the table.</p>
           </div>
         )}
       </Modal>
@@ -609,10 +609,10 @@ export default function FloorView() {
           </div>
           <button className={primary} onClick={doAddTip} disabled={busy}>Add tip</button>
           <div className="divide-y divide-gray-100 dark:divide-white/[0.05] border rounded border-gray-200 dark:border-white/[0.05]">
-            {tips.length === 0 && <p className="p-3 text-sm text-gray-500">No tips recorded.</p>}
+            {tips.length === 0 && <p className="p-3 text-sm text-gray-500 dark:text-gray-400">No tips recorded.</p>}
             {tips.map((t) => (
               <div key={t.id} className="flex items-center justify-between p-2 text-sm">
-                <span>{money(t.amount)} · {t.method}{t.staffName ? ` · ${t.staffName}` : ""} <span className="text-gray-500">by {t.createdBy}</span></span>
+                <span>{money(t.amount)} · {t.method}{t.staffName ? ` · ${t.staffName}` : ""} <span className="text-gray-500 dark:text-gray-400">by {t.createdBy}</span></span>
                 <DeleteIconButton onClick={() => doDeleteTip(t.id)} />
               </div>
             ))}
@@ -625,14 +625,14 @@ export default function FloorView() {
       <Modal isOpen={dialog === "courses"} onClose={() => setDialog("table")} title={`Courses — invoice #${trxId ?? ""}`} className="max-w-xl"
         footer={<><button className={neutral} onClick={() => setDialog("table")}>Back</button><button className={primary} onClick={doSaveCourses} disabled={busy || Object.keys(courseEdits).length === 0}>Save courses</button></>}>
         <div className="space-y-3">
-          {courses.length === 0 && <p className="text-sm text-gray-500">No items on this invoice yet.</p>}
+          {courses.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400">No items on this invoice yet.</p>}
           {courses.length > 0 && (
             <div className="divide-y divide-gray-100 dark:divide-white/[0.05] border rounded border-gray-200 dark:border-white/[0.05]">
               {courses.map((c) => (
                 <div key={c.itemId} className="flex items-center justify-between p-2 text-sm gap-2">
                   <div className="flex-1">
                     <span className="font-medium">{c.quantity}× {c.itemName}</span>
-                    {c.firedOn ? <span className="ml-2 text-xs text-green-600">fired {new Date(c.firedOn).toLocaleTimeString()}</span> : <span className="ml-2 text-xs text-gray-500">not fired</span>}
+                    {c.firedOn ? <span className="ml-2 text-xs text-green-600">fired {new Date(c.firedOn).toLocaleTimeString()}</span> : <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">not fired</span>}
                   </div>
                   <select className="h-8 rounded border border-gray-300 px-2 text-xs dark:bg-gray-900 dark:border-gray-700"
                     value={courseEdits[c.itemId] ?? c.courseNumber}
@@ -656,7 +656,7 @@ export default function FloorView() {
               })}
             </div>
           )}
-          <p className="text-xs text-gray-500">Save course changes before firing. Firing stamps the course as sent to the kitchen.</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Save course changes before firing. Firing stamps the course as sent to the kitchen.</p>
         </div>
       </Modal>
 
@@ -687,23 +687,23 @@ export default function FloorView() {
         {bill && (
           <div className="space-y-3">
             <div className="grid grid-cols-3 gap-2 text-sm text-center">
-              <div className="rounded bg-gray-50 dark:bg-white/[0.03] p-2"><div className="text-xs text-gray-500">Invoice</div><div className="font-semibold">{money(bill.totalPrice)}</div></div>
-              <div className="rounded bg-gray-50 dark:bg-white/[0.03] p-2"><div className="text-xs text-gray-500">On seats</div><div className="font-semibold">{money(bill.assignedTotal)}</div></div>
-              <div className="rounded bg-gray-50 dark:bg-white/[0.03] p-2"><div className="text-xs text-gray-500">Table / unassigned</div><div className="font-semibold">{money(bill.unassignedTotal)}</div></div>
+              <div className="rounded bg-gray-50 dark:bg-white/[0.03] p-2"><div className="text-xs text-gray-500 dark:text-gray-400">Invoice</div><div className="font-semibold">{money(bill.totalPrice)}</div></div>
+              <div className="rounded bg-gray-50 dark:bg-white/[0.03] p-2"><div className="text-xs text-gray-500 dark:text-gray-400">On seats</div><div className="font-semibold">{money(bill.assignedTotal)}</div></div>
+              <div className="rounded bg-gray-50 dark:bg-white/[0.03] p-2"><div className="text-xs text-gray-500 dark:text-gray-400">Table / unassigned</div><div className="font-semibold">{money(bill.unassignedTotal)}</div></div>
             </div>
-            {bill.discountPercentage > 0 && <p className="text-xs text-gray-500">Invoice discount {bill.discountPercentage}% applied to each seat's net amount.</p>}
-            {bill.seats.length === 0 && <p className="text-sm text-gray-500">No items on this invoice yet.</p>}
+            {bill.discountPercentage > 0 && <p className="text-xs text-gray-500 dark:text-gray-400">Invoice discount {bill.discountPercentage}% applied to each seat's net amount.</p>}
+            {bill.seats.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400">No items on this invoice yet.</p>}
             {bill.seats.map((s) => (
               <div key={s.label} className="border rounded border-gray-200 dark:border-white/[0.05]">
                 <div className="flex items-center justify-between px-3 py-2 bg-gray-50 dark:bg-white/[0.03] text-sm">
                   <span className="font-semibold">{s.label}</span>
-                  <span className="font-semibold">{money(s.net)}{s.net !== s.subtotal ? <span className="ml-1 text-xs text-gray-500 line-through">{money(s.subtotal)}</span> : null}</span>
+                  <span className="font-semibold">{money(s.net)}{s.net !== s.subtotal ? <span className="ml-1 text-xs text-gray-500 dark:text-gray-400 line-through">{money(s.subtotal)}</span> : null}</span>
                 </div>
                 <div className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                   {s.lines.map((l) => (
                     <div key={`${l.itemId}-${l.seatNumber ?? "t"}`} className="flex items-center justify-between px-3 py-1.5 text-sm">
                       <span>{l.quantity}× {l.itemName}
-                        <span className="ml-2 text-xs text-gray-500">course {l.courseNumber}{l.extrasPerUnit ? ` · +${money(l.extrasPerUnit)}/unit extras` : ""}{l.firedOn ? " · fired" : ""}</span>
+                        <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">course {l.courseNumber}{l.extrasPerUnit ? ` · +${money(l.extrasPerUnit)}/unit extras` : ""}{l.firedOn ? " · fired" : ""}</span>
                       </span>
                       <span>{money(l.lineTotal)}</span>
                     </div>
@@ -711,7 +711,7 @@ export default function FloorView() {
                 </div>
               </div>
             ))}
-            <p className="text-xs text-gray-500">Seat amounts come from item price × quantity plus the add-on / option extras stored on the invoice lines.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Seat amounts come from item price × quantity plus the add-on / option extras stored on the invoice lines.</p>
           </div>
         )}
       </Modal>

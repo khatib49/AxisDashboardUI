@@ -27,7 +27,7 @@ function Delta({ pct, label }: { pct?: number | null; label: string }) {
 
 function Card({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] ${className}`}>
+    <div className={`rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90 ${className}`}>
       <div className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">{title}</div>
       {children}
     </div>
@@ -41,7 +41,7 @@ function ChartTooltip({ active, payload }: { active?: boolean; payload?: { paylo
   const p = payload[0].payload;
   return (
     <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs shadow dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
-      <div className="text-gray-500">{p.date}</div>
+      <div className="text-gray-500 dark:text-gray-400">{p.date}</div>
       <div className="font-semibold">{money(p.total)}</div>
     </div>
   );
@@ -114,7 +114,7 @@ export default function OwnerView() {
 
       {branches.length > 0 && (
         <div className="mb-4 flex items-center gap-2">
-          <label htmlFor="owner-branch" className="text-xs text-gray-500">Branch</label>
+          <label htmlFor="owner-branch" className="text-xs text-gray-500 dark:text-gray-400">Branch</label>
           <select
             id="owner-branch"
             value={branchId ?? ""}
@@ -141,7 +141,7 @@ export default function OwnerView() {
               <Delta pct={data.salesDeltaVsYesterdayPct} label="vs yesterday" />
               <Delta pct={data.salesDeltaVsLastWeekPct} label="vs last week" />
             </div>
-            <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs text-gray-500">
+            <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs text-gray-500 dark:text-gray-400">
               <div><div className="text-gray-400">Yesterday</div><div className="font-medium text-gray-700 dark:text-gray-300">{money(data.yesterday.sales)}</div></div>
               <div><div className="text-gray-400">Same day last week</div><div className="font-medium text-gray-700 dark:text-gray-300">{money(data.sameDayLastWeek.sales)}</div></div>
               <div><div className="text-gray-400">Avg ticket</div><div className="font-medium text-gray-700 dark:text-gray-300">{money(data.today.averageTicket)}</div></div>
@@ -158,7 +158,7 @@ export default function OwnerView() {
             </Card>
             <Card title="Open invoices">
               <div className="text-2xl font-semibold text-gray-900 dark:text-white">{data.openInvoicesCount}</div>
-              <div className="text-xs text-gray-500">{money(data.openInvoicesValue)} outstanding</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{money(data.openInvoicesValue)} outstanding</div>
               <div className={`mt-2 text-xs ${data.lowStockCount > 0 ? "text-yellow-600" : "text-gray-400"}`}>
                 {data.lowStockCount} low-stock ingredient{data.lowStockCount === 1 ? "" : "s"}
               </div>

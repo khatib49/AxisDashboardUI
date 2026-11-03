@@ -72,7 +72,7 @@ export default function Periods() {
             const isCurrent = p.year === now.getFullYear() && p.month === now.getMonth() + 1;
             const isFuture = p.year > now.getFullYear() || (p.year === now.getFullYear() && p.month > now.getMonth() + 1);
             return (
-              <div key={p.month} className={`rounded-2xl border p-4 ${p.isLocked ? "border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-900/10" : "border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]"}`}>
+              <div key={p.month} className={`rounded-2xl border p-4 ${p.isLocked ? "border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-900/10" : "border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90"}`}>
                 <div className="flex items-center justify-between">
                   <div className="text-base font-semibold text-gray-800 dark:text-white/90">{MONTHS[p.month - 1]} {p.year}</div>
                   <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${p.isLocked ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300" : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"}`}>{p.isLocked ? "Locked" : "Open"}</span>

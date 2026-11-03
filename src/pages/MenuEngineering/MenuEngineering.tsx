@@ -66,7 +66,7 @@ type Point = MenuEngineeringItemDto & { x: number; y: number };
 const btnPrimary = "rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50";
 const btnSecondary =
   "rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/5";
-const card = "rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]";
+const card = "rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90";
 
 // ─── small components ───────────────────────────────────────────────────────
 function Kpi({ title, value, sub, tone }: { title: string; value: string; sub?: string; tone?: "ok" | "bad" | "neutral" }) {
@@ -94,7 +94,7 @@ function QuadrantPill({ quadrant, colors }: { quadrant: string; colors: Record<Q
 }
 
 function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
-  return <span className={`ml-1 text-xs ${active ? "text-brand-500" : "text-gray-300 dark:text-gray-600"}`}>{active ? (dir === "asc" ? "↑" : "↓") : "↕"}</span>;
+  return <span className={`ml-1 text-xs ${active ? "text-brand-500 dark:text-brand-400" : "text-gray-400"}`}>{active ? (dir === "asc" ? "↑" : "↓") : "↕"}</span>;
 }
 
 function ChartTooltip({ active, payload }: { active?: boolean; payload?: ReadonlyArray<{ payload: Point }> }) {
@@ -196,7 +196,7 @@ function CostDrawer({ itemId, colors, onClose }: { itemId: number | null; colors
   return (
     <div className="fixed inset-0 z-[99999] flex justify-end">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden="true" />
-      <aside className="relative flex h-full w-full flex-col overflow-y-auto bg-white shadow-xl dark:bg-gray-900 sm:w-[480px]" role="dialog" aria-label="Cost breakdown">
+      <aside className="relative flex h-full w-full flex-col overflow-y-auto bg-white shadow-xl dark:bg-gray-900 sm:w-[480px] text-gray-800 dark:text-white/90" role="dialog" aria-label="Cost breakdown">
         <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-800">
           <div>
             <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Cost breakdown</div>
@@ -206,7 +206,7 @@ function CostDrawer({ itemId, colors, onClose }: { itemId: number | null; colors
         </div>
 
         <div className="flex-1 space-y-4 p-4">
-          {loading && <div className="flex items-center gap-2 text-sm text-gray-500"><Loader /> Loading…</div>}
+          {loading && <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400"><Loader /> Loading…</div>}
           {error && !loading && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">{error}</div>}
 
           {data && !loading && (
@@ -521,7 +521,7 @@ export default function MenuEngineering() {
           <div className={`${card} p-0`}>
             <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
               <h3 className="text-base font-semibold text-gray-800 dark:text-white/90">
-                Items {quadrantFilter !== "all" && <span className="text-sm font-normal text-gray-500">· {quadrantFilter}s only</span>}
+                Items {quadrantFilter !== "all" && <span className="text-sm font-normal text-gray-500 dark:text-gray-400">· {quadrantFilter}s only</span>}
               </h3>
               <div className="text-xs text-gray-500 dark:text-gray-400">{rows.length} of {report.items.length} · click a row for the cost breakdown</div>
             </div>

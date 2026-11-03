@@ -113,7 +113,7 @@ export default function VatReport() {
         </div>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
         <StateBlock loading={loading} error={error} empty={!report || report.rows.length === 0} emptyText="No data for this period.">
           <div className="max-w-full overflow-x-auto">
             <Table>

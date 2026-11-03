@@ -153,7 +153,7 @@ export default function Locations() {
       {error && <div className="text-red-600 bg-red-50 p-3 rounded mb-4">{error}</div>}
 
       {!loading && !error && (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
           <div className="max-w-full overflow-x-auto">
             <Table>
               <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
@@ -183,8 +183,8 @@ export default function Locations() {
                     </TableCell>
                     <TableCell className={td}>
                       <div className="flex items-center gap-3">
-                        <button className="text-blue-600 hover:underline" onClick={() => { setStockSearch(""); setStockFor(l); }}>Stock</button>
-                        <button className="text-blue-600 hover:underline" onClick={() => openEdit(l)}>Edit</button>
+                        <button className="text-blue-600 dark:text-blue-400 hover:underline" onClick={() => { setStockSearch(""); setStockFor(l); }}>Stock</button>
+                        <button className="text-blue-600 dark:text-blue-400 hover:underline" onClick={() => openEdit(l)}>Edit</button>
                         {!l.isDefault && l.isActive && (
                           <button className="text-red-600 hover:underline" onClick={() => deactivate(l)}>Deactivate</button>
                         )}
@@ -205,7 +205,7 @@ export default function Locations() {
         className="max-w-lg"
         footer={
           <>
-            <button className="px-4 py-2 rounded border dark:border-white/10" onClick={() => setIsFormOpen(false)} disabled={submitting}>Cancel</button>
+            <button className="px-4 py-2 rounded border dark:border-white/10 text-gray-700 dark:text-gray-300" onClick={() => setIsFormOpen(false)} disabled={submitting}>Cancel</button>
             <button className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50" onClick={submit} disabled={submitting}>
               {submitting ? "Saving..." : "Save"}
             </button>
@@ -239,7 +239,7 @@ export default function Locations() {
         {stockLoading ? (
           <div className="flex justify-center py-6"><Loader /></div>
         ) : stock.length === 0 ? (
-          <p className="text-sm text-gray-500 py-4 text-center">No ingredients.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">No ingredients.</p>
         ) : (
           <div className="max-h-[50vh] overflow-auto">
             <Table>

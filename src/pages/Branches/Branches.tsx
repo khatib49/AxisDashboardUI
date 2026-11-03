@@ -284,7 +284,7 @@ export default function Branches() {
       {error && <div className="text-red-600 bg-red-50 p-3 rounded mb-4">{error}</div>}
 
       {!loading && !error && (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
           <div className="max-w-full overflow-x-auto">
             <Table>
               <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
@@ -300,7 +300,7 @@ export default function Branches() {
               <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                 {branches.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="px-5 py-8 text-center text-sm text-gray-500">
+                    <TableCell colSpan={6} className="px-5 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
                       No branches yet. Create the first one; it becomes the default branch.
                     </TableCell>
                   </TableRow>
@@ -312,19 +312,19 @@ export default function Branches() {
                       <div className="font-medium text-gray-800 dark:text-white/90">
                         {b.name}
                         {b.isDefault && (
-                          <span className="ml-2 rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-600 dark:bg-brand-500/10">
+                          <span className="ml-2 rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-600 dark:text-brand-400 dark:bg-brand-500/10">
                             default
                           </span>
                         )}
                       </div>
-                      {b.address && <div className="text-xs text-gray-500">{b.address}</div>}
+                      {b.address && <div className="text-xs text-gray-500 dark:text-gray-400">{b.address}</div>}
                     </TableCell>
                     <TableCell className={td}>{b.currencyCode}</TableCell>
                     <TableCell className={td}>
                       {b.openingTime || b.closingTime ? `${b.openingTime ?? "—"} – ${b.closingTime ?? "—"}` : "—"}
                     </TableCell>
                     <TableCell className={td}>
-                      <span className={`rounded-full px-2 py-0.5 text-xs ${b.isActive ? "bg-green-50 text-green-700 dark:bg-green-500/10" : "bg-gray-100 text-gray-500 dark:bg-white/10"}`}>
+                      <span className={`rounded-full px-2 py-0.5 text-xs ${b.isActive ? "bg-green-50 text-green-700 dark:bg-green-500/10" : "bg-gray-100 text-gray-500 dark:text-gray-400 dark:bg-white/10"}`}>
                         {b.isActive ? "Active" : "Inactive"}
                       </span>
                     </TableCell>
@@ -451,7 +451,7 @@ export default function Branches() {
               </label>
               <button className={`${btn} mb-1 bg-blue-600 text-white hover:bg-blue-700`} disabled={!pickUserId} onClick={doAssign}>Assign</button>
             </div>
-            {staff.length === 0 && <p className="text-xs text-gray-500">Could not load the staff list; assignments can still be removed.</p>}
+            {staff.length === 0 && <p className="text-xs text-gray-500 dark:text-gray-400">Could not load the staff list; assignments can still be removed.</p>}
             <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-white/[0.05]">
               <Table>
                 <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
@@ -465,7 +465,7 @@ export default function Branches() {
                 <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                   {assignments.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={4} className="px-5 py-6 text-center text-sm text-gray-500">No users assigned.</TableCell>
+                      <TableCell colSpan={4} className="px-5 py-6 text-center text-sm text-gray-500 dark:text-gray-400">No users assigned.</TableCell>
                     </TableRow>
                   )}
                   {assignments.map((a) => (
@@ -500,8 +500,8 @@ export default function Branches() {
           <div className="flex justify-center py-6"><Loader /></div>
         ) : (
           <div className="space-y-3">
-            <p className="text-xs text-gray-500">Per-branch overrides, e.g. <code>Receipt.Header</code>, <code>Tax.Number</code>, <code>Receipt.Footer</code>.</p>
-            {settingRows.length === 0 && <p className="text-sm text-gray-500">No settings yet.</p>}
+            <p className="text-xs text-gray-500 dark:text-gray-400">Per-branch overrides, e.g. <code>Receipt.Header</code>, <code>Tax.Number</code>, <code>Receipt.Footer</code>.</p>
+            {settingRows.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400">No settings yet.</p>}
             {settingRows.map((row, i) => (
               <div key={i} className="flex items-center gap-2">
                 <div className="w-1/3">

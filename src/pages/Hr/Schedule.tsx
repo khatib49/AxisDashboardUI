@@ -154,9 +154,9 @@ export default function Schedule() {
         </div>
       </div>
 
-      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-white/[0.03]">
-        <span className="text-xs uppercase text-gray-500">Palette:</span>
-        <button className={`rounded-full border px-3 py-1 text-xs ${activeTemplate == null ? "border-brand-500 text-brand-500" : "border-gray-300 text-gray-600 dark:border-gray-700 dark:text-gray-300"}`} onClick={() => setActiveTemplate(null)}>Custom (open editor)</button>
+      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
+        <span className="text-xs uppercase text-gray-500 dark:text-gray-400">Palette:</span>
+        <button className={`rounded-full border px-3 py-1 text-xs ${activeTemplate == null ? "border-brand-500 text-brand-500 dark:text-brand-400" : "border-gray-300 text-gray-600 dark:border-gray-700 dark:text-gray-300"}`} onClick={() => setActiveTemplate(null)}>Custom (open editor)</button>
         {templates.map((t) => (
           <span key={t.id} className="inline-flex items-center gap-1">
             <button onClick={() => setActiveTemplate(activeTemplate === t.id ? null : t.id)} title="Click, then click a cell to add this shift"
@@ -172,14 +172,14 @@ export default function Schedule() {
       {error && <Alert variant="error" title="Error" message={error} />}
       {loading ? <div className="flex justify-center py-10"><Loader /></div> : week && (
         week.rows.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-gray-300 p-10 text-center text-gray-500 dark:border-gray-700">No active employees. Add staff on the Employees page first.</div>
+          <div className="rounded-lg border border-dashed border-gray-300 p-10 text-center text-gray-500 dark:text-gray-400 dark:border-gray-700">No active employees. Add staff on the Employees page first.</div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+          <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
             <table className="min-w-full table-fixed text-sm">
               <thead className="border-b border-gray-100 dark:border-white/[0.05]">
                 <tr>
-                  <th className="w-44 px-3 py-2 text-left text-xs font-medium uppercase text-gray-500">Employee</th>
-                  {week.days.map((d) => <th key={d} className={`px-2 py-2 text-left text-xs font-medium uppercase ${d === toDateOnly(new Date()) ? "text-brand-500" : "text-gray-500"}`}>{dayLabel(d)}</th>)}
+                  <th className="w-44 px-3 py-2 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Employee</th>
+                  {week.days.map((d) => <th key={d} className={`px-2 py-2 text-left text-xs font-medium uppercase ${d === toDateOnly(new Date()) ? "text-brand-500 dark:text-brand-400" : "text-gray-500 dark:text-gray-400"}`}>{dayLabel(d)}</th>)}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
@@ -187,7 +187,7 @@ export default function Schedule() {
                   <tr key={r.employeeId}>
                     <td className="px-3 py-2 align-top">
                       <div className="font-medium text-gray-800 dark:text-white/90">{r.employeeName}</div>
-                      <div className="text-xs text-gray-500">{r.position || ""}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{r.position || ""}</div>
                     </td>
                     {week.days.map((d) => {
                       const shifts = r.shifts.filter((s) => s.date === d);
@@ -258,7 +258,7 @@ export default function Schedule() {
             <div><Label>End</Label><Input type="time" value={tf.endTime} onChange={(e) => setTf((f) => ({ ...f, endTime: e.target.value }))} /></div>
           </div>
           <div><Label>Colour</Label><input type="color" value={tf.color} onChange={(e) => setTf((f) => ({ ...f, color: e.target.value }))} className="h-10 w-20 cursor-pointer rounded border border-gray-300 dark:border-gray-700" /></div>
-          <p className="text-xs text-gray-500">An end time earlier than the start means the shift ends the next day.</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">An end time earlier than the start means the shift ends the next day.</p>
         </div>
       </Modal>
     </div>

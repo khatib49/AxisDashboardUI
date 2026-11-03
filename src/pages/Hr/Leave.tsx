@@ -18,7 +18,7 @@ type Tab = "requests" | "balances" | "types";
 const btn = "rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50";
 const btnPrimary = `${btn} bg-brand-500 text-white hover:bg-brand-600`;
 const btnGhost = `${btn} border border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-white/5`;
-const th = "px-4 py-3 text-left text-xs font-medium uppercase text-gray-500";
+const th = "px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400";
 const td = "px-4 py-3 text-sm text-gray-700 dark:text-gray-300";
 const selectCls = "h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90";
 
@@ -26,7 +26,7 @@ const statusCls: Record<string, string> = {
   Pending: "bg-warning-50 text-warning-600 dark:bg-warning-500/15",
   Approved: "bg-success-50 text-success-600 dark:bg-success-500/15",
   Rejected: "bg-error-50 text-error-600 dark:bg-error-500/15",
-  Cancelled: "bg-gray-100 text-gray-500 dark:bg-white/10",
+  Cancelled: "bg-gray-100 text-gray-500 dark:text-gray-400 dark:bg-white/10",
 };
 
 export default function Leave() {
@@ -116,8 +116,8 @@ export default function Leave() {
     finally { setBusy(false); }
   }
 
-  const empty = (msg: string) => <div className="rounded-lg border border-dashed border-gray-300 p-10 text-center text-gray-500 dark:border-gray-700">{msg}</div>;
-  const wrap = (children: React.ReactNode) => <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">{children}</div>;
+  const empty = (msg: string) => <div className="rounded-lg border border-dashed border-gray-300 p-10 text-center text-gray-500 dark:text-gray-400 dark:border-gray-700">{msg}</div>;
+  const wrap = (children: React.ReactNode) => <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90">{children}</div>;
 
   return (
     <div>
@@ -127,7 +127,7 @@ export default function Leave() {
 
       <div className="mb-4 flex gap-1 border-b border-gray-200 dark:border-gray-800">
         {([["requests", "Requests"], ["balances", "Balances"], ["types", "Leave types"]] as [Tab, string][]).map(([k, l]) => (
-          <button key={k} onClick={() => setTab(k)} className={`-mb-px border-b-2 px-4 py-2 text-sm ${tab === k ? "border-brand-500 text-brand-500" : "border-transparent text-gray-500"}`}>{l}</button>
+          <button key={k} onClick={() => setTab(k)} className={`-mb-px border-b-2 px-4 py-2 text-sm ${tab === k ? "border-brand-500 text-brand-500 dark:text-brand-400" : "border-transparent text-gray-500 dark:text-gray-400"}`}>{l}</button>
         ))}
       </div>
 
@@ -170,7 +170,7 @@ export default function Leave() {
                           <button className="text-error-500 hover:underline" disabled={busy} onClick={() => { setDecide({ req: r, approve: false }); setNote(""); }}>Reject</button>
                         </span>
                       )}
-                      {r.status === "Approved" && <button className="text-gray-500 hover:underline" disabled={busy} onClick={() => cancel(r)}>Cancel</button>}
+                      {r.status === "Approved" && <button className="text-gray-500 dark:text-gray-400 hover:underline" disabled={busy} onClick={() => cancel(r)}>Cancel</button>}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -187,7 +187,7 @@ export default function Leave() {
                     <TableCell className={td}>{b.employeeName}</TableCell>
                     {types.map((t) => { const i = b.items.find((x) => x.leaveTypeId === t.id); return (
                       <TableCell key={t.id} className={td}>
-                        {i ? <><span className={i.remaining < 0 ? "text-error-500" : "font-medium text-gray-800 dark:text-white/90"}>{i.remaining}</span> <span className="text-xs text-gray-500">left · {i.usedDays} used{i.pendingDays ? ` · ${i.pendingDays} pending` : ""}</span></> : "—"}
+                        {i ? <><span className={i.remaining < 0 ? "text-error-500" : "font-medium text-gray-800 dark:text-white/90"}>{i.remaining}</span> <span className="text-xs text-gray-500 dark:text-gray-400">left · {i.usedDays} used{i.pendingDays ? ` · ${i.pendingDays} pending` : ""}</span></> : "—"}
                       </TableCell>); })}
                   </TableRow>
                 ))}
@@ -222,7 +222,7 @@ export default function Leave() {
             <div><Label>From</Label><Input type="date" value={rf.fromDate} onChange={(e) => setRf((f) => ({ ...f, fromDate: e.target.value }))} /></div>
             <div><Label>To</Label><Input type="date" value={rf.toDate} onChange={(e) => setRf((f) => ({ ...f, toDate: e.target.value }))} /></div>
           </div>
-          <div className="text-xs text-gray-500">{days(rf.fromDate, rf.toDate)} calendar day(s)</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">{days(rf.fromDate, rf.toDate)} calendar day(s)</div>
           <div><Label>Reason</Label><Input value={rf.reason} onChange={(e) => setRf((f) => ({ ...f, reason: e.target.value }))} /></div>
         </div>
       </Modal>

@@ -230,7 +230,7 @@ export default function Batches() {
       {error && <div className="text-red-600 bg-red-50 p-3 rounded mb-4">{error}</div>}
 
       {!loading && !error && (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
           <div className="max-w-full overflow-x-auto">
             <Table>
               <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
@@ -260,7 +260,7 @@ export default function Batches() {
                     <TableCell className={td}><ExpiryPill b={b} /></TableCell>
                     <TableCell className={td}>
                       <div className="flex items-center gap-3">
-                        {!b.writtenOffOn && <button className="text-blue-600 hover:underline" onClick={() => openEdit(b)}>Edit</button>}
+                        {!b.writtenOffOn && <button className="text-blue-600 dark:text-blue-400 hover:underline" onClick={() => openEdit(b)}>Edit</button>}
                         {b.isExpired && b.remainingQuantity > 0 && !b.writtenOffOn && (
                           <button className="text-red-600 hover:underline disabled:opacity-50" disabled={busyId === b.id} onClick={() => writeOff(b)}>Write off</button>
                         )}
@@ -276,8 +276,8 @@ export default function Batches() {
             <div className="flex items-center justify-between px-5 py-3 text-sm text-gray-600 dark:text-gray-300">
               <span>Page {page} of {totalPages} ({totalCount} total)</span>
               <div className="flex gap-2">
-                <button className="px-3 py-1 rounded border dark:border-white/10 disabled:opacity-50" disabled={page <= 1} onClick={() => setPage(page - 1)}>Prev</button>
-                <button className="px-3 py-1 rounded border dark:border-white/10 disabled:opacity-50" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>Next</button>
+                <button className="px-3 py-1 rounded border dark:border-white/10 disabled:opacity-50 text-gray-700 dark:text-gray-300" disabled={page <= 1} onClick={() => setPage(page - 1)}>Prev</button>
+                <button className="px-3 py-1 rounded border dark:border-white/10 disabled:opacity-50 text-gray-700 dark:text-gray-300" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>Next</button>
               </div>
             </div>
           )}
@@ -295,7 +295,7 @@ export default function Batches() {
         className="max-w-lg"
         footer={
           <>
-            <button className="px-4 py-2 rounded border dark:border-white/10" onClick={() => setIsFormOpen(false)} disabled={submitting}>Cancel</button>
+            <button className="px-4 py-2 rounded border dark:border-white/10 text-gray-700 dark:text-gray-300" onClick={() => setIsFormOpen(false)} disabled={submitting}>Cancel</button>
             <button className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50" onClick={submit} disabled={submitting}>{submitting ? "Saving..." : "Save"}</button>
           </>
         }

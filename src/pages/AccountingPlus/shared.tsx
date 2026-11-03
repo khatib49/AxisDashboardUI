@@ -35,7 +35,7 @@ export function StateBlock({ loading, error, empty, emptyText, children }: {
 export function Card({ title, value, sub, tone }: { title: string; value: string; sub?: string; tone?: "ok" | "bad" | "neutral" }) {
   const color = tone === "ok" ? "text-green-600 dark:text-green-400" : tone === "bad" ? "text-red-600 dark:text-red-400" : "text-gray-800 dark:text-white/90";
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
+    <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
       <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">{title}</div>
       <div className={`mt-1 text-xl font-semibold ${color}`}>{value}</div>
       {sub && <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">{sub}</div>}
@@ -89,7 +89,7 @@ export function StatusPill({ status }: { status: string }) {
     Active: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
     Disposed: "bg-gray-200 text-gray-600 dark:bg-gray-800 dark:text-gray-300",
   };
-  return <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${map[status] ?? "bg-gray-100 text-gray-600"}`}>{status}</span>;
+  return <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${map[status] ?? "bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-400"}`}>{status}</span>;
 }
 
 export function toInputDate(d: Date): string {

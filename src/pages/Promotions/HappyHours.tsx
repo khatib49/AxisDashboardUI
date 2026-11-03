@@ -141,19 +141,19 @@ export default function HappyHours() {
       <HappyHourBanner className="mb-4" />
       {notice && <div className="mb-4"><Alert variant={notice.variant} title={notice.title} message={notice.message} /></div>}
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
         <div className="mb-4 flex items-center">
-          <p className="text-sm text-gray-500">Rules are evaluated in venue time (Asia/Beirut). A window that ends before it starts runs overnight.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Rules are evaluated in venue time (Asia/Beirut). A window that ends before it starts runs overnight.</p>
           <button className="ml-auto rounded bg-brand-500 px-4 py-2 text-sm text-white" onClick={openCreate}>New rule</button>
         </div>
         {error && <Alert variant="error" title="Error" message={error} />}
         {loading ? <div className="flex justify-center py-10"><Loader /></div> : rules.length === 0 ? (
-          <div className="py-10 text-center text-gray-500">No happy hour rules yet.</div>
+          <div className="py-10 text-center text-gray-500 dark:text-gray-400">No happy hour rules yet.</div>
         ) : (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
-                <TableRow>{["Name", "Days", "Window", "Discount", "Applies to", "Priority", "Active", "Now", ""].map((h) => <TableCell key={h} isHeader className="px-3 py-3 text-left text-xs font-medium text-gray-500">{h}</TableCell>)}</TableRow>
+                <TableRow>{["Name", "Days", "Window", "Discount", "Applies to", "Priority", "Active", "Now", ""].map((h) => <TableCell key={h} isHeader className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{h}</TableCell>)}</TableRow>
               </TableHeader>
               <TableBody>
                 {rules.map((r) => (
@@ -168,7 +168,7 @@ export default function HappyHours() {
                     <TableCell className="px-3 py-3 text-sm">{activeIds.includes(r.id) ? <span className="rounded bg-success-50 px-2 py-0.5 text-xs text-success-700 dark:bg-success-500/15 dark:text-success-400">LIVE</span> : ""}</TableCell>
                     <TableCell className="px-3 py-3 text-right text-sm">
                       <div className="flex justify-end gap-3">
-                        <button className="text-brand-500 hover:underline" onClick={() => openEdit(r)}>Edit</button>
+                        <button className="text-brand-500 dark:text-brand-400 hover:underline" onClick={() => openEdit(r)}>Edit</button>
                         <DeleteIconButton onClick={() => void remove(r)} />
                       </div>
                     </TableCell>
@@ -210,7 +210,7 @@ export default function HappyHours() {
           </div>
           <div className="col-span-2 md:col-span-4"><Label>Specific item ids (comma separated, optional)</Label><Input value={form.itemIdsCsv} placeholder="e.g. 12,15" onChange={(e) => setForm({ ...form, itemIdsCsv: e.target.value })} /></div>
           <div className="col-span-2 flex justify-end gap-2 md:col-span-4">
-            <button className="rounded border px-4 py-2 text-sm dark:border-gray-700" onClick={() => setFormOpen(false)}>Cancel</button>
+            <button className="rounded border px-4 py-2 text-sm dark:border-gray-700 text-gray-700 dark:text-gray-300" onClick={() => setFormOpen(false)}>Cancel</button>
             <button className="rounded bg-brand-500 px-4 py-2 text-sm text-white disabled:opacity-50" disabled={submitting} onClick={submit}>{submitting ? "Saving…" : "Save"}</button>
           </div>
         </div>

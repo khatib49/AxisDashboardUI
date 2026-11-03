@@ -209,7 +209,7 @@ export default function BankReconciliation() {
         </div>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
         <StateBlock loading={loading} error={error} empty={!detail || detail.lines.length === 0} emptyText={statementId === "" ? "Pick a bank account and statement, or import a CSV." : "No statement lines."}>
           <div className="max-w-full overflow-x-auto">
             <Table>
@@ -264,7 +264,7 @@ export default function BankReconciliation() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  {["Entry", "Date", "Description", "Amount", "Days", ""].map((h) => <TableCell key={h} isHeader className="px-3 py-2 text-start text-xs text-gray-500">{h}</TableCell>)}
+                  {["Entry", "Date", "Description", "Amount", "Days", ""].map((h) => <TableCell key={h} isHeader className="px-3 py-2 text-start text-xs text-gray-500 dark:text-gray-400">{h}</TableCell>)}
                 </TableRow>
               </TableHeader>
               <TableBody>

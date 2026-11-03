@@ -69,11 +69,11 @@ export default function ClockKiosk() {
   return (
     <div className="flex min-h-[80vh] flex-col items-center justify-center">
       <PageMeta title="Clock In / Out | Axis" description="Staff attendance kiosk" />
-      <div className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+      <div className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 text-gray-800 dark:text-white/90">
         <div className="mb-4 text-center">
-          <div className="text-sm uppercase tracking-wide text-gray-500">Staff clock</div>
+          <div className="text-sm uppercase tracking-wide text-gray-500 dark:text-gray-400">Staff clock</div>
           <div className="text-3xl font-semibold text-gray-800 dark:text-white/90">{now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</div>
-          <div className="text-xs text-gray-500">{now.toLocaleDateString()}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">{now.toLocaleDateString()}</div>
         </div>
 
         {result ? (
@@ -105,7 +105,7 @@ export default function ClockKiosk() {
             {busy ? "…" : "Clock in / out"}
           </button>
         </div>
-        <p className="mt-4 text-center text-xs text-gray-500">Enter your 4-6 digit PIN. The same PIN clocks you in and out.</p>
+        <p className="mt-4 text-center text-xs text-gray-500 dark:text-gray-400">Enter your 4-6 digit PIN. The same PIN clocks you in and out.</p>
       </div>
     </div>
   );

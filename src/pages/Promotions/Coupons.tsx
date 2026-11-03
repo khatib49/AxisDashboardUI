@@ -183,7 +183,7 @@ export default function Coupons() {
       <PageBreadcrumb pageTitle="Coupons" />
       {notice && <div className="mb-4"><Alert variant={notice.variant} title={notice.title} message={notice.message} /></div>}
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
         <div className="mb-4 flex items-center gap-3">
           <div className="w-64"><Input placeholder="Search code / name" value={search} onChange={(e) => { setPage(1); setSearch(e.target.value); }} /></div>
           <button className="ml-auto rounded bg-brand-500 px-4 py-2 text-sm text-white" onClick={openCreate}>New coupon</button>
@@ -191,12 +191,12 @@ export default function Coupons() {
 
         {error && <Alert variant="error" title="Error" message={error} />}
         {loading ? <div className="flex justify-center py-10"><Loader /></div> : rows.length === 0 ? (
-          <div className="py-10 text-center text-gray-500">No coupons yet.</div>
+          <div className="py-10 text-center text-gray-500 dark:text-gray-400">No coupons yet.</div>
         ) : (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
-                <TableRow>{["Code", "Name", "Discount", "Min order", "Uses", "Valid", "Categories", "Active", ""].map((h) => <TableCell key={h} isHeader className="px-3 py-3 text-left text-xs font-medium text-gray-500">{h}</TableCell>)}</TableRow>
+                <TableRow>{["Code", "Name", "Discount", "Min order", "Uses", "Valid", "Categories", "Active", ""].map((h) => <TableCell key={h} isHeader className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{h}</TableCell>)}</TableRow>
               </TableHeader>
               <TableBody>
                 {rows.map((c) => (
@@ -205,13 +205,13 @@ export default function Coupons() {
                     <TableCell className="px-3 py-3 text-sm">{c.name}</TableCell>
                     <TableCell className="px-3 py-3 text-sm">{c.type === "Fixed" ? `${c.value.toFixed(2)} off` : `${c.value}%`}{c.maxDiscountAmount ? ` (max ${c.maxDiscountAmount})` : ""}</TableCell>
                     <TableCell className="px-3 py-3 text-sm">{c.minOrderAmount ?? "—"}</TableCell>
-                    <TableCell className="px-3 py-3 text-sm"><button className="text-brand-500 hover:underline" onClick={() => void showRedemptions(c)}>{c.usedCount}{c.maxUses ? ` / ${c.maxUses}` : ""}</button></TableCell>
+                    <TableCell className="px-3 py-3 text-sm"><button className="text-brand-500 dark:text-brand-400 hover:underline" onClick={() => void showRedemptions(c)}>{c.usedCount}{c.maxUses ? ` / ${c.maxUses}` : ""}</button></TableCell>
                     <TableCell className="px-3 py-3 text-xs">{c.validFrom ? new Date(c.validFrom).toLocaleDateString() : "…"} → {c.validTo ? new Date(c.validTo).toLocaleDateString() : "…"}</TableCell>
                     <TableCell className="px-3 py-3 text-xs">{catName(c.categoryIdsCsv)}</TableCell>
                     <TableCell className="px-3 py-3 text-sm">{c.isActive ? "Yes" : "No"}</TableCell>
                     <TableCell className="px-3 py-3 text-right text-sm">
                       <div className="flex justify-end gap-3">
-                        <button className="text-brand-500 hover:underline" onClick={() => openEdit(c)}>Edit</button>
+                        <button className="text-brand-500 dark:text-brand-400 hover:underline" onClick={() => openEdit(c)}>Edit</button>
                         <DeleteIconButton onClick={() => void remove(c)} />
                       </div>
                     </TableCell>
@@ -222,11 +222,11 @@ export default function Coupons() {
           </div>
         )}
         <div className="mt-4 flex items-center justify-between text-sm">
-          <span className="text-gray-500">{total} coupon(s)</span>
+          <span className="text-gray-500 dark:text-gray-400">{total} coupon(s)</span>
           <div className="flex gap-2">
-            <button className="rounded border px-3 py-1 disabled:opacity-40 dark:border-gray-700" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Prev</button>
+            <button className="rounded border px-3 py-1 disabled:opacity-50 dark:border-gray-700 text-gray-700 dark:text-gray-300" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Prev</button>
             <span className="px-2 py-1">{page} / {pages}</span>
-            <button className="rounded border px-3 py-1 disabled:opacity-40 dark:border-gray-700" disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>Next</button>
+            <button className="rounded border px-3 py-1 disabled:opacity-50 dark:border-gray-700 text-gray-700 dark:text-gray-300" disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>Next</button>
           </div>
         </div>
       </div>
@@ -253,7 +253,7 @@ export default function Coupons() {
           <div className="col-span-2 md:col-span-3">
             <Label>Restrict to categories (none = whole order)</Label>
             <div className="flex max-h-32 flex-wrap gap-2 overflow-auto rounded-lg border p-2 dark:border-gray-700">
-              {categories.length === 0 && <span className="text-xs text-gray-500">No categories loaded</span>}
+              {categories.length === 0 && <span className="text-xs text-gray-500 dark:text-gray-400">No categories loaded</span>}
               {categories.map((c) => {
                 const on = form.categoryIds.includes(c.id);
                 return (
@@ -266,16 +266,16 @@ export default function Coupons() {
             </div>
           </div>
           <div className="col-span-2 flex justify-end gap-2 md:col-span-3">
-            <button className="rounded border px-4 py-2 text-sm dark:border-gray-700" onClick={() => setFormOpen(false)}>Cancel</button>
+            <button className="rounded border px-4 py-2 text-sm dark:border-gray-700 text-gray-700 dark:text-gray-300" onClick={() => setFormOpen(false)}>Cancel</button>
             <button className="rounded bg-brand-500 px-4 py-2 text-sm text-white disabled:opacity-50" disabled={submitting} onClick={submit}>{submitting ? "Saving…" : "Save"}</button>
           </div>
         </div>
       </Modal>
 
       <Modal isOpen={!!redemptionsFor} onClose={() => setRedemptionsFor(null)} title={redemptionsFor ? `Redemptions of ${redemptionsFor.code}` : ""}>
-        {redLoading ? <Loader /> : redemptions.length === 0 ? <div className="text-gray-500">Not used yet.</div> : (
+        {redLoading ? <Loader /> : redemptions.length === 0 ? <div className="text-gray-500 dark:text-gray-400">Not used yet.</div> : (
           <Table>
-            <TableHeader><TableRow>{["When", "Invoice", "Customer", "Discount", "By"].map((h) => <TableCell key={h} isHeader className="px-2 py-1 text-left text-xs text-gray-500">{h}</TableCell>)}</TableRow></TableHeader>
+            <TableHeader><TableRow>{["When", "Invoice", "Customer", "Discount", "By"].map((h) => <TableCell key={h} isHeader className="px-2 py-1 text-left text-xs text-gray-500 dark:text-gray-400">{h}</TableCell>)}</TableRow></TableHeader>
             <TableBody>
               {redemptions.map((r) => (
                 <TableRow key={r.id} className="border-t border-gray-100 text-sm dark:border-white/[0.05]">

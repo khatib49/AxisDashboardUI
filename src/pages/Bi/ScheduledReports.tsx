@@ -66,7 +66,7 @@ function fmtDate(iso?: string | null): string {
 }
 
 function statusClass(s?: string | null): string {
-  if (!s) return "bg-gray-100 text-gray-500 dark:bg-white/10";
+  if (!s) return "bg-gray-100 text-gray-500 dark:text-gray-400 dark:bg-white/10";
   if (s.startsWith("Failed") || s.includes("failed")) return "bg-red-50 text-red-700 dark:bg-red-500/10";
   if (s.startsWith("Skipped") || s.includes("skipped")) return "bg-yellow-50 text-yellow-700 dark:bg-yellow-500/10";
   return "bg-green-50 text-green-700 dark:bg-green-500/10";
@@ -247,7 +247,7 @@ export default function ScheduledReports() {
       {error && <div className="text-red-600 bg-red-50 p-3 rounded mb-4">{error}</div>}
 
       {!loading && !error && (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
           <div className="max-w-full overflow-x-auto">
             <Table>
               <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
@@ -265,7 +265,7 @@ export default function ScheduledReports() {
               <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                 {reports.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="px-5 py-8 text-center text-sm text-gray-500">No scheduled reports yet.</TableCell>
+                    <TableCell colSpan={8} className="px-5 py-8 text-center text-sm text-gray-500 dark:text-gray-400">No scheduled reports yet.</TableCell>
                   </TableRow>
                 )}
                 {reports.map((r) => (
@@ -282,7 +282,7 @@ export default function ScheduledReports() {
                       {r.lastStatus && <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs ${statusClass(r.lastStatus)}`}>{r.lastStatus}</span>}
                     </TableCell>
                     <TableCell className={td}>
-                      <button onClick={() => toggleActive(r)} className={`rounded-full px-2 py-0.5 text-xs ${r.isActive ? "bg-green-50 text-green-700 dark:bg-green-500/10" : "bg-gray-100 text-gray-500 dark:bg-white/10"}`}>
+                      <button onClick={() => toggleActive(r)} className={`rounded-full px-2 py-0.5 text-xs ${r.isActive ? "bg-green-50 text-green-700 dark:bg-green-500/10" : "bg-gray-100 text-gray-500 dark:text-gray-400 dark:bg-white/10"}`}>
                         {r.isActive ? "Active" : "Paused"}
                       </button>
                     </TableCell>
@@ -396,7 +396,7 @@ export default function ScheduledReports() {
         {runsLoading ? (
           <div className="flex justify-center py-6"><Loader /></div>
         ) : runs.length === 0 ? (
-          <p className="text-sm text-gray-500">No runs yet.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">No runs yet.</p>
         ) : (
           <div className="space-y-3">
             {runs.map((run) => (
@@ -408,7 +408,7 @@ export default function ScheduledReports() {
                 {run.error && <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded bg-red-50 p-2 text-xs text-red-700 dark:bg-red-500/10">{run.error}</pre>}
                 {run.payloadPreview && (
                   run.payloadPreview.trimStart().startsWith("<")
-                    ? <iframe title={`run-${run.id}`} sandbox="" srcDoc={run.payloadPreview} className="mt-2 h-64 w-full rounded border border-gray-200 bg-white" />
+                    ? <iframe title={`run-${run.id}`} sandbox="" srcDoc={run.payloadPreview} className="mt-2 h-64 w-full rounded border border-gray-200 dark:border-gray-700 bg-white" />
                     : <pre className="mt-2 max-h-64 overflow-auto rounded bg-gray-50 p-2 text-xs dark:bg-white/5 dark:text-gray-300">{run.payloadPreview}</pre>
                 )}
               </details>
@@ -422,7 +422,7 @@ export default function ScheduledReports() {
         {preview && (
           preview.data.format === "Csv"
             ? <pre className="max-h-[60vh] overflow-auto rounded bg-gray-50 p-3 text-xs dark:bg-white/5 dark:text-gray-300">{preview.data.content}</pre>
-            : <iframe title="report-preview" sandbox="" srcDoc={preview.data.content} className="h-[60vh] w-full rounded border border-gray-200 bg-white" />
+            : <iframe title="report-preview" sandbox="" srcDoc={preview.data.content} className="h-[60vh] w-full rounded border border-gray-200 dark:border-gray-700 bg-white" />
         )}
       </Modal>
     </div>

@@ -158,7 +158,7 @@ export default function Currencies() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         <div className="lg:col-span-2">
-          <div className="rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+          <div className="rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 text-gray-800 dark:text-white/90">
             <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-700">
               <h4 className="text-sm font-semibold dark:text-white">Currencies</h4>
               <button onClick={() => setForm({ code: "", name: "", symbol: "", decimalPlaces: "2", roundingStep: "0.01", initialRate: "" })} className="rounded-lg bg-brand-500 px-3 py-1.5 text-xs text-white hover:bg-brand-600">+ Add</button>
@@ -166,16 +166,16 @@ export default function Currencies() {
             {loading ? (
               <div className="flex justify-center py-10"><Loader /></div>
             ) : rows.length === 0 ? (
-              <p className="px-4 py-8 text-center text-sm text-gray-500">No currencies.</p>
+              <p className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">No currencies.</p>
             ) : (
               <Table>
                 <TableHeader className="bg-gray-50 dark:bg-gray-900/40">
                   <TableRow>
-                    <TableCell isHeader className="px-4 py-2 text-left text-xs uppercase text-gray-500">Code</TableCell>
-                    <TableCell isHeader className="px-4 py-2 text-left text-xs uppercase text-gray-500">Name</TableCell>
-                    <TableCell isHeader className="px-4 py-2 text-right text-xs uppercase text-gray-500">Rate / 1 base</TableCell>
-                    <TableCell isHeader className="px-4 py-2 text-right text-xs uppercase text-gray-500">Step</TableCell>
-                    <TableCell isHeader className="px-4 py-2 text-right text-xs uppercase text-gray-500">{""}</TableCell>
+                    <TableCell isHeader className="px-4 py-2 text-left text-xs uppercase text-gray-500 dark:text-gray-400">Code</TableCell>
+                    <TableCell isHeader className="px-4 py-2 text-left text-xs uppercase text-gray-500 dark:text-gray-400">Name</TableCell>
+                    <TableCell isHeader className="px-4 py-2 text-right text-xs uppercase text-gray-500 dark:text-gray-400">Rate / 1 base</TableCell>
+                    <TableCell isHeader className="px-4 py-2 text-right text-xs uppercase text-gray-500 dark:text-gray-400">Step</TableCell>
+                    <TableCell isHeader className="px-4 py-2 text-right text-xs uppercase text-gray-500 dark:text-gray-400">{""}</TableCell>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -189,7 +189,7 @@ export default function Currencies() {
                       <TableCell className="px-4 py-2 text-right tabular-nums">{c.isBase ? "1" : c.currentRate != null ? c.currentRate.toLocaleString() : "—"}</TableCell>
                       <TableCell className="px-4 py-2 text-right tabular-nums">{c.roundingStep}</TableCell>
                       <TableCell className="px-4 py-2 text-right">
-                        <button onClick={() => { setEditing(c); setEditForm({ name: c.name, symbol: c.symbol, decimalPlaces: String(c.decimalPlaces), roundingStep: String(c.roundingStep), isActive: c.isActive }); }} className="text-brand-500 hover:underline">Edit</button>
+                        <button onClick={() => { setEditing(c); setEditForm({ name: c.name, symbol: c.symbol, decimalPlaces: String(c.decimalPlaces), roundingStep: String(c.roundingStep), isActive: c.isActive }); }} className="text-brand-500 dark:text-brand-400 hover:underline">Edit</button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -200,12 +200,12 @@ export default function Currencies() {
         </div>
 
         <div className="space-y-6 lg:col-span-3">
-          <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+          <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800 text-gray-800 dark:text-white/90">
             <h4 className="mb-3 text-sm font-semibold dark:text-white">Today's rate {selectedCurrency ? `· 1 USD → ${selectedCurrency.code}` : ""}</h4>
             {!selectedCurrency ? (
-              <p className="text-sm text-gray-500">Select a non-base currency on the left.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Select a non-base currency on the left.</p>
             ) : selectedCurrency.isBase ? (
-              <p className="text-sm text-gray-500">The base currency always has rate 1.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">The base currency always has rate 1.</p>
             ) : (
               <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                 <div>
@@ -223,12 +223,12 @@ export default function Currencies() {
             )}
           </div>
 
-          <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+          <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800 text-gray-800 dark:text-white/90">
             <h4 className="mb-3 text-sm font-semibold dark:text-white">Rate history {selected ? `· ${selected}` : ""}</h4>
             {historyLoading ? (
               <div className="flex justify-center py-10"><Loader /></div>
             ) : chartData.length === 0 ? (
-              <p className="py-8 text-center text-sm text-gray-500">No rates recorded yet.</p>
+              <p className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">No rates recorded yet.</p>
             ) : (
               <>
                 <div className="h-64 w-full">
@@ -246,9 +246,9 @@ export default function Currencies() {
                   <Table>
                     <TableHeader className="bg-gray-50 dark:bg-gray-900/40">
                       <TableRow>
-                        <TableCell isHeader className="px-3 py-1.5 text-left text-xs uppercase text-gray-500">Effective</TableCell>
-                        <TableCell isHeader className="px-3 py-1.5 text-right text-xs uppercase text-gray-500">Rate</TableCell>
-                        <TableCell isHeader className="px-3 py-1.5 text-left text-xs uppercase text-gray-500">Set by</TableCell>
+                        <TableCell isHeader className="px-3 py-1.5 text-left text-xs uppercase text-gray-500 dark:text-gray-400">Effective</TableCell>
+                        <TableCell isHeader className="px-3 py-1.5 text-right text-xs uppercase text-gray-500 dark:text-gray-400">Rate</TableCell>
+                        <TableCell isHeader className="px-3 py-1.5 text-left text-xs uppercase text-gray-500 dark:text-gray-400">Set by</TableCell>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -256,7 +256,7 @@ export default function Currencies() {
                         <TableRow key={h.id} className="border-t border-gray-100 text-sm dark:border-gray-700 dark:text-gray-200">
                           <TableCell className="px-3 py-1.5">{new Date(h.effectiveFrom).toLocaleDateString()}</TableCell>
                           <TableCell className="px-3 py-1.5 text-right tabular-nums">{h.rate.toLocaleString()}</TableCell>
-                          <TableCell className="px-3 py-1.5 text-gray-500">{h.createdBy}</TableCell>
+                          <TableCell className="px-3 py-1.5 text-gray-500 dark:text-gray-400">{h.createdBy}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>

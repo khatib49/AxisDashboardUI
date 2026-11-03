@@ -111,7 +111,7 @@ export default function Cards() {
 
     return (
         <div className="p-6">
-            <h1 className="text-2xl font-semibold mb-4">Cards</h1>
+            <h1 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">Cards</h1>
 
             <div className="mb-4 flex items-center gap-3">
                 <button className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded" onClick={openCreate}>

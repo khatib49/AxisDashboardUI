@@ -115,8 +115,8 @@ export default function CouponApplyDialog({ isOpen, onClose, transactionId, onAp
             </div>
           )}
           <div className="flex justify-end gap-2">
-            <button className="rounded border px-4 py-2 text-sm dark:border-gray-700" onClick={onClose} disabled={busy}>Cancel</button>
-            <button className="rounded border px-4 py-2 text-sm dark:border-gray-700" onClick={doValidate} disabled={busy}>{busy && !check ? "Checking…" : "Check"}</button>
+            <button className="rounded border px-4 py-2 text-sm dark:border-gray-700 text-gray-700 dark:text-gray-300" onClick={onClose} disabled={busy}>Cancel</button>
+            <button className="rounded border px-4 py-2 text-sm dark:border-gray-700 text-gray-700 dark:text-gray-300" onClick={doValidate} disabled={busy}>{busy && !check ? "Checking…" : "Check"}</button>
             <button className="rounded bg-brand-500 px-4 py-2 text-sm text-white disabled:opacity-50" onClick={doRedeem} disabled={busy || !check?.eligible}>{busy && check ? "Applying…" : "Apply"}</button>
           </div>
         </div>

@@ -250,7 +250,7 @@ export default function StockTransfers() {
       {error && <div className="text-red-600 bg-red-50 p-3 rounded mb-4">{error}</div>}
 
       {!loading && !error && (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
           <div className="max-w-full overflow-x-auto">
             <Table>
               <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
@@ -278,10 +278,10 @@ export default function StockTransfers() {
                     <TableCell className={td}>{new Date(t.createdOn).toLocaleString()}<div className="text-xs text-gray-400">{t.createdBy}</div></TableCell>
                     <TableCell className={td}>
                       <div className="flex items-center gap-3">
-                        <button className="text-blue-600 hover:underline" onClick={() => view(t.id)}>View</button>
+                        <button className="text-blue-600 dark:text-blue-400 hover:underline" onClick={() => view(t.id)}>View</button>
                         {t.status === "Draft" && (
                           <>
-                            <button className="text-blue-600 hover:underline" onClick={() => openEdit(t)}>Edit</button>
+                            <button className="text-blue-600 dark:text-blue-400 hover:underline" onClick={() => openEdit(t)}>Edit</button>
                             <button className="text-green-600 hover:underline disabled:opacity-50" disabled={busyId === t.id} onClick={() => post(t)}>Post</button>
                             <button className="text-red-600 hover:underline disabled:opacity-50" disabled={busyId === t.id} onClick={() => cancel(t)}>Cancel</button>
                           </>
@@ -297,8 +297,8 @@ export default function StockTransfers() {
             <div className="flex items-center justify-between px-5 py-3 text-sm text-gray-600 dark:text-gray-300">
               <span>Page {page} of {totalPages} ({totalCount} total)</span>
               <div className="flex gap-2">
-                <button className="px-3 py-1 rounded border dark:border-white/10 disabled:opacity-50" disabled={page <= 1} onClick={() => setPage(page - 1)}>Prev</button>
-                <button className="px-3 py-1 rounded border dark:border-white/10 disabled:opacity-50" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>Next</button>
+                <button className="px-3 py-1 rounded border dark:border-white/10 disabled:opacity-50 text-gray-700 dark:text-gray-300" disabled={page <= 1} onClick={() => setPage(page - 1)}>Prev</button>
+                <button className="px-3 py-1 rounded border dark:border-white/10 disabled:opacity-50 text-gray-700 dark:text-gray-300" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>Next</button>
               </div>
             </div>
           )}
@@ -313,7 +313,7 @@ export default function StockTransfers() {
         className="max-w-3xl"
         footer={
           <>
-            <button className="px-4 py-2 rounded border dark:border-white/10" onClick={() => setIsFormOpen(false)} disabled={submitting}>Cancel</button>
+            <button className="px-4 py-2 rounded border dark:border-white/10 text-gray-700 dark:text-gray-300" onClick={() => setIsFormOpen(false)} disabled={submitting}>Cancel</button>
             <button className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50" onClick={submit} disabled={submitting}>
               {submitting ? "Saving..." : "Save draft"}
             </button>
@@ -344,7 +344,7 @@ export default function StockTransfers() {
 
           <div>
             <Label>Lines</Label>
-            {lines.length === 0 && <p className="mb-2 text-sm text-gray-500">No lines yet — search an ingredient below to add one.</p>}
+            {lines.length === 0 && <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">No lines yet — search an ingredient below to add one.</p>}
             {lines.length > 0 && (
               <Table>
                 <TableHeader>
@@ -384,8 +384,8 @@ export default function StockTransfers() {
             <div className="mt-3">
               <Input placeholder="Search ingredient to add..." value={pickerSearch} onChange={(e) => setPickerSearch(e.target.value)} />
               {pickerSearch && (
-                <div className="mt-1 max-h-48 overflow-auto rounded border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900">
-                  {pickerOptions.length === 0 && <div className="px-3 py-2 text-sm text-gray-500">No matches</div>}
+                <div className="mt-1 max-h-48 overflow-auto rounded border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 text-gray-800 dark:text-white/90">
+                  {pickerOptions.length === 0 && <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">No matches</div>}
                   {pickerOptions.map((i) => (
                     <button key={i.id} className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-white/5" onClick={() => addLine(i)}>
                       {i.name} <span className="text-xs text-gray-400">{i.unit}{sourceStock[i.id] != null ? ` · ${qty(sourceStock[i.id])} available` : ""}</span>
@@ -407,7 +407,7 @@ export default function StockTransfers() {
               <span>{viewing.fromLocationName} → {viewing.toLocationName}</span>
               {viewing.postedOn && <span>Posted {new Date(viewing.postedOn).toLocaleString()}</span>}
             </div>
-            {viewing.notes && <p className="mb-3 text-xs text-gray-500">{viewing.notes}</p>}
+            {viewing.notes && <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{viewing.notes}</p>}
             <Table>
               <TableHeader>
                 <TableRow>

@@ -328,7 +328,7 @@ export default function Reservations() {
       )}
 
       {!loading && !error && (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
           <div className="max-w-full overflow-x-auto">
             <Table>
               <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
@@ -345,7 +345,7 @@ export default function Reservations() {
               <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                 {rows.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className={`${td} text-center text-gray-500`}>No reservations for this day.</TableCell>
+                    <TableCell colSpan={7} className={`${td} text-center text-gray-500 dark:text-gray-400`}>No reservations for this day.</TableCell>
                   </TableRow>
                 )}
                 {rows.map((r) => (
@@ -353,10 +353,10 @@ export default function Reservations() {
                     <TableCell className={`${td} whitespace-nowrap`}>{fmtTime(r.startOn)} – {fmtTime(r.endOn)}</TableCell>
                     <TableCell className={td}>
                       <div className="font-medium text-gray-800 dark:text-white/90">{r.customerName}</div>
-                      <div className="text-xs text-gray-500">{r.phone}{r.notes ? ` · ${r.notes}` : ""}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{r.phone}{r.notes ? ` · ${r.notes}` : ""}</div>
                     </TableCell>
                     <TableCell className={td}>
-                      <span className="text-xs text-gray-500">{r.resourceType}</span>{" "}
+                      <span className="text-xs text-gray-500 dark:text-gray-400">{r.resourceType}</span>{" "}
                       {r.resourceName ?? "—"}
                     </TableCell>
                     <TableCell className={td}>{r.partySize}</TableCell>
@@ -368,18 +368,18 @@ export default function Reservations() {
                       {r.confirmationSentOn && !r.reminderSentOn && (
                         <span className="ml-1 inline-block rounded px-2 py-0.5 text-xs bg-sky-100 text-sky-800 dark:bg-sky-500/20 dark:text-sky-200" title={`Confirmation sent ${new Date(r.confirmationSentOn).toLocaleString()}`}>confirmed via WhatsApp</span>
                       )}
-                      {r.seatedTransactionId && <div className="text-xs text-gray-500">#{r.seatedTransactionId}</div>}
+                      {r.seatedTransactionId && <div className="text-xs text-gray-500 dark:text-gray-400">#{r.seatedTransactionId}</div>}
                     </TableCell>
                     <TableCell className={td}>{r.source}</TableCell>
                     <TableCell className={td}>
                       <div className="flex flex-wrap items-center gap-2">
-                        {r.status === "Pending" && <button className="text-blue-600 hover:underline" disabled={busy} onClick={() => act("Confirm", () => confirmReservation(r.id))}>Confirm</button>}
+                        {r.status === "Pending" && <button className="text-blue-600 dark:text-blue-400 hover:underline" disabled={busy} onClick={() => act("Confirm", () => confirmReservation(r.id))}>Confirm</button>}
                         {(r.status === "Pending" || r.status === "Confirmed") && (
                           <>
                             <button className="text-green-600 hover:underline" disabled={busy} onClick={() => { setSeatTarget(r); setSeatOpenSession(r.resourceType === "Table"); }}>Seat</button>
                             <button className="text-red-600 hover:underline" disabled={busy} onClick={() => act("No-show", () => noShowReservation(r.id))}>No-show</button>
-                            <button className="text-gray-600 hover:underline" disabled={busy} onClick={() => act("Cancel", () => cancelReservation(r.id))}>Cancel</button>
-                            <button className="text-gray-600 hover:underline" onClick={() => openEdit(r)}>Edit</button>
+                            <button className="text-gray-600 dark:text-gray-400 hover:underline" disabled={busy} onClick={() => act("Cancel", () => cancelReservation(r.id))}>Cancel</button>
+                            <button className="text-gray-600 dark:text-gray-400 hover:underline" onClick={() => openEdit(r)}>Edit</button>
                             <button className="text-emerald-600 hover:underline" disabled={busy} title="Send a WhatsApp reminder now" onClick={() => act("Remind", () => sendReservationReminder(r.id))}>
                               {r.reminderSentOn ? "Remind again" : "Remind"}
                             </button>

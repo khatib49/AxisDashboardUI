@@ -17,7 +17,7 @@ type Notice = { variant: "success" | "error" | "warning" | "info"; title: string
 const btn = "rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50";
 const btnPrimary = `${btn} bg-brand-500 text-white hover:bg-brand-600`;
 const btnGhost = `${btn} border border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-white/5`;
-const th = "px-4 py-3 text-left text-xs font-medium uppercase text-gray-500";
+const th = "px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400";
 const td = "px-4 py-3 text-sm text-gray-700 dark:text-gray-300";
 const selectCls = "h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90";
 
@@ -114,9 +114,9 @@ export default function TipPools() {
 
       {report && (
         <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-3">
-          <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]"><div className="text-xs uppercase text-gray-500">Distributed in range</div><div className="text-2xl font-semibold text-gray-800 dark:text-white/90">{money(report.total)}</div><div className="text-xs text-gray-500">{report.byDay.length} day(s)</div></div>
-          <div className="rounded-xl border border-gray-200 bg-white p-4 md:col-span-2 dark:border-gray-800 dark:bg-white/[0.03]">
-            <div className="mb-1 text-xs uppercase text-gray-500">By employee</div>
+          <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90"><div className="text-xs uppercase text-gray-500 dark:text-gray-400">Distributed in range</div><div className="text-2xl font-semibold text-gray-800 dark:text-white/90">{money(report.total)}</div><div className="text-xs text-gray-500 dark:text-gray-400">{report.byDay.length} day(s)</div></div>
+          <div className="rounded-xl border border-gray-200 bg-white p-4 md:col-span-2 dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
+            <div className="mb-1 text-xs uppercase text-gray-500 dark:text-gray-400">By employee</div>
             {report.byEmployee.length === 0 ? <div className="text-sm text-gray-400">Nothing distributed yet.</div> : (
               <div className="flex flex-wrap gap-2">{report.byEmployee.map((e) => <span key={e.employeeId} className="rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-700 dark:bg-white/10 dark:text-gray-200">{e.employeeName}: <b>{money(e.amount)}</b></span>)}</div>
             )}
@@ -126,9 +126,9 @@ export default function TipPools() {
 
       {error && <Alert variant="error" title="Error" message={error} />}
       {loading ? <div className="flex justify-center py-10"><Loader /></div> : pools.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-gray-300 p-10 text-center text-gray-500 dark:border-gray-700">No tip pools in this range.</div>
+        <div className="rounded-lg border border-dashed border-gray-300 p-10 text-center text-gray-500 dark:text-gray-400 dark:border-gray-700">No tip pools in this range.</div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+        <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
           <Table>
             <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]"><TableRow>{["Date", "Total", "Method", "Staff", "Status", "By", ""].map((h) => <TableCell key={h} isHeader className={th}>{h}</TableCell>)}</TableRow></TableHeader>
             <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
@@ -144,8 +144,8 @@ export default function TipPools() {
                     <TableCell className="px-4 py-3 text-right text-sm">
                       {p.status === "Draft" ? (
                         <span className="flex justify-end gap-3">
-                          <button className="text-brand-500 hover:underline" disabled={busy} onClick={() => openEdit(p)}>Edit</button>
-                          <button className="text-gray-500 hover:underline" disabled={busy} onClick={() => act(() => computeTipPool(p.id), "Recompute")}>Recompute</button>
+                          <button className="text-brand-500 dark:text-brand-400 hover:underline" disabled={busy} onClick={() => openEdit(p)}>Edit</button>
+                          <button className="text-gray-500 dark:text-gray-400 hover:underline" disabled={busy} onClick={() => act(() => computeTipPool(p.id), "Recompute")}>Recompute</button>
                           <button className="text-success-600 hover:underline" disabled={busy} onClick={() => act(() => distributeTipPool(p.id), "Distribute")}>Distribute</button>
                           <DeleteIconButton onClick={() => setDeleteId(p.id)} />
                         </span>
@@ -157,10 +157,10 @@ export default function TipPools() {
                       <TableCell colSpan={7} className="bg-gray-50 px-6 py-3 dark:bg-white/[0.02]">
                         {p.allocations.length === 0 ? <span className="text-sm text-gray-400">No staff in this pool.</span> : (
                           <div className="flex flex-wrap gap-2">
-                            {p.allocations.map((a) => <span key={a.id} className="rounded-lg border border-gray-200 bg-white px-3 py-1 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">{a.employeeName}: <b>{money(a.amount)}</b>{p.method === "ByHours" ? <span className="text-xs text-gray-500"> · {a.hours ?? 0}h</span> : p.method === "ByPoints" ? <span className="text-xs text-gray-500"> · {a.points ?? 0} pts</span> : null}</span>)}
+                            {p.allocations.map((a) => <span key={a.id} className="rounded-lg border border-gray-200 bg-white px-3 py-1 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">{a.employeeName}: <b>{money(a.amount)}</b>{p.method === "ByHours" ? <span className="text-xs text-gray-500 dark:text-gray-400"> · {a.hours ?? 0}h</span> : p.method === "ByPoints" ? <span className="text-xs text-gray-500 dark:text-gray-400"> · {a.points ?? 0} pts</span> : null}</span>)}
                           </div>
                         )}
-                        {p.notes && <div className="mt-2 text-xs text-gray-500">{p.notes}</div>}
+                        {p.notes && <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">{p.notes}</div>}
                       </TableCell>
                     </TableRow>
                   )}
@@ -185,19 +185,19 @@ export default function TipPools() {
         </div>
         <div className="mt-4">
           <div className="mb-2 flex items-center justify-between"><Label>Staff in this pool ({parts.length})</Label>
-            <span className="flex gap-3 text-xs"><button className="text-brand-500" onClick={() => setParts(employees.map((e) => ({ employeeId: e.id, points: "1" })))}>All</button><button className="text-gray-500" onClick={() => setParts([])}>None</button></span>
+            <span className="flex gap-3 text-xs"><button className="text-brand-500 dark:text-brand-400" onClick={() => setParts(employees.map((e) => ({ employeeId: e.id, points: "1" })))}>All</button><button className="text-gray-500 dark:text-gray-400" onClick={() => setParts([])}>None</button></span>
           </div>
           {employees.length === 0 ? <div className="text-sm text-gray-400">No active employees.</div> : (
             <div className="grid max-h-72 grid-cols-1 gap-2 overflow-auto md:grid-cols-2">
               {employees.map((e) => { const p = parts.find((x) => x.employeeId === e.id); return (
                 <label key={e.id} className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${p ? "border-brand-300 bg-brand-50/40 dark:border-brand-800 dark:bg-brand-500/10" : "border-gray-200 dark:border-gray-700"}`}>
                   <input type="checkbox" checked={!!p} onChange={() => toggle(e.id)} />
-                  <span className="flex-1 text-gray-800 dark:text-white/90">{e.fullName}<span className="text-xs text-gray-500"> {e.position || ""}</span></span>
+                  <span className="flex-1 text-gray-800 dark:text-white/90">{e.fullName}<span className="text-xs text-gray-500 dark:text-gray-400"> {e.position || ""}</span></span>
                   {pf.method === "ByPoints" && p && <input type="number" className="w-20 rounded border border-gray-300 bg-transparent px-2 py-1 text-sm dark:border-gray-700" value={p.points} onChange={(ev) => setParts((ps) => ps.map((x) => (x.employeeId === e.id ? { ...x, points: ev.target.value } : x)))} />}
                 </label>); })}
             </div>
           )}
-          {pf.method === "ByHours" && <p className="mt-2 text-xs text-gray-500">Shares are weighted by minutes clocked on {pf.date}; staff with no closed attendance that day get 0.</p>}
+          {pf.method === "ByHours" && <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Shares are weighted by minutes clocked on {pf.date}; staff with no closed attendance that day get 0.</p>}
         </div>
       </Modal>
 

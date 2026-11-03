@@ -202,7 +202,7 @@ export default function ReorderSuggestions() {
 
   const tabBtn = (key: typeof tab, label: string) => (
     <button
-      className={`px-4 py-2 text-sm font-medium border-b-2 ${tab === key ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400"}`}
+      className={`px-4 py-2 text-sm font-medium border-b-2 ${tab === key ? "border-blue-600 text-blue-600 dark:text-blue-400" : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400"}`}
       onClick={() => setTab(key)}
     >
       {label}
@@ -248,7 +248,7 @@ export default function ReorderSuggestions() {
               <option value="">All suppliers</option>
               {supplierOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
             </select>
-            <button className="text-sm text-blue-600 hover:underline" onClick={load}>Refresh</button>
+            <button className="text-sm text-blue-600 dark:text-blue-400 hover:underline" onClick={load}>Refresh</button>
             <div className="ml-auto flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
               <span>{selectedRows.length} selected · est. <b>{money(selectedCost)}</b></span>
               <button className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-50" disabled={preparing || selectedRows.length === 0} onClick={prepare}>
@@ -257,7 +257,7 @@ export default function ReorderSuggestions() {
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
             <div className="max-w-full overflow-x-auto">
               <Table>
                 <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
@@ -297,9 +297,9 @@ export default function ReorderSuggestions() {
                       <TableCell className={td}>{s.lastPurchaseOn ? new Date(s.lastPurchaseOn).toLocaleDateString() : "—"}{s.lastPurchaseUnitCost != null && <div className="text-xs text-gray-400">@ {money(s.lastPurchaseUnitCost)}</div>}</TableCell>
                       <TableCell className={td}>
                         {s.hasRule ? (
-                          <button className="text-blue-600 hover:underline" onClick={() => { const r = rules.find((x) => x.ingredientId === s.ingredientId); if (r) openEditRule(r); }}>Rule</button>
+                          <button className="text-blue-600 dark:text-blue-400 hover:underline" onClick={() => { const r = rules.find((x) => x.ingredientId === s.ingredientId); if (r) openEditRule(r); }}>Rule</button>
                         ) : (
-                          <button className="text-gray-500 hover:underline" onClick={() => openCreateRule(s.ingredientId)}>Add rule</button>
+                          <button className="text-gray-500 dark:text-gray-400 hover:underline" onClick={() => openCreateRule(s.ingredientId)}>Add rule</button>
                         )}
                       </TableCell>
                     </TableRow>
@@ -319,7 +319,7 @@ export default function ReorderSuggestions() {
           <div className="mb-4 flex justify-end">
             <button className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition" onClick={() => openCreateRule()}>+ Add Rule</button>
           </div>
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
             <div className="max-w-full overflow-x-auto">
               <Table>
                 <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
@@ -347,7 +347,7 @@ export default function ReorderSuggestions() {
                       <TableCell className={td}>{r.isActive ? "Yes" : "No"}</TableCell>
                       <TableCell className={td}>
                         <div className="flex items-center gap-3">
-                          <button className="text-blue-600 hover:underline" onClick={() => openEditRule(r)}>Edit</button>
+                          <button className="text-blue-600 dark:text-blue-400 hover:underline" onClick={() => openEditRule(r)}>Edit</button>
                           <DeleteIconButton onClick={() => removeRule(r)} />
                         </div>
                       </TableCell>
@@ -367,7 +367,7 @@ export default function ReorderSuggestions() {
         className="max-w-lg"
         footer={
           <>
-            <button className="px-4 py-2 rounded border dark:border-white/10" onClick={() => setIsRuleOpen(false)} disabled={submitting}>Cancel</button>
+            <button className="px-4 py-2 rounded border dark:border-white/10 text-gray-700 dark:text-gray-300" onClick={() => setIsRuleOpen(false)} disabled={submitting}>Cancel</button>
             <button className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50" onClick={submitRule} disabled={submitting}>{submitting ? "Saving..." : "Save"}</button>
           </>
         }

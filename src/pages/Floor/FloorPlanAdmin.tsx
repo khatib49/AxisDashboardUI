@@ -245,14 +245,14 @@ export default function FloorPlanAdmin() {
       {!loading && !error && (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           {/* Areas */}
-          <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] p-4">
+          <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] p-4 text-gray-800 dark:text-white/90">
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-semibold text-gray-800 dark:text-white/90">Areas</h2>
               <button className={`${btn} bg-blue-600 text-white hover:bg-blue-700`} onClick={openAreaCreate}>
                 + Area
               </button>
             </div>
-            {areas.length === 0 && <p className="text-sm text-gray-500">No areas yet. Create one to start placing tables.</p>}
+            {areas.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400">No areas yet. Create one to start placing tables.</p>}
             <ul className="space-y-1">
               {areas.map((a) => (
                 <li
@@ -269,13 +269,13 @@ export default function FloorPlanAdmin() {
                     <div className={`text-sm font-medium ${a.isActive ? "text-gray-800 dark:text-white/90" : "text-gray-400 line-through"}`}>
                       {a.name}
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
                       {a.tableCount} table{a.tableCount === 1 ? "" : "s"} · order {a.sortOrder}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
-                      className="text-xs text-blue-600 hover:underline"
+                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
                       onClick={(e) => {
                         e.stopPropagation();
                         openAreaEdit(a);
@@ -292,7 +292,7 @@ export default function FloorPlanAdmin() {
 
           {/* Preview + table list */}
           <div className="lg:col-span-3 space-y-4">
-            <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] p-4">
+            <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] p-4 text-gray-800 dark:text-white/90">
               <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                 <h2 className="font-semibold text-gray-800 dark:text-white/90">
                   Layout preview {selectedAreaId ? `— ${areas.find((a) => a.id === selectedAreaId)?.name ?? ""}` : ""}
@@ -311,7 +311,7 @@ export default function FloorPlanAdmin() {
                 </div>
               </div>
 
-              {!selectedAreaId && <p className="text-sm text-gray-500">Select an area to see its tables.</p>}
+              {!selectedAreaId && <p className="text-sm text-gray-500 dark:text-gray-400">Select an area to see its tables.</p>}
               {selectedAreaId && (
                 <div className="flex flex-col xl:flex-row gap-4">
                   <div className="overflow-auto">
@@ -341,7 +341,7 @@ export default function FloorPlanAdmin() {
                                 ? "border-blue-600 bg-blue-100 text-blue-900 dark:bg-blue-500/30 dark:text-white"
                                 : t.isActive
                                 ? "border-gray-400 bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-white"
-                                : "border-gray-300 bg-gray-50 text-gray-400 dark:bg-gray-800"
+                                : "border-gray-300 dark:border-gray-700 bg-gray-50 text-gray-400 dark:bg-gray-800"
                             }`}
                             style={{ left: g.posX * CELL, top: g.posY * CELL, width: g.width * CELL, height: g.height * CELL }}
                           >
@@ -354,7 +354,7 @@ export default function FloorPlanAdmin() {
                   </div>
 
                   <div className="w-full xl:w-64 rounded border border-gray-200 dark:border-white/[0.05] p-3">
-                    {!selectedTable && <p className="text-sm text-gray-500">Click a table in the preview to adjust its position and size.</p>}
+                    {!selectedTable && <p className="text-sm text-gray-500 dark:text-gray-400">Click a table in the preview to adjust its position and size.</p>}
                     {selectedTable && (
                       <div className="space-y-2">
                         <div className="font-medium text-gray-800 dark:text-white/90">
@@ -381,7 +381,7 @@ export default function FloorPlanAdmin() {
               )}
             </div>
 
-            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
               <div className="max-w-full overflow-x-auto">
                 <Table>
                   <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
@@ -398,7 +398,7 @@ export default function FloorPlanAdmin() {
                   <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                     {areaTables.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={7} className={`${td} text-center text-gray-500`}>
+                        <TableCell colSpan={7} className={`${td} text-center text-gray-500 dark:text-gray-400`}>
                           {selectedAreaId ? "No tables in this area yet." : "Select an area."}
                         </TableCell>
                       </TableRow>
@@ -417,7 +417,7 @@ export default function FloorPlanAdmin() {
                           <TableCell className={td}>{t.isActive ? "Yes" : "No"}</TableCell>
                           <TableCell className={td}>
                             <div className="flex items-center gap-3">
-                              <button className="text-blue-600 hover:underline" onClick={() => openTableEdit(t)}>
+                              <button className="text-blue-600 dark:text-blue-400 hover:underline" onClick={() => openTableEdit(t)}>
                                 Edit
                               </button>
                               <DeleteIconButton onClick={() => setDeleteTarget({ kind: "table", id: t.id, label: `${t.code} — ${t.name}` })} />

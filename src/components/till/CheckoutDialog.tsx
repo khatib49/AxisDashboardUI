@@ -124,20 +124,20 @@ export default function CheckoutDialog({ isOpen, onClose, invoiceId, total, onIn
         <div className="space-y-4">
           <div className="rounded-xl border border-gray-200 p-4 dark:border-gray-700">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">Invoice total</span>
+              <span className="text-gray-500 dark:text-gray-400">Invoice total</span>
               <span className="text-xl font-bold text-orange-600">${total.toFixed(2)}</span>
             </div>
             <div className="mt-2 flex items-center justify-between text-sm">
-              <span className="text-gray-500">Tenders recorded</span>
+              <span className="text-gray-500 dark:text-gray-400">Tenders recorded</span>
               <span className="font-medium">{loadingSummary ? <Loader size={12} /> : `$${paid.toFixed(2)}`}</span>
             </div>
             <div className="mt-1 flex items-center justify-between text-sm">
-              <span className="text-gray-500">Remaining</span>
+              <span className="text-gray-500 dark:text-gray-400">Remaining</span>
               <span className={`font-medium ${remaining <= 0 ? "text-green-600" : ""}`}>${Math.max(remaining, 0).toFixed(2)}</span>
             </div>
             {summary && summary.changeInBase > 0 && (
               <div className="mt-1 flex items-center justify-between text-sm">
-                <span className="text-gray-500">Change due</span>
+                <span className="text-gray-500 dark:text-gray-400">Change due</span>
                 <span className="font-medium text-green-600">
                   {summary.changeByCurrency.map((c) => `${c.currencyCode} ${c.amount.toLocaleString()}`).join(" / ")}
                 </span>
@@ -146,13 +146,13 @@ export default function CheckoutDialog({ isOpen, onClose, invoiceId, total, onIn
           </div>
 
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <button type="button" onClick={() => setCouponOpen(true)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-white/5">
+            <button type="button" onClick={() => setCouponOpen(true)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-white/5 text-gray-700 dark:text-gray-300">
               Coupon
             </button>
-            <button type="button" onClick={() => setGiftOpen(true)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-white/5">
+            <button type="button" onClick={() => setGiftOpen(true)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-white/5 text-gray-700 dark:text-gray-300">
               Gift card
             </button>
-            <button type="button" onClick={() => setTenderOpen(true)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-white/5">
+            <button type="button" onClick={() => setTenderOpen(true)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-white/5 text-gray-700 dark:text-gray-300">
               Tenders (USD / LBP)
             </button>
             <button type="button" onClick={() => void payWithWhish()} disabled={whishBusy || remaining <= 0} className="rounded-lg border border-emerald-500 px-3 py-2 text-sm text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 dark:text-emerald-400 dark:hover:bg-white/5">
@@ -167,20 +167,20 @@ export default function CheckoutDialog({ isOpen, onClose, invoiceId, total, onIn
               ) : (
                 <>
                   <div className="inline-block rounded-lg bg-white p-2"><QRCodeSVG value={whish.qrPayload} size={160} /></div>
-                  <p className="mt-2 text-xs text-gray-500">Customer scans with Whish · ${whish.amount.toFixed(2)} · {whishStatus ?? "Pending"}{getDisplayRegister() ? " · also on the customer display" : ""}</p>
+                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Customer scans with Whish · ${whish.amount.toFixed(2)} · {whishStatus ?? "Pending"}{getDisplayRegister() ? " · also on the customer display" : ""}</p>
                 </>
               )}
             </div>
           )}
 
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
             Coupons and gift cards reduce the invoice total. Tenders record what the customer handed over and the change due. Closing marks the invoice paid, exactly as before.
           </p>
 
           {/* Promotions currently booked (happy hour / combos / coupons) */}
           <div className="rounded-lg border border-dashed border-gray-200 px-3 py-2 text-xs dark:border-gray-700" data-testid="checkout-promotions">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-gray-500">
+              <span className="text-gray-500 dark:text-gray-400">
                 Promotions
                 {applied && applied.totalDiscount > 0 ? (
                   <span className="ml-1 font-medium text-success-700 dark:text-success-400">−${applied.totalDiscount.toFixed(2)}</span>
@@ -198,11 +198,11 @@ export default function CheckoutDialog({ isOpen, onClose, invoiceId, total, onIn
               </button>
             </div>
             <AppliedPromotionChips applied={applied} className="mt-1" />
-            {recheck.note && <p className="mt-1 text-gray-500">{recheck.note}</p>}
+            {recheck.note && <p className="mt-1 text-gray-500 dark:text-gray-400">{recheck.note}</p>}
           </div>
 
           <div className="flex justify-end gap-2 border-t border-gray-200 pt-3 dark:border-gray-700">
-            <button type="button" onClick={onClose} disabled={closing} className="rounded-lg border px-4 py-2 text-sm dark:border-gray-700">Cancel</button>
+            <button type="button" onClick={onClose} disabled={closing} className="rounded-lg border px-4 py-2 text-sm dark:border-gray-700 text-gray-700 dark:text-gray-300">Cancel</button>
             <button type="button" onClick={() => void onConfirmClose()} disabled={closing} className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50">
               {closing ? <Loader size={14} /> : null}
               Close &amp; mark paid

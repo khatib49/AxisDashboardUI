@@ -15,7 +15,7 @@ import {
 
 const errMsg = (e: unknown) => (e as { message?: string })?.message || "Request failed";
 const money = (n: number) => n.toFixed(2);
-const th = "px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase";
+const th = "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase";
 const td = "px-4 py-3 text-sm text-gray-700 dark:text-gray-200";
 
 const emptyZone: DeliveryZoneUpsertDto = { name: "", fee: 0, minOrder: 0, etaMinutes: 30, isActive: true };
@@ -96,10 +96,10 @@ export default function ZonesDrivers() {
       <PageBreadcrumb pageTitle="Delivery zones & drivers" />
       {notification && <div className="mb-4"><Alert variant={notification.variant} title={notification.title} message={notification.message} /></div>}
       {error && <div className="mb-4"><Alert variant="error" title="Could not load" message={error} /></div>}
-      {loading && <div className="flex items-center gap-2 text-gray-500 mb-4"><Loader /> Loading…</div>}
+      {loading && <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-4"><Loader /> Loading…</div>}
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <section className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-white/[0.03]">
+        <section className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800">
             <h3 className="font-semibold text-gray-800 dark:text-white/90">Zones</h3>
             <button onClick={() => { setEditingZone(null); setZoneForm(emptyZone); setZoneOpen(true); }} className="px-3 py-1.5 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700">+ Zone</button>
@@ -112,7 +112,7 @@ export default function ZonesDrivers() {
                 <TableCell isHeader className={th}>Active</TableCell><TableCell isHeader className={th}>Actions</TableCell>
               </TableRow></TableHeader>
               <TableBody>
-                {zones.length === 0 && !loading && <TableRow><TableCell colSpan={6} className={`${td} text-center text-gray-500`}>No zones yet.</TableCell></TableRow>}
+                {zones.length === 0 && !loading && <TableRow><TableCell colSpan={6} className={`${td} text-center text-gray-500 dark:text-gray-400`}>No zones yet.</TableCell></TableRow>}
                 {zones.map((z) => (
                   <TableRow key={z.id} className="border-t border-gray-100 dark:border-gray-800">
                     <TableCell className={td}>{z.name}</TableCell><TableCell className={td}>{money(z.fee)}</TableCell>
@@ -120,7 +120,7 @@ export default function ZonesDrivers() {
                     <TableCell className={td}>{z.isActive ? "Yes" : "No"}</TableCell>
                     <TableCell className={td}>
                       <div className="flex items-center gap-3">
-                        <button className="text-blue-600 hover:underline" onClick={() => { setEditingZone(z); setZoneForm({ name: z.name, fee: z.fee, minOrder: z.minOrder, etaMinutes: z.etaMinutes, isActive: z.isActive }); setZoneOpen(true); }}>Edit</button>
+                        <button className="text-blue-600 dark:text-blue-400 hover:underline" onClick={() => { setEditingZone(z); setZoneForm({ name: z.name, fee: z.fee, minOrder: z.minOrder, etaMinutes: z.etaMinutes, isActive: z.isActive }); setZoneOpen(true); }}>Edit</button>
                         <DeleteIconButton onClick={() => setConfirm({ kind: "zone", id: z.id, name: z.name })} />
                       </div>
                     </TableCell>
@@ -131,7 +131,7 @@ export default function ZonesDrivers() {
           </div>
         </section>
 
-        <section className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-white/[0.03]">
+        <section className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800">
             <h3 className="font-semibold text-gray-800 dark:text-white/90">Drivers</h3>
             <button onClick={() => { setEditingDriver(null); setDriverForm(emptyDriver); setDriverOpen(true); }} className="px-3 py-1.5 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700">+ Driver</button>
@@ -144,7 +144,7 @@ export default function ZonesDrivers() {
                 <TableCell isHeader className={th}>Active</TableCell><TableCell isHeader className={th}>Actions</TableCell>
               </TableRow></TableHeader>
               <TableBody>
-                {drivers.length === 0 && !loading && <TableRow><TableCell colSpan={6} className={`${td} text-center text-gray-500`}>No drivers yet.</TableCell></TableRow>}
+                {drivers.length === 0 && !loading && <TableRow><TableCell colSpan={6} className={`${td} text-center text-gray-500 dark:text-gray-400`}>No drivers yet.</TableCell></TableRow>}
                 {drivers.map((d) => (
                   <TableRow key={d.id} className="border-t border-gray-100 dark:border-gray-800">
                     <TableCell className={td}>{d.name}</TableCell><TableCell className={td}>{d.phone || "—"}</TableCell>
@@ -152,7 +152,7 @@ export default function ZonesDrivers() {
                     <TableCell className={td}>{d.isActive ? "Yes" : "No"}</TableCell>
                     <TableCell className={td}>
                       <div className="flex items-center gap-3">
-                        <button className="text-blue-600 hover:underline" onClick={() => { setEditingDriver(d); setDriverForm({ name: d.name, phone: d.phone ?? "", vehicleNote: d.vehicleNote ?? "", userId: d.userId ?? null, isActive: d.isActive }); setDriverOpen(true); }}>Edit</button>
+                        <button className="text-blue-600 dark:text-blue-400 hover:underline" onClick={() => { setEditingDriver(d); setDriverForm({ name: d.name, phone: d.phone ?? "", vehicleNote: d.vehicleNote ?? "", userId: d.userId ?? null, isActive: d.isActive }); setDriverOpen(true); }}>Edit</button>
                         <DeleteIconButton onClick={() => setConfirm({ kind: "driver", id: d.id, name: d.name })} />
                       </div>
                     </TableCell>
@@ -165,7 +165,7 @@ export default function ZonesDrivers() {
       </div>
 
       <Modal isOpen={zoneOpen} onClose={() => setZoneOpen(false)} title={editingZone ? "Edit zone" : "New zone"} className="max-w-lg"
-        footer={<><button onClick={() => setZoneOpen(false)} className="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700">Cancel</button><button disabled={saving || !zoneForm.name.trim()} onClick={saveZone} className="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg disabled:opacity-50">{saving ? "Saving…" : "Save"}</button></>}>
+        footer={<><button onClick={() => setZoneOpen(false)} className="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300">Cancel</button><button disabled={saving || !zoneForm.name.trim()} onClick={saveZone} className="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg disabled:opacity-50">{saving ? "Saving…" : "Save"}</button></>}>
         <div className="space-y-3">
           <div><Label>Name</Label><Input value={zoneForm.name} onChange={(e) => setZoneForm({ ...zoneForm, name: e.target.value })} /></div>
           <div className="grid grid-cols-3 gap-3">
@@ -178,7 +178,7 @@ export default function ZonesDrivers() {
       </Modal>
 
       <Modal isOpen={driverOpen} onClose={() => setDriverOpen(false)} title={editingDriver ? "Edit driver" : "New driver"} className="max-w-lg"
-        footer={<><button onClick={() => setDriverOpen(false)} className="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700">Cancel</button><button disabled={saving || !driverForm.name.trim()} onClick={saveDriver} className="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg disabled:opacity-50">{saving ? "Saving…" : "Save"}</button></>}>
+        footer={<><button onClick={() => setDriverOpen(false)} className="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300">Cancel</button><button disabled={saving || !driverForm.name.trim()} onClick={saveDriver} className="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg disabled:opacity-50">{saving ? "Saving…" : "Save"}</button></>}>
         <div className="space-y-3">
           <div><Label>Name</Label><Input value={driverForm.name} onChange={(e) => setDriverForm({ ...driverForm, name: e.target.value })} /></div>
           <div><Label>Phone</Label><Input value={driverForm.phone ?? ""} onChange={(e) => setDriverForm({ ...driverForm, phone: e.target.value })} /></div>
@@ -192,7 +192,7 @@ export default function ZonesDrivers() {
       </Modal>
 
       <Modal isOpen={!!confirm} onClose={() => setConfirm(null)} title="Remove?" className="max-w-md"
-        footer={<><button onClick={() => setConfirm(null)} className="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700">Keep</button><button onClick={doDelete} className="px-4 py-2 text-sm text-white bg-red-600 rounded-lg">Remove</button></>}>
+        footer={<><button onClick={() => setConfirm(null)} className="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300">Keep</button><button onClick={doDelete} className="px-4 py-2 text-sm text-white bg-red-600 rounded-lg">Remove</button></>}>
         <p className="text-sm text-gray-600 dark:text-gray-300">Remove {confirm?.name}? If it is used by past orders it will be deactivated instead.</p>
       </Modal>
     </div>

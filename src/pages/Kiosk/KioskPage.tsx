@@ -83,7 +83,7 @@ export default function KioskPage() {
         <div className="text-2xl mt-6">{paidOnline ? "Paid online: " : "Total to pay at the counter: "}<span className="font-bold">{money(done.total)}</span></div>
         <div className="text-lg mt-2 opacity-80">{paidOnline ? "Please wait for your number." : "Please pay at the counter and wait for your number."}</div>
         {token && done.transactionId > 0 && !paidOnline && (
-          <div className="mt-8 w-full max-w-xl text-left text-gray-900">
+          <div className="mt-8 w-full max-w-xl text-left text-gray-900 dark:text-white/90">
             <WhishPayPanel
               token={token}
               transactionId={done.transactionId}
@@ -105,24 +105,24 @@ export default function KioskPage() {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-950 text-gray-900 dark:text-white/90 select-none flex flex-col">
-      <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
+      <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between text-gray-800 dark:text-white/90">
         <h1 className="text-2xl font-bold">Order here</h1>
-        <div className="text-sm text-gray-500">{menu?.tableLabel ?? "Kiosk"}</div>
+        <div className="text-sm text-gray-500 dark:text-gray-400">{menu?.tableLabel ?? "Kiosk"}</div>
       </header>
       {toast && <div className="fixed top-20 left-1/2 -translate-x-1/2 z-30 px-5 py-3 rounded-xl bg-gray-900 text-white text-lg shadow-lg">{toast}</div>}
 
       {loading ? (
-        <div className="flex-1 flex items-center justify-center text-xl text-gray-500">Loading menu…</div>
+        <div className="flex-1 flex items-center justify-center text-xl text-gray-500 dark:text-gray-400">Loading menu…</div>
       ) : error ? (
         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
           <div className="text-5xl mb-4">⚠️</div>
           <p className="text-xl font-medium">{error}</p>
-          <p className="text-gray-500 mt-2">This kiosk is not available. Please order at the counter.</p>
+          <p className="text-gray-500 dark:text-gray-400 mt-2">This kiosk is not available. Please order at the counter.</p>
         </div>
       ) : menu && (
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_380px] min-h-0">
           <div className="flex min-h-0">
-            <aside className="w-44 shrink-0 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 overflow-auto">
+            <aside className="w-44 shrink-0 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 overflow-auto text-gray-800 dark:text-white/90">
               {menu.categories.map((c) => (
                 <button key={c.id} onClick={() => setCategory(c.id)} className={`block w-full text-left px-4 py-5 text-lg font-medium border-b border-gray-100 dark:border-gray-800 ${category === c.id ? "bg-blue-600 text-white" : ""}`}>
                   {c.name}
@@ -130,18 +130,18 @@ export default function KioskPage() {
               ))}
             </aside>
             <main className="flex-1 overflow-auto p-4 grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-4 content-start">
-              {menu.categories.length === 0 && <p className="col-span-full text-center text-gray-500 py-10 text-xl">The menu is empty.</p>}
+              {menu.categories.length === 0 && <p className="col-span-full text-center text-gray-500 dark:text-gray-400 py-10 text-xl">The menu is empty.</p>}
               {(menu.categories.find((c) => c.id === category)?.items ?? []).map((it) => {
                 const qty = cart[it.id]?.qty ?? 0;
                 return (
                   <button
                     key={it.id}
                     onClick={() => setQty(it, qty + 1)}
-                    className={`relative rounded-2xl bg-white dark:bg-gray-900 border-2 p-4 text-left min-h-[170px] flex flex-col active:scale-95 transition ${qty > 0 ? "border-blue-600" : "border-transparent"}`}
+                    className={`relative rounded-2xl bg-white dark:bg-gray-900 border-2 p-4 text-left min-h-[170px] flex flex-col active:scale-95 transition text-gray-800 dark:text-white/90 ${qty > 0 ? "border-blue-600" : "border-transparent"}`}
                   >
-                    {it.imagePath ? <img src={it.imagePath} alt="" className="w-full h-24 object-cover rounded-xl mb-2 bg-gray-100" /> : <div className="w-full h-24 rounded-xl bg-gray-100 dark:bg-gray-800 mb-2" />}
+                    {it.imagePath ? <img src={it.imagePath} alt="" className="w-full h-24 object-cover rounded-xl mb-2 bg-gray-100 dark:bg-white/10" /> : <div className="w-full h-24 rounded-xl bg-gray-100 dark:bg-gray-800 mb-2" />}
                     <div className="font-semibold text-lg leading-tight">{it.name}</div>
-                    <div className="text-gray-500 mt-auto">{money(it.price)}</div>
+                    <div className="text-gray-500 dark:text-gray-400 mt-auto">{money(it.price)}</div>
                     {qty > 0 && <span className="absolute top-3 right-3 w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-lg font-bold">{qty}</span>}
                   </button>
                 );
@@ -149,12 +149,12 @@ export default function KioskPage() {
             </main>
           </div>
 
-          <aside className="bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 flex flex-col">
+          <aside className="bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 flex flex-col text-gray-800 dark:text-white/90">
             <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-800 text-xl font-semibold">Your order</div>
             <div className="flex-1 overflow-auto px-5">
-              {lines.length === 0 ? <p className="text-gray-500 py-8 text-center text-lg">Tap items to add them</p> : lines.map((l) => (
+              {lines.length === 0 ? <p className="text-gray-500 dark:text-gray-400 py-8 text-center text-lg">Tap items to add them</p> : lines.map((l) => (
                 <div key={l.item.id} className="flex items-center gap-3 py-3 border-b border-gray-100 dark:border-gray-800">
-                  <div className="flex-1 min-w-0"><div className="font-medium truncate">{l.item.name}</div><div className="text-sm text-gray-500">{money(l.item.price * l.qty)}</div></div>
+                  <div className="flex-1 min-w-0"><div className="font-medium truncate">{l.item.name}</div><div className="text-sm text-gray-500 dark:text-gray-400">{money(l.item.price * l.qty)}</div></div>
                   <button onClick={() => setQty(l.item, l.qty - 1)} className="w-11 h-11 rounded-xl bg-gray-100 dark:bg-gray-800 text-2xl">−</button>
                   <span className="w-6 text-center text-lg font-semibold">{l.qty}</span>
                   <button onClick={() => setQty(l.item, l.qty + 1)} className="w-11 h-11 rounded-xl bg-blue-600 text-white text-2xl">+</button>
@@ -167,7 +167,7 @@ export default function KioskPage() {
               <button disabled={count === 0 || submitting} onClick={submit} className="w-full py-5 rounded-2xl bg-blue-600 text-white text-2xl font-bold disabled:opacity-40 active:scale-95 transition">
                 {submitting ? "Placing order…" : `Place order (${count})`}
               </button>
-              {count > 0 && <button onClick={() => setCart({})} className="w-full py-2 text-gray-500">Clear</button>}
+              {count > 0 && <button onClick={() => setCart({})} className="w-full py-2 text-gray-500 dark:text-gray-400">Clear</button>}
             </div>
           </aside>
         </div>

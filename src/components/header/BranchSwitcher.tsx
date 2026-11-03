@@ -78,7 +78,7 @@ export default function BranchSwitcher() {
       <Dropdown
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
-        className="absolute right-0 mt-2 w-56 rounded-xl border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-800 dark:bg-gray-900"
+        className="absolute right-0 mt-2 w-56 rounded-xl border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-800 dark:bg-gray-900 text-gray-800 dark:text-white/90"
       >
         <div className="px-2 pb-1 text-[11px] uppercase tracking-wide text-gray-400">Branch</div>
         {branches.map((b) => (
@@ -87,7 +87,7 @@ export default function BranchSwitcher() {
             type="button"
             onClick={() => choose(b.id)}
             className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-white/5 ${
-              b.id === current.id ? "font-semibold text-brand-500" : "text-gray-700 dark:text-gray-300"
+              b.id === current.id ? "font-semibold text-brand-500 dark:text-brand-400" : "text-gray-700 dark:text-gray-300"
             }`}
           >
             <span className="truncate">{b.name}</span>

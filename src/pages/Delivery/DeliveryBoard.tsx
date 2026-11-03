@@ -170,7 +170,7 @@ export default function DeliveryBoard() {
             <input type="checkbox" checked={showDone} onChange={(e) => setShowDone(e.target.checked)} />
             Show delivered / cancelled
           </label>
-          <button onClick={() => refresh(false)} className="px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
+          <button onClick={() => refresh(false)} className="px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300">
             Refresh
           </button>
           <Link to="/delivery/new" className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
@@ -186,7 +186,7 @@ export default function DeliveryBoard() {
       )}
 
       {loading && !board ? (
-        <div className="flex items-center gap-2 p-6 text-gray-500"><Loader /> Loading…</div>
+        <div className="flex items-center gap-2 p-6 text-gray-500 dark:text-gray-400"><Loader /> Loading…</div>
       ) : (
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-4">
           {columns.map((col) => (
@@ -226,7 +226,7 @@ export default function DeliveryBoard() {
         className="max-w-md"
         footer={
           <>
-            <button onClick={() => setCancelTarget(null)} className="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700">Keep</button>
+            <button onClick={() => setCancelTarget(null)} className="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300">Keep</button>
             <button onClick={onCancelConfirm} className="px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700">Cancel order</button>
           </>
         }
@@ -245,7 +245,7 @@ export default function DeliveryBoard() {
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="px-3 py-1.5 rounded-lg bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-gray-800">
+    <div className="px-3 py-1.5 rounded-lg bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-gray-800 text-gray-800 dark:text-white/90">
       <span className="text-gray-500 dark:text-gray-400 mr-1">{label}</span>
       <span className="font-semibold text-gray-800 dark:text-white/90">{value}</span>
     </div>
@@ -267,11 +267,11 @@ function OrderCard({
   const terminal = isTerminal(o.status);
   const needsDriver = o.type === "Delivery" && !terminal;
   return (
-    <div className="rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-3 shadow-sm">
+    <div className="rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-3 shadow-sm text-gray-800 dark:text-white/90">
       <div className="flex items-start justify-between gap-2">
         <button onClick={onOpen} className="text-left">
           <div className="font-semibold text-gray-800 dark:text-white/90">#{o.id} · {o.customerName}</div>
-          <div className="text-xs text-gray-500">{clock(o.createdOn)} · {o.items.length} item{o.items.length === 1 ? "" : "s"} · {money(o.total)}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">{clock(o.createdOn)} · {o.items.length} item{o.items.length === 1 ? "" : "s"} · {money(o.total)}</div>
         </button>
         <span className={`px-2 py-0.5 text-[11px] rounded-full ${o.type === "Delivery" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200"}`}>
           {o.type}
@@ -282,9 +282,9 @@ function OrderCard({
           {o.zoneName ? `${o.zoneName} · ` : ""}{o.address || "No address"}
         </div>
       )}
-      {o.phone && <div className="text-xs text-gray-500">{o.phone}</div>}
+      {o.phone && <div className="text-xs text-gray-500 dark:text-gray-400">{o.phone}</div>}
       {(o.externalSource || o.channelName) && (
-        <div className="text-[11px] text-gray-500 mt-0.5">
+        <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
           {o.channelName ?? o.externalSource}{o.externalRef ? ` #${o.externalRef}` : ""}
         </div>
       )}
@@ -321,7 +321,7 @@ function OrderCard({
           </button>
         </div>
       )}
-      {o.status === "Cancelled" && o.cancelledReason && <div className="mt-1 text-xs text-gray-500 italic">{o.cancelledReason}</div>}
+      {o.status === "Cancelled" && o.cancelledReason && <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 italic">{o.cancelledReason}</div>}
     </div>
   );
 }
@@ -336,10 +336,10 @@ function OrderDetails({ order: o }: { order: DeliveryOrderDto }) {
         <Row k="Channel" v={o.channelName || o.externalSource || "Till"} /><Row k="Created by" v={o.createdBy} />
         <Row k="Scheduled" v={o.scheduledFor ? new Date(o.scheduledFor).toLocaleString() : "ASAP"} /><Row k="Created" v={new Date(o.createdOn).toLocaleString()} />
       </div>
-      {o.address && <div><span className="text-gray-500">Address:</span> {o.address}</div>}
-      {o.notes && <div><span className="text-gray-500">Notes:</span> {o.notes}</div>}
+      {o.address && <div><span className="text-gray-500 dark:text-gray-400">Address:</span> {o.address}</div>}
+      {o.notes && <div><span className="text-gray-500 dark:text-gray-400">Notes:</span> {o.notes}</div>}
       <table className="w-full text-sm">
-        <thead><tr className="text-left text-gray-500"><th className="py-1">Item</th><th className="py-1 text-right">Qty</th><th className="py-1 text-right">Line</th></tr></thead>
+        <thead><tr className="text-left text-gray-500 dark:text-gray-400"><th className="py-1">Item</th><th className="py-1 text-right">Qty</th><th className="py-1 text-right">Line</th></tr></thead>
         <tbody>
           {o.items.map((l) => (
             <tr key={l.itemId} className="border-t border-gray-100 dark:border-gray-800">
@@ -352,7 +352,7 @@ function OrderDetails({ order: o }: { order: DeliveryOrderDto }) {
         </tbody>
       </table>
       <div>
-        <div className="text-gray-500 mb-1">History</div>
+        <div className="text-gray-500 dark:text-gray-400 mb-1">History</div>
         <ul className="space-y-0.5 text-xs">
           {o.events.map((e) => (
             <li key={e.id}>{clock(e.on)} · {e.fromStatus ? `${e.fromStatus} → ` : ""}{e.toStatus} · {e.by}{e.note ? ` — ${e.note}` : ""}</li>
@@ -364,5 +364,5 @@ function OrderDetails({ order: o }: { order: DeliveryOrderDto }) {
 }
 
 function Row({ k, v }: { k: string; v: string }) {
-  return <div><span className="text-gray-500">{k}:</span> {v}</div>;
+  return <div><span className="text-gray-500 dark:text-gray-400">{k}:</span> {v}</div>;
 }

@@ -60,24 +60,24 @@ export default function WaiterShell({
   return (
     <div className="h-dvh min-h-[100vh] flex flex-col bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white" style={{ maxWidth: "100vw" }}>
       <PageMeta title={`${title} | Waiter`} description="Handheld table service" />
-      <header className="shrink-0 flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+      <header className="shrink-0 flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 text-gray-800 dark:text-white/90">
         {back && (
           <Link to={back} className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg text-xl" aria-label="Back">‹</Link>
         )}
         <div className="flex-1 min-w-0">
           <div className="font-semibold truncate">{title}</div>
-          {subtitle && <div className="text-xs text-gray-500 truncate">{subtitle}</div>}
+          {subtitle && <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{subtitle}</div>}
         </div>
         {headerRight}
       </header>
       <main className="flex-1 min-h-0 overflow-y-auto">{children}</main>
-      {footer && <div className="shrink-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 p-3">{footer}</div>}
-      <nav className="shrink-0 grid grid-cols-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 pb-[env(safe-area-inset-bottom)]" aria-label="Waiter sections">
+      {footer && <div className="shrink-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 p-3 text-gray-800 dark:text-white/90">{footer}</div>}
+      <nav className="shrink-0 grid grid-cols-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 pb-[env(safe-area-inset-bottom)] text-gray-800 dark:text-white/90" aria-label="Waiter sections">
         {tabs.map((t) => (
           <Link
             key={t.key}
             to={t.to}
-            className={`min-h-[56px] flex flex-col items-center justify-center text-xs gap-0.5 ${current === t.key ? "text-blue-600 dark:text-blue-400 font-semibold" : "text-gray-500"}`}
+            className={`min-h-[56px] flex flex-col items-center justify-center text-xs gap-0.5 ${current === t.key ? "text-blue-600 dark:text-blue-400 font-semibold" : "text-gray-500 dark:text-gray-400"}`}
             aria-current={current === t.key ? "page" : undefined}
           >
             <span className="text-lg leading-none" aria-hidden="true">{t.icon}</span>

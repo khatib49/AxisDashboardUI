@@ -34,17 +34,17 @@ const td = "px-5 py-3 text-sm text-gray-700 dark:text-gray-300";
 
 function KpiCard({ k }: { k: BranchKpiDto }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
       <div className="flex items-start justify-between">
         <div>
           <div className="text-xs font-mono text-gray-400">{k.code}</div>
           <div className="font-semibold text-gray-800 dark:text-white/90">{k.name}</div>
         </div>
-        {k.isDefault && <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-600 dark:bg-brand-500/10">default</span>}
+        {k.isDefault && <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-600 dark:text-brand-400 dark:bg-brand-500/10">default</span>}
       </div>
       <div className="mt-4 text-2xl font-semibold text-gray-900 dark:text-white">{money(k.sales, k.currencyCode)}</div>
-      <div className="mt-1 text-xs text-gray-500">{k.orders} orders · avg {money(k.averageTicket)}</div>
-      <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
+      <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">{k.orders} orders · avg {money(k.averageTicket)}</div>
+      <div className="mt-3 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
         <span>Open invoices</span>
         <span className="font-medium text-gray-700 dark:text-gray-300">{k.openInvoices} · {money(k.openInvoicesValue)}</span>
       </div>
@@ -199,7 +199,7 @@ export default function Consolidated() {
       {!loading && !error && data && (
         <>
           {data.branches.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500 dark:border-gray-700">
+            <div className="rounded-xl border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500 dark:text-gray-400 dark:border-gray-700">
               No branches yet. Create one under Branches to see it here.
             </div>
           ) : (
@@ -209,7 +209,7 @@ export default function Consolidated() {
             </div>
           )}
 
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
             <div className="max-w-full overflow-x-auto">
               <Table>
                 <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">

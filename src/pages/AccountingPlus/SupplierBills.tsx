@@ -158,7 +158,7 @@ export default function SupplierBills() {
               {["Draft", "Open", "PartiallyPaid", "Paid", "Void"].map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
             <StateBlock loading={loading} error={error} empty={rows.length === 0} emptyText="No supplier bills yet.">
               <div className="max-w-full overflow-x-auto">
                 <Table>
@@ -215,7 +215,7 @@ export default function SupplierBills() {
               <Card title="Total payable" value={money(aging.totals.total)} />
             </div>
           )}
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
             <StateBlock loading={loading} error={error} empty={!aging || aging.rows.length === 0} emptyText="No open supplier bills.">
               <Table>
                 <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]"><TableRow>{["Supplier", "Open bills", "Current", "1-30", "31-60", "61-90", "90+", "Total"].map(th)}</TableRow></TableHeader>
@@ -240,7 +240,7 @@ export default function SupplierBills() {
       )}
 
       {tab === "due" && (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
           <StateBlock loading={loading} error={error} empty={dueSoon.length === 0} emptyText="Nothing due in the next 14 days.">
             <Table>
               <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]"><TableRow>{["Bill #", "Supplier", "Due", "Days", "Outstanding", "Status"].map(th)}</TableRow></TableHeader>

@@ -125,7 +125,7 @@ export default function GiftCardRedeem({ isOpen, onClose, transactionId, invoice
                   onKeyDown={(e) => { if (e.key === "Enter") void doLookup(); }}
                   disabled={busy}
                 />
-                <button className="rounded border px-4 py-2 text-sm dark:border-gray-700" onClick={doLookup} disabled={busy}>
+                <button className="rounded border px-4 py-2 text-sm dark:border-gray-700 text-gray-700 dark:text-gray-300" onClick={doLookup} disabled={busy}>
                   {busy && !card ? <Loader size={16} /> : "Look up"}
                 </button>
               </div>

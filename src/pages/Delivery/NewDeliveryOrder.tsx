@@ -136,7 +136,7 @@ export default function NewDeliveryOrder() {
 
       <div className="grid gap-6 lg:grid-cols-5">
         {/* Customer */}
-        <div className="lg:col-span-2 space-y-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-white/[0.03] p-4">
+        <div className="lg:col-span-2 space-y-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-white/[0.03] p-4 text-gray-800 dark:text-white/90">
           <div className="flex gap-2">
             {(["Delivery", "Takeaway"] as DeliveryOrderType[]).map((t) => (
               <button
@@ -192,7 +192,7 @@ export default function NewDeliveryOrder() {
 
         {/* Items */}
         <div className="lg:col-span-3 space-y-4">
-          <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-white/[0.03] p-4">
+          <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-white/[0.03] p-4 text-gray-800 dark:text-white/90">
             <div className="flex flex-wrap gap-2 mb-3">
               <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search items…" className="max-w-xs" />
               <select className={`${inputCls} max-w-xs`} value={selectedCategory ?? ""} onChange={(e) => setSelectedCategory(e.target.value ? Number(e.target.value) : null)}>
@@ -202,19 +202,19 @@ export default function NewDeliveryOrder() {
             </div>
             {itemsError && <Alert variant="error" title="Items" message={itemsError} />}
             {loadingItems ? (
-              <div className="flex items-center gap-2 text-gray-500 p-4"><Loader /> Loading items…</div>
+              <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 p-4"><Loader /> Loading items…</div>
             ) : items.length === 0 ? (
-              <p className="text-sm text-gray-500 p-4 text-center">No items found.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 p-4 text-center">No items found.</p>
             ) : (
               <div className="grid gap-2 grid-cols-2 md:grid-cols-3 xl:grid-cols-4 max-h-[420px] overflow-auto">
                 {items.map((it) => (
                   <button
                     key={it.id}
                     onClick={() => add(it)}
-                    className="text-left rounded-lg border border-gray-200 dark:border-gray-800 p-3 hover:border-blue-400 hover:bg-blue-50/40 dark:hover:bg-blue-900/10"
+                    className="text-left rounded-lg border border-gray-200 dark:border-gray-800 p-3 hover:border-blue-400 hover:bg-blue-50/40 dark:hover:bg-blue-900/10 text-gray-700 dark:text-gray-300"
                   >
                     <div className="text-sm font-medium text-gray-800 dark:text-white/90 line-clamp-2">{it.name}</div>
-                    <div className="text-xs text-gray-500 mt-1">{money(it.price)}{cart[it.id] ? ` · in cart ×${cart[it.id].qty}` : ""}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{money(it.price)}{cart[it.id] ? ` · in cart ×${cart[it.id].qty}` : ""}</div>
                   </button>
                 ))}
               </div>
@@ -222,10 +222,10 @@ export default function NewDeliveryOrder() {
           </div>
 
           {/* Cart */}
-          <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-white/[0.03] p-4">
+          <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-white/[0.03] p-4 text-gray-800 dark:text-white/90">
             <h3 className="font-semibold text-gray-800 dark:text-white/90 mb-2">Cart</h3>
             {lines.length === 0 ? (
-              <p className="text-sm text-gray-500">Tap items above to add them.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Tap items above to add them.</p>
             ) : (
               <table className="w-full text-sm">
                 <tbody>
@@ -234,9 +234,9 @@ export default function NewDeliveryOrder() {
                       <td className="py-1.5 text-gray-800 dark:text-white/90">{l.item.name}</td>
                       <td className="py-1.5">
                         <div className="flex items-center gap-1 justify-end">
-                          <button onClick={() => setQty(l.item.id, l.qty - 1)} className="w-7 h-7 rounded border border-gray-300 dark:border-gray-700">−</button>
+                          <button onClick={() => setQty(l.item.id, l.qty - 1)} className="w-7 h-7 rounded border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300">−</button>
                           <span className="w-8 text-center">{l.qty}</span>
-                          <button onClick={() => setQty(l.item.id, l.qty + 1)} className="w-7 h-7 rounded border border-gray-300 dark:border-gray-700">+</button>
+                          <button onClick={() => setQty(l.item.id, l.qty + 1)} className="w-7 h-7 rounded border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300">+</button>
                         </div>
                       </td>
                       <td className="py-1.5 text-right w-24">{money(l.item.price * l.qty)}</td>
@@ -252,10 +252,10 @@ export default function NewDeliveryOrder() {
               {belowMin && zone && (
                 <div className="text-xs text-red-600">Minimum order for {zone.name} is {money(zone.minOrder)}.</div>
               )}
-              <div className="text-xs text-gray-500">The fee is tracked on the delivery order; the invoice carries the items only.</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">The fee is tracked on the delivery order; the invoice carries the items only.</div>
             </div>
             <div className="mt-4 flex justify-end gap-2">
-              <button onClick={() => navigate("/delivery/board")} className="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700">Back to board</button>
+              <button onClick={() => navigate("/delivery/board")} className="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300">Back to board</button>
               <button onClick={submit} disabled={!canSubmit} className="px-5 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50">
                 {submitting ? "Creating…" : "Create open invoice"}
               </button>

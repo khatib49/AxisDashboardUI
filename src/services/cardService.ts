@@ -14,9 +14,16 @@ export type CardCreateDto = {
   cardType: string;
 };
 
+type PagedCards = { data: CardDto[]; totalCount?: number };
+
 export const getCards = async (): Promise<CardDto[]> => {
-  const res = await api.get<CardDto[]>('/card');
-  return res.data;
+  // GET /api/card may return a plain array or a paginated envelope
+  // ({ totalCount, data, ... }); unwrap `.data` in the latter case.
+  const res = await api.get<CardDto[] | PagedCards>('/card');
+  const body = res.data;
+  if (Array.isArray(body)) return body;
+  if (body && Array.isArray((body as PagedCards).data)) return (body as PagedCards).data;
+  return [];
 };
 
 export const getCard = async (id: string): Promise<CardDto> => {

@@ -161,7 +161,7 @@ export default function FixedAssets() {
         <button className={btnPrimary} onClick={() => { setForm({ ...blank, assetGlAccountId: form.assetGlAccountId, accumulatedDepGlAccountId: form.accumulatedDepGlAccountId, depExpenseGlAccountId: form.depExpenseGlAccountId }); setFormOpen(true); }}>+ New asset</button>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
         <StateBlock loading={loading} error={error} empty={visible.length === 0} emptyText="No fixed assets registered.">
           <div className="max-w-full overflow-x-auto">
             <Table>

@@ -165,24 +165,24 @@ export default function Combos() {
       <PageBreadcrumb pageTitle="Combos" />
       {notice && <div className="mb-4"><Alert variant={notice.variant} title={notice.title} message={notice.message} /></div>}
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
         <div className="mb-4 flex items-center">
-          <p className="text-sm text-gray-500">Selling a combo adds its items to the invoice at full price, then books the saving as one adjustment.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Selling a combo adds its items to the invoice at full price, then books the saving as one adjustment.</p>
           <button className="ml-auto rounded bg-brand-500 px-4 py-2 text-sm text-white" onClick={openCreate}>New combo</button>
         </div>
         {error && <Alert variant="error" title="Error" message={error} />}
         {loading ? <div className="flex justify-center py-10"><Loader /></div> : combos.length === 0 ? (
-          <div className="py-10 text-center text-gray-500">No combos yet.</div>
+          <div className="py-10 text-center text-gray-500 dark:text-gray-400">No combos yet.</div>
         ) : (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
-                <TableRow>{["Name", "Items", "Items total", "Combo price", "Saving", "Active", ""].map((h) => <TableCell key={h} isHeader className="px-3 py-3 text-left text-xs font-medium text-gray-500">{h}</TableCell>)}</TableRow>
+                <TableRow>{["Name", "Items", "Items total", "Combo price", "Saving", "Active", ""].map((h) => <TableCell key={h} isHeader className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{h}</TableCell>)}</TableRow>
               </TableHeader>
               <TableBody>
                 {combos.map((c) => (
                   <TableRow key={c.id} className="border-b border-gray-100 dark:border-white/[0.05]">
-                    <TableCell className="px-3 py-3 text-sm"><div className="font-medium">{c.name}</div>{c.description && <div className="text-xs text-gray-500">{c.description}</div>}</TableCell>
+                    <TableCell className="px-3 py-3 text-sm"><div className="font-medium">{c.name}</div>{c.description && <div className="text-xs text-gray-500 dark:text-gray-400">{c.description}</div>}</TableCell>
                     <TableCell className="px-3 py-3 text-xs">{c.items.map((i) => `${i.quantity}× ${i.itemName}`).join(", ")}</TableCell>
                     <TableCell className="px-3 py-3 text-sm">{c.itemsTotal.toFixed(2)}</TableCell>
                     <TableCell className="px-3 py-3 text-sm font-semibold">{c.price.toFixed(2)}</TableCell>
@@ -190,8 +190,8 @@ export default function Combos() {
                     <TableCell className="px-3 py-3 text-sm">{c.isActive ? "Yes" : "No"}</TableCell>
                     <TableCell className="px-3 py-3 text-right text-sm">
                       <div className="flex justify-end gap-3">
-                        <button className="text-brand-500 hover:underline" disabled={!c.isActive} onClick={() => { setSellFor(c); setSellTx(""); }}>Sell</button>
-                        <button className="text-brand-500 hover:underline" onClick={() => openEdit(c)}>Edit</button>
+                        <button className="text-brand-500 dark:text-brand-400 hover:underline" disabled={!c.isActive} onClick={() => { setSellFor(c); setSellTx(""); }}>Sell</button>
+                        <button className="text-brand-500 dark:text-brand-400 hover:underline" onClick={() => openEdit(c)}>Edit</button>
                         <DeleteIconButton onClick={() => void remove(c)} />
                       </div>
                     </TableCell>
@@ -214,20 +214,20 @@ export default function Combos() {
 
             <div className="rounded-lg border p-3 text-sm dark:border-gray-700">
               <div className="mb-2 font-medium">Items in combo</div>
-              {form.items.length === 0 && <div className="text-gray-500">Pick items from the list.</div>}
+              {form.items.length === 0 && <div className="text-gray-500 dark:text-gray-400">Pick items from the list.</div>}
               {form.items.map((l) => (
                 <div key={l.itemId} className="flex items-center gap-2 py-1">
-                  <span className="flex-1">{l.name} <span className="text-xs text-gray-500">@ {l.unitPrice.toFixed(2)}</span></span>
-                  <button className="rounded border px-2 dark:border-gray-700" onClick={() => setQty(l.itemId, l.quantity - 1)}>−</button>
+                  <span className="flex-1">{l.name} <span className="text-xs text-gray-500 dark:text-gray-400">@ {l.unitPrice.toFixed(2)}</span></span>
+                  <button className="rounded border px-2 dark:border-gray-700 text-gray-700 dark:text-gray-300" onClick={() => setQty(l.itemId, l.quantity - 1)}>−</button>
                   <span className="w-6 text-center">{l.quantity}</span>
-                  <button className="rounded border px-2 dark:border-gray-700" onClick={() => setQty(l.itemId, l.quantity + 1)}>+</button>
+                  <button className="rounded border px-2 dark:border-gray-700 text-gray-700 dark:text-gray-300" onClick={() => setQty(l.itemId, l.quantity + 1)}>+</button>
                 </div>
               ))}
               <div className="mt-2 flex justify-between border-t pt-2 dark:border-gray-700">
                 <span>Items total</span><strong>{itemsTotal.toFixed(2)}</strong>
               </div>
               {form.price !== "" && (
-                <div className="flex justify-between text-xs text-gray-500">
+                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
                   <span>Saving vs items</span><span>{Math.max(0, itemsTotal - Number(form.price)).toFixed(2)}</span>
                 </div>
               )}
@@ -238,11 +238,11 @@ export default function Combos() {
             <Label>Find items</Label>
             <Input placeholder="Search items…" value={itemSearch} onChange={(e) => setItemSearch(e.target.value)} />
             <div className="mt-2 max-h-80 overflow-auto rounded-lg border dark:border-gray-700">
-              {itemLoading ? <div className="p-3"><Loader size={18} /></div> : itemResults.length === 0 ? <div className="p-3 text-sm text-gray-500">No items.</div> : (
+              {itemLoading ? <div className="p-3"><Loader size={18} /></div> : itemResults.length === 0 ? <div className="p-3 text-sm text-gray-500 dark:text-gray-400">No items.</div> : (
                 itemResults.map((it) => (
                   <button key={it.id} type="button" className="flex w-full items-center justify-between border-b px-3 py-2 text-left text-sm hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-white/[0.03]" onClick={() => addItem(it)}>
                     <span>{it.name}</span>
-                    <span className="text-xs text-gray-500">{Number(it.price).toFixed(2)}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{Number(it.price).toFixed(2)}</span>
                   </button>
                 ))
               )}
@@ -250,7 +250,7 @@ export default function Combos() {
           </div>
 
           <div className="flex justify-end gap-2 md:col-span-2">
-            <button className="rounded border px-4 py-2 text-sm dark:border-gray-700" onClick={() => setFormOpen(false)}>Cancel</button>
+            <button className="rounded border px-4 py-2 text-sm dark:border-gray-700 text-gray-700 dark:text-gray-300" onClick={() => setFormOpen(false)}>Cancel</button>
             <button className="rounded bg-brand-500 px-4 py-2 text-sm text-white disabled:opacity-50" disabled={submitting} onClick={submit}>{submitting ? "Saving…" : "Save"}</button>
           </div>
         </div>
@@ -263,7 +263,7 @@ export default function Combos() {
             <div>{sellFor.items.map((i) => `${i.quantity}× ${i.itemName}`).join(", ")} for <strong>{sellFor.price.toFixed(2)}</strong></div>
             <div><Label>Open invoice # (leave empty to open a new invoice)</Label><Input type="number" value={sellTx} onChange={(e) => setSellTx(e.target.value)} /></div>
             <div className="flex justify-end gap-2">
-              <button className="rounded border px-4 py-2 dark:border-gray-700" onClick={() => setSellFor(null)}>Cancel</button>
+              <button className="rounded border px-4 py-2 dark:border-gray-700 text-gray-700 dark:text-gray-300" onClick={() => setSellFor(null)}>Cancel</button>
               <button className="rounded bg-brand-500 px-4 py-2 text-white disabled:opacity-50" disabled={selling} onClick={doSell}>{selling ? "Selling…" : sellTx ? "Add to invoice" : "Open new invoice"}</button>
             </div>
           </div>

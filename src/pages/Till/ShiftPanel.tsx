@@ -158,7 +158,7 @@ export default function ShiftPanel() {
           </div>
         </div>
       ) : !shift ? (
-        <div className="max-w-lg rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+        <div className="max-w-lg rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800 text-gray-800 dark:text-white/90">
           <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white">Open a shift</h3>
           <div className="space-y-4">
             <div>
@@ -168,7 +168,7 @@ export default function ShiftPanel() {
             <div>
               <Label htmlFor="float">Opening float (USD)</Label>
               <Input id="float" type="number" min="0" step={0.01} value={openingFloat} onChange={(e) => setOpeningFloat(e.target.value)} />
-              {rate > 0 && <p className="mt-1 text-xs text-gray-500">{formatDual(parseFloat(openingFloat) || 0, rate)}</p>}
+              {rate > 0 && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{formatDual(parseFloat(openingFloat) || 0, rate)}</p>}
             </div>
             <div>
               <Label htmlFor="notes">Notes (optional)</Label>
@@ -197,10 +197,10 @@ export default function ShiftPanel() {
 
           {report ? <ShiftReportView report={report} rate={rate} onPrint={() => window.print()} /> : <p className="text-sm text-gray-500">X report unavailable.</p>}
 
-          <div className="rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 print:hidden">
+          <div className="rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 print:hidden text-gray-800 dark:text-white/90">
             <h4 className="border-b border-gray-200 px-4 py-3 text-sm font-semibold dark:border-gray-700 dark:text-white">Cash movements</h4>
             {shift.movements.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-gray-500">No pay-ins or pay-outs yet.</p>
+              <p className="px-4 py-6 text-sm text-gray-500 dark:text-gray-400">No pay-ins or pay-outs yet.</p>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
@@ -222,7 +222,7 @@ export default function ShiftPanel() {
                         </TableCell>
                         <TableCell className="px-4 py-2 text-right text-sm tabular-nums">{formatUsd(m.amount)}</TableCell>
                         <TableCell className="px-4 py-2 text-sm">{m.reason}</TableCell>
-                        <TableCell className="px-4 py-2 text-sm text-gray-500">{m.createdBy}</TableCell>
+                        <TableCell className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">{m.createdBy}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -250,7 +250,7 @@ export default function ShiftPanel() {
             <div>
               <Label htmlFor="mv-amount">Amount (USD)</Label>
               <Input id="mv-amount" type="number" min="0" step={0.01} value={movement.amount} onChange={(e) => setMovement({ ...movement, amount: e.target.value })} />
-              {rate > 0 && <p className="mt-1 text-xs text-gray-500">{formatDual(parseFloat(movement.amount) || 0, rate)}</p>}
+              {rate > 0 && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{formatDual(parseFloat(movement.amount) || 0, rate)}</p>}
             </div>
             <div>
               <Label htmlFor="mv-reason">Reason</Label>
@@ -279,7 +279,7 @@ export default function ShiftPanel() {
               <Label htmlFor="counted">Counted cash (USD)</Label>
               <Input id="counted" type="number" min="0" step={0.01} value={closing.counted} onChange={(e) => setClosing({ ...closing, counted: e.target.value })} />
               {closing.counted !== "" && !Number.isNaN(parseFloat(closing.counted)) && (
-                <p className="mt-1 text-xs text-gray-500">Variance: {formatUsd(parseFloat(closing.counted) - expectedPreview)}</p>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Variance: {formatUsd(parseFloat(closing.counted) - expectedPreview)}</p>
               )}
             </div>
             <div>
@@ -295,10 +295,10 @@ export default function ShiftPanel() {
 
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
-      <p className="text-xs uppercase tracking-wide text-gray-500">{label}</p>
+    <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800 text-gray-800 dark:text-white/90">
+      <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">{label}</p>
       <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">{value}</p>
-      {sub && <p className="text-xs text-gray-500">{sub}</p>}
+      {sub && <p className="text-xs text-gray-500 dark:text-gray-400">{sub}</p>}
     </div>
   );
 }

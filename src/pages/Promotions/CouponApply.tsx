@@ -77,7 +77,7 @@ export default function CouponApply() {
       <PageBreadcrumb pageTitle="Apply Coupon" />
       <HappyHourBanner className="mb-4" />
 
-      <div className="mx-auto max-w-xl rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+      <div className="mx-auto max-w-xl rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
         {error && <div className="mb-4"><Alert variant="error" title="Coupon" message={error} /></div>}
 
         {applied ? (
@@ -102,7 +102,7 @@ export default function CouponApply() {
               </div>
             </div>
             <div className="flex justify-end gap-2">
-              <button className="rounded border px-4 py-2 text-sm dark:border-gray-700" onClick={doValidate} disabled={busy}>{busy && !check ? "Checking…" : "Check"}</button>
+              <button className="rounded border px-4 py-2 text-sm dark:border-gray-700 text-gray-700 dark:text-gray-300" onClick={doValidate} disabled={busy}>{busy && !check ? "Checking…" : "Check"}</button>
               <button className="rounded bg-brand-500 px-4 py-2 text-sm text-white disabled:opacity-50" onClick={doRedeem} disabled={busy || !check?.eligible}>{busy && check ? "Applying…" : "Apply"}</button>
             </div>
 

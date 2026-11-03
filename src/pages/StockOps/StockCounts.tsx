@@ -272,7 +272,7 @@ export default function StockCounts() {
       {error && <div className="text-red-600 bg-red-50 p-3 rounded mb-4">{error}</div>}
 
       {!loading && !error && (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
           <div className="max-w-full overflow-x-auto">
             <Table>
               <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
@@ -302,8 +302,8 @@ export default function StockCounts() {
                     <TableCell className={td}>{c.postedOn ? new Date(c.postedOn).toLocaleString() : "—"}</TableCell>
                     <TableCell className={td}>
                       <div className="flex items-center gap-3">
-                        <button className="text-blue-600 hover:underline" onClick={() => openSheet(c.id)}>{c.status === "Draft" ? "Count" : "View"}</button>
-                        {c.status === "Posted" && <button className="text-blue-600 hover:underline" onClick={() => openReport(c.id)}>Variance</button>}
+                        <button className="text-blue-600 dark:text-blue-400 hover:underline" onClick={() => openSheet(c.id)}>{c.status === "Draft" ? "Count" : "View"}</button>
+                        {c.status === "Posted" && <button className="text-blue-600 dark:text-blue-400 hover:underline" onClick={() => openReport(c.id)}>Variance</button>}
                         {c.status === "Draft" && <button className="text-red-600 hover:underline" onClick={() => cancel(c.id, c.reference)}>Cancel</button>}
                       </div>
                     </TableCell>
@@ -316,8 +316,8 @@ export default function StockCounts() {
             <div className="flex items-center justify-between px-5 py-3 text-sm text-gray-600 dark:text-gray-300">
               <span>Page {page} of {totalPages} ({totalCount} total)</span>
               <div className="flex gap-2">
-                <button className="px-3 py-1 rounded border dark:border-white/10 disabled:opacity-50" disabled={page <= 1} onClick={() => setPage(page - 1)}>Prev</button>
-                <button className="px-3 py-1 rounded border dark:border-white/10 disabled:opacity-50" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>Next</button>
+                <button className="px-3 py-1 rounded border dark:border-white/10 disabled:opacity-50 text-gray-700 dark:text-gray-300" disabled={page <= 1} onClick={() => setPage(page - 1)}>Prev</button>
+                <button className="px-3 py-1 rounded border dark:border-white/10 disabled:opacity-50 text-gray-700 dark:text-gray-300" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>Next</button>
               </div>
             </div>
           )}
@@ -332,7 +332,7 @@ export default function StockCounts() {
         className="max-w-lg"
         footer={
           <>
-            <button className="px-4 py-2 rounded border dark:border-white/10" onClick={() => setIsNewOpen(false)} disabled={creating}>Cancel</button>
+            <button className="px-4 py-2 rounded border dark:border-white/10 text-gray-700 dark:text-gray-300" onClick={() => setIsNewOpen(false)} disabled={creating}>Cancel</button>
             <button className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50" onClick={createSheet} disabled={creating}>
               {creating ? "Creating..." : "Create sheet"}
             </button>
@@ -358,7 +358,7 @@ export default function StockCounts() {
             <Label htmlFor="sc-notes">Notes</Label>
             <Input id="sc-notes" value={newNotes} onChange={(e) => setNewNotes(e.target.value)} placeholder="Month-end count" />
           </div>
-          <p className="text-xs text-gray-500">Every active ingredient is added with its current system quantity as the expected amount.</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Every active ingredient is added with its current system quantity as the expected amount.</p>
         </div>
       </Modal>
 
@@ -371,8 +371,8 @@ export default function StockCounts() {
         footer={
           sheet && sheet.status === "Draft" ? (
             <>
-              <button className="px-4 py-2 rounded border dark:border-white/10" onClick={() => setSheet(null)}>Close</button>
-              <button className="px-4 py-2 rounded border border-blue-600 text-blue-600 disabled:opacity-50" onClick={saveCounts} disabled={saving || posting || changedLines.length === 0}>
+              <button className="px-4 py-2 rounded border dark:border-white/10 text-gray-700 dark:text-gray-300" onClick={() => setSheet(null)}>Close</button>
+              <button className="px-4 py-2 rounded border border-blue-600 text-blue-600 dark:text-blue-400 disabled:opacity-50" onClick={saveCounts} disabled={saving || posting || changedLines.length === 0}>
                 {saving ? "Saving..." : `Save counts${changedLines.length ? ` (${changedLines.length})` : ""}`}
               </button>
               <button className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 disabled:opacity-50" onClick={post} disabled={saving || posting}>
@@ -380,7 +380,7 @@ export default function StockCounts() {
               </button>
             </>
           ) : (
-            <button className="px-4 py-2 rounded border dark:border-white/10" onClick={() => setSheet(null)}>Close</button>
+            <button className="px-4 py-2 rounded border dark:border-white/10 text-gray-700 dark:text-gray-300" onClick={() => setSheet(null)}>Close</button>
           )
         }
       >
@@ -406,10 +406,10 @@ export default function StockCounts() {
                 <span className="text-green-600">Surplus: <b>{money(preview.surplus)}</b></span>
               </div>
             </div>
-            {sheet.notes && <p className="mb-3 text-xs text-gray-500">{sheet.notes}</p>}
+            {sheet.notes && <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{sheet.notes}</p>}
             <div className="max-h-[55vh] overflow-auto rounded-lg border border-gray-200 dark:border-white/[0.05]">
               <Table>
-                <TableHeader className="sticky top-0 bg-white dark:bg-gray-800">
+                <TableHeader className="sticky top-0 bg-white dark:bg-gray-800 text-gray-800 dark:text-white/90">
                   <TableRow>
                     <TableCell isHeader className={th}>Ingredient</TableCell>
                     <TableCell isHeader className={`${th} text-end`}>Expected</TableCell>
@@ -469,7 +469,7 @@ export default function StockCounts() {
             </div>
             <h4 className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Top variances</h4>
             {report.topVariances.length === 0 ? (
-              <p className="text-sm text-gray-500">No variances on this stocktake.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">No variances on this stocktake.</p>
             ) : (
               <Table>
                 <TableHeader>

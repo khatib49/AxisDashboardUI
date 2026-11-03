@@ -135,7 +135,7 @@ export default function WaiterTable() {
 
       {!loading && table && !session && (
         <div className="p-3 space-y-4">
-          <div className="rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4 space-y-3">
+          <div className="rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4 space-y-3 text-gray-800 dark:text-white/90">
             <div className="font-semibold">Guests</div>
             <div className="flex items-center justify-center gap-3">
               <button type="button" className={`${neutralBtn} w-14 h-14 text-2xl`} onClick={() => setGuests((g) => Math.max(1, g - 1))} aria-label="Fewer guests">−</button>
@@ -151,9 +151,9 @@ export default function WaiterTable() {
           {!seatMode ? (
             <button type="button" className={`${neutralBtn} w-full`} onClick={startSeat}>Seat an existing open invoice</button>
           ) : (
-            <div className="rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4 space-y-3">
+            <div className="rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4 space-y-3 text-gray-800 dark:text-white/90">
               <div className="font-semibold">Open invoices</div>
-              {openInvoices.length === 0 && <p className="text-sm text-gray-500">No open F&amp;B invoices.</p>}
+              {openInvoices.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400">No open F&amp;B invoices.</p>}
               <div className="space-y-2">
                 {openInvoices.map((i) => (
                   <button key={i.id} type="button" onClick={() => setInvoiceId(i.id)}
@@ -173,11 +173,11 @@ export default function WaiterTable() {
 
       {!loading && table && session && (
         <div className="p-3 space-y-3">
-          <div className="rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4 grid grid-cols-2 gap-y-1 text-sm">
-            <span className="text-gray-500">Total</span><span className="font-semibold text-lg">{money(session.total)}</span>
-            <span className="text-gray-500">Items</span><span>{session.itemsCount}</span>
-            <span className="text-gray-500">Opened by</span><span>{session.openedBy}</span>
-            {session.notes && (<><span className="text-gray-500">Notes</span><span>{session.notes}</span></>)}
+          <div className="rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4 grid grid-cols-2 gap-y-1 text-sm text-gray-800 dark:text-white/90">
+            <span className="text-gray-500 dark:text-gray-400">Total</span><span className="font-semibold text-lg">{money(session.total)}</span>
+            <span className="text-gray-500 dark:text-gray-400">Items</span><span>{session.itemsCount}</span>
+            <span className="text-gray-500 dark:text-gray-400">Opened by</span><span>{session.openedBy}</span>
+            {session.notes && (<><span className="text-gray-500 dark:text-gray-400">Notes</span><span>{session.notes}</span></>)}
           </div>
 
           <button type="button" className={`${neutralBtn} w-full justify-between px-4`} onClick={() => setBillOpen((o) => !o)} aria-expanded={billOpen}>
@@ -186,15 +186,15 @@ export default function WaiterTable() {
           </button>
           {billOpen && (
             <div className="space-y-2">
-              {!bill && <p className="text-sm text-gray-500">{session.itemsCount === 0 ? "Nothing ordered yet." : "Bill by seat is not available right now."}</p>}
+              {!bill && <p className="text-sm text-gray-500 dark:text-gray-400">{session.itemsCount === 0 ? "Nothing ordered yet." : "Bill by seat is not available right now."}</p>}
               {bill?.seats.map((s) => (
-                <div key={s.label} className="rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
+                <div key={s.label} className="rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-800 dark:text-white/90">
                   <div className="flex items-center justify-between px-3 py-2 font-semibold text-sm border-b border-gray-100 dark:border-gray-800">
                     <span>{s.label}</span><span>{money(s.net)}</span>
                   </div>
                   {s.lines.map((l) => (
                     <div key={`${l.itemId}-${l.seatNumber ?? "t"}`} className="flex items-center justify-between px-3 py-1.5 text-sm">
-                      <span>{l.quantity}× {l.itemName} <span className="text-xs text-gray-500">c{l.courseNumber}{l.firedOn ? " · fired" : ""}</span></span>
+                      <span>{l.quantity}× {l.itemName} <span className="text-xs text-gray-500 dark:text-gray-400">c{l.courseNumber}{l.firedOn ? " · fired" : ""}</span></span>
                       <span>{money(l.lineTotal)}</span>
                     </div>
                   ))}
@@ -212,7 +212,7 @@ export default function WaiterTable() {
           <button type="button" className={`${dangerBtn} w-full`} disabled={busy} onClick={() => {
             if (window.confirm(`Release ${table.code}? The invoice stays open at the till.`)) run("Release table", () => closeSessionByTransaction(session.transactionId));
           }}>Release table (invoice stays open)</button>
-          <p className={`${tap} w-full text-xs text-gray-500 !min-h-0`}>Payment is taken at the till: "Request payment" opens the invoice in Open Invoices.</p>
+          <p className={`${tap} w-full text-xs text-gray-500 dark:text-gray-400 !min-h-0`}>Payment is taken at the till: "Request payment" opens the invoice in Open Invoices.</p>
         </div>
       )}
     </WaiterShell>

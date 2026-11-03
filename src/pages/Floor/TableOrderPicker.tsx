@@ -150,8 +150,8 @@ export default function TableOrderPicker({ transactionId, guestCount, tableLabel
 
   const shell =
     mode === "drawer"
-      ? "fixed inset-y-0 right-0 z-[100000] w-full md:w-[760px] bg-white dark:bg-gray-900 shadow-2xl flex flex-col"
-      : "flex flex-col h-full min-h-0 bg-white dark:bg-gray-900";
+      ? "fixed inset-y-0 right-0 z-[100000] w-full md:w-[760px] bg-white dark:bg-gray-900 shadow-2xl flex flex-col text-gray-800 dark:text-white/90"
+      : "flex flex-col h-full min-h-0 bg-white dark:bg-gray-900 text-gray-800 dark:text-white/90";
 
   const cartPanel = (
     <div className="flex flex-col h-full min-h-0">
@@ -160,7 +160,7 @@ export default function TableOrderPicker({ transactionId, guestCount, tableLabel
         {cartOpen && <button type="button" className={chip} onClick={() => setCartOpen(false)}>Back to menu</button>}
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-gray-100 dark:divide-white/[0.05]">
-        {cart.length === 0 && <p className="p-4 text-sm text-gray-500">Tap items to add them for {seatLabel(seat)}.</p>}
+        {cart.length === 0 && <p className="p-4 text-sm text-gray-500 dark:text-gray-400">Tap items to add them for {seatLabel(seat)}.</p>}
         {cart.map((l) => {
           const addOns = (l.item.addOns ?? []).filter((a) => a.isActive);
           const variants = (l.item.variants ?? []).filter((v) => v.isActive);
@@ -172,7 +172,7 @@ export default function TableOrderPicker({ transactionId, guestCount, tableLabel
               <div className="flex items-start gap-2">
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-gray-900 dark:text-white truncate">{l.item.name}</div>
-                  <div className="text-xs text-gray-500">{money(lineTotal(l))}{problem ? <span className="ml-2 text-amber-600">{problem}</span> : null}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{money(lineTotal(l))}{problem ? <span className="ml-2 text-amber-600">{problem}</span> : null}</div>
                 </div>
                 <div className="flex items-center gap-1">
                   <button type="button" className={stepBtn} aria-label="Less" onClick={() => setQty(l.key, l.quantity - 1)}>−</button>
@@ -205,7 +205,7 @@ export default function TableOrderPicker({ transactionId, guestCount, tableLabel
                 <div className="rounded-lg bg-gray-50 dark:bg-white/[0.03] p-2 space-y-2">
                   {addOns.length > 0 && (
                     <div>
-                      <div className="text-xs font-semibold text-gray-500 mb-1">Add-ons (per unit)</div>
+                      <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Add-ons (per unit)</div>
                       <div className="flex flex-wrap gap-2">
                         {addOns.map((a) => {
                           const q = l.addOns[a.id] ?? 0;
@@ -229,16 +229,16 @@ export default function TableOrderPicker({ transactionId, guestCount, tableLabel
                   )}
                   {variants.length > 0 && (
                     <div>
-                      <div className="text-xs font-semibold text-gray-500 mb-1">Options — pick {l.quantity}</div>
+                      <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Options — pick {l.quantity}</div>
                       <div className="space-y-1">
                         {variants.map((v) => {
                           const q = l.variants[v.id] ?? 0;
                           return (
                             <div key={v.id} className="flex items-center gap-2">
                               <span className="flex-1 text-sm text-gray-800 dark:text-gray-100">
-                                {v.color && <i className="inline-block w-3 h-3 rounded-full mr-1 align-middle border border-gray-300" style={{ background: v.color }} />}
+                                {v.color && <i className="inline-block w-3 h-3 rounded-full mr-1 align-middle border border-gray-300 dark:border-gray-700" style={{ background: v.color }} />}
                                 {v.name}{v.priceDelta ? ` (${v.priceDelta > 0 ? "+" : ""}${money(v.priceDelta)})` : ""}
-                                <span className="text-xs text-gray-500"> · {v.quantity} in stock</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400"> · {v.quantity} in stock</span>
                               </span>
                               <button type="button" className={stepBtn} aria-label="Less" disabled={q <= 0} onClick={() => update(l.key, (x) => ({ ...x, variants: { ...x.variants, [v.id]: Math.max(0, q - 1) } }))}>−</button>
                               <span className="w-6 text-center text-sm">{q}</span>
@@ -279,19 +279,19 @@ export default function TableOrderPicker({ transactionId, guestCount, tableLabel
       <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-200 dark:border-gray-700">
         <div className="flex-1 min-w-0">
           <div className="font-semibold text-gray-900 dark:text-white truncate">Order · {tableLabel}</div>
-          <div className="text-xs text-gray-500">Invoice #{transactionId} · {guestCount} guest{guestCount === 1 ? "" : "s"}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">Invoice #{transactionId} · {guestCount} guest{guestCount === 1 ? "" : "s"}</div>
         </div>
         <button type="button" className={chip} onClick={onClose} aria-label="Close">✕</button>
       </div>
 
       {/* seat + course selector */}
       <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2 overflow-x-auto">
-        <span className="text-xs text-gray-500 shrink-0">Adding for</span>
+        <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0">Adding for</span>
         <button type="button" className={seat === null ? chipOn : chip} onClick={() => setSeat(null)}>Table</button>
         {seats.map((n) => (
           <button key={n} type="button" className={seat === n ? chipOn : chip} onClick={() => setSeat(n)}>Seat {n}</button>
         ))}
-        <label className="ml-auto shrink-0 inline-flex items-center gap-1 text-xs text-gray-500">
+        <label className="ml-auto shrink-0 inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
           Course
           <select
             className="min-h-[44px] rounded-lg border border-gray-300 px-2 text-sm bg-white dark:bg-gray-800 dark:text-white dark:border-gray-600"
@@ -326,7 +326,7 @@ export default function TableOrderPicker({ transactionId, guestCount, tableLabel
           <div className="flex-1 min-h-0 overflow-y-auto px-3 pb-3">
             {error && <div className="text-sm text-red-600 bg-red-50 dark:bg-red-500/10 rounded p-2 mb-2">{error}</div>}
             {loading && items.length === 0 && <div className="flex justify-center py-8"><Loader /></div>}
-            {!loading && items.length === 0 && !error && <p className="text-sm text-gray-500 py-6 text-center">No items match.</p>}
+            {!loading && items.length === 0 && !error && <p className="text-sm text-gray-500 dark:text-gray-400 py-6 text-center">No items match.</p>}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {items.map((it) => {
                 const inCart = cart.filter((l) => l.item.id === it.id).reduce((s, l) => s + l.quantity, 0);
@@ -336,10 +336,10 @@ export default function TableOrderPicker({ transactionId, guestCount, tableLabel
                     key={it.id}
                     type="button"
                     onClick={() => addItem(it)}
-                    className="relative min-h-[84px] rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 text-left active:border-blue-500 active:bg-blue-50 dark:active:bg-blue-500/10"
+                    className="relative min-h-[84px] rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 text-left active:border-blue-500 active:bg-blue-50 dark:active:bg-blue-500/10 text-gray-800 dark:text-white/90"
                   >
                     <div className="font-medium text-gray-900 dark:text-white leading-tight line-clamp-2">{it.name}</div>
-                    <div className="mt-1 text-sm text-gray-600 dark:text-gray-300">{money(it.price)}{extras ? <span className="ml-1 text-xs text-blue-600">· options</span> : null}</div>
+                    <div className="mt-1 text-sm text-gray-600 dark:text-gray-300">{money(it.price)}{extras ? <span className="ml-1 text-xs text-blue-600 dark:text-blue-400">· options</span> : null}</div>
                     {inCart > 0 && (
                       <span className="absolute top-2 right-2 min-w-[24px] h-6 px-1 rounded-full bg-blue-600 text-white text-xs font-bold inline-flex items-center justify-center">{inCart}</span>
                     )}
@@ -349,7 +349,7 @@ export default function TableOrderPicker({ transactionId, guestCount, tableLabel
             </div>
           </div>
           {mode === "page" && (
-            <div className="p-3 border-t border-gray-200 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-900">
+            <div className="p-3 border-t border-gray-200 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-900 text-gray-800 dark:text-white/90">
               <button type="button" className={`${tap} w-full h-12 bg-gray-900 text-white dark:bg-white dark:text-gray-900 text-base`} onClick={() => setCartOpen(true)} disabled={cart.length === 0}>
                 Review order · {count} item{count === 1 ? "" : "s"} · {money(total)}
               </button>
@@ -359,7 +359,7 @@ export default function TableOrderPicker({ transactionId, guestCount, tableLabel
 
         {/* cart */}
         {mode === "drawer" && <div className="w-[340px] shrink-0 border-l border-gray-200 dark:border-gray-700 hidden md:flex flex-col min-h-0">{cartPanel}</div>}
-        {mode === "drawer" && cartOpen && <div className="md:hidden absolute inset-0 bg-white dark:bg-gray-900 flex flex-col">{cartPanel}</div>}
+        {mode === "drawer" && cartOpen && <div className="md:hidden absolute inset-0 bg-white dark:bg-gray-900 flex flex-col text-gray-800 dark:text-white/90">{cartPanel}</div>}
         {mode === "page" && cartOpen && <div className="flex-1 min-h-0 flex flex-col">{cartPanel}</div>}
       </div>
 

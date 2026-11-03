@@ -76,7 +76,7 @@ export default function ReservationRequest() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
       <PageMeta title="Reserve | Axis" description="Request a table, gaming room or console reservation" />
-      <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-gray-800 shadow-lg p-6 md:p-8">
+      <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-gray-800 shadow-lg p-6 md:p-8 text-gray-800 dark:text-white/90">
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Reserve at Axis</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-6">
           Send us a request and we will confirm it shortly by phone or WhatsApp.
@@ -169,7 +169,7 @@ export default function ReservationRequest() {
             <button type="submit" disabled={submitting} className="w-full h-11 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50">
               {submitting ? "Sending…" : "Send request"}
             </button>
-            <p className="text-xs text-gray-500 text-center">Requests are pending until our team confirms them. Max 3 pending requests per phone number.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 text-center">Requests are pending until our team confirms them. Max 3 pending requests per phone number.</p>
           </form>
         )}
       </div>

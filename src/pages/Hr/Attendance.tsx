@@ -18,7 +18,7 @@ type Tab = "records" | "daily" | "timesheet";
 const btn = "rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50";
 const btnPrimary = `${btn} bg-brand-500 text-white hover:bg-brand-600`;
 const btnGhost = `${btn} border border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-white/5`;
-const th = "px-4 py-3 text-left text-xs font-medium uppercase text-gray-500";
+const th = "px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400";
 const td = "px-4 py-3 text-sm text-gray-700 dark:text-gray-300";
 const selectCls = "h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90";
 
@@ -113,8 +113,8 @@ export default function Attendance() {
     </select>
   );
 
-  const empty = (msg: string) => <div className="rounded-lg border border-dashed border-gray-300 p-10 text-center text-gray-500 dark:border-gray-700">{msg}</div>;
-  const wrap = (children: React.ReactNode) => <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">{children}</div>;
+  const empty = (msg: string) => <div className="rounded-lg border border-dashed border-gray-300 p-10 text-center text-gray-500 dark:text-gray-400 dark:border-gray-700">{msg}</div>;
+  const wrap = (children: React.ReactNode) => <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90">{children}</div>;
 
   return (
     <div>
@@ -124,7 +124,7 @@ export default function Attendance() {
 
       <div className="mb-4 flex gap-1 border-b border-gray-200 dark:border-gray-800">
         {([["records", "Records"], ["daily", "Daily summary"], ["timesheet", "Monthly timesheet"]] as [Tab, string][]).map(([k, l]) => (
-          <button key={k} onClick={() => setTab(k)} className={`-mb-px border-b-2 px-4 py-2 text-sm ${tab === k ? "border-brand-500 text-brand-500" : "border-transparent text-gray-500"}`}>{l}</button>
+          <button key={k} onClick={() => setTab(k)} className={`-mb-px border-b-2 px-4 py-2 text-sm ${tab === k ? "border-brand-500 text-brand-500 dark:text-brand-400" : "border-transparent text-gray-500 dark:text-gray-400"}`}>{l}</button>
         ))}
       </div>
 
@@ -208,7 +208,7 @@ export default function Attendance() {
             <>
               <div className="mb-3 grid grid-cols-2 gap-3 md:grid-cols-4">
                 {[["Employee", sheet.employeeName], ["Hourly rate", sheet.hourlyRate != null ? String(sheet.hourlyRate) : "—"], ["Total hours", hm(sheet.totalMinutes)], ["Amount", sheet.totalAmount.toFixed(2)]].map(([l, v]) => (
-                  <div key={l} className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]"><div className="text-xs uppercase text-gray-500">{l}</div><div className="text-lg font-semibold text-gray-800 dark:text-white/90">{v}</div></div>
+                  <div key={l} className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90"><div className="text-xs uppercase text-gray-500 dark:text-gray-400">{l}</div><div className="text-lg font-semibold text-gray-800 dark:text-white/90">{v}</div></div>
                 ))}
               </div>
               {sheet.rows.length === 0 ? empty("No attendance this month.") : wrap(
