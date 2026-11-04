@@ -1,10 +1,15 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import Model3DViewer from "./Model3DViewer";
 import type { PublicItemModelDto } from "../../services/phase4Service";
 
 type Props = { model?: PublicItemModelDto | null; name: string; className?: string };
 
-/** Small "3D" button for menu cards; opens the viewer in a full-screen sheet. */
+/**
+ * Small "3D" button for menu cards; opens the viewer in a full-screen sheet.
+ * The sheet is portalled to <body>: cards with transform / backdrop-filter
+ * would otherwise trap a position:fixed overlay inside the card.
+ */
 export default function Model3DButton({ model, name, className = "" }: Props) {
   const [open, setOpen] = useState(false);
   if (!model) return null;
@@ -18,7 +23,7 @@ export default function Model3DButton({ model, name, className = "" }: Props) {
       >
         3D
       </button>
-      {open && (
+      {open && createPortal(
         <div className="fixed inset-0 z-[100000] flex items-end justify-center bg-black/60 sm:items-center" role="dialog" aria-modal="true" aria-label={`${name} in 3D`} onClick={() => setOpen(false)}>
           <div className="w-full max-w-lg rounded-t-2xl bg-white p-4 dark:bg-gray-900 sm:rounded-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-2 flex items-center justify-between">
@@ -28,7 +33,8 @@ export default function Model3DButton({ model, name, className = "" }: Props) {
             <Model3DViewer model={model} alt={`3D model of ${name}`} className="h-[60vh] w-full" />
             <p className="mt-2 text-center text-xs text-gray-500 dark:text-gray-400">Drag to turn, pinch to zoom. On a phone, tap "View on your table".</p>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );
