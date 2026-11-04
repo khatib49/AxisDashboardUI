@@ -55,7 +55,7 @@ export default function ShopOrderDetail() {
       <PageMeta title={`Order ${code} — AXIS Shop`} description={`Status and details of your order ${code}.`} />
       <nav className="text-xs text-gray-500 dark:text-gray-400" aria-label="Breadcrumb"><Link to="/shop/orders" className="hover:underline">My orders</Link> / <span>{code}</span></nav>
       {!signedIn ? (
-        <div className="mt-4 max-w-md"><p className="mb-3 text-sm text-gray-500 dark:text-gray-400">Sign in to see this order.</p><ShopAuthForm /></div>
+        <div className="mt-4 max-w-md"><h1 className="mb-2 text-2xl font-bold">Order {code}</h1><p className="mb-3 text-sm text-gray-500 dark:text-gray-400">Sign in to see this order.</p><ShopAuthForm /></div>
       ) : loading ? (
         <div className="mt-4 space-y-3"><div className="h-8 w-48 rounded bg-gray-200 dark:bg-gray-800 animate-pulse" /><div className="h-32 rounded-2xl bg-gray-200 dark:bg-gray-800 animate-pulse" /></div>
       ) : missing ? (
@@ -65,7 +65,10 @@ export default function ShopOrderDetail() {
           <Link to="/shop/orders" className="mt-4 inline-block text-brand-600 dark:text-brand-400 underline">Back to my orders</Link>
         </div>
       ) : error && !order ? (
+        <>
+        <h1 className="mt-4 text-2xl font-bold">Order {code}</h1>
         <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400" role="alert">{error}</div>
+        </>
       ) : order && (
         <>
           {state?.placed && <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300" role="status">Thank you! Your order has been placed{order.paymentMode === "PayAtPickup" ? " — pay when you pick it up" : ""}.</div>}
