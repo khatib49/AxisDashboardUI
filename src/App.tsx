@@ -122,6 +122,23 @@ import HrPayroll from "./pages/Hr/Payroll";
 import HrPayComponents from "./pages/Hr/PayComponents";
 import RetailBarcodes from "./pages/Retail/Barcodes";
 import Menu3DAdmin from "./pages/Phase4/Menu3DAdmin";
+import TournamentsAdmin from "./pages/Phase5/TournamentsAdmin";
+import BookingsAdmin from "./pages/Phase5/BookingsAdmin";
+import StationCodesAdmin from "./pages/Phase5/StationCodesAdmin";
+import ParentWalletAdmin from "./pages/Phase5/ParentWalletAdmin";
+import OwnerAssistantAdmin from "./pages/Phase5/OwnerAssistantAdmin";
+import IntegrationsAdmin from "./pages/Phase5/IntegrationsAdmin";
+import AlertsAdmin from "./pages/Phase5/AlertsAdmin";
+import AiForecast from "./pages/Phase5/AiForecast";
+import AiMenuImport from "./pages/Phase5/AiMenuImport";
+import AiInvoiceScan from "./pages/Phase5/AiInvoiceScan";
+import SetupWizard from "./pages/Phase5/SetupWizard";
+import AccountingExports from "./pages/Phase5/AccountingExports";
+import TournamentPublic, { TournamentListPublic } from "./pages/Phase5/public/TournamentPublic";
+import BookPublic, { BookingStatusPublic } from "./pages/Phase5/public/BookPublic";
+import StationPublic from "./pages/Phase5/public/StationPublic";
+import ParentPublic from "./pages/Phase5/public/ParentPublic";
+
 import UpsellsAdmin from "./pages/Phase4/UpsellsAdmin";
 import DeliveryPlatformsAdmin from "./pages/Phase4/DeliveryPlatformsAdmin";
 import CardTerminalsAdmin from "./pages/Phase4/CardTerminalsAdmin";
@@ -232,6 +249,12 @@ export default function App() {
             <Route path="/kiosk" element={<KioskPage />} />
             <Route path="/display" element={<CustomerDisplayPage />} />
             {/* Public storefront (client accounts, no staff layout) */}
+            <Route path="/t" element={<TournamentListPublic />} />
+            <Route path="/t/:token" element={<TournamentPublic />} />
+            <Route path="/book" element={<BookPublic />} />
+            <Route path="/book/:token" element={<BookingStatusPublic />} />
+            <Route path="/station/:token" element={<StationPublic />} />
+            <Route path="/parent/:token" element={<ParentPublic />} />
             <Route path="/shop" element={<ShopHome />} />
             <Route path="/shop/c/:categoryId" element={<ShopCategory />} />
             <Route path="/shop/p/:itemId" element={<ShopProduct />} />
@@ -357,6 +380,18 @@ export default function App() {
               <Route path="/stock/positions" element={<ProtectedRoute><BranchPositions /></ProtectedRoute>} />
               <Route path="/admin/retail/barcodes" element={<AdminRoute><RetailBarcodes /></AdminRoute>} />
               <Route path="/admin/menu-3d" element={<AdminRoute><Menu3DAdmin /></AdminRoute>} />
+              <Route path="/admin/tournaments" element={<ProtectedRoute><TournamentsAdmin /></ProtectedRoute>} />
+              <Route path="/admin/bookings" element={<ProtectedRoute><BookingsAdmin /></ProtectedRoute>} />
+              <Route path="/admin/parent-wallet" element={<ProtectedRoute><ParentWalletAdmin /></ProtectedRoute>} />
+              <Route path="/admin/station-codes" element={<AdminRoute><StationCodesAdmin /></AdminRoute>} />
+              <Route path="/admin/owner-assistant" element={<AdminRoute><OwnerAssistantAdmin /></AdminRoute>} />
+              <Route path="/admin/integrations" element={<AdminRoute><IntegrationsAdmin /></AdminRoute>} />
+              <Route path="/admin/alerts" element={<AdminRoute><AlertsAdmin /></AdminRoute>} />
+              <Route path="/admin/ai/forecast" element={<AdminRoute><AiForecast /></AdminRoute>} />
+              <Route path="/admin/ai/menu-import" element={<AdminRoute><AiMenuImport /></AdminRoute>} />
+              <Route path="/admin/ai/invoice-scan" element={<AdminRoute><AiInvoiceScan /></AdminRoute>} />
+              <Route path="/admin/setup" element={<AdminRoute><SetupWizard /></AdminRoute>} />
+              <Route path="/admin/accounting/exports" element={<AdminRoute><AccountingExports /></AdminRoute>} />
               <Route path="/admin/upsells" element={<AdminRoute><UpsellsAdmin /></AdminRoute>} />
               <Route path="/admin/delivery/platforms" element={<AdminRoute><DeliveryPlatformsAdmin /></AdminRoute>} />
               <Route path="/admin/payments/terminals" element={<AdminRoute><CardTerminalsAdmin /></AdminRoute>} />

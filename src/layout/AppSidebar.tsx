@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
+import { useI18n } from "../i18n/I18nProvider";
 import { Link, useLocation } from "react-router";
 
 // Assume these icons are imported from an icon library
@@ -71,6 +72,7 @@ const baseOthersItems: NavItem[] = [];
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
+  const { t } = useI18n();
   const { hasRole } = useAuth();
   const location = useLocation();
 
@@ -160,6 +162,7 @@ const AppSidebar: React.FC = () => {
     { name: "Menu Engineering", path: "/accounting/menu-engineering" },
     { name: "Chart of Accounts", path: "/accounting/accounts" },
     { name: "Journal Entries", path: "/accounting/journal" },
+    { name: "Accounting Exports", path: "/admin/accounting/exports" },
     { name: "Trial Balance", path: "/accounting/trial-balance" },
     { name: "General Ledger", path: "/accounting/general-ledger" },
     { name: "Bank Reconciliation", path: "/accounting-plus/bank-reconciliation" },
@@ -206,6 +209,30 @@ const AppSidebar: React.FC = () => {
             { name: "Self-Order Tables (QR)", path: "/admin/selforder/tables" },
             { name: "Kiosk Devices", path: "/admin/kiosk/devices" },
             { name: "Online Shop (public)", path: "/shop" },
+          ],
+        },
+        {
+          icon: <TicketIcon />,
+          name: "Gaming",
+          subItems: [
+            { name: "Tournaments", path: "/admin/tournaments" },
+            { name: "Station Bookings", path: "/admin/bookings" },
+            { name: "Station QR Ordering", path: "/admin/station-codes" },
+            { name: "Parent Wallet", path: "/admin/parent-wallet" },
+            { name: "Book a station (public)", path: "/book" },
+          ],
+        },
+        {
+          icon: <GridIcon />,
+          name: "Owner",
+          subItems: [
+            { name: "Setup", path: "/admin/setup" },
+            { name: "Owner Assistant", path: "/admin/owner-assistant" },
+            { name: "Owner Alerts", path: "/admin/alerts" },
+            { name: "AI Forecast", path: "/admin/ai/forecast" },
+            { name: "AI Menu Import", path: "/admin/ai/menu-import" },
+            { name: "AI Invoice Scan", path: "/admin/ai/invoice-scan" },
+            { name: "Integrations", path: "/admin/integrations" },
           ],
         },
         {
@@ -297,6 +324,9 @@ const AppSidebar: React.FC = () => {
         { icon: <PieChartIcon />, name: "Menu Engineering", path: "/accounting/menu-engineering" },
         { icon: <TableIcon />, name: "Floor", path: "/cashier/floor" },
         { icon: <CalenderIcon />, name: "Reservations", path: "/floor/reservations" },
+        { icon: <TicketIcon />, name: "Tournaments", path: "/admin/tournaments" },
+        { icon: <CalenderIcon />, name: "Station Bookings", path: "/admin/bookings" },
+        { icon: <UserCircleIcon />, name: "Parent Wallet", path: "/admin/parent-wallet" },
         { icon: <TableIcon />, name: "Waiter mode", path: "/waiter" },
         { icon: <TableIcon />, name: "Till", subItems: [
           { name: "My Shift", path: "/till/shift" },
@@ -475,7 +505,7 @@ const AppSidebar: React.FC = () => {
                 {nav.icon}
               </span>
               {(isExpanded || isHovered || isMobileOpen) && (
-                <span className="menu-item-text">{nav.name}</span>
+                <span className="menu-item-text">{t(nav.name)}</span>
               )}
               {(isExpanded || isHovered || isMobileOpen) && (
                 <ChevronDownIcon
@@ -503,7 +533,7 @@ const AppSidebar: React.FC = () => {
                   {nav.icon}
                 </span>
                 {(isExpanded || isHovered || isMobileOpen) && (
-                  <span className="menu-item-text">{nav.name}</span>
+                  <span className="menu-item-text">{t(nav.name)}</span>
                 )}
               </Link>
             )
@@ -531,7 +561,7 @@ const AppSidebar: React.FC = () => {
                         : "menu-dropdown-item-inactive"
                         }`}
                     >
-                      {subItem.name}
+                      {t(subItem.name)}
                       <span className="flex items-center gap-1 ml-auto">
                         {subItem.new && (
                           <span
@@ -567,14 +597,14 @@ const AppSidebar: React.FC = () => {
 
   return (
     <aside
-      className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200 
+      className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 rtl:left-auto rtl:right-0 rtl:border-r-0 rtl:border-l bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200 
         ${isExpanded || isMobileOpen
           ? "w-[290px]"
           : isHovered
             ? "w-[290px]"
             : "w-[90px]"
         }
-        ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
+        ${isMobileOpen ? "translate-x-0" : "-translate-x-full rtl:max-lg:translate-x-full"}
         lg:translate-x-0`}
       onMouseEnter={() => !isExpanded && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -617,7 +647,7 @@ const AppSidebar: React.FC = () => {
                   }`}
               >
                 {isExpanded || isHovered || isMobileOpen ? (
-                  "Menu"
+                  t("Menu")
                 ) : (
                   <HorizontaLDots className="size-6" />
                 )}

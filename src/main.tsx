@@ -3,6 +3,7 @@ import { ConfigProvider, theme as antdTheme } from "antd";
 import "./index.css";
 import "swiper/swiper-bundle.css";
 import "flatpickr/dist/flatpickr.css";
+import { I18nProvider } from "./i18n/I18nProvider";
 import App from "./App.tsx";
 import { AppWrapper } from "./components/common/PageMeta.tsx";
 import { ThemeProvider, useTheme } from "./context/ThemeContext.tsx";
@@ -37,6 +38,7 @@ const AntdThemeProvider = ({ children }: { children: React.ReactNode }) => {
 
 createRoot(document.getElementById("root")!).render(
 
+  <I18nProvider>
   <ThemeProvider>
     <AntdThemeProvider>
       <AppWrapper>
@@ -44,5 +46,6 @@ createRoot(document.getElementById("root")!).render(
       </AppWrapper>
     </AntdThemeProvider>
   </ThemeProvider>
+  </I18nProvider>
   ,
 );
