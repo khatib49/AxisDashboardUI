@@ -108,6 +108,8 @@ const AppSidebar: React.FC = () => {
             { name: "Categories", path: "/admin/categories" },
             { name: "Orders", path: "/admin/orders" },
             { name: "QR Generator", path: "/admin/qr-generator" },
+            { name: "Barcodes", path: "/admin/retail/barcodes" },
+            { name: "Serial Numbers", path: "/admin/retail/serials" },
           ],
         },
         {
@@ -200,6 +202,7 @@ const AppSidebar: React.FC = () => {
             { name: "Zones & Drivers", path: "/admin/delivery/zones-drivers" },
             { name: "Self-Order Tables (QR)", path: "/admin/selforder/tables" },
             { name: "Kiosk Devices", path: "/admin/kiosk/devices" },
+            { name: "Online Shop (public)", path: "/shop" },
           ],
         },
         {
@@ -211,6 +214,7 @@ const AppSidebar: React.FC = () => {
             { name: "Stock Transfers", path: "/stock/transfers" },
             { name: "Reorder Suggestions", path: "/stock/reorder" },
             { name: "Batches & Expiry", path: "/stock/batches" },
+            { name: "Branch Positions", path: "/stock/positions" },
           ],
         },
         {
@@ -221,6 +225,7 @@ const AppSidebar: React.FC = () => {
             { name: "Coupons", path: "/admin/promotions/coupons" },
             { name: "Happy Hours", path: "/admin/promotions/happy-hours" },
             { name: "Combos", path: "/admin/promotions/combos" },
+            { name: "Promotion Accounting", path: "/admin/promotions/accounting" },
             { name: "Apply Coupon", path: "/cashier/coupon" },
           ],
         },
@@ -370,6 +375,7 @@ const AppSidebar: React.FC = () => {
           { name: "Reorder Suggestions", path: "/stock/reorder" },
           { name: "Batches & Expiry", path: "/stock/batches" },
           { name: "Stock Locations", path: "/stock/locations" },
+          { name: "Branch Positions", path: "/stock/positions" },
         ] },
         { icon: <UserCircleIcon />, name: "Clock In / Out", path: "/hr/clock" },
       ];

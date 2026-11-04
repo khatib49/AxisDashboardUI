@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
+import BranchScopeBadge from "./BranchScopeBadge";
+import { useBranchScope } from "./useBranchScope";
 import Modal from "../../components/ui/Modal";
 import Input from "../../components/form/input/InputField";
 import Label from "../../components/form/Label";
@@ -44,6 +46,7 @@ function StatusPill({ status }: { status: string }) {
 }
 
 export default function StockTransfers() {
+  const { branchId } = useBranchScope();
   const [transfers, setTransfers] = useState<StockTransferDto[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
@@ -85,12 +88,14 @@ export default function StockTransfers() {
 
   useEffect(() => {
     load();
-  }, [load]);
+    // Re-run when the header BranchSwitcher changes the X-Branch-Id scope.
+  }, [load, branchId]);
 
   useEffect(() => {
     getLocations().then(setLocations).catch(() => setLocations([]));
     getIngredients().then((i) => setIngredients(i.filter((x) => x.isActive))).catch(() => setIngredients([]));
-  }, []);
+    // Locations are branch-scoped: refetch when the header BranchSwitcher changes.
+  }, [branchId]);
 
   useEffect(() => {
     if (!notice) return;
@@ -227,6 +232,7 @@ export default function StockTransfers() {
     <div className="p-6">
       <PageMeta title="Stock Transfers | Axis" description="Move stock between locations" />
       <PageBreadcrumb pageTitle="Stock Transfers" />
+      <BranchScopeBadge note={'Showing transfers touching this branch\'s locations plus shared-only ones. Move stock Main → "Main – CODE" to supply the branch.'} />
 
       {notice && (
         <div className="mb-4">

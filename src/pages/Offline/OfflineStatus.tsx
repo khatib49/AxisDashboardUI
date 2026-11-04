@@ -8,6 +8,7 @@ import DeleteIconButton from "../../components/ui/DeleteIconButton";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "../../components/ui/table";
 import { useOffline } from "../../offline/useOffline";
 import { list, QueuedOp, remove } from "../../offline/queue";
+import { isOfflineCreateOp } from "../../services/offlineService";
 import {
   getSnapshot,
   onSnapshotChange,
@@ -29,6 +30,13 @@ function describe(op: QueuedOp): string {
       return `Add ${qty} item${qty === 1 ? "" : "s"} to invoice ${formatInvoice(p.invoiceId)}`;
     case "CloseOpenInvoice":
       return `Close invoice ${formatInvoice(p.invoiceId)}${Number(p.walletAmount) > 0 ? ` (wallet ${p.walletAmount})` : ""}`;
+    case "CreateGameSession": {
+      const persons = Number(p.numberOfPersons) || 1;
+      const duration = p.isDayPass ? "day pass" : Number(p.hours) === 0 ? "open hour" : `${p.hours} h`;
+      return `Start game session · game #${p.gameId}, setting #${p.gameSettingId}, ${duration}, ${persons} person${persons === 1 ? "" : "s"}${p.setId ? `, set #${p.setId}` : ""}`;
+    }
+    case "CloseGameSession":
+      return `Close game session ${formatInvoice(p.invoiceId)}${Number(p.walletAmount) > 0 ? ` (wallet ${p.walletAmount})` : ""}`;
     default:
       return op.type;
   }
@@ -183,6 +191,7 @@ export default function OfflineStatus() {
               </p>
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 v{snapshot.data.version} · {snapshot.data.items.length} items · {snapshot.data.categories.length} categories · {snapshot.data.discounts.length} discounts
+                {snapshot.data.games ? ` · ${snapshot.data.games.length} games · ${snapshot.data.gameSettings?.length ?? 0} game settings · ${snapshot.data.rooms?.length ?? 0} rooms` : ""}
               </p>
             </>
           ) : (
@@ -201,7 +210,7 @@ export default function OfflineStatus() {
 
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] text-gray-800 dark:text-white/90">
         <div className="border-b border-gray-200 px-5 py-4 dark:border-gray-800">
-          <h3 className="text-base font-semibold text-gray-800 dark:text-white/90">Queued orders</h3>
+          <h3 className="text-base font-semibold text-gray-800 dark:text-white/90">Queued orders and game sessions</h3>
           <p className="text-xs text-gray-500 dark:text-gray-400">Sent in order, oldest first. Each is applied exactly once on the server even if it is retried.</p>
         </div>
         {loading ? (
@@ -227,7 +236,7 @@ export default function OfflineStatus() {
                   <TableRow key={op.opId}>
                     <TableCell className="px-5 py-3 text-sm text-gray-700 dark:text-gray-300">
                       {formatTime(op.queuedAt)}
-                      {op.tempId !== undefined && op.type === "CreateCoffeeShopOrder" && (
+                      {op.tempId !== undefined && isOfflineCreateOp(op.type) && (
                         <span className="ml-2 text-xs text-gray-400">{formatInvoice(op.tempId)}</span>
                       )}
                     </TableCell>

@@ -120,6 +120,19 @@ import MarketingSegments from "./pages/Marketing/Segments";
 import MarketingCampaigns from "./pages/Marketing/Campaigns";
 import HrPayroll from "./pages/Hr/Payroll";
 import HrPayComponents from "./pages/Hr/PayComponents";
+import RetailBarcodes from "./pages/Retail/Barcodes";
+import RetailLabels from "./pages/Retail/Labels";
+import RetailSerials from "./pages/Retail/Serials";
+import PromotionAccounting from "./pages/Promotions/PromotionAccounting";
+import BranchPositions from "./pages/StockOps/BranchPositions";
+import ShopHome from "./pages/Shop/ShopHome";
+import ShopCategory from "./pages/Shop/ShopCategory";
+import ShopProduct from "./pages/Shop/ShopProduct";
+import ShopCart from "./pages/Shop/ShopCart";
+import ShopCheckout from "./pages/Shop/ShopCheckout";
+import ShopOrders from "./pages/Shop/ShopOrders";
+import ShopOrderDetail from "./pages/Shop/ShopOrderDetail";
+import ShopAccount from "./pages/Shop/ShopAccount";
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { authenticated, loading } = useAuth();
@@ -214,6 +227,17 @@ export default function App() {
             <Route path="/order/:tableCode" element={<SelfOrderPage />} />
             <Route path="/kiosk" element={<KioskPage />} />
             <Route path="/display" element={<CustomerDisplayPage />} />
+            {/* Public storefront (client accounts, no staff layout) */}
+            <Route path="/shop" element={<ShopHome />} />
+            <Route path="/shop/c/:categoryId" element={<ShopCategory />} />
+            <Route path="/shop/p/:itemId" element={<ShopProduct />} />
+            <Route path="/shop/cart" element={<ShopCart />} />
+            <Route path="/shop/checkout" element={<ShopCheckout />} />
+            <Route path="/shop/orders" element={<ShopOrders />} />
+            <Route path="/shop/orders/:code" element={<ShopOrderDetail />} />
+            <Route path="/shop/account" element={<ShopAccount />} />
+            {/* Printable barcode labels: admin only, outside the layout so only labels print */}
+            <Route path="/admin/retail/labels" element={<AdminRoute><RetailLabels /></AdminRoute>} />
             {/* Handheld waiter mode: phone app shell without the sidebar layout */}
             <Route path="/waiter" element={<ProtectedRoute><WaiterHome /></ProtectedRoute>} />
             <Route path="/waiter/table/:tableId" element={<ProtectedRoute><WaiterTable /></ProtectedRoute>} />
@@ -326,6 +350,9 @@ export default function App() {
               <Route path="/stock/transfers" element={<ProtectedRoute><StockTransfers /></ProtectedRoute>} />
               <Route path="/stock/reorder" element={<ProtectedRoute><ReorderSuggestions /></ProtectedRoute>} />
               <Route path="/stock/batches" element={<ProtectedRoute><StockBatches /></ProtectedRoute>} />
+              <Route path="/stock/positions" element={<ProtectedRoute><BranchPositions /></ProtectedRoute>} />
+              <Route path="/admin/retail/barcodes" element={<AdminRoute><RetailBarcodes /></AdminRoute>} />
+              <Route path="/admin/retail/serials" element={<AdminRoute><RetailSerials /></AdminRoute>} />
 
               {/* ── Floor, tables & reservations ── */}
               <Route path="/admin/floor-plan" element={<AdminRoute><FloorPlanAdmin /></AdminRoute>} />
@@ -376,6 +403,7 @@ export default function App() {
               <Route path="/admin/promotions/coupons" element={<AdminRoute><Coupons /></AdminRoute>} />
               <Route path="/admin/promotions/happy-hours" element={<AdminRoute><HappyHours /></AdminRoute>} />
               <Route path="/admin/promotions/combos" element={<AdminRoute><Combos /></AdminRoute>} />
+              <Route path="/admin/promotions/accounting" element={<AdminRoute><PromotionAccounting /></AdminRoute>} />
               <Route path="/cashier/coupon" element={<ProtectedRoute><CouponApply /></ProtectedRoute>} />
 
               {/* ── Branches, BI & owner view ── */}

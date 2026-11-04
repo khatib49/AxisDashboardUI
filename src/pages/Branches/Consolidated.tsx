@@ -8,7 +8,14 @@ import Alert from "../../components/ui/alert/Alert";
 import Modal from "../../components/ui/Modal";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "../../components/ui/table";
 import { useAuth } from "../../context/AuthContext";
-import { BranchKpiDto, ConsolidatedDashboardDto, backfillTransactions, getConsolidated } from "../../services/branchService";
+import {
+  BranchBackfillResultDto,
+  BranchKpiDto,
+  ConsolidatedDashboardDto,
+  backfillAll,
+  backfillTransactions,
+  getConsolidated,
+} from "../../services/branchService";
 
 type Notice = { variant: "success" | "error" | "warning" | "info"; title: string; message: string };
 
@@ -64,6 +71,7 @@ export default function Consolidated() {
   const [notice, setNotice] = useState<Notice | null>(null);
   const [backfillOpen, setBackfillOpen] = useState(false);
   const [backfilling, setBackfilling] = useState(false);
+  const [backfillResult, setBackfillResult] = useState<BranchBackfillResultDto | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -89,16 +97,36 @@ export default function Consolidated() {
   async function runBackfill() {
     setBackfilling(true);
     try {
-      const r = await backfillTransactions(null);
-      if (r.success) {
-        setNotice({ variant: "success", title: "Backfill complete", message: r.message || `${r.data} transaction(s) updated.` });
+      // Phase 3 endpoint: every branch-aware table, counts per table.
+      const r = await backfillAll(null, "all");
+      if (r.success && r.data) {
+        setBackfillResult(r.data);
+        setNotice({ variant: "success", title: "Backfill complete", message: r.message || `${r.data.total} row(s) updated.` });
         setBackfillOpen(false);
         await load();
       } else {
         setNotice({ variant: "error", title: "Backfill failed", message: r.error || r.message || "Unknown error" });
       }
     } catch (err) {
-      setNotice({ variant: "error", title: "Backfill failed", message: errMessage(err, "Could not backfill transactions") });
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 404) {
+        // Older API without /branches/backfill: fall back to the transactions-only endpoint.
+        try {
+          const r = await backfillTransactions(null);
+          if (r.success) {
+            setBackfillResult(null);
+            setNotice({ variant: "success", title: "Backfill complete (transactions only)", message: r.message || `${r.data} transaction(s) updated.` });
+            setBackfillOpen(false);
+            await load();
+            return;
+          }
+          setNotice({ variant: "error", title: "Backfill failed", message: r.error || r.message || "Unknown error" });
+        } catch (err2) {
+          setNotice({ variant: "error", title: "Backfill failed", message: errMessage(err2, "Could not backfill transactions") });
+        }
+        return;
+      }
+      setNotice({ variant: "error", title: "Backfill failed", message: errMessage(err, "Could not backfill legacy rows") });
     } finally {
       setBackfilling(false);
     }
@@ -144,24 +172,57 @@ export default function Consolidated() {
       {data && data.attribution === "default-branch" && (
         <div className="mb-5">
           <Alert variant="info" title="Attribution: default branch" message={data.attributionNote} />
-          {isAdmin && defaultBranch && (
-            <div className="mt-2">
-              <button
-                type="button"
-                onClick={() => setBackfillOpen(true)}
-                className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600"
-              >
-                Backfill legacy transactions to default branch
-              </button>
+        </div>
+      )}
+
+      {isAdmin && defaultBranch && (
+        <div className="mb-5 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setBackfillOpen(true)}
+            className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600"
+          >
+            Backfill legacy rows to default branch
+          </button>
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            Stamps every row without a branch (transactions, till shifts &amp; tenders, delivery orders, reservations, tips, attendance, stock ops, promotions).
+          </span>
+        </div>
+      )}
+
+      {backfillResult && (
+        <div className="mb-5 rounded-xl border border-gray-200 bg-white p-4 dark:border-white/[0.05] dark:bg-white/[0.03] text-gray-800 dark:text-white/90" data-testid="backfill-result">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="text-sm font-semibold">
+              Backfill result · {backfillResult.total} row(s) → {backfillResult.branchName} ({backfillResult.branchCode})
             </div>
-          )}
+            <button type="button" className="text-xs text-gray-500 hover:underline dark:text-gray-400" onClick={() => setBackfillResult(null)}>Dismiss</button>
+          </div>
+          <div className="max-w-full overflow-x-auto">
+            <Table>
+              <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
+                <TableRow>
+                  <TableCell isHeader className={th}>Table</TableCell>
+                  <TableCell isHeader className={`${th} text-end`}>Rows stamped</TableCell>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
+                {backfillResult.tables.map((t) => (
+                  <TableRow key={t}>
+                    <TableCell className={`${td} font-mono text-xs`}>{t}</TableCell>
+                    <TableCell className={`${td} text-end tabular-nums ${(backfillResult.counts[t] ?? 0) > 0 ? "font-semibold" : "text-gray-400"}`}>{backfillResult.counts[t] ?? 0}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       )}
 
       <Modal
         isOpen={backfillOpen}
         onClose={() => !backfilling && setBackfillOpen(false)}
-        title="Backfill legacy transactions"
+        title="Backfill legacy rows"
         className="max-w-lg"
         footer={
           <>
@@ -185,9 +246,12 @@ export default function Consolidated() {
         }
       >
         <p className="text-sm text-gray-700 dark:text-gray-300">
-          Every transaction that has no branch yet will be stamped with the default branch
+          Every row that has no branch yet — transactions, till shifts and payment tenders, delivery orders,
+          reservations, tips, attendance records, stocktakes / transfers / batches and promotions — will be stamped
+          with the default branch
           {defaultBranch ? <> <strong>{defaultBranch.name}</strong> ({defaultBranch.code})</> : null}.
-          New sales are stamped automatically; this only touches historical rows and cannot be undone from here.
+          Stock locations are left alone (no branch there means "shared"). New rows are stamped automatically;
+          this only touches historical rows, reports the count per table and cannot be undone from here.
         </p>
       </Modal>
 

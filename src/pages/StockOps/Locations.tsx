@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
+import BranchScopeBadge from "./BranchScopeBadge";
+import { useBranchScope } from "./useBranchScope";
 import Modal from "../../components/ui/Modal";
 import Input from "../../components/form/input/InputField";
 import Label from "../../components/form/Label";
@@ -24,6 +26,7 @@ const th = "px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:te
 const td = "px-5 py-3 text-sm text-gray-700 dark:text-gray-300";
 
 export default function Locations() {
+  const { branchId } = useBranchScope();
   const [locations, setLocations] = useState<StockLocationDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +57,8 @@ export default function Locations() {
 
   useEffect(() => {
     load();
-  }, [load]);
+    // Re-run when the header BranchSwitcher changes the X-Branch-Id scope.
+  }, [load, branchId]);
 
   useEffect(() => {
     if (!notice) return;
@@ -124,6 +128,7 @@ export default function Locations() {
     <div className="p-6">
       <PageMeta title="Stock Locations | Axis" description="Manage the places stock is held" />
       <PageBreadcrumb pageTitle="Stock Locations" />
+      <BranchScopeBadge note={'Showing this branch\'s locations plus the shared ones; the branch default ("Main – CODE") holds its own stock.'} />
 
       {notice && (
         <div className="mb-4">

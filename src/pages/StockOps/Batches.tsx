@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
+import BranchScopeBadge from "./BranchScopeBadge";
+import { useBranchScope } from "./useBranchScope";
 import Modal from "../../components/ui/Modal";
 import Input from "../../components/form/input/InputField";
 import Label from "../../components/form/Label";
@@ -40,6 +42,7 @@ function ExpiryPill({ b }: { b: StockBatchDto }) {
 }
 
 export default function Batches() {
+  const { branchId } = useBranchScope();
   const [batches, setBatches] = useState<StockBatchDto[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
@@ -82,7 +85,8 @@ export default function Batches() {
 
   useEffect(() => {
     load();
-  }, [load]);
+    // Re-run when the header BranchSwitcher changes the X-Branch-Id scope.
+  }, [load, branchId]);
 
   useEffect(() => {
     getIngredients().then((i) => setIngredients(i.filter((x) => x.isActive))).catch(() => setIngredients([]));
@@ -192,6 +196,7 @@ export default function Batches() {
     <div className="p-6">
       <PageMeta title="Stock Batches | Axis" description="Lot numbers and expiry tracking" />
       <PageBreadcrumb pageTitle="Batches & Expiry" />
+      <BranchScopeBadge note={'Showing batches received under this branch plus shared ones.'} />
 
       {notice && (
         <div className="mb-4">

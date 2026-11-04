@@ -29,6 +29,9 @@ import CartPromoHint from '../../components/promotions/CartPromoHint';
 import { describeAutoApply, type CartPromoLine } from '../../components/promotions/cartPromotions';
 import { autoApply } from '../../services/promotionsService';
 import { getDisplayRegister, pushDisplayState } from '../../services/displayService';
+import ScannerInput from '../../components/retail/ScannerInput';
+import SerialPromptDialog from '../../components/retail/SerialPromptDialog';
+import { lookupBarcode, sellSerial } from '../../services/retailService';
 
 
 /** Line shape of the existing CreateCoffeeShopOrder response (untyped upstream). */
@@ -100,6 +103,12 @@ export default function CashierItems() {
 
     // Comment state
     const [comment, setComment] = useState('');
+
+    // Barcode / serial scanning (phase 3): variant split and serials chosen per cart item
+    const [scanVariants, setScanVariants] = useState<Record<string, Record<number, { name: string; qty: number }>>>({});
+    const [scanSerials, setScanSerials] = useState<Record<string, string[]>>({});
+    const [serialPrompt, setSerialPrompt] = useState<{ itemId: number; itemName: string; variantId: number | null } | null>(null);
+    const [scanBusy, setScanBusy] = useState(false);
 
     const auth = useAuth();
 
@@ -311,6 +320,101 @@ export default function CashierItems() {
 
     // Creation UI is intentionally not exposed to cashiers in the header.
 
+    /** Empties the cart and the scan bookkeeping that goes with it. */
+    function clearCart() {
+        setSelectedItems({});
+        setScanVariants({});
+        setScanSerials({});
+        setSerialPrompt(null);
+    }
+
+    /**
+     * Order lines for the API. Items that were scanned per option carry a
+     * variants split; the split is reconciled with the line quantity (the
+     * +/- buttons change the quantity without naming an option) by
+     * stretching / trimming the last scanned option.
+     */
+    function buildOrderItems() {
+        return Object.entries(selectedItems)
+            .filter(([, q]) => q > 0)
+            .map(([itemId, q]) => {
+                const split = scanVariants[itemId];
+                if (!split || Object.keys(split).length === 0) return { itemId: parseInt(itemId), quantity: q };
+                const entries = Object.entries(split).map(([vid, v]) => ({ variantId: Number(vid), quantity: v.qty })).filter(v => v.quantity > 0);
+                let sum = entries.reduce((a, v) => a + v.quantity, 0);
+                if (entries.length > 0) {
+                    const last = entries[entries.length - 1];
+                    if (sum < q) { last.quantity += q - sum; sum = q; }
+                    while (sum > q && entries.length > 0) {
+                        const l = entries[entries.length - 1];
+                        const take = Math.min(l.quantity, sum - q);
+                        l.quantity -= take; sum -= take;
+                        if (l.quantity === 0) entries.pop();
+                    }
+                }
+                return { itemId: parseInt(itemId), quantity: q, variants: entries.length > 0 ? entries : undefined };
+            });
+    }
+
+    /** After the invoice exists: record every chosen serial as Sold on it (idempotent server-side). */
+    async function recordSerials(transactionId: number) {
+        const all = Object.values(scanSerials).flat();
+        if (all.length === 0) return;
+        const failed: string[] = [];
+        for (const serial of all) {
+            try {
+                const r = await sellSerial(serial, transactionId);
+                if (!r.success) failed.push(`${serial}: ${r.error || r.message}`);
+            } catch {
+                failed.push(serial);
+            }
+        }
+        if (failed.length > 0) {
+            setNotification({ variant: 'warning', title: 'Serials not recorded', message: failed.join('; ') });
+        }
+    }
+
+    /** Scanner / manual code entry: resolve the code and add the item (and option) to the cart. */
+    async function handleScan(code: string) {
+        if (scanBusy) return;
+        setScanBusy(true);
+        try {
+            const r = await lookupBarcode(code);
+            if (!r.success || !r.data) {
+                setNotification({ variant: 'error', title: 'Unknown code', message: r.error || r.message || `No item for ${code}` });
+                return;
+            }
+            const hit = r.data;
+            const key = String(hit.itemId);
+            setItemLookup(prev => prev[key] ? prev : {
+                ...prev,
+                [key]: { id: key, name: hit.itemName, quantity: hit.stock, price: hit.price, type: '', categoryId: hit.categoryId, gameId: null, statusId: STATUS_ENABLED, imagePath: hit.imagePath },
+            });
+            setSelectedItems(s => ({ ...s, [key]: (s[key] || 0) + 1 }));
+            if (hit.variantId != null) {
+                const vid = hit.variantId;
+                setScanVariants(prev => {
+                    const cur = { ...(prev[key] || {}) };
+                    cur[vid] = { name: hit.variantName || `Option ${vid}`, qty: (cur[vid]?.qty || 0) + 1 };
+                    return { ...prev, [key]: cur };
+                });
+            }
+            const label = hit.variantName ? `${hit.itemName} — ${hit.variantName}` : hit.itemName;
+            if (hit.matchedSerial) {
+                const serial = hit.matchedSerial;
+                setScanSerials(prev => ({ ...prev, [key]: Array.from(new Set([...(prev[key] || []), serial])) }));
+                setNotification({ variant: 'success', title: 'Added to cart', message: `${label} · serial ${serial}` });
+            } else if (hit.requiresSerial) {
+                setNotification({ variant: 'info', title: 'Added to cart', message: `${label} — pick the serial number` });
+                setSerialPrompt({ itemId: hit.itemId, itemName: label, variantId: hit.variantId });
+            } else {
+                setNotification({ variant: 'success', title: 'Added to cart', message: `${label} · $${Number(hit.price).toFixed(2)}${hit.stock <= 0 ? ' (out of stock)' : ''}` });
+            }
+        } finally {
+            setScanBusy(false);
+        }
+    }
+
     // Editing is intentionally not exposed in cashier view.
 
     async function submitForm() {
@@ -370,7 +474,7 @@ export default function CashierItems() {
 
     return (
         <div className="p-6">
-            <h1 className="text-2xl font-semibold mb-4">Items (Cashier)</h1>
+            <h1 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-white/90">Items (Cashier)</h1>
             <HappyHourBanner className="mb-4" />
 
             <div className="mb-4 flex items-center justify-between">
@@ -385,7 +489,7 @@ export default function CashierItems() {
                         Calculator
                     </button>
                     <div className="flex items-center">
-                        <label className="text-sm text-gray-600 mr-2">Category</label>
+                        <label className="text-sm text-gray-600 dark:text-gray-400 mr-2">Category</label>
                         <div className="w-48">
                             <Select
                                 options={[{ value: '', label: 'All' }, ...categories.map(c => ({ value: c.id, label: c.name }))]}
@@ -395,11 +499,12 @@ export default function CashierItems() {
                         </div>
                     </div>
                     <div className="flex items-center">
-                        <label className="text-sm text-gray-600 mr-2">Search</label>
+                        <label className="text-sm text-gray-600 dark:text-gray-400 mr-2">Search</label>
                         <div className="w-56">
                             <Input placeholder="Search items..." value={search} onChange={(e) => { setPage(1); setSearch(e.target.value); }} className="px-2 py-1" />
                         </div>
                     </div>
+                    <ScannerInput onScan={handleScan} disabled={scanBusy} placeholder="Scan barcode…" />
                 </div>
 
                 <div>
@@ -407,7 +512,7 @@ export default function CashierItems() {
                         <div className="flex items-center gap-2">
                             <button
                                 className="px-4 py-2 bg-orange-600 text-white rounded shadow hover:bg-orange-700 transition flex items-center gap-2"
-                                onClick={() => setSelectedItems({})}
+                                onClick={() => clearCart()}
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -425,7 +530,7 @@ export default function CashierItems() {
                 </div>
             </div>
 
-            {loading && <div className="text-gray-600">Loading items...</div>}
+            {loading && <div className="text-gray-600 dark:text-gray-400">Loading items...</div>}
 
             {error && <div className="text-red-600 bg-red-50 p-3 rounded">{error}</div>}
 
@@ -435,7 +540,7 @@ export default function CashierItems() {
                         {items.map(it => {
                             const isOutOfStock = it.quantity <= 0;
                             return (
-                                <div key={it.id} className={`border rounded p-3 bg-white shadow-sm ${isOutOfStock ? 'opacity-60 border-gray-200' : (selectedItems[it.id] || 0) > 0 ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-gray-200'}`}>
+                                <div key={it.id} className={`border rounded p-3 bg-white dark:bg-gray-800 dark:border-gray-700 shadow-sm ${isOutOfStock ? 'opacity-60 border-gray-200' : (selectedItems[it.id] || 0) > 0 ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-gray-200'}`}>
                                     <div className="flex items-center gap-3 mb-2">
                                         <img
                                             src={it.imagePath ? resolveImageUrl(it.imagePath) : '/images/image-placeholder.svg'}
@@ -443,16 +548,16 @@ export default function CashierItems() {
                                             className="w-16 h-12 object-cover rounded"
                                             onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/images/image-placeholder.svg'; }}
                                         />
-                                        <div className="font-medium text-gray-800">{it.name}</div>
+                                        <div className="font-medium text-gray-800 dark:text-white/90">{it.name}</div>
                                     </div>
-                                    <div className="text-sm text-gray-500">Category: {categories.find(c => c.id === it.categoryId)?.name ?? '-'}</div>
-                                    <div className="text-sm text-gray-500">Price: ${it.price}</div>
-                                    <div className={`text-sm ${isOutOfStock ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
+                                    <div className="text-sm text-gray-500 dark:text-gray-400">Category: {categories.find(c => c.id === it.categoryId)?.name ?? '-'}</div>
+                                    <div className="text-sm text-gray-500 dark:text-gray-400">Price: ${it.price}</div>
+                                    <div className={`text-sm ${isOutOfStock ? 'text-red-600 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
                                         Stock: {it.quantity} {isOutOfStock && '(Out of Stock)'}
                                     </div>
                                     <div className="mt-3 flex items-center gap-2">
                                         <button
-                                            className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="px-2 py-1 bg-gray-200 dark:bg-gray-700 dark:text-white/90 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                                             disabled={isOutOfStock}
                                             onClick={() => setSelectedItems(s => {
                                                 const key = String(it.id);
@@ -463,9 +568,9 @@ export default function CashierItems() {
                                                 return copy;
                                             })}
                                         >-</button>
-                                        <div className="px-3 py-1 border rounded">{selectedItems[String(it.id)] || 0}</div>
+                                        <div className="px-3 py-1 border rounded dark:border-gray-700 text-gray-800 dark:text-white/90">{selectedItems[String(it.id)] || 0}</div>
                                         <button
-                                            className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="px-2 py-1 bg-gray-200 dark:bg-gray-700 dark:text-white/90 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                                             disabled={isOutOfStock}
                                             onClick={() => setSelectedItems(s => {
                                                 const key = String(it.id);
@@ -481,10 +586,10 @@ export default function CashierItems() {
 
                     <div className="mt-4 flex items-start justify-between">
                         <div>
-                            <div className="text-sm text-gray-600">Showing page {page} — {total} items</div>
+                            <div className="text-sm text-gray-600 dark:text-gray-400">Showing page {page} — {total} items</div>
                             <div className="mt-2 space-x-2">
-                                <button className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>Prev</button>
-                                <button className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50" disabled={page >= Math.max(1, Math.ceil(total / pageSize))} onClick={() => setPage(p => p + 1)}>Next</button>
+                                <button className="px-3 py-1 bg-gray-200 dark:bg-gray-700 dark:text-white/90 rounded disabled:opacity-50" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>Prev</button>
+                                <button className="px-3 py-1 bg-gray-200 dark:bg-gray-700 dark:text-white/90 rounded disabled:opacity-50" disabled={page >= Math.max(1, Math.ceil(total / pageSize))} onClick={() => setPage(p => p + 1)}>Next</button>
                             </div>
                         </div>
 
@@ -505,17 +610,17 @@ export default function CashierItems() {
                                     transform: isDrawerOpen ? 'translateX(0)' : 'translateX(100%)',
                                 }}
                             >
-                                <div className="h-full bg-white shadow-xl p-4 overflow-y-auto">
+                                <div className="h-full bg-white dark:bg-gray-800 dark:text-white/90 shadow-xl p-4 overflow-y-auto">
                                     <div className="flex items-center justify-between">
-                                        <h3 className="font-medium">Order Summary</h3>
+                                        <h3 className="font-medium text-gray-800 dark:text-white/90">Order Summary</h3>
                                         <button className="text-gray-500" onClick={() => setIsDrawerOpen(false)}>Close</button>
                                     </div>
                                     <div className="mt-4">
-                                        <div className="text-sm text-gray-700">Date: {orderTimestamp ? orderTimestamp.toLocaleDateString() : ''} {orderTimestamp ? orderTimestamp.toLocaleTimeString() : ''}</div>
+                                        <div className="text-sm text-gray-700 dark:text-gray-300">Date: {orderTimestamp ? orderTimestamp.toLocaleDateString() : ''} {orderTimestamp ? orderTimestamp.toLocaleTimeString() : ''}</div>
 
                                         {/* Discount Selection */}
                                         <div className="mt-3">
-                                            <label className="text-sm font-medium text-gray-700 mb-1 block">Apply Discount</label>
+                                            <label className="text-sm font-medium text-gray-700 dark:text-white/90 mb-1 block">Apply Discount</label>
                                             {loadingDiscounts ? (
                                                 <div className="text-xs text-gray-500">Loading discounts...</div>
                                             ) : (
@@ -535,7 +640,7 @@ export default function CashierItems() {
 
                                         {/* Client Selection */}
                                         <div className="mt-3">
-                                            <label className="text-sm font-medium text-gray-700 mb-1 block">Client (Optional)</label>
+                                            <label className="text-sm font-medium text-gray-700 dark:text-white/90 mb-1 block">Client (Optional)</label>
                                             <div className="flex gap-2">
                                                 <Input
                                                     placeholder="Search by phone or name..."
@@ -549,7 +654,7 @@ export default function CashierItems() {
                                                     className="flex-1"
                                                 />
                                                 <button
-                                                    className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition text-sm"
+                                                    className="px-3 py-1 bg-gray-200 dark:bg-gray-700 dark:text-white/90 rounded hover:bg-gray-300 transition text-sm"
                                                     onClick={handleClientSearch}
                                                     disabled={searchingClient}
                                                 >
@@ -603,7 +708,7 @@ export default function CashierItems() {
 
                                         {/* Set Selection */}
                                         <div className="mt-3">
-                                            <label className="text-sm font-medium text-gray-700 mb-1 block">Set/Table (Optional)</label>
+                                            <label className="text-sm font-medium text-gray-700 dark:text-white/90 mb-1 block">Set/Table (Optional)</label>
                                             {loadingSets ? (
                                                 <div className="text-xs text-gray-500">Loading sets...</div>
                                             ) : (
@@ -623,18 +728,18 @@ export default function CashierItems() {
 
                                         {/* Comment Section */}
                                         <div className="mt-3">
-                                            <label className="text-sm font-medium text-gray-700 mb-1 block">Comment (Optional)</label>
+                                            <label className="text-sm font-medium text-gray-700 dark:text-white/90 mb-1 block">Comment (Optional)</label>
                                             <textarea
                                                 value={comment}
                                                 onChange={(e) => setComment(e.target.value)}
                                                 placeholder="Add any notes or comments..."
                                                 rows={3}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                                             />
                                         </div>
 
-                                        <div className="mt-3 bg-gray-50 border p-2 rounded">
-                                            <div className="text-sm font-medium border-b pb-2 mb-2">Receipt</div>
+                                        <div className="mt-3 bg-gray-50 dark:bg-gray-900 border dark:border-gray-700 p-2 rounded">
+                                            <div className="text-sm font-medium border-b dark:border-gray-700 pb-2 mb-2 text-gray-800 dark:text-white/90">Receipt</div>
                                             <div className="space-y-2">
                                                 {orderLines.length === 0 && <div className="text-sm text-gray-500">No items</div>}
                                                 {orderLines.map((l) => (
@@ -642,8 +747,19 @@ export default function CashierItems() {
                                                         <div className="flex items-center gap-3 flex-1">
                                                             <img src={l.image || '/images/image-placeholder.svg'} alt={l.name} className="w-10 h-8 object-cover rounded" onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/images/image-placeholder.svg'; }} />
                                                             <div>
-                                                                <div className="font-medium">{l.name}</div>
+                                                                <div className="font-medium text-gray-800 dark:text-white/90">{l.name}</div>
                                                                 <div className="text-xs text-gray-500">{l.qty} × ${l.unit.toFixed(2)}</div>
+                                                                {scanVariants[l.itemId] && Object.keys(scanVariants[l.itemId]).length > 0 && (
+                                                                    <div className="text-xs text-indigo-600 dark:text-indigo-400">
+                                                                        {Object.values(scanVariants[l.itemId]).filter(v => v.qty > 0).map(v => `${v.name} ×${v.qty}`).join(', ')}
+                                                                    </div>
+                                                                )}
+                                                                {(scanSerials[l.itemId] || []).length > 0 && (
+                                                                    <div className="text-xs font-mono text-gray-600 dark:text-gray-400">
+                                                                        S/N {scanSerials[l.itemId].join(', ')}
+                                                                        <button type="button" className="ml-1 text-red-500" title="Clear serials" onClick={() => setScanSerials(prev => { const c = { ...prev }; delete c[l.itemId]; return c; })}>✕</button>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         </div>
                                                         <div className="ml-2 w-24 text-right font-medium">${l.lineTotal.toFixed(2)}</div>
@@ -672,9 +788,7 @@ export default function CashierItems() {
                                                 className="px-3 py-2 bg-green-600 text-white rounded w-full flex items-center justify-center disabled:opacity-60"
                                                 disabled={orderSubmitting}
                                                 onClick={async () => {
-                                                    const orderItems = Object.entries(selectedItems)
-                                                        .filter(([, q]) => q > 0)
-                                                        .map(([itemId, q]) => ({ itemId: parseInt(itemId), quantity: q }));
+                                                    const orderItems = buildOrderItems();
 
                                                     if (orderItems.length === 0) return;
 
@@ -731,6 +845,7 @@ export default function CashierItems() {
 
                                                             setCurrentInvoice(invoiceData);
                                                             setInvoiceModalOpen(true);
+                                                            await recordSerials(response.data.id);
 
                                                             // Auto-print station tickets (kitchen / bar)
                                                             printStationTickets(
@@ -750,7 +865,7 @@ export default function CashierItems() {
                                                             );
                                                         }
 
-                                                        setSelectedItems({});
+                                                        clearCart();
                                                         { const r = getDisplayRegister(); if (r) pushDisplayState(r, [], "Idle"); }
                                                         setSelectedDiscountId(null);
                                                         setSelectedClient(null);
@@ -790,9 +905,7 @@ export default function CashierItems() {
                                                 className="px-3 py-2 bg-orange-600 text-white rounded w-full flex items-center justify-center disabled:opacity-60"
                                                 disabled={orderSubmitting}
                                                 onClick={async () => {
-                                                    const orderItems = Object.entries(selectedItems)
-                                                        .filter(([, q]) => q > 0)
-                                                        .map(([itemId, q]) => ({ itemId: parseInt(itemId), quantity: q }));
+                                                    const orderItems = buildOrderItems();
 
                                                     if (orderItems.length === 0) return;
 
@@ -861,6 +974,7 @@ export default function CashierItems() {
                                                             
                                                             setCurrentInvoice(invoiceData);
                                                             setInvoiceModalOpen(true);
+                                                            await recordSerials(response.data.id);
 
                                                             // Auto-print station tickets (kitchen / bar)
                                                             printStationTickets(
@@ -880,7 +994,7 @@ export default function CashierItems() {
                                                             );
                                                         }
 
-                                                        setSelectedItems({});
+                                                        clearCart();
                                                         { const r = getDisplayRegister(); if (r) pushDisplayState(r, [], "Idle"); }
                                                         setSelectedDiscountId(null);
                                                         setSelectedClient(null);
@@ -922,7 +1036,7 @@ export default function CashierItems() {
                     {/* Invoices Section */}
                     <div className="mt-8">
                         <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-xl font-semibold">My Invoices</h2>
+                            <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90">My Invoices</h2>
                             <button
                                 onClick={() => setShowInvoicesSection(!showInvoicesSection)}
                                 className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition"
@@ -934,9 +1048,9 @@ export default function CashierItems() {
                         {showInvoicesSection && (
                             <div className="space-y-4">
                                 {/* Date Filter Buttons */}
-                                <div className="bg-white rounded-lg shadow p-4">
+                                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
                                     <div className="flex items-center gap-2 flex-wrap mb-4">
-                                        <span className="text-sm font-medium text-gray-700 mr-2">Filter by:</span>
+                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 mr-2">Filter by:</span>
                                         {[
                                             { value: 'today', label: 'Today' },
                                             { value: 'yesterday', label: 'Yesterday' },
@@ -946,7 +1060,7 @@ export default function CashierItems() {
                                                 onClick={() => setDateFilter(filter.value as typeof dateFilter)}
                                                 className={`px-3 py-1.5 rounded text-sm font-medium transition ${dateFilter === filter.value
                                                     ? 'bg-indigo-600 text-white'
-                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-white/20'
                                                     }`}
                                             >
                                                 {filter.label}
@@ -975,7 +1089,7 @@ export default function CashierItems() {
                                 </div>
 
                                 {/* Invoices List */}
-                                <div className="bg-white rounded-lg shadow p-6">
+                                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                                     {loadingInvoices && (
                                         <div className="flex justify-center py-10">
                                             <Loader />
@@ -993,7 +1107,7 @@ export default function CashierItems() {
                                             {userInvoices.map((invoice) => (
                                                 <div
                                                     key={invoice.transactionId}
-                                                    className="border rounded-lg p-4 hover:shadow-md transition cursor-pointer"
+                                                    className="border dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition cursor-pointer"
                                                     onClick={() => {
                                                         setCurrentInvoice(invoice);
                                                         setInvoiceModalOpen(true);
@@ -1002,7 +1116,7 @@ export default function CashierItems() {
                                                     <div className="flex justify-between items-start">
                                                         <div className="flex-1">
                                                             <div className="flex items-center gap-3 mb-2">
-                                                                <span className="text-lg font-semibold text-gray-800">
+                                                                <span className="text-lg font-semibold text-gray-800 dark:text-white/90">
                                                                     Invoice #{invoice.transactionId}
                                                                 </span>
                                                                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${invoice.statusId === STATUS_ENABLED || invoice.statusId === STATUS_PROCESSED_PAID
@@ -1015,19 +1129,19 @@ export default function CashierItems() {
                                                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                                                                 <div>
                                                                     <p className="text-gray-500">Date</p>
-                                                                    <p className="font-medium text-gray-800">
+                                                                    <p className="font-medium text-gray-800 dark:text-white/90">
                                                                         {new Date(invoice.createdOn).toLocaleDateString()}
                                                                     </p>
                                                                 </div>
                                                                 {invoice.roomName && (
                                                                     <div>
                                                                         <p className="text-gray-500">Room</p>
-                                                                        <p className="font-medium text-gray-800">{invoice.roomName}</p>
+                                                                        <p className="font-medium text-gray-800 dark:text-white/90">{invoice.roomName}</p>
                                                                     </div>
                                                                 )}
                                                                 <div>
                                                                     <p className="text-gray-500">Items</p>
-                                                                    <p className="font-medium text-gray-800">
+                                                                    <p className="font-medium text-gray-800 dark:text-white/90">
                                                                         {invoice.items?.length || 0} item{(invoice.items?.length || 0) !== 1 ? 's' : ''}
                                                                     </p>
                                                                 </div>
@@ -1035,7 +1149,7 @@ export default function CashierItems() {
                                                         </div>
                                                         <div className="text-right ml-4">
                                                             <p className="text-sm text-gray-500">Total</p>
-                                                            <p className="text-2xl font-bold text-gray-800">
+                                                            <p className="text-2xl font-bold text-gray-800 dark:text-white/90">
                                                                 ${invoice.totalPrice.toFixed(2)}
                                                             </p>
                                                         </div>
@@ -1087,28 +1201,28 @@ export default function CashierItems() {
             <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} title={editing ? "Edit Item" : "Create Item"}>
                 <div className="flex flex-col gap-3">
                     <Input placeholder="Name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
-                    <label className="text-sm text-gray-600">Quantity</label>
+                    <label className="text-sm text-gray-600 dark:text-gray-400">Quantity</label>
                     <Input type="number" placeholder="Quantity" value={form.quantity} onChange={(e) => setForm((f) => ({ ...f, quantity: Number(e.target.value) }))} />
-                    <label className="text-sm text-gray-600">Price (usd)</label>
+                    <label className="text-sm text-gray-600 dark:text-gray-400">Price (usd)</label>
                     <Input type="number" step={0.01} placeholder="Price" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: Number(e.target.value) }))} />
                     <Input placeholder="Type" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))} />
-                    <label className="text-sm text-gray-600">Category</label>
+                    <label className="text-sm text-gray-600 dark:text-gray-400">Category</label>
                     <Select options={[{ value: '', label: '-- Select category --' }, ...categories.map((c) => ({ value: c.id, label: c.name }))]} defaultValue={form.categoryId ?? ''} onChange={(v: string | number) => setForm((f) => ({ ...f, categoryId: v === '' ? null : Number(v) }))} />
-                    <label className="text-sm text-gray-600">Status</label>
+                    <label className="text-sm text-gray-600 dark:text-gray-400">Status</label>
                     <StatusToggle value={form.statusId} onChange={(id) => setForm((f) => ({ ...f, statusId: id }))} />
                     <Input placeholder="GameId" value={form.gameId ?? ""} onChange={(e) => setForm((f) => ({ ...f, gameId: e.target.value || null }))} />
                     <div className="flex items-center gap-2">
                         <button className="px-3 py-1 bg-green-600 text-white rounded flex items-center gap-2" onClick={submitForm}>
                             {submitting ? <Loader size={16} /> : (editing ? 'Save' : 'Create')}
                         </button>
-                        <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setIsFormOpen(false)}>Cancel</button>
+                        <button className="px-3 py-1 bg-gray-200 dark:bg-gray-700 dark:text-white/90 rounded" onClick={() => setIsFormOpen(false)}>Cancel</button>
                     </div>
                 </div>
             </Modal>
 
             <Modal isOpen={!!deleteId} onClose={() => setDeleteId(null)} title="Confirm delete">
                 <div className="space-y-4">
-                    <p>Are you sure you want to delete this item?</p>
+                    <p className="text-gray-800 dark:text-white/90">Are you sure you want to delete this item?</p>
                     <div className="flex items-center gap-2">
                         <button className="px-3 py-1 bg-red-600 text-white rounded flex items-center gap-2" onClick={async () => {
                             if (!deleteId) return;
@@ -1133,7 +1247,7 @@ export default function CashierItems() {
                         }}>
                             {deleting ? <Loader size={16} /> : 'Delete'}
                         </button>
-                        <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setDeleteId(null)}>Cancel</button>
+                        <button className="px-3 py-1 bg-gray-200 dark:bg-gray-700 dark:text-white/90 rounded" onClick={() => setDeleteId(null)}>Cancel</button>
                     </div>
                 </div>
             </Modal>
@@ -1144,6 +1258,24 @@ export default function CashierItems() {
                 onClose={() => setCalculatorOpen(false)}
                 totalAmount={orderTotal}
             />
+
+            {/* Serial prompt for serial-tracked scanned items */}
+            {serialPrompt && (
+                <SerialPromptDialog
+                    isOpen={!!serialPrompt}
+                    itemId={serialPrompt.itemId}
+                    itemName={serialPrompt.itemName}
+                    variantId={serialPrompt.variantId}
+                    taken={scanSerials[String(serialPrompt.itemId)] || []}
+                    onPick={(serial) => {
+                        const key = String(serialPrompt.itemId);
+                        setScanSerials(prev => ({ ...prev, [key]: Array.from(new Set([...(prev[key] || []), serial])) }));
+                        setSerialPrompt(null);
+                        setNotification({ variant: 'success', title: 'Serial recorded', message: `${serialPrompt.itemName} · ${serial}` });
+                    }}
+                    onSkip={() => setSerialPrompt(null)}
+                />
+            )}
 
             {/* Toast container bottom-right */}
             <div className="fixed bottom-6 right-6 z-50">

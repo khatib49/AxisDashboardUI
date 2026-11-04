@@ -8,7 +8,15 @@ import Label from '../../components/form/Label';
 import Input from '../../components/form/input/InputField';
 import Select from '../../components/form/Select';
 import Alert from '../../components/ui/alert/Alert';
-import { createGameSession } from '../../services/gameSession';
+import { createGameSession, CreateGameSessionResponse } from '../../services/gameSession';
+import { OFFLINE_MODE_ENABLED } from '../../offline/flags';
+import {
+    closeGameSessionOfflineAware,
+    createGameSessionOfflineAware,
+    listQueuedGameSessions,
+    QueuedGameSessionPlaceholder,
+} from '../../offline/offlineGames';
+import { subscribeQueue } from '../../offline/queue';
 import ChangeCalculator from '../../components/common/ChangeCalculator';
 import { getRooms, RoomDto } from '../../services/roomsService';
 import { getSetAvailability, SetAvailabilityDto } from '../../services/setService';
@@ -71,6 +79,53 @@ const GameSession: React.FC = () => {
 
     // Comment state
     const [comment, setComment] = useState('');
+
+    // Offline mode (VITE_ENABLE_OFFLINE_MODE): sessions queued on this device
+    // while the server was unreachable. Empty and never read when the flag is off.
+    const [queuedSessions, setQueuedSessions] = useState<QueuedGameSessionPlaceholder[]>([]);
+    const [closingQueuedId, setClosingQueuedId] = useState<number | null>(null);
+
+    const reloadQueuedSessions = React.useCallback(async () => {
+        if (!OFFLINE_MODE_ENABLED) return;
+        try {
+            setQueuedSessions(await listQueuedGameSessions());
+        } catch {
+            /* no IndexedDB: nothing queued to show */
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!OFFLINE_MODE_ENABLED) return;
+        // subscribeQueue fires immediately and on every queue change (enqueue, replay).
+        return subscribeQueue(() => { void reloadQueuedSessions(); });
+    }, [reloadQueuedSessions]);
+
+    const handleCloseQueuedSession = async (ps: QueuedGameSessionPlaceholder) => {
+        setClosingQueuedId(ps.id);
+        try {
+            const r = await closeGameSessionOfflineAware<CreateGameSessionResponse>(ps.id);
+            if (r.queued) {
+                setToast({ variant: 'info', title: 'Close queued (offline)', message: 'The session will be closed on the server as soon as the connection is back.' });
+            } else if (r.response?.success === false) {
+                setToast({ variant: 'error', title: 'Failed', message: r.response.message || r.response.error || 'Failed to close session' });
+            } else {
+                setToast({ variant: 'success', title: 'Session closed', message: r.response?.message || 'Session closed' });
+                if (r.response?.data) {
+                    setCurrentInvoice(r.response.data as unknown as GameTransaction);
+                    setInvoiceModalOpen(true);
+                }
+            }
+            await reloadQueuedSessions();
+        } catch (e: unknown) {
+            const message = e && typeof e === 'object' && typeof (e as { message?: unknown }).message === 'string'
+                ? (e as { message: string }).message
+                : 'Failed to close session';
+            setToast({ variant: 'error', title: 'Failed', message });
+        } finally {
+            setClosingQueuedId(null);
+            setTimeout(() => setToast(null), 4000);
+        }
+    };
 
     const handleClientSearch = async () => {
         if (!clientPhone.trim()) {
@@ -244,7 +299,7 @@ const GameSession: React.FC = () => {
     return (
         <div className="p-6">
             <div className="flex items-center justify-between mb-4">
-                <h1 className="text-2xl font-semibold">Game Sessions</h1>
+                <h1 className="text-2xl font-semibold text-gray-800 dark:text-white/90">Game Sessions</h1>
                 <button
                     onClick={() => setCalculatorOpen(true)}
                     className="px-4 py-2 bg-green-600 text-white rounded shadow hover:bg-green-700 transition flex items-center gap-2"
@@ -263,18 +318,24 @@ const GameSession: React.FC = () => {
             )}
 
             {error && (
-                <div className="text-red-600 bg-red-50 p-3 rounded mb-4">{error}</div>
+                <div className="text-red-600 bg-red-50 p-3 rounded mb-4 dark:bg-red-500/10 dark:text-red-400">{error}</div>
+            )}
+
+            {toast && !startModalOpen && (
+                <div className="mb-4">
+                    <Alert variant={toast.variant} title={toast.title} message={toast.message} />
+                </div>
             )}
 
             {!loading && !error && (
                 <>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                         {games.map((g) => (
-                            <div key={g.id} className="border rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition">
+                            <div key={g.id} className="border rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition dark:bg-white/[0.03] dark:border-gray-800">
                                 <div className="flex items-start justify-between">
                                     <div>
-                                        <div className="text-lg font-semibold">{g.name}</div>
-                                        <div className="text-sm text-gray-500">{g.categoryName ?? '—'}</div>
+                                        <div className="text-lg font-semibold text-gray-800 dark:text-white/90">{g.name}</div>
+                                        <div className="text-sm text-gray-500 dark:text-gray-400">{g.categoryName ?? '—'}</div>
                                     </div>
                                     <div className="text-sm">
                                         {(() => {
@@ -294,12 +355,12 @@ const GameSession: React.FC = () => {
                                 </div>
 
                                 <div className="mt-3">
-                                    <div className="text-sm font-medium mb-2">Settings</div>
+                                    <div className="text-sm font-medium mb-2 text-gray-700 dark:text-white/90">Settings</div>
                                     <div className="space-y-2">
                                         {(settingsByGame.get(g.id) || []).map((s) => (
-                                            <div key={s.id} className="flex items-center justify-between p-2 rounded bg-gray-50">
+                                            <div key={s.id} className="flex items-center justify-between p-2 rounded bg-gray-50 dark:bg-white/5">
                                                 <div>
-                                                    <div className="text-sm font-medium">{s.name}</div>
+                                                    <div className="text-sm font-medium text-gray-800 dark:text-white/90">{s.name}</div>
                                                     <div className="text-xs text-gray-500">
                                                         {s.hours === 0 ? 'Open Hour' : (s.hours ? `${s.hours} hrs` : '')}
                                                         {((s.hours === 0 || s.hours) && s.price) ? ' • ' : ''}
@@ -321,7 +382,7 @@ const GameSession: React.FC = () => {
                                             </div>
                                         ))}
                                         {((settingsByGame.get(g.id) || []).length === 0) && (
-                                            <div className="text-sm text-gray-500">No settings available</div>
+                                            <div className="text-sm text-gray-500 dark:text-gray-400">No settings available</div>
                                         )}
                                     </div>
                                 </div>
@@ -331,11 +392,11 @@ const GameSession: React.FC = () => {
 
                     {/* Pagination */}
                     <div className="mt-6 flex items-center justify-between">
-                        <div className="text-sm text-gray-600">{totalCount !== null ? `Showing ${games.length} of ${totalCount}` : ''}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-300">{totalCount !== null ? `Showing ${games.length} of ${totalCount}` : ''}</div>
                         <div className="flex items-center gap-2">
-                            <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>Prev</button>
-                            <div className="text-sm">Page {page}</div>
-                            <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => setPage((p) => p + 1)} disabled={totalCount !== null && page * PAGE_SIZE >= (totalCount || 0)}>Next</button>
+                            <button className="px-3 py-1 bg-gray-200 rounded dark:bg-gray-700 dark:text-gray-200" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>Prev</button>
+                            <div className="text-sm text-gray-700 dark:text-gray-300">Page {page}</div>
+                            <button className="px-3 py-1 bg-gray-200 rounded dark:bg-gray-700 dark:text-gray-200" onClick={() => setPage((p) => p + 1)} disabled={totalCount !== null && page * PAGE_SIZE >= (totalCount || 0)}>Next</button>
                         </div>
                     </div>
                 </>
@@ -385,7 +446,7 @@ const GameSession: React.FC = () => {
                         {selectedRoomId && !rooms.find(r => String(r.id) === String(selectedRoomId))?.isOpenSet && !loadingAvailability && setAvailability && (
                             <div>
                                 <Label>Select Set</Label>
-                                <div className="flex gap-3 text-xs mb-2">
+                                <div className="flex gap-3 text-xs mb-2 text-gray-700 dark:text-gray-300">
                                     <div className="flex items-center gap-1">
                                         <div className="w-3 h-3 bg-green-100 border-2 border-green-500 rounded"></div>
                                         <span>Available ({setAvailability.availableCount})</span>
@@ -481,7 +542,7 @@ const GameSession: React.FC = () => {
                                     className="flex-1"
                                 />
                                 <button
-                                    className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition text-sm"
+                                    className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition text-sm dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
                                     onClick={handleClientSearch}
                                     disabled={searchingClient}
                                 >
@@ -559,14 +620,14 @@ const GameSession: React.FC = () => {
                                     <div>
                                         {selectedDiscount ? (
                                             <div className="space-y-1">
-                                                <div className="text-sm text-gray-600">${basePrice.toFixed(2)} × {numberOfPersons} person{numberOfPersons !== 1 ? 's' : ''} = ${subtotal.toFixed(2)}</div>
+                                                <div className="text-sm text-gray-600 dark:text-gray-300">${basePrice.toFixed(2)} × {numberOfPersons} person{numberOfPersons !== 1 ? 's' : ''} = ${subtotal.toFixed(2)}</div>
                                                 <div className="text-sm text-green-600">Discount ({selectedDiscount.name} - {selectedDiscount.percentage}%): -${discountAmount.toFixed(2)}</div>
-                                                <div className="text-lg font-semibold">${total.toFixed(2)}</div>
+                                                <div className="text-lg font-semibold text-gray-800 dark:text-white/90">${total.toFixed(2)}</div>
                                             </div>
                                         ) : (
                                             <div>
-                                                <div className="text-sm text-gray-600 mb-1">${basePrice.toFixed(2)} × {numberOfPersons} person{numberOfPersons !== 1 ? 's' : ''}</div>
-                                                <div className="text-lg font-semibold">${subtotal.toFixed(2)}</div>
+                                                <div className="text-sm text-gray-600 mb-1 dark:text-gray-300">${basePrice.toFixed(2)} × {numberOfPersons} person{numberOfPersons !== 1 ? 's' : ''}</div>
+                                                <div className="text-lg font-semibold text-gray-800 dark:text-white/90">${subtotal.toFixed(2)}</div>
                                             </div>
                                         )}
                                     </div>
@@ -591,19 +652,55 @@ const GameSession: React.FC = () => {
 
                                     setStarting(true);
                                     try {
-                                        const response = await createGameSession({
-                                            gameId: selectedSetting.gameId,
-                                            gameSettingId: selectedSetting.id,
-                                            hours: startHours,
-                                            status: String(STATUS_ENABLED),
-                                            setId: isOpenSetRoom ? undefined : selectedSetId!,
-                                            isOpenHour: selectedSetting.isOpenHour,
-                                            discountId: selectedDiscountId,
-                                            userId: selectedClient?.id,
-                                            isDayPass: selectedSetting?.isDayPass,
-                                            numberOfPersons: numberOfPersons,
-                                            comment: comment,
-                                        });
+                                        let response: CreateGameSessionResponse | null;
+                                        if (OFFLINE_MODE_ENABLED) {
+                                            // Same request; queued locally when the server is unreachable.
+                                            const r = await createGameSessionOfflineAware<CreateGameSessionResponse>({
+                                                gameId: Number(selectedSetting.gameId),
+                                                gameSettingId: Number(selectedSetting.id),
+                                                hours: startHours,
+                                                status: STATUS_ENABLED,
+                                                setId: isOpenSetRoom ? undefined : selectedSetId!,
+                                                discountId: selectedDiscountId ?? undefined,
+                                                userId: selectedClient?.id,
+                                                isDayPass: selectedSetting?.isDayPass,
+                                                numberOfPersons: numberOfPersons,
+                                                comment: comment,
+                                            });
+                                            if (r.queued) {
+                                                setToast({
+                                                    variant: 'info',
+                                                    title: 'Session queued (offline)',
+                                                    message: `The session was saved on this device and will be sent when the connection is back. Estimated total $${r.placeholder.totalPrice.toFixed(2)}.`,
+                                                });
+                                                setStartModalOpen(false);
+                                                setSelectedRoomId(null);
+                                                setSelectedSetId(null);
+                                                setSelectedDiscountId(null);
+                                                setSelectedClient(null);
+                                                setClientResults([]);
+                                                setClientPhone('');
+                                                setNumberOfPersons(1);
+                                                setComment('');
+                                                await reloadQueuedSessions();
+                                                return;
+                                            }
+                                            response = r.response;
+                                        } else {
+                                            response = await createGameSession({
+                                                gameId: selectedSetting.gameId,
+                                                gameSettingId: selectedSetting.id,
+                                                hours: startHours,
+                                                status: String(STATUS_ENABLED),
+                                                setId: isOpenSetRoom ? undefined : selectedSetId!,
+                                                isOpenHour: selectedSetting.isOpenHour,
+                                                discountId: selectedDiscountId,
+                                                userId: selectedClient?.id,
+                                                isDayPass: selectedSetting?.isDayPass,
+                                                numberOfPersons: numberOfPersons,
+                                                comment: comment,
+                                            });
+                                        }
 
                                         // Check if the response indicates success
                                         if (response && response.success === false) {
@@ -665,7 +762,7 @@ const GameSession: React.FC = () => {
                             >
                                 {starting ? <Loader size={14} /> : 'Submit'}
                             </button>
-                            <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => { setStartModalOpen(false); setSelectedRoomId(null); setSelectedSetId(null); }}>Cancel</button>
+                            <button className="px-3 py-1 bg-gray-200 rounded dark:bg-gray-700 dark:text-gray-200" onClick={() => { setStartModalOpen(false); setSelectedRoomId(null); setSelectedSetId(null); }}>Cancel</button>
                         </div>
                     </div>
                 </div>
@@ -703,68 +800,68 @@ const GameSession: React.FC = () => {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                 </div>
-                                <h3 className="text-xl font-semibold text-gray-900">Session Active</h3>
-                                <p className="text-sm text-gray-600 mt-1">Your game session has been started successfully</p>
+                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white/90">Session Active</h3>
+                                <p className="text-sm text-gray-600 mt-1 dark:text-gray-300">Your game session has been started successfully</p>
                             </div>
 
-                            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                                <div className="flex justify-between items-center pb-2 border-b border-gray-200">
-                                    <span className="text-sm font-medium text-gray-600">Transaction ID:</span>
-                                    <span className="text-sm font-semibold text-gray-900">#{sessionSummaryData.id || sessionSummaryData.transactionId}</span>
+                            <div className="bg-gray-50 rounded-lg p-4 space-y-3 dark:bg-white/5">
+                                <div className="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-gray-700">
+                                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Transaction ID:</span>
+                                    <span className="text-sm font-semibold text-gray-900 dark:text-white/90">#{sessionSummaryData.id || sessionSummaryData.transactionId}</span>
                                 </div>
 
                                 {(sessionSummaryData.room || sessionSummaryData.roomName) && (
                                     <div className="flex justify-between items-center">
-                                        <span className="text-sm font-medium text-gray-600">Room:</span>
-                                        <span className="text-sm font-semibold text-gray-900">{sessionSummaryData.room || sessionSummaryData.roomName}</span>
+                                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Room:</span>
+                                        <span className="text-sm font-semibold text-gray-900 dark:text-white/90">{sessionSummaryData.room || sessionSummaryData.roomName}</span>
                                     </div>
                                 )}
 
                                 {(sessionSummaryData.set || sessionSummaryData.setName) && (
                                     <div className="flex justify-between items-center">
-                                        <span className="text-sm font-medium text-gray-600">Set:</span>
-                                        <span className="text-sm font-semibold text-gray-900">{sessionSummaryData.set || sessionSummaryData.setName}</span>
+                                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Set:</span>
+                                        <span className="text-sm font-semibold text-gray-900 dark:text-white/90">{sessionSummaryData.set || sessionSummaryData.setName}</span>
                                     </div>
                                 )}
 
                                 {(sessionSummaryData.game || sessionSummaryData.gameName) && (
                                     <div className="flex justify-between items-center">
-                                        <span className="text-sm font-medium text-gray-600">Game:</span>
-                                        <span className="text-sm font-semibold text-gray-900">{sessionSummaryData.game || sessionSummaryData.gameName}</span>
+                                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Game:</span>
+                                        <span className="text-sm font-semibold text-gray-900 dark:text-white/90">{sessionSummaryData.game || sessionSummaryData.gameName}</span>
                                     </div>
                                 )}
 
                                 {(sessionSummaryData.gameType || sessionSummaryData.gameTypeName) && (
                                     <div className="flex justify-between items-center">
-                                        <span className="text-sm font-medium text-gray-600">Game Type:</span>
-                                        <span className="text-sm font-semibold text-gray-900">{sessionSummaryData.gameType || sessionSummaryData.gameTypeName}</span>
+                                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Game Type:</span>
+                                        <span className="text-sm font-semibold text-gray-900 dark:text-white/90">{sessionSummaryData.gameType || sessionSummaryData.gameTypeName}</span>
                                     </div>
                                 )}
 
                                 {(sessionSummaryData.gameSetting || sessionSummaryData.gameSettingName) && (
                                     <div className="flex justify-between items-center">
-                                        <span className="text-sm font-medium text-gray-600">Setting:</span>
-                                        <span className="text-sm font-semibold text-gray-900">{sessionSummaryData.gameSetting || sessionSummaryData.gameSettingName}</span>
+                                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Setting:</span>
+                                        <span className="text-sm font-semibold text-gray-900 dark:text-white/90">{sessionSummaryData.gameSetting || sessionSummaryData.gameSettingName}</span>
                                     </div>
                                 )}
 
                                 <div className="flex justify-between items-center">
-                                    <span className="text-sm font-medium text-gray-600">Duration:</span>
-                                    <span className="text-sm font-semibold text-gray-900">
+                                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Duration:</span>
+                                    <span className="text-sm font-semibold text-gray-900 dark:text-white/90">
                                         {sessionSummaryData.isDayPass ? 'Day Pass' : (sessionSummaryData.hours === 0 ? 'Open Hour' : `${sessionSummaryData.hours}h`)}
                                     </span>
                                 </div>
 
                                 {sessionSummaryData.numberOfPersons && (
                                     <div className="flex justify-between items-center">
-                                        <span className="text-sm font-medium text-gray-600">Persons:</span>
-                                        <span className="text-sm font-semibold text-gray-900">{sessionSummaryData.numberOfPersons}</span>
+                                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Persons:</span>
+                                        <span className="text-sm font-semibold text-gray-900 dark:text-white/90">{sessionSummaryData.numberOfPersons}</span>
                                     </div>
                                 )}
 
                                 <div className="flex justify-between items-center">
-                                    <span className="text-sm font-medium text-gray-600">Started:</span>
-                                    <span className="text-sm font-semibold text-gray-900">
+                                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Started:</span>
+                                    <span className="text-sm font-semibold text-gray-900 dark:text-white/90">
                                         {new Date(sessionSummaryData.createdOn).toLocaleString('en-US', {
                                             month: 'short',
                                             day: 'numeric',
@@ -775,11 +872,11 @@ const GameSession: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2 dark:bg-blue-500/10 dark:border-blue-500/30">
                                 <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-                                <p className="text-sm text-blue-800">
+                                <p className="text-sm text-blue-800 dark:text-blue-200">
                                     This is an open session. Close the session to generate the final invoice.
                                 </p>
                             </div>
@@ -965,10 +1062,77 @@ const GameSession: React.FC = () => {
                 totalAmount={0}
             />
 
+            {/* Queued (offline) sessions — only rendered when the offline flag is on and something is queued */}
+            {OFFLINE_MODE_ENABLED && queuedSessions.length > 0 && (
+                <div className="mt-8">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90">Queued sessions (offline)</h2>
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">
+                            {queuedSessions.length} waiting to sync
+                        </span>
+                    </div>
+                    <div className="space-y-3">
+                        {queuedSessions.map((ps) => (
+                            <div key={ps.opId} data-testid="queued-session" className="border border-amber-300 rounded-lg p-4 bg-amber-50/40 dark:bg-amber-500/5 dark:border-amber-500/40">
+                                <div className="flex justify-between items-start">
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <span className="text-lg font-semibold text-gray-800 dark:text-white/90">
+                                                Session #offline-{Math.abs(ps.id)}
+                                            </span>
+                                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">
+                                                {ps.syncStatus === 'failed' ? 'Queued — failing' : 'Queued'}
+                                            </span>
+                                            {ps.closeQueued && (
+                                                <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-white/10 dark:text-gray-200">Close queued</span>
+                                            )}
+                                        </div>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                            <div>
+                                                <p className="text-gray-500 dark:text-gray-400">Queued at</p>
+                                                <p className="font-medium text-gray-800 dark:text-white/90">{new Date(ps.createdOn).toLocaleString()}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-gray-500 dark:text-gray-400">Game</p>
+                                                <p className="font-medium text-gray-800 dark:text-white/90">{ps.gameName ?? `#${ps.gameId}`}{ps.gameSettingName ? ` · ${ps.gameSettingName}` : ''}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-gray-500 dark:text-gray-400">Room / set</p>
+                                                <p className="font-medium text-gray-800 dark:text-white/90">{ps.roomName ?? '—'}{ps.setName ? ` / ${ps.setName}` : ps.setId ? ` / set #${ps.setId}` : ''}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-gray-500 dark:text-gray-400">Duration</p>
+                                                <p className="font-medium text-gray-800 dark:text-white/90">
+                                                    {ps.isDayPass ? 'Day Pass' : (ps.hours === 0 ? 'Open Hour' : `${ps.hours}h`)} · {ps.numberOfPersons} person{ps.numberOfPersons !== 1 ? 's' : ''}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        {ps.lastError && <p className="mt-2 text-xs text-red-600 dark:text-red-400">{ps.lastError}</p>}
+                                    </div>
+                                    <div className="text-right ml-4">
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">{ps.estimated ? 'Estimated total' : 'Total'}</p>
+                                        <p className="text-2xl font-bold text-gray-800 dark:text-white/90">${ps.totalPrice.toFixed(2)}</p>
+                                        {ps.statusId === 7 && !ps.closeQueued && (
+                                            <button
+                                                onClick={() => void handleCloseQueuedSession(ps)}
+                                                disabled={closingQueuedId === ps.id}
+                                                className="mt-2 px-3 py-1 bg-gray-800 text-white text-xs rounded hover:bg-gray-700 disabled:opacity-50 dark:bg-gray-700 dark:hover:bg-gray-600"
+                                            >
+                                                {closingQueuedId === ps.id ? 'Closing…' : 'Close session'}
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Invoices Section */}
             <div className="mt-8">
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold">My Invoices</h2>
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90">My Invoices</h2>
                     <button
                         onClick={() => setShowInvoicesSection(!showInvoicesSection)}
                         className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
@@ -980,13 +1144,13 @@ const GameSession: React.FC = () => {
                 {showInvoicesSection && (
                     <div className="space-y-4">
                         {/* Info Banner */}
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3 dark:bg-blue-500/10 dark:border-blue-500/30">
                             <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                             <div className="flex-1">
-                                <p className="text-sm font-medium text-blue-900">Displaying Recent Invoices</p>
-                                <p className="text-sm text-blue-700 mt-1">Showing all invoices from yesterday and today.</p>
+                                <p className="text-sm font-medium text-blue-900 dark:text-blue-200">Displaying Recent Invoices</p>
+                                <p className="text-sm text-blue-700 mt-1 dark:text-blue-300">Showing all invoices from yesterday and today.</p>
                             </div>
                         </div>
 
@@ -1007,7 +1171,7 @@ const GameSession: React.FC = () => {
                         </div>
 
                         {/* Invoices List */}
-                        <div className="bg-white rounded-lg shadow p-6">
+                        <div className="bg-white rounded-lg shadow p-6 dark:bg-white/[0.03]">
                             {loadingInvoices && (
                                 <div className="flex justify-center py-10">
                                     <Loader />
@@ -1015,7 +1179,7 @@ const GameSession: React.FC = () => {
                             )}
 
                             {!loadingInvoices && userInvoices.length === 0 && (
-                                <div className="text-center py-10 text-gray-500">
+                                <div className="text-center py-10 text-gray-500 dark:text-gray-400">
                                     No invoices found
                                 </div>
                             )}
@@ -1025,7 +1189,7 @@ const GameSession: React.FC = () => {
                                     {userInvoices.map((invoice) => (
                                         <div
                                             key={invoice.transactionId}
-                                            className="border rounded-lg p-4 hover:shadow-md transition cursor-pointer"
+                                            className="border rounded-lg p-4 hover:shadow-md transition cursor-pointer dark:border-gray-800"
                                             onClick={() => {
                                                 setCurrentInvoice(invoice);
                                                 setInvoiceModalOpen(true);
@@ -1034,7 +1198,7 @@ const GameSession: React.FC = () => {
                                             <div className="flex justify-between items-start">
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-3 mb-2">
-                                                        <span className="text-lg font-semibold text-gray-800">
+                                                        <span className="text-lg font-semibold text-gray-800 dark:text-white/90">
                                                             Invoice #{invoice.transactionId}
                                                         </span>
                                                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${invoice.statusId === STATUS_ENABLED || invoice.statusId === STATUS_PROCESSED_PAID
@@ -1046,34 +1210,34 @@ const GameSession: React.FC = () => {
                                                     </div>
                                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                                                         <div>
-                                                            <p className="text-gray-500">Date</p>
-                                                            <p className="font-medium text-gray-800">
+                                                            <p className="text-gray-500 dark:text-gray-400">Date</p>
+                                                            <p className="font-medium text-gray-800 dark:text-white/90">
                                                                 {new Date(invoice.createdOn).toLocaleDateString()}
                                                             </p>
                                                         </div>
                                                         {invoice.roomName && (
                                                             <div>
-                                                                <p className="text-gray-500">Room</p>
-                                                                <p className="font-medium text-gray-800">{invoice.roomName}</p>
+                                                                <p className="text-gray-500 dark:text-gray-400">Room</p>
+                                                                <p className="font-medium text-gray-800 dark:text-white/90">{invoice.roomName}</p>
                                                             </div>
                                                         )}
                                                         {invoice.gameName && (
                                                             <div>
-                                                                <p className="text-gray-500">Game</p>
-                                                                <p className="font-medium text-gray-800">{invoice.gameName}</p>
+                                                                <p className="text-gray-500 dark:text-gray-400">Game</p>
+                                                                <p className="font-medium text-gray-800 dark:text-white/90">{invoice.gameName}</p>
                                                             </div>
                                                         )}
                                                         <div>
-                                                            <p className="text-gray-500">Durations</p>
-                                                            <p className="font-medium text-gray-800">
+                                                            <p className="text-gray-500 dark:text-gray-400">Durations</p>
+                                                            <p className="font-medium text-gray-800 dark:text-white/90">
                                                                 {invoice.isDayPass ? 'Day Pass' : (invoice.hours === 0 ? 'Open Hour' : `${invoice.hours}h`)}
                                                             </p>
                                                         </div>
                                                     </div>
                                                 </div>
                                                 <div className="text-right ml-4">
-                                                    <p className="text-sm text-gray-500">Total</p>
-                                                    <p className="text-2xl font-bold text-gray-800">
+                                                    <p className="text-sm text-gray-500 dark:text-gray-400">Total</p>
+                                                    <p className="text-2xl font-bold text-gray-800 dark:text-white/90">
                                                         ${invoice.totalPrice.toFixed(2)}
                                                     </p>
                                                 </div>

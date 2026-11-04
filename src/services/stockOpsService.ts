@@ -240,6 +240,80 @@ export type StockBatchUpdateDto = {
   notes?: string | null;
 };
 
+// ─── Branch positions (phase 3) ───────────────────────────────────────────
+/** One ingredient at one branch. belowLevel = totalQty <= reorderLevel (rule minQty, else ingredient reorder level). */
+export type BranchStockLineDto = {
+  ingredientId: number;
+  ingredientName: string;
+  unit: string;
+  defaultQty: number;
+  otherQty: number;
+  totalQty: number;
+  reorderLevel?: number | null;
+  belowLevel: boolean;
+  unitCost?: number | null;
+  value: number;
+};
+
+/** branchId null = the shared scope (global "Main" + shared locations). */
+export type BranchStockPositionDto = {
+  branchId?: number | null;
+  branchCode: string;
+  branchName: string;
+  defaultLocationId: number;
+  defaultLocationName: string;
+  otherLocations: StockLocationDto[];
+  belowLevelCount: number;
+  totalValue: number;
+  lines: BranchStockLineDto[];
+};
+
+export type StockPositionColumnDto = {
+  branchId?: number | null;
+  code: string;
+  name: string;
+  defaultLocationId: number;
+  defaultLocationName: string;
+  totalValue: number;
+  belowLevelCount: number;
+};
+
+export type StockPositionCellDto = { branchId?: number | null; qty: number; belowLevel: boolean; value: number };
+
+export type StockPositionRowDto = {
+  ingredientId: number;
+  ingredientName: string;
+  unit: string;
+  reorderLevel?: number | null;
+  unitCost?: number | null;
+  cells: StockPositionCellDto[];
+  totalQty: number;
+  totalValue: number;
+};
+
+/** All branches side by side; columns[0] is always the shared scope. */
+export type StockPositionsDto = { columns: StockPositionColumnDto[]; rows: StockPositionRowDto[]; totalValue: number };
+
+export type ReceiveToLocationResultDto = {
+  purchaseId: number;
+  locationId: number;
+  locationName: string;
+  /** The purchase had already been received; transfer is the existing one. */
+  alreadyReceived: boolean;
+  transfer: StockTransferDto;
+};
+
+// Minimal shape of the EXISTING /purchases list rows (PurchaseDto).
+export type PurchaseLite = {
+  id: number;
+  supplierId?: number | null;
+  supplierName?: string | null;
+  purchaseDate: string;
+  invoiceNumber?: string | null;
+  totalCost: number;
+  lines: { id: number; ingredientId: number; ingredientName: string; unit: string; quantity: number; unitCost: number }[];
+};
+
 // ─── Helpers ──────────────────────────────────────────────────────────────
 /** Pulls a readable message out of an axios error / BaseResponse failure. */
 export function errorMessage(err: unknown, fallback = "Something went wrong"): string {
@@ -462,6 +536,40 @@ export async function writeOffBatch(id: number, notes?: string): Promise<StockBa
   return unwrap(res.data);
 }
 
+// ─── API: branch positions (phase 3) ──────────────────────────────────────
+/** ?branchId= wins, else the X-Branch-Id header api.ts attaches, else the shared scope. */
+export async function getBranchPosition(branchId?: number | null): Promise<BranchStockPositionDto> {
+  const q = branchId && branchId > 0 ? `?branchId=${branchId}` : "";
+  const res = await api.get<BranchStockPositionDto>(`/stockops/branch-position${q}`);
+  return res.data;
+}
+
+/** Admin: every branch side by side. */
+export async function getPositions(): Promise<StockPositionsDto> {
+  const res = await api.get<StockPositionsDto>("/stockops/positions");
+  return res.data;
+}
+
+/** Moves a purchase's quantities from Main to a location (posted transfer "PO-{purchaseId}"); idempotent. */
+export async function receiveToLocation(purchaseId: number, locationId: number, notes?: string | null): Promise<BaseResponse<ReceiveToLocationResultDto>> {
+  const res = await api.post<BaseResponse<ReceiveToLocationResultDto>>("/stockops/receive-to-location", {
+    purchaseId,
+    locationId,
+    notes: notes || null,
+  });
+  return res.data;
+}
+
+/** Existing /purchases list (read only), newest first. */
+export async function getPurchases(params: { page?: number; pageSize?: number; search?: string } = {}): Promise<Paginated<PurchaseLite>> {
+  const q = new URLSearchParams();
+  q.set("page", String(params.page ?? 1));
+  q.set("pageSize", String(params.pageSize ?? 50));
+  if (params.search) q.set("search", params.search);
+  const res = await api.get<Paginated<PurchaseLite>>(`/purchases?${q.toString()}`);
+  return res.data;
+}
+
 export default {
   getIngredients,
   getSuppliers,
@@ -497,4 +605,8 @@ export default {
   updateBatch,
   deleteBatch,
   writeOffBatch,
+  getBranchPosition,
+  getPositions,
+  receiveToLocation,
+  getPurchases,
 };

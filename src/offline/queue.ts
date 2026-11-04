@@ -1,6 +1,7 @@
 import { dbDelete, dbGet, dbGetAll, dbPut } from "./db";
 import { getOfflineClientId, newUuid, OFFLINE_MODE_ENABLED } from "./flags";
 import {
+  isOfflineCreateOp,
   OfflineOpResult,
   OfflineOpType,
   syncOfflineOps,
@@ -13,7 +14,7 @@ export interface QueuedOp {
   type: OfflineOpType;
   payload: unknown;
   queuedAt: string; // ISO
-  /** Negative placeholder id handed to the UI for an order created offline. */
+  /** Negative placeholder id handed to the UI for an order / game session created offline. */
   tempId?: number;
   attempts: number;
   status: QueuedOpStatus;
@@ -142,7 +143,7 @@ export async function enqueue(op: {
     type: op.type,
     payload: op.payload,
     queuedAt: new Date().toISOString(),
-    tempId: op.tempId ?? (op.type === "CreateCoffeeShopOrder" ? nextTempId() : undefined),
+    tempId: op.tempId ?? (isOfflineCreateOp(op.type) ? nextTempId() : undefined),
     attempts: 0,
     status: "pending",
     lastError: null,
@@ -169,10 +170,10 @@ export async function remove(opId: string): Promise<void> {
   await refreshQueueLength();
 }
 
-/** Find the queued CREATE op that produced a given negative placeholder id. */
+/** Find the queued CREATE op (order or game session) that produced a given negative placeholder id. */
 export async function findByTempId(tempId: number): Promise<QueuedOp | undefined> {
   const all = await list();
-  return all.find((o) => o.type === "CreateCoffeeShopOrder" && o.tempId === tempId);
+  return all.find((o) => isOfflineCreateOp(o.type) && o.tempId === tempId);
 }
 
 export async function refreshQueueLength(): Promise<number> {
@@ -244,7 +245,7 @@ export async function replay(opts: { force?: boolean } = {}): Promise<ReplayResu
         if (r.outcome === "ok" || r.outcome === "replayed") {
           summary.succeeded += 1;
           summary.results.push(r);
-          if (op.type === "CreateCoffeeShopOrder" && op.tempId !== undefined) {
+          if (isOfflineCreateOp(op.type) && op.tempId !== undefined) {
             const id = (r.result as { data?: { id?: unknown } } | undefined)?.data?.id;
             if (typeof id === "number" && id > 0) await rememberRealId(op.tempId, op.opId, id);
           }

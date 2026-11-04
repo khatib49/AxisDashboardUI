@@ -428,6 +428,133 @@ export async function getApplied(transactionId: number) {
   return (await api.get<BaseResponse<AppliedPromotionsDto>>(`/promotions/applied/${transactionId}`)).data;
 }
 
+// ─────────────────────────── accounting (phase 3) ────────────────────
+/** One ledger posting attempted for a gift card movement or a promotion delta. Pending = business action stands, entry deferred. */
+export type PromotionPostingDto = {
+  id: number;
+  referenceType: string; // GiftCardLoad | GiftCardRedeem | GiftCardRefund | PromotionCoupon | PromotionHappyHour | PromotionCombo
+  kind: string; // Coupon | HappyHour | Combo | GiftCard*
+  referenceId: number;
+  sequence: number;
+  amount: number; // promotions: negative = discount applied
+  invoiceId?: number | null;
+  giftCardId?: number | null;
+  journalEntryId?: number | null;
+  entryNumber?: string | null;
+  status: "Pending" | "Posted" | string;
+  error?: string | null;
+  description?: string | null;
+  on: string;
+  postedOn?: string | null;
+  attempts: number;
+  by: string;
+  debitAccount?: string | null;
+  creditAccount?: string | null;
+};
+
+export type PromotionPostingResultDto = {
+  postingId: number;
+  referenceType: string;
+  referenceId: number;
+  sequence: number;
+  amount: number;
+  status: string;
+  journalEntryId?: number | null;
+  entryNumber?: string | null;
+  error?: string | null;
+  alreadyPosted: boolean;
+};
+
+export type PromotionAccountsDto = {
+  liabilityAccountId: number;
+  liabilityAccountNumber: string;
+  liabilityAccountName: string;
+  discountAccountId: number;
+  discountAccountNumber: string;
+  discountAccountName: string;
+  cashAccountId: number;
+  cashAccountNumber: string;
+  salesAccountId: number;
+  salesAccountNumber: string;
+  createdLiability: boolean;
+  createdDiscount: boolean;
+};
+
+export type GiftCardLiabilityReportDto = {
+  asOf: string;
+  activeCards: number;
+  activeCardBalance: number;
+  expiredCards: number;
+  expiredCardBalance: number;
+  ledgerBalance: number;
+  difference: number;
+  pendingPostings: number;
+  pendingAmount: number;
+  liabilityAccountNumber: string;
+  note?: string | null;
+};
+
+export type PromotionDiscountKindDto = {
+  kind: string;
+  postings: number;
+  applied: number;
+  refunded: number;
+  discountGiven: number;
+  discountRefunded: number;
+  netDiscount: number;
+  postedAmount: number;
+  pendingAmount: number;
+  pendingPostings: number;
+};
+
+export type PromotionDiscountsReportDto = {
+  from: string;
+  to: string;
+  kinds: PromotionDiscountKindDto[];
+  totalNetDiscount: number;
+  totalPosted: number;
+  totalPending: number;
+  giftCardRedeemed: number;
+  discountAccountNumber: string;
+};
+
+export type PromotionRepostResultDto = {
+  attempted: number;
+  posted: number;
+  stillPending: number;
+  results: PromotionPostingResultDto[];
+};
+
+export async function getPromotionAccounts() {
+  return (await api.get<BaseResponse<PromotionAccountsDto>>("/promotions/accounting/accounts")).data;
+}
+
+export async function getGiftCardLiabilityReport() {
+  return (await api.get<BaseResponse<GiftCardLiabilityReportDto>>("/promotions/accounting/gift-card-liability")).data;
+}
+
+export async function getPromotionDiscountsReport(from?: string, to?: string) {
+  return (await api.get<BaseResponse<PromotionDiscountsReportDto>>("/promotions/accounting/discounts", { params: { from, to } })).data;
+}
+
+export async function getPromotionPostings(from?: string, to?: string, status?: string) {
+  return (await api.get<PromotionPostingDto[]>("/promotions/accounting/postings", { params: { from, to, status: status || undefined } })).data;
+}
+
+export async function getPendingPromotionPostings() {
+  return (await api.get<PromotionPostingDto[]>("/promotions/accounting/pending")).data;
+}
+
+/** Retries every pending posting (after the accounting period was unlocked, or the chart of accounts completed). */
+export async function repostPromotionPostings() {
+  return (await api.post<BaseResponse<PromotionRepostResultDto>>("/promotions/accounting/repost")).data;
+}
+
+/** Books gift card movements / promotion applications recorded before accounting existed. */
+export async function backfillPromotionPostings() {
+  return (await api.post<BaseResponse<PromotionRepostResultDto>>("/promotions/accounting/backfill")).data;
+}
+
 export default {
   issueGiftCard, listGiftCards, getGiftCard, getGiftCardTransactions, disableGiftCard, adjustGiftCard,
   loadGiftCard, refundGiftCard, lookupGiftCard, redeemGiftCard,
@@ -436,4 +563,6 @@ export default {
   getHappyHourPricePreview, applyHappyHour,
   listCombos, getCombo, createCombo, updateCombo, deleteCombo, sellCombo,
   autoApply, getApplied,
+  getPromotionAccounts, getGiftCardLiabilityReport, getPromotionDiscountsReport, getPromotionPostings,
+  getPendingPromotionPostings, repostPromotionPostings, backfillPromotionPostings,
 };

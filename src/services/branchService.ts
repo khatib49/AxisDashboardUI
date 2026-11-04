@@ -196,6 +196,37 @@ export async function backfillTransactions(branchId?: number | null): Promise<Ba
   return res.data;
 }
 
+export type BranchBackfillResultDto = {
+  branchId: number;
+  branchCode: string;
+  branchName: string;
+  /** Tables processed, in order. */
+  tables: string[];
+  /** Table name => rows whose BranchId was null and is now branchId. */
+  counts: Record<string, number>;
+  total: number;
+};
+
+export type BackfillAllResult = {
+  success: boolean;
+  error?: string | null;
+  message: string;
+  data?: BranchBackfillResultDto | null;
+};
+
+/**
+ * Phase 3: stamp BranchId on every legacy row of the branch-aware tables
+ * (transactions, Till_*, Delivery_Orders, Floor_Reservations/Tips, Hr_AttendanceRecords,
+ * StockOps_*, Promo_*). tables = "all" or a comma-separated subset.
+ */
+export async function backfillAll(branchId?: number | null, tables = "all"): Promise<BackfillAllResult> {
+  const q = new URLSearchParams();
+  if (branchId && branchId > 0) q.set("branchId", String(branchId));
+  q.set("tables", tables || "all");
+  const res = await api.post<BackfillAllResult>(`/branches/backfill?${q.toString()}`);
+  return res.data;
+}
+
 /** Staff list for the assignment picker (existing /users endpoint, unchanged). */
 export async function listStaffUsers(pageSize = 200): Promise<BranchUserPick[]> {
   const res = await api.get<{ data?: BranchUserPick[] }>(`/users?Page=1&PageSize=${pageSize}`);
@@ -216,6 +247,7 @@ export default {
   setBranchSettings,
   getConsolidated,
   backfillTransactions,
+  backfillAll,
   listStaffUsers,
   getSelectedBranchId,
   setSelectedBranchId,

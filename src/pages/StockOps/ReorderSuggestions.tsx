@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
+import BranchScopeBadge from "./BranchScopeBadge";
+import { useBranchScope } from "./useBranchScope";
 import Modal from "../../components/ui/Modal";
 import Input from "../../components/form/input/InputField";
 import Label from "../../components/form/Label";
@@ -35,6 +37,7 @@ const money = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits
 const qty = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 3 });
 
 export default function ReorderSuggestions() {
+  const { branchId } = useBranchScope();
   const [tab, setTab] = useState<"suggestions" | "rules">("suggestions");
   const [suggestions, setSuggestions] = useState<ReorderSuggestionDto[]>([]);
   const [rules, setRules] = useState<ReorderRuleDto[]>([]);
@@ -79,7 +82,8 @@ export default function ReorderSuggestions() {
     } catch {
       setDraftReady(false);
     }
-  }, [load]);
+    // Re-run when the header BranchSwitcher changes the X-Branch-Id scope.
+  }, [load, branchId]);
 
   useEffect(() => {
     if (!notice) return;
@@ -213,6 +217,7 @@ export default function ReorderSuggestions() {
     <div className="p-6">
       <PageMeta title="Reorder Suggestions | Axis" description="What to buy next, based on stock levels" />
       <PageBreadcrumb pageTitle="Reorder Suggestions" />
+      <BranchScopeBadge note={'Quantities are what this branch holds (its locations), so suggestions show what the branch needs to pull in.'} />
 
       {notice && (
         <div className="mb-4">

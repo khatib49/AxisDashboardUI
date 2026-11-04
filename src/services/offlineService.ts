@@ -7,7 +7,16 @@ import type { DiscountDto } from "./discountService";
 export type OfflineOpType =
   | "CreateCoffeeShopOrder"
   | "AddItemsToOpenInvoice"
-  | "CloseOpenInvoice";
+  | "CloseOpenInvoice"
+  | "CreateGameSession"
+  | "CloseGameSession";
+
+/** Op types that create an invoice; their queued op carries a negative tempId. */
+export const OFFLINE_CREATE_OP_TYPES: readonly OfflineOpType[] = ["CreateCoffeeShopOrder", "CreateGameSession"];
+
+export function isOfflineCreateOp(type: OfflineOpType | string): boolean {
+  return (OFFLINE_CREATE_OP_TYPES as readonly string[]).includes(type);
+}
 
 export type OfflineOpOutcome = "ok" | "replayed" | "failed" | "conflict";
 
@@ -88,6 +97,59 @@ export interface OfflineItemDto {
   weightKg?: number | null;
 }
 
+// ---- game till members (phase 3) ----
+
+/** Mirrors Application.DTOs.GameDto. */
+export interface OfflineGameDto {
+  id: number;
+  name: string;
+  categoryId: number;
+  categoryName?: string | null;
+  statusId?: number | null;
+  status: string;
+}
+
+/** A room set with its status (10 = occupied by an ongoing session, 9 = free). */
+export interface OfflineRoomSetDto {
+  id: number;
+  name: string;
+  statusId?: number | null;
+  status?: string | null;
+}
+
+export interface OfflineRoomDto {
+  id: number;
+  name: string;
+  categoryId?: number | null;
+  categoryName?: string | null;
+  isOpenSet: boolean;
+  sets: OfflineRoomSetDto[];
+}
+
+/** Mirrors Application.DTOs.SettingDto (active settings only). */
+export interface OfflineGameSettingDto {
+  id: number;
+  name: string;
+  type: string;
+  gameId: number;
+  gameName: string;
+  hours: number;
+  price: number;
+  isOffer: boolean;
+  isOpenHour: boolean;
+  isDayPass: boolean;
+  isActive: boolean;
+  isEvent?: boolean;
+}
+
+export interface OfflinePassTypeDto {
+  id: number;
+  name: string;
+  durationInMinutes: number;
+  price: number;
+  gameId: number;
+}
+
 export interface OfflineSnapshotDto {
   version: string;
   serverTime: string;
@@ -95,6 +157,11 @@ export interface OfflineSnapshotDto {
   items: OfflineItemDto[];
   discounts: DiscountDto[];
   channels: OfflineChannelDto[];
+  /** Present since phase 3; optional so a snapshot cached by an older build still parses. */
+  games?: OfflineGameDto[] | null;
+  rooms?: OfflineRoomDto[] | null;
+  gameSettings?: OfflineGameSettingDto[] | null;
+  passTypes?: OfflinePassTypeDto[] | null;
 }
 
 export async function fetchOfflineSnapshot(): Promise<OfflineSnapshotDto> {
