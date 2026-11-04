@@ -14,6 +14,8 @@ import {
   sendTableOrder,
 } from "../../services/waiterService";
 import { errorMessage } from "../../services/floorService";
+import UpsellStrip from "../../components/upsell/UpsellStrip";
+import type { UpsellSuggestionDto } from "../../services/phase4Service";
 
 /**
  * Item picker for table service. Used as a side drawer on the desktop floor
@@ -94,6 +96,15 @@ export default function TableOrderPicker({ transactionId, guestCount, tableLabel
   const total = useMemo(() => cartTotal(cart), [cart]);
   const count = useMemo(() => cart.reduce((s, l) => s + l.quantity, 0), [cart]);
   const problems = useMemo(() => cart.map(lineProblem).filter((p): p is string => !!p), [cart]);
+
+  async function addSuggested(sug: UpsellSuggestionDto) {
+    const local = items.find((i) => i.id === sug.itemId);
+    if (local) { addItem(local); return; }
+    try {
+      const found = (await getMenuItems(null, sug.name)).find((i) => i.id === sug.itemId);
+      if (found) addItem(found); else setSendError(`${sug.name} is not on this menu.`);
+    } catch (e) { setSendError(errorMessage(e)); }
+  }
 
   function addItem(item: MenuItemDto) {
     setSendError(null);
@@ -256,6 +267,7 @@ export default function TableOrderPicker({ transactionId, guestCount, tableLabel
         })}
       </div>
       <div className="p-3 border-t border-gray-200 dark:border-gray-700 space-y-2">
+        <UpsellStrip channel="Waiter" title="Suggest to the table" limit={2} itemIds={cart.map((l) => l.item.id)} onAdd={(sug) => void addSuggested(sug)} />
         {sendError && <div className="text-sm text-red-600 bg-red-50 dark:bg-red-500/10 rounded p-2">{sendError}</div>}
         <div className="flex items-center justify-between text-sm text-gray-700 dark:text-gray-200">
           <span>Total to add</span>

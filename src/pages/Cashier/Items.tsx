@@ -32,6 +32,7 @@ import { getDisplayRegister, pushDisplayState } from '../../services/displayServ
 import ScannerInput from '../../components/retail/ScannerInput';
 import SerialPromptDialog from '../../components/retail/SerialPromptDialog';
 import { lookupBarcode, sellSerial } from '../../services/retailService';
+import UpsellStrip from '../../components/upsell/UpsellStrip';
 
 
 /** Line shape of the existing CreateCoffeeShopOrder response (untyped upstream). */
@@ -778,6 +779,19 @@ export default function CashierItems() {
                                                 <div className="flex items-center justify-between mt-1"><div>Tax</div><div>$0.00</div></div>
                                                 <div className="flex items-center justify-between mt-2 font-semibold"><div>Total</div><div>${orderTotal.toFixed(2)}</div></div>
                                                 <CartPromoHint lines={promoLines} className="mt-2" />
+                                                <UpsellStrip
+                                                    className="mt-3"
+                                                    channel="Till"
+                                                    itemIds={Object.keys(selectedItems).map(Number).filter(n => n > 0)}
+                                                    onAdd={(sug) => {
+                                                        const key = String(sug.itemId);
+                                                        setItemLookup(prev => prev[key] ? prev : {
+                                                            ...prev,
+                                                            [key]: { id: key, name: sug.name, quantity: 0, price: sug.price, type: '', categoryId: 0, gameId: null, statusId: STATUS_ENABLED, imagePath: sug.imagePath ?? null },
+                                                        });
+                                                        setSelectedItems(s => ({ ...s, [key]: (s[key] || 0) + 1 }));
+                                                    }}
+                                                />
                                             </div>
                                         </div>
 

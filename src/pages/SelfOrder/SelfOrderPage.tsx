@@ -5,6 +5,10 @@ import {
   startSelfOrderSession, submitSelfOrder,
 } from "../../services/selfOrderService";
 import WhishPayPanel from "./WhishPayPanel";
+import UpsellStrip from "../../components/upsell/UpsellStrip";
+import Model3DButton from "../../components/menu3d/Model3DButton";
+import { useItemModels } from "../../components/menu3d/useItemModels";
+import type { UpsellSuggestionDto } from "../../services/phase4Service";
 
 const POLL_MS = 8000;
 const money = (n: number) => n.toFixed(2);
@@ -95,6 +99,12 @@ export default function SelfOrderPage() {
       if (qty <= 0) delete n[item.id]; else n[item.id] = { item, qty };
       return n;
     });
+  const addSuggested = (sug: UpsellSuggestionDto) => {
+    const found = menu?.categories.flatMap((c) => c.items).find((i) => i.id === sug.itemId);
+    const item: MenuItemDto = found ?? { id: sug.itemId, name: sug.name, price: sug.price, available: true, type: "", imagePath: null };
+    setQty(item, (cart[item.id]?.qty ?? 0) + 1);
+  };
+  const models = useItemModels();
 
   const submit = async () => {
     if (lines.length === 0 || submitting) return;
@@ -201,7 +211,7 @@ export default function SelfOrderPage() {
                 <div key={it.id} className={`flex items-center gap-3 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-3 text-gray-800 dark:text-white/90 ${!it.available ? "opacity-60" : ""}`}>
                   {it.imagePath ? <img src={it.imagePath} alt="" className="w-16 h-16 rounded-lg object-cover bg-gray-100 dark:bg-white/10" /> : <div className="w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-800" />}
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{it.name}</div>
+                    <div className="flex items-center gap-2"><span className="font-medium truncate">{it.name}</span><Model3DButton model={models.get(it.id)} name={it.name} /></div>
                     <div className="text-sm text-gray-500 dark:text-gray-400">{money(it.price)}{!it.available ? " · may be unavailable" : ""}</div>
                   </div>
                   {qty === 0 ? (
@@ -223,6 +233,7 @@ export default function SelfOrderPage() {
       {view === "menu" && menu && !error && (
         <footer className="fixed bottom-0 inset-x-0 z-20 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 p-3 text-gray-800 dark:text-white/90">
           <div className="max-w-3xl mx-auto space-y-2">
+            <UpsellStrip channel="SelfOrder" title="Add to your order?" limit={2} itemIds={lines.map((l) => l.item.id)} onAdd={addSuggested} />
             {cartCount > 0 && (
               <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note for the kitchen (optional)" className="w-full h-10 rounded-lg border border-gray-300 dark:border-gray-700 px-3 text-sm dark:bg-gray-800" />
             )}

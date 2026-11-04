@@ -121,6 +121,10 @@ import MarketingCampaigns from "./pages/Marketing/Campaigns";
 import HrPayroll from "./pages/Hr/Payroll";
 import HrPayComponents from "./pages/Hr/PayComponents";
 import RetailBarcodes from "./pages/Retail/Barcodes";
+import Menu3DAdmin from "./pages/Phase4/Menu3DAdmin";
+import UpsellsAdmin from "./pages/Phase4/UpsellsAdmin";
+import DeliveryPlatformsAdmin from "./pages/Phase4/DeliveryPlatformsAdmin";
+import CardTerminalsAdmin from "./pages/Phase4/CardTerminalsAdmin";
 import RetailLabels from "./pages/Retail/Labels";
 import RetailSerials from "./pages/Retail/Serials";
 import PromotionAccounting from "./pages/Promotions/PromotionAccounting";
@@ -352,6 +356,10 @@ export default function App() {
               <Route path="/stock/batches" element={<ProtectedRoute><StockBatches /></ProtectedRoute>} />
               <Route path="/stock/positions" element={<ProtectedRoute><BranchPositions /></ProtectedRoute>} />
               <Route path="/admin/retail/barcodes" element={<AdminRoute><RetailBarcodes /></AdminRoute>} />
+              <Route path="/admin/menu-3d" element={<AdminRoute><Menu3DAdmin /></AdminRoute>} />
+              <Route path="/admin/upsells" element={<AdminRoute><UpsellsAdmin /></AdminRoute>} />
+              <Route path="/admin/delivery/platforms" element={<AdminRoute><DeliveryPlatformsAdmin /></AdminRoute>} />
+              <Route path="/admin/payments/terminals" element={<AdminRoute><CardTerminalsAdmin /></AdminRoute>} />
               <Route path="/admin/retail/serials" element={<AdminRoute><RetailSerials /></AdminRoute>} />
 
               {/* ── Floor, tables & reservations ── */}

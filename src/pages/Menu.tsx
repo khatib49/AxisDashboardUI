@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { getItems, ItemDto } from "../services/itemService";
+import Model3DButton from "../components/menu3d/Model3DButton";
+import { useItemModels } from "../components/menu3d/useItemModels";
 import { getCategoriesByType, CategoryDto } from "../services/categoryService";
 
 export default function Menu() {
@@ -90,6 +92,7 @@ export default function Menu() {
         return matchesItemType && matchesCategory;
     });
 
+    const models = useItemModels();
     const renderItemCard = (item: ItemDto) => {
         const inStock = item.quantity > 0;
         return (
@@ -107,6 +110,10 @@ export default function Menu() {
                     >
                         {inStock ? "✓" : "✕"}
                     </span>
+                </div>
+
+                <div className="absolute top-2 left-2 z-20">
+                    <Model3DButton model={models.get(Number(item.id))} name={item.name} />
                 </div>
 
                 {/* Item Image */}

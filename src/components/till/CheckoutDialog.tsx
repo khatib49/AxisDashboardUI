@@ -11,6 +11,7 @@ import { describeAutoApply } from "../promotions/cartPromotions";
 import { QRCodeSVG } from "qrcode.react";
 import { getDisplayRegister, requestDisplayWhish } from "../../services/displayService";
 import { getWhishStatus, isWhishNotConfigured, startWhishPayment, type WhishStartResultDto } from "../../services/whishPayService";
+import CardTerminalPay from "./CardTerminalPay";
 
 type Props = {
   isOpen: boolean;
@@ -172,6 +173,8 @@ export default function CheckoutDialog({ isOpen, onClose, invoiceId, total, onIn
               )}
             </div>
           )}
+
+          <CardTerminalPay invoiceId={invoiceId} remaining={remaining} onPaid={(closed) => { void refreshSummary(); if (closed) void onInvoiceChanged?.(); }} />
 
           <p className="text-xs text-gray-500 dark:text-gray-400">
             Coupons and gift cards reduce the invoice total. Tenders record what the customer handed over and the change due. Closing marks the invoice paid, exactly as before.

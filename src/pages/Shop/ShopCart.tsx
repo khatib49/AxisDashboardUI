@@ -1,16 +1,26 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import ShopLayout from "../../components/shop/ShopLayout";
 import QtyStepper from "../../components/shop/QtyStepper";
-import { lineTotal, lineUnit, toRequestLines, useCart } from "../../components/shop/store";
-import { fmtMoney, getCatalog, imageUrl, quoteDelivery, type ShopQuoteDto, type ShopZoneDto } from "../../services/shopService";
+import { buildLine, lineTotal, lineUnit, toRequestLines, useCart } from "../../components/shop/store";
+import UpsellStrip from "../../components/upsell/UpsellStrip";
+import { fmtMoney, getCatalog, getShopItem, imageUrl, quoteDelivery, type ShopQuoteDto, type ShopZoneDto } from "../../services/shopService";
 
 const errMsg = (e: unknown) => (e as { message?: string })?.message || "Something went wrong";
 
 /** /shop/cart — quantities + delivery estimate (POST shop/quote) by zone city. */
 export default function ShopCart() {
-  const { lines, subtotal, count, setQty, remove, clear } = useCart();
+  const { lines, subtotal, count, setQty, remove, clear, add } = useCart();
+  const navigate = useNavigate();
+  /** Simple items go straight in; items with options open their page so the guest can choose. */
+  const addSuggested = async (itemId: number) => {
+    try {
+      const item = await getShopItem(itemId);
+      if (!item || item.variants.some((v) => v.isActive)) { navigate(`/shop/p/${itemId}`); return; }
+      add(buildLine(item, 1));
+    } catch { navigate(`/shop/p/${itemId}`); }
+  };
   const [zones, setZones] = useState<ShopZoneDto[]>([]);
   const [deliveryEnabled, setDeliveryEnabled] = useState(false);
   const [city, setCity] = useState(() => { try { return localStorage.getItem("shop_city") ?? ""; } catch { return ""; } });
@@ -77,6 +87,7 @@ export default function ShopCart() {
           </ul>
 
           <aside className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900 lg:sticky lg:top-20">
+            <UpsellStrip channel="Shop" title="Goes well with your order" className="mb-4" itemIds={lines.map((l) => l.itemId)} onAdd={(sug) => void addSuggested(sug.itemId)} />
             <h2 className="font-bold">Summary</h2>
             <dl className="mt-3 space-y-1 text-sm">
               <div className="flex justify-between"><dt>Subtotal ({count} {count === 1 ? "item" : "items"})</dt><dd className="font-semibold" data-testid="cart-subtotal">{fmtMoney(subtotal)}</dd></div>

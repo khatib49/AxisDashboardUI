@@ -5,6 +5,8 @@ import ShopLayout from "../../components/shop/ShopLayout";
 import QtyStepper from "../../components/shop/QtyStepper";
 import ProductCard from "../../components/shop/ProductCard";
 import { buildLine, itemInStock, useCart } from "../../components/shop/store";
+import Model3DViewer from "../../components/menu3d/Model3DViewer";
+import { useItemModels } from "../../components/menu3d/useItemModels";
 import { fmtMoney, getShopItem, imageUrl, listShopItems, type ItemAddOnDto, type ItemVariantDto, type ShopItemDto } from "../../services/shopService";
 
 const errMsg = (e: unknown) => (e as { message?: string })?.message || "Something went wrong";
@@ -15,6 +17,8 @@ export default function ShopProduct() {
   const id = Number(itemId);
   const nav = useNavigate();
   const { add } = useCart();
+  const models = useItemModels();
+  const [view3d, setView3d] = useState(false);
   const [item, setItem] = useState<ShopItemDto | null>(null);
   const [related, setRelated] = useState<ShopItemDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,8 +80,20 @@ export default function ShopProduct() {
         <>
           <nav className="text-xs text-gray-500 dark:text-gray-400" aria-label="Breadcrumb"><Link to="/shop" className="hover:underline">Shop</Link> / <Link to={`/shop/c/${item.categoryId}`} className="hover:underline">{item.categoryName}</Link> / <span>{item.name}</span></nav>
           <div className="mt-3 grid md:grid-cols-2 gap-6 lg:gap-10">
-            <div className="rounded-3xl overflow-hidden border border-gray-200 bg-gray-100 dark:border-gray-800 dark:bg-gray-800 aspect-square">
-              <img src={imageUrl(item.imagePath)} alt={item.name} className={`h-full w-full object-cover ${item.imagePath ? "" : "opacity-60 p-12 object-contain"}`} />
+            <div>
+              <div className="relative rounded-3xl overflow-hidden border border-gray-200 bg-gray-100 dark:border-gray-800 dark:bg-gray-800 aspect-square">
+                {view3d && models.get(item.id) ? (
+                  <Model3DViewer model={models.get(item.id)!} alt={`3D model of ${item.name}`} className="h-full w-full" />
+                ) : (
+                  <img src={imageUrl(item.imagePath)} alt={item.name} className={`h-full w-full object-cover ${item.imagePath ? "" : "opacity-60 p-12 object-contain"}`} />
+                )}
+              </div>
+              {models.get(item.id) && (
+                <div className="mt-2 flex justify-center gap-2" role="group" aria-label="Picture or 3D">
+                  <button type="button" onClick={() => setView3d(false)} aria-pressed={!view3d} className={`rounded-full px-4 py-1.5 text-sm font-medium ${!view3d ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900" : "border border-gray-300 text-gray-700 dark:border-gray-700 dark:text-gray-300"}`}>Photo</button>
+                  <button type="button" onClick={() => setView3d(true)} aria-pressed={view3d} className={`rounded-full px-4 py-1.5 text-sm font-medium ${view3d ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900" : "border border-gray-300 text-gray-700 dark:border-gray-700 dark:text-gray-300"}`}>View in 3D</button>
+                </div>
+              )}
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold">{item.name}</h1>

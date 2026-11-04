@@ -3,6 +3,10 @@ import { useSearchParams } from "react-router";
 import { getKioskMenu, KioskOrderResultDto, placeKioskOrder } from "../../services/kioskService";
 import type { MenuItemDto, PublicMenuDto } from "../../services/selfOrderService";
 import WhishPayPanel from "../SelfOrder/WhishPayPanel";
+import UpsellStrip from "../../components/upsell/UpsellStrip";
+import Model3DButton from "../../components/menu3d/Model3DButton";
+import { useItemModels } from "../../components/menu3d/useItemModels";
+import type { UpsellSuggestionDto } from "../../services/phase4Service";
 
 const RESET_SECONDS = 20;
 const money = (n: number) => n.toFixed(2);
@@ -59,6 +63,12 @@ export default function KioskPage() {
   const count = lines.reduce((s, l) => s + l.qty, 0);
   const setQty = (item: MenuItemDto, qty: number) =>
     setCart((c) => { const n = { ...c }; if (qty <= 0) delete n[item.id]; else n[item.id] = { item, qty }; return n; });
+  const addSuggested = (sug: UpsellSuggestionDto) => {
+    const found = menu?.categories.flatMap((c) => c.items).find((i) => i.id === sug.itemId);
+    const item: MenuItemDto = found ?? { id: sug.itemId, name: sug.name, price: sug.price, available: true, type: "", imagePath: null };
+    setQty(item, (cart[item.id]?.qty ?? 0) + 1);
+  };
+  const models = useItemModels();
 
   const submit = async () => {
     if (lines.length === 0 || submitting) return;
@@ -134,16 +144,18 @@ export default function KioskPage() {
               {(menu.categories.find((c) => c.id === category)?.items ?? []).map((it) => {
                 const qty = cart[it.id]?.qty ?? 0;
                 return (
+                  <div key={it.id} className="relative">
                   <button
-                    key={it.id}
                     onClick={() => setQty(it, qty + 1)}
-                    className={`relative rounded-2xl bg-white dark:bg-gray-900 border-2 p-4 text-left min-h-[170px] flex flex-col active:scale-95 transition text-gray-800 dark:text-white/90 ${qty > 0 ? "border-blue-600" : "border-transparent"}`}
+                    className={`relative rounded-2xl bg-white dark:bg-gray-900 border-2 p-4 text-left w-full min-h-[170px] flex flex-col active:scale-95 transition text-gray-800 dark:text-white/90 ${qty > 0 ? "border-blue-600" : "border-transparent"}`}
                   >
                     {it.imagePath ? <img src={it.imagePath} alt="" className="w-full h-24 object-cover rounded-xl mb-2 bg-gray-100 dark:bg-white/10" /> : <div className="w-full h-24 rounded-xl bg-gray-100 dark:bg-gray-800 mb-2" />}
                     <div className="font-semibold text-lg leading-tight">{it.name}</div>
                     <div className="text-gray-500 dark:text-gray-400 mt-auto">{money(it.price)}</div>
                     {qty > 0 && <span className="absolute top-3 right-3 w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-lg font-bold">{qty}</span>}
                   </button>
+                  <Model3DButton model={models.get(it.id)} name={it.name} className="absolute top-3 left-3 text-sm px-3 py-1.5" />
+                  </div>
                 );
               })}
             </main>
@@ -162,6 +174,7 @@ export default function KioskPage() {
               ))}
             </div>
             <div className="p-5 border-t border-gray-200 dark:border-gray-800 space-y-3">
+              <UpsellStrip channel="Kiosk" title="Make it a meal?" limit={2} itemIds={lines.map((l) => l.item.id)} onAdd={addSuggested} />
               <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name (optional)" className="w-full h-12 rounded-xl border border-gray-300 dark:border-gray-700 px-4 text-lg dark:bg-gray-800" />
               <div className="flex justify-between text-2xl font-bold"><span>Total</span><span>{money(total)}</span></div>
               <button disabled={count === 0 || submitting} onClick={submit} className="w-full py-5 rounded-2xl bg-blue-600 text-white text-2xl font-bold disabled:opacity-40 active:scale-95 transition">
