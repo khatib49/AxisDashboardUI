@@ -54,8 +54,8 @@ export default function ShopAuthForm({ onDone, compact = false }: { onDone?: (c:
           </div>
           <label className="block text-sm"><span className="text-gray-600 dark:text-gray-300">Phone</span>
             <input className={field} type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required name="phone" autoComplete="tel" placeholder="+961 70 000 000" /></label>
-          <label className="block text-sm"><span className="text-gray-600 dark:text-gray-300">Email (optional)</span>
-            <input className={field} type="email" value={email} onChange={(e) => setEmail(e.target.value)} name="email" autoComplete="email" /></label>
+          <label className="block text-sm"><span className="text-gray-600 dark:text-gray-300">Email</span>
+            <input className={field} type="email" value={email} onChange={(e) => setEmail(e.target.value)} required name="email" autoComplete="email" placeholder="you@example.com" /></label>
           <label className="block text-sm"><span className="text-gray-600 dark:text-gray-300">Password (6+ characters)</span>
             <input className={field} type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} name="password" autoComplete="new-password" /></label>
           <p className="text-xs text-gray-500 dark:text-gray-400">Already a customer at the counter? Use the same phone number to set your password.</p>
