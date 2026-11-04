@@ -33,6 +33,9 @@ export const AR: Record<string, string> = {
   "AI Menu Import": "استيراد القائمة بالذكاء الاصطناعي", "AI Invoice Scan": "مسح فواتير الموردين", "Setup": "الإعداد", "Accounting Exports": "تصدير المحاسبة",
   "Integrations": "التكاملات", "Book a station (public)": "حجز محطة",
 
+  "Audit Logs": "سجلات التدقيق", "Exchange rate (USD / LBP)": "سعر الصرف (دولار / ليرة)", "Rooms, stations and tables": "الغرف والمحطات والطاولات",
+  "Staff accounts": "حسابات الموظفين", "Printers": "الطابعات", "Payments (Whish / card terminal)": "الدفع (ويش / جهاز البطاقات)",
+  "Owner phone (Telegram / WhatsApp)": "هاتف المالك (تيليغرام / واتساب)", "AI assistant key": "مفتاح المساعد الذكي",
   // ── Common ──
   "Save": "حفظ", "Cancel": "إلغاء", "Delete": "حذف", "Edit": "تعديل", "Add": "إضافة", "Close": "إغلاق", "Back": "رجوع", "Loading…": "جار التحميل…",
   "Search": "بحث", "Status": "الحالة", "Name": "الاسم", "Phone": "الهاتف", "Date": "التاريخ", "Time": "الوقت", "Price": "السعر", "Total": "المجموع",

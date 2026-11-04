@@ -32,7 +32,7 @@ export default function SetupWizard() {
             {st?.steps.map((s) => (
               <li key={s.key} className="flex items-start gap-3 rounded-xl border border-gray-200 p-3 dark:border-gray-800">
                 <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs ${s.done ? "bg-green-500 text-white" : "border border-gray-300 dark:border-gray-600"}`}>{s.done ? "✓" : ""}</span>
-                <div className="min-w-0 flex-1"><p className="text-sm font-medium text-gray-800 dark:text-white/90">{s.title}</p><p className="text-xs text-gray-500 dark:text-gray-400">{s.detail}</p></div>
+                <div className="min-w-0 flex-1"><p className="text-sm font-medium text-gray-800 dark:text-white/90">{t(s.title)}</p><p className="text-xs text-gray-500 dark:text-gray-400">{s.detail}</p></div>
                 {s.link && !s.done && <Link to={s.link} className="text-sm text-brand-600 underline dark:text-brand-400">{t("Go")}</Link>}
               </li>
             ))}
