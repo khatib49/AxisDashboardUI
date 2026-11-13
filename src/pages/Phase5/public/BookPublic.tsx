@@ -54,7 +54,7 @@ export default function BookPublic() {
         {rooms.map((room) => (
           <div key={room} className="mb-2">
             <p className="mb-1 text-xs text-gray-500 dark:text-gray-400">{room}</p>
-            <div className="flex flex-wrap gap-2">{stations.filter((s) => s.room === room).map((s) => <button key={s.setId} type="button" className={chip(s.setId === setId)} onClick={() => setSetId(s.setId)}>{s.station}</button>)}</div>
+            <div className="flex flex-wrap gap-2">{stations.filter((s) => s.room === room).sort((a, b) => (a.station ?? "").localeCompare(b.station ?? "", undefined, { numeric: true })).map((s) => <button key={s.setId} type="button" className={chip(s.setId === setId)} onClick={() => setSetId(s.setId)}>{s.station || `#${s.setId}`}</button>)}</div>
           </div>
         ))}
       </section>
