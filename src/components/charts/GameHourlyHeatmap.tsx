@@ -171,7 +171,7 @@ export default function GameHourlyHeatmap() {
     };
 
     return (
-        <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-5 md:p-6">
+        <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-5 md:p-6 text-gray-800 dark:text-white/90">
             <div className="mb-6">
                 <div className="flex items-center justify-between mb-4">
                     <div>

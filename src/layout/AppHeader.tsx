@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { useSidebar } from "../context/SidebarContext";
 import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
+import { LanguageToggle } from "../i18n/I18nProvider";
+import BranchSwitcher from "../components/header/BranchSwitcher";
 import NotificationDropdown from "../components/header/NotificationDropdown";
 import UserDropdown from "../components/header/UserDropdown";
 import BrandLogo from "../components/common/BrandLogo";
@@ -157,6 +159,8 @@ const AppHeader: React.FC = () => {
             <span className="text-xs font-semibold text-success-700 dark:text-success-300">Live</span>
           </div>
           <div className="flex items-center gap-2 2xsm:gap-3">
+            <BranchSwitcher />
+            <LanguageToggle />
             <ThemeToggleButton />
             <NotificationDropdown />
           </div>

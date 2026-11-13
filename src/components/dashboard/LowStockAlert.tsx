@@ -50,7 +50,7 @@ export default function LowStockAlert({ threshold = 5 }: { threshold?: number })
     };
 
     return (
-        <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-5 md:p-6">
+        <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-5 md:p-6 text-gray-800 dark:text-white/90">
             <div className="flex items-center justify-between mb-4">
                 <div>
                     <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90 flex items-center gap-2">
@@ -61,7 +61,7 @@ export default function LowStockAlert({ threshold = 5 }: { threshold?: number })
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">Threshold:</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Threshold:</span>
                     <select
                         value={customThreshold}
                         onChange={e => setCustomThreshold(Number(e.target.value))}
@@ -78,25 +78,25 @@ export default function LowStockAlert({ threshold = 5 }: { threshold?: number })
                 <div className="flex justify-center py-10"><Loader /></div>
             ) : items.length === 0 ? (
                 <div className="text-center py-10">
-                    <p className="text-4xl mb-2">✅</p>
-                    <p className="text-gray-500 text-sm">All items have sufficient stock</p>
+                    <p className="text-4xl mb-2 dark:text-white/90">✅</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">All items have sufficient stock</p>
                 </div>
             ) : (
                 <>
                     <div className="mb-3 flex items-center gap-2">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-500/15 text-red-700 dark:text-red-400">
                             {items.filter(i => i.quantity === 0).length} out of stock
                         </span>
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-500/15 text-orange-700 dark:text-orange-400">
                             {items.filter(i => i.quantity > 0 && i.quantity <= 2).length} critical
                         </span>
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-500/15 text-yellow-700 dark:text-yellow-400">
                             {items.filter(i => i.quantity > 2).length} low
                         </span>
                     </div>
                     <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
                         {items.map(item => (
-                            <div key={item.id} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+                            <div key={item.id} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition text-gray-800 dark:text-white/90">
                                 <div className="flex-1 min-w-0">
                                     <p className="font-medium text-gray-800 dark:text-white/90 text-sm truncate">{item.name}</p>
                                     {item.categoryName && (

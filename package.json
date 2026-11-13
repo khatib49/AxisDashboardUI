@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:e2e": "node e2e/smoke/run.mjs",
+    "e2e:capture": "node e2e/capture/run.mjs --theme light && node e2e/capture/run.mjs --theme dark",
+    "e2e:contrast": "node e2e/a11y-contrast/run.mjs --theme dark"
   },
   "dependencies": {
     "@ant-design/icons": "^6.1.0",
@@ -17,6 +20,7 @@
     "@fullcalendar/list": "^6.1.15",
     "@fullcalendar/react": "^6.1.15",
     "@fullcalendar/timegrid": "^6.1.15",
+    "@google/model-viewer": "^4.0.0",
     "@microsoft/signalr": "^9.0.6",
     "@react-jvectormap/core": "^1.0.4",
     "@react-jvectormap/world": "^1.1.2",
@@ -55,6 +59,7 @@
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.22.0",
     "vite": "^6.1.0",
+    "vite-plugin-pwa": "1.0.3",
     "vite-plugin-svgr": "^4.3.0"
   },
   "overrides": {

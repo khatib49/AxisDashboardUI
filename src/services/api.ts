@@ -57,8 +57,20 @@ api.interceptors.request.use(
       }
     }
 
-    // Example: add a request id or locale
-    // config.headers = { ...(config.headers || {}), 'x-request-id': crypto.randomUUID() };
+    // Multi-branch: when the user picked a branch in the header switcher,
+    // tag every request so the API can scope branch-aware modules.
+    try {
+      const branchId = localStorage.getItem("axis.branchId");
+      if (branchId) {
+        const h = (config.headers ?? {}) as unknown as {
+          set?: (key: string, value: string) => void;
+        } & Record<string, string>;
+        if (typeof h.set === "function") h.set("X-Branch-Id", branchId);
+        else config.headers = { ...(h as Record<string, string>), "X-Branch-Id": branchId } as unknown as AxiosRequestHeaders;
+      }
+    } catch {
+      /* ignore */
+    }
 
     return config;
   },

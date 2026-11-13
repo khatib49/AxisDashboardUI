@@ -1,0 +1,7 @@
+{
+  "$comment": "Per-route overrides for the e2e runners. Keys are the exact `path=` values from src/App.tsx. Fields: skip (string reason), roles (override the guard mapping), query (appended to the URL; ${kioskToken} is resolved from GET /kiosk/devices as admin), allowRedirectTo (a client-side redirect to this path is not a failure), titleSelector (custom CSS selector for the page-title assertion).",
+  "/kiosk": { "query": "?token=${kioskToken}" },
+  "/accounting/menu-engineering": { "roles": ["admin"], "$why": "the page itself allows admin/admin_fnb only and sends other roles to /" },
+  "/owner": { "roles": ["admin"], "$why": "OwnerView itself allows admin/admin_fnb only and sends other roles to /" },
+  "/signup": { "skip": "sign-up is disabled in the product; page only renders a form" }
+}

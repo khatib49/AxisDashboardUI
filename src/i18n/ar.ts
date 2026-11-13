@@ -1,0 +1,80 @@
+/** Arabic strings keyed by the English text. Missing keys fall back to English. */
+export const AR: Record<string, string> = {
+  // ── Sidebar ──
+  "Menu": "القائمة", "Others": "أخرى", "Dashboard": "لوحة التحكم", "Overview": "نظرة عامة", "Owner View": "عرض المالك",
+  "3D Menu": "قائمة ثلاثية الأبعاد", "AP / AR Aging": "أعمار الذمم", "AXIS PLUS Check": "فحص AXIS PLUS", "AXIS PLUS Rewards": "مكافآت AXIS PLUS",
+  "Accounting Periods": "الفترات المحاسبية", "Accounting": "المحاسبة", "Apply Coupon": "تطبيق قسيمة", "Attendance": "الحضور",
+  "Bank Reconciliation": "تسوية البنك", "Bar Orders": "طلبات البار", "Barcodes": "الباركود", "Batches & Expiry": "الدفعات والصلاحية",
+  "Board Games": "ألعاب الطاولة", "Branch Positions": "مخزون الفروع", "Branches & BI": "الفروع والتقارير", "Branches": "الفروع",
+  "Calendar": "التقويم", "Campaigns": "الحملات", "Card Terminals": "أجهزة البطاقات", "Cashier Shifts": "ورديات الكاشير", "Categories": "الفئات",
+  "Chart of Accounts": "دليل الحسابات", "Clients": "العملاء", "Clock In / Out": "تسجيل الدخول والخروج", "Combos": "العروض المجمعة",
+  "Conduct Draws": "إجراء السحوبات", "Consolidated": "الموحد", "Coupons": "القسائم", "Currencies & Rates": "العملات والأسعار",
+  "Customer Displays": "شاشات العملاء", "Customer Lookup": "البحث عن عميل", "Delivery & Self-Service": "التوصيل والخدمة الذاتية",
+  "Delivery & Takeaway": "التوصيل والسفري", "Delivery Apps": "تطبيقات التوصيل", "Delivery Board": "لوحة التوصيل", "Delivery": "التوصيل",
+  "Discount Management": "إدارة الخصومات", "Employees": "الموظفون", "Entries Management": "إدارة القيود", "Entries": "القيود",
+  "F&B Management": "إدارة المأكولات", "F&B Profit": "أرباح المأكولات", "Fixed Assets": "الأصول الثابتة", "Floor & Reservations": "الصالة والحجوزات",
+  "Floor Plan": "مخطط الصالة", "Floor": "الصالة", "Game Session": "جلسة لعب", "Game Transactions": "معاملات الألعاب", "Game": "الألعاب",
+  "Gaming Profit": "أرباح الألعاب", "General Ledger": "دفتر الأستاذ", "Gift Cards": "بطاقات الهدايا", "HR": "الموارد البشرية",
+  "Happy Hours": "ساعات التخفيض", "Inventory Management": "إدارة المخزون", "Item Revenue": "إيرادات الأصناف", "Item Transactions": "معاملات الأصناف",
+  "Items": "الأصناف", "Journal Entries": "قيود اليومية", "Kiosk Devices": "أجهزة الكشك", "Kitchen Orders": "طلبات المطبخ", "Leaderboard": "لوحة المتصدرين",
+  "Leave": "الإجازات", "Marketing": "التسويق", "Menu Engineering": "هندسة القائمة", "My Shift": "ورديتي", "New Delivery Order": "طلب توصيل جديد",
+  "Offline Status": "حالة عدم الاتصال", "Online Shop (public)": "المتجر الإلكتروني", "Open Items Invoice": "فواتير مفتوحة", "Orders": "الطلبات",
+  "Overall Profit": "إجمالي الأرباح", "PS5 Sessions": "جلسات PS5", "Pay Components": "بنود الراتب", "Payroll": "الرواتب", "Profit": "الأرباح",
+  "Promotion Accounting": "محاسبة العروض", "Promotions": "العروض", "QR Generator": "مولد QR", "Reorder Suggestions": "اقتراحات الطلب",
+  "Reservations": "الحجوزات", "Rooms": "الغرف", "Scheduled Reports": "التقارير المجدولة", "Segments": "الشرائح", "Self-Order Tables (QR)": "طاولات الطلب الذاتي",
+  "Serial Numbers": "الأرقام التسلسلية", "Settings": "الإعدادات", "Shift Schedule": "جدول الورديات", "Stock Locations": "مواقع المخزون",
+  "Stock Management": "إدارة المخزون", "Stock Transfers": "تحويلات المخزون", "Stock": "المخزون", "Stocktakes": "الجرد", "Supplier Bills": "فواتير الموردين",
+  "TCG Profit": "أرباح بطاقات التداول", "Tables": "الطاولات", "Tenders": "طرق الدفع", "Till Controls": "ضوابط الصندوق", "Till": "الصندوق",
+  "Tip Pools": "توزيع الإكراميات", "Transactions": "المعاملات", "Trial Balance": "ميزان المراجعة", "Upsells": "البيع الإضافي", "User Profile": "الملف الشخصي",
+  "Users Management": "إدارة المستخدمين", "VAT Report": "تقرير الضريبة", "Void / Refund Requests": "طلبات الإلغاء والاسترداد", "Void Reasons": "أسباب الإلغاء",
+  "Void Requests": "طلبات الإلغاء", "Waiter mode (phone)": "وضع النادل (هاتف)", "Waiter mode": "وضع النادل", "Zones & Drivers": "المناطق والسائقون",
+  "Gaming": "الألعاب", "Owner": "المالك", "Tournaments": "البطولات", "Station Bookings": "حجوزات المحطات", "Station QR Ordering": "الطلب من المحطة",
+  "Parent Wallet": "محفظة الأهل", "Owner Assistant": "مساعد المالك", "Owner Alerts": "تنبيهات المالك", "AI Forecast": "توقعات الذكاء الاصطناعي",
+  "AI Menu Import": "استيراد القائمة بالذكاء الاصطناعي", "AI Invoice Scan": "مسح فواتير الموردين", "Setup": "الإعداد", "Accounting Exports": "تصدير المحاسبة",
+  "Integrations": "التكاملات", "Book a station (public)": "حجز محطة",
+
+  "Audit Logs": "سجلات التدقيق", "Exchange rate (USD / LBP)": "سعر الصرف (دولار / ليرة)", "Rooms, stations and tables": "الغرف والمحطات والطاولات",
+  "Staff accounts": "حسابات الموظفين", "Printers": "الطابعات", "Payments (Whish / card terminal)": "الدفع (ويش / جهاز البطاقات)",
+  "Owner phone (Telegram / WhatsApp)": "هاتف المالك (تيليغرام / واتساب)", "AI assistant key": "مفتاح المساعد الذكي",
+  // ── Common ──
+  "Save": "حفظ", "Cancel": "إلغاء", "Delete": "حذف", "Edit": "تعديل", "Add": "إضافة", "Close": "إغلاق", "Back": "رجوع", "Loading…": "جار التحميل…",
+  "Search": "بحث", "Status": "الحالة", "Name": "الاسم", "Phone": "الهاتف", "Date": "التاريخ", "Time": "الوقت", "Price": "السعر", "Total": "المجموع",
+  "Yes": "نعم", "No": "لا", "Active": "فعال", "Inactive": "غير فعال", "Refresh": "تحديث", "Download": "تنزيل", "Apply": "تطبيق", "Discard": "تجاهل",
+  "Send": "إرسال", "Test": "اختبار", "Copy link": "نسخ الرابط", "Open": "فتح", "Print": "طباعة", "Players": "اللاعبون", "Station": "المحطة", "Room": "الغرفة",
+  "Minutes": "دقائق", "Note (optional)": "ملاحظة (اختياري)", "Your name": "اسمك", "Phone number": "رقم الهاتف", "Something went wrong.": "حدث خطأ ما.",
+  "Language": "اللغة", "English": "الإنجليزية", "Arabic": "العربية",
+
+  // ── Tournaments (public) ──
+  "Tournament": "البطولة", "Sign up": "التسجيل", "Bracket": "شجرة البطولة", "Entry fee": "رسوم الاشتراك", "Prize pool": "الجوائز",
+  "Starts": "يبدأ", "Rules": "القوانين", "Free": "مجاني", "Round {n}": "الدور {n}", "Final": "النهائي", "Semi-final": "نصف النهائي", "Winner": "الفائز",
+  "Player name": "اسم اللاعب", "Join the tournament": "انضم إلى البطولة", "Sign-up is closed.": "التسجيل مغلق.", "Waiting": "بانتظار",
+  "Champion": "البطل", "spots left": "أماكن متبقية", "bye": "تأهل مباشر", "Upcoming tournaments": "البطولات القادمة", "Tournament not found.": "البطولة غير موجودة.",
+
+  // ── Booking (public) ──
+  "Book a station": "احجز محطة", "Pick a station": "اختر محطة", "Pick a day": "اختر اليوم", "How long?": "المدة؟", "Pick a time": "اختر الوقت",
+  "Book now": "احجز الآن", "Your booking": "حجزك", "Booking confirmed.": "تم تأكيد الحجز.", "Check in": "تسجيل الوصول", "Cancel booking": "إلغاء الحجز",
+  "No free times on this day.": "لا توجد أوقات متاحة في هذا اليوم.", "Show this page when you arrive. Check-in opens 30 minutes before.": "أظهر هذه الصفحة عند وصولك. يبدأ تسجيل الوصول قبل 30 دقيقة.",
+  "Confirmed": "مؤكد", "Pending": "قيد الانتظار", "CheckedIn": "تم الوصول", "Completed": "مكتمل", "NoShow": "لم يحضر", "Cancelled": "ملغى",
+  "1 hour": "ساعة", "2 hours": "ساعتان", "3 hours": "3 ساعات", "30 minutes": "30 دقيقة", "Booking not found.": "الحجز غير موجود.",
+
+  // ── Station ordering (public) ──
+  "Order from your station": "اطلب من محطتك", "Your game": "لعبتك", "Ends at": "ينتهي عند", "Open time": "وقت مفتوح", "Send order": "إرسال الطلب",
+  "Order sent to the kitchen.": "تم إرسال الطلب إلى المطبخ.", "Your tab": "حسابك", "Extend my session": "تمديد جلستي", "The staff got your request.": "وصل طلبك إلى الموظفين.",
+  "No game is running on this station.": "لا توجد لعبة تعمل على هذه المحطة.", "This QR code is not active.": "رمز QR هذا غير فعال.", "items": "أصناف",
+  "Ordering from the station works while your game is running. Please ask the staff.": "الطلب من المحطة متاح أثناء اللعب فقط. يرجى سؤال الموظفين.",
+
+  // ── Parent page (public) ──
+  "Wallet": "المحفظة", "Balance": "الرصيد", "Spent today": "المصروف اليوم", "Daily limit": "الحد اليومي", "Left today": "المتبقي اليوم",
+  "Recent activity": "النشاط الأخير", "Top up at the counter.": "اشحن الرصيد عند الصندوق.", "No limit": "بدون حد", "Spend": "مصروف", "TopUp": "شحن", "Adjust": "تعديل",
+
+  // ── Owner pages ──
+  "Business details": "بيانات النشاط", "Business name": "اسم النشاط", "Address": "العنوان", "Time zone": "المنطقة الزمنية", "Setup progress": "تقدم الإعداد",
+  "Your setup checklist": "قائمة الإعداد", "Done": "تم", "To do": "مطلوب", "Go": "اذهب", "Ask a question": "اطرح سؤالاً", "Send today's summary now": "أرسل ملخص اليوم الآن",
+  "Connected chats": "المحادثات المتصلة", "Allow": "سماح", "Block": "حظر", "Allowed": "مسموح", "Not allowed": "غير مسموح",
+  "New alert": "تنبيه جديد", "When": "عندما", "is above": "أكبر من", "is below": "أقل من", "Send to": "أرسل إلى", "Only between": "فقط بين", "Cooldown (minutes)": "فترة الانتظار (دقائق)",
+  "Window (minutes)": "النافذة (دقائق)", "Extra recipients": "مستلمون إضافيون", "Recent alerts": "التنبيهات الأخيرة", "Check now": "تحقق الآن", "Send a test": "أرسل تجربة",
+  "Forecast": "التوقعات", "Next {n} days": "الأيام {n} القادمة", "Expected": "المتوقع", "Ingredients to buy": "المكونات المطلوب شراؤها", "Needed": "المطلوب", "On hand": "المتوفر", "Buy": "اشترِ",
+  "Upload a menu photo, PDF or CSV": "ارفع صورة أو ملف PDF أو CSV للقائمة", "Read the menu": "اقرأ القائمة", "Create items": "أنشئ الأصناف", "Starting stock per item": "المخزون الأولي لكل صنف",
+  "Upload a supplier invoice photo or PDF": "ارفع صورة أو PDF لفاتورة المورد", "Read the invoice": "اقرأ الفاتورة", "Book the purchase": "سجل المشتريات", "Ingredient": "المكون", "Quantity": "الكمية", "Unit cost": "سعر الوحدة",
+  "Export journals": "تصدير القيود", "From": "من", "To": "إلى", "Format": "الصيغة", "Chart of accounts": "دليل الحسابات",
+};

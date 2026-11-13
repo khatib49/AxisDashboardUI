@@ -85,8 +85,8 @@ export default function OverallProfit() {
     return (
         <>
             <PageMeta title="Overall Profit - AXIS" description="Overall business profit analysis" />
-            <div className="p-6">
-                <h1 className="text-2xl font-semibold mb-6">Overall Profit</h1>
+            <div className="p-6 text-gray-800 dark:text-white/90">
+                <h1 className="text-2xl font-semibold mb-6 dark:text-white/90">Overall Profit</h1>
 
                 {/* Date Filter */}
                 <div className="mb-6 flex gap-2 flex-wrap">
@@ -146,7 +146,7 @@ export default function OverallProfit() {
                 )}
 
                 {error && (
-                    <div className="text-red-600 bg-red-50 p-4 rounded-lg">
+                    <div className="text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 p-4 rounded-lg">
                         {error}
                     </div>
                 )}
@@ -154,8 +154,8 @@ export default function OverallProfit() {
                 {!loading && !error && profit && profit.fnbProfit && profit.gamingProfit && profit.tcgRetailProfit && (
                     <div className="space-y-6">
                         {/* Segment Breakdown */}
-                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                            <h2 className="text-xl font-semibold mb-4">Business Segments</h2>
+                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-gray-800 dark:text-white/90">
+                            <h2 className="text-xl font-semibold mb-4 dark:text-white/90">Business Segments</h2>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 {/* Food & Beverage */}
                                 <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
@@ -171,13 +171,13 @@ export default function OverallProfit() {
                                         </div>
                                         <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-2">
                                             <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">Net Profit:</span>
-                                            <span className={`font-bold ${(profit.fnbProfit.netProfit ?? 0) < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                            <span className={`font-bold ${(profit.fnbProfit.netProfit ?? 0) < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                                                 ${(profit.fnbProfit.netProfit ?? 0).toFixed(2)}
                                             </span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-sm text-gray-600 dark:text-gray-400">Margin:</span>
-                                            <span className={`font-semibold ${(profit.fnbProfit.profitMargin ?? 0) < 0 ? 'text-red-600' : 'text-gray-900 dark:text-white'}`}>
+                                            <span className={`font-semibold ${(profit.fnbProfit.profitMargin ?? 0) < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
                                                 {(profit.fnbProfit.profitMargin ?? 0).toFixed(2)}%
                                             </span>
                                         </div>
@@ -202,13 +202,13 @@ export default function OverallProfit() {
                                         </div>
                                         <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-2">
                                             <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">Net Profit:</span>
-                                            <span className={`font-bold ${(profit.gamingProfit.netProfit ?? 0) < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                            <span className={`font-bold ${(profit.gamingProfit.netProfit ?? 0) < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                                                 ${(profit.gamingProfit.netProfit ?? 0).toFixed(2)}
                                             </span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-sm text-gray-600 dark:text-gray-400">Margin:</span>
-                                            <span className={`font-semibold ${(profit.gamingProfit.profitMargin ?? 0) < 0 ? 'text-red-600' : 'text-gray-900 dark:text-white'}`}>
+                                            <span className={`font-semibold ${(profit.gamingProfit.profitMargin ?? 0) < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
                                                 {(profit.gamingProfit.profitMargin ?? 0).toFixed(2)}%
                                             </span>
                                         </div>
@@ -233,13 +233,13 @@ export default function OverallProfit() {
                                         </div>
                                         <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-2">
                                             <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">Net Profit:</span>
-                                            <span className={`font-bold ${(profit.tcgRetailProfit.netProfit ?? 0) < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                            <span className={`font-bold ${(profit.tcgRetailProfit.netProfit ?? 0) < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                                                 ${(profit.tcgRetailProfit.netProfit ?? 0).toFixed(2)}
                                             </span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-sm text-gray-600 dark:text-gray-400">Margin:</span>
-                                            <span className={`font-semibold ${(profit.tcgRetailProfit.profitMargin ?? 0) < 0 ? 'text-red-600' : 'text-gray-900 dark:text-white'}`}>
+                                            <span className={`font-semibold ${(profit.tcgRetailProfit.profitMargin ?? 0) < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
                                                 {(profit.tcgRetailProfit.profitMargin ?? 0).toFixed(2)}%
                                             </span>
                                         </div>
@@ -255,7 +255,7 @@ export default function OverallProfit() {
                         {/* Overall Totals */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             {/* Total Revenue */}
-                            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-gray-800 dark:text-white/90">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-sm text-gray-600 dark:text-gray-400">Total Revenue</p>
@@ -272,7 +272,7 @@ export default function OverallProfit() {
                             </div>
 
                             {/* Total Expenses */}
-                            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-gray-800 dark:text-white/90">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-sm text-gray-600 dark:text-gray-400">Total Expenses</p>
@@ -289,11 +289,11 @@ export default function OverallProfit() {
                             </div>
 
                             {/* Overall Net Profit */}
-                            <div className={`bg-white dark:bg-gray-800 rounded-lg shadow p-6 ${(profit.netProfit ?? 0) < 0 ? 'border-2 border-red-500' : 'border-2 border-green-500'}`}>
+                            <div className={`bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-gray-800 dark:text-white/90 ${(profit.netProfit ?? 0) < 0 ? 'border-2 border-red-500' : 'border-2 border-green-500'}`}>
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-sm text-gray-600 dark:text-gray-400">Overall Net Profit</p>
-                                        <p className={`text-2xl font-bold mt-2 ${(profit.netProfit ?? 0) < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                        <p className={`text-2xl font-bold mt-2 ${(profit.netProfit ?? 0) < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                                             ${(profit.netProfit ?? 0).toFixed(2)}
                                         </p>
                                     </div>
@@ -306,11 +306,11 @@ export default function OverallProfit() {
                             </div>
 
                             {/* Overall Profit Margin */}
-                            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-gray-800 dark:text-white/90">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-sm text-gray-600 dark:text-gray-400">Overall Margin</p>
-                                        <p className={`text-2xl font-bold mt-2 ${(profit.profitMargin ?? 0) < 0 ? 'text-red-600' : 'text-gray-900 dark:text-white'}`}>
+                                        <p className={`text-2xl font-bold mt-2 ${(profit.profitMargin ?? 0) < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
                                             {(profit.profitMargin ?? 0).toFixed(2)}%
                                         </p>
                                     </div>
@@ -323,8 +323,8 @@ export default function OverallProfit() {
                             </div>
 
                             {/* Summary Info */}
-                            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 md:col-span-2 lg:col-span-4">
-                                <h3 className="text-lg font-semibold mb-4">Summary</h3>
+                            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 md:col-span-2 lg:col-span-4 text-gray-800 dark:text-white/90">
+                                <h3 className="text-lg font-semibold mb-4 dark:text-white/90">Summary</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div>
                                         <p className="text-sm text-gray-600 dark:text-gray-400">Total Transactions</p>

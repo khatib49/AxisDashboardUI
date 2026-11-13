@@ -10,7 +10,9 @@ import Label from '../../components/form/Label';
 import Input from '../../components/form/input/InputField';
 import Select from '../../components/form/Select';
 import Alert from '../../components/ui/alert/Alert';
-import { createGameSession } from '../../services/gameSession';
+import { createGameSession, CreateGameSessionResponse } from '../../services/gameSession';
+import { OFFLINE_MODE_ENABLED } from '../../offline/flags';
+import { createGameSessionOfflineAware } from '../../offline/offlineGames';
 import ChangeCalculator from '../../components/common/ChangeCalculator';
 import { getRooms, RoomDto } from '../../services/roomsService';
 import { getSetAvailability, SetAvailabilityDto } from '../../services/setService';
@@ -678,19 +680,49 @@ const GameSession: React.FC = () => {
 
                                     setStarting(true);
                                     try {
-                                        const response = await createGameSession({
-                                            gameId: selectedSetting.gameId,
-                                            gameSettingId: selectedSetting.id,
-                                            hours: startHours,
-                                            status: String(STATUS_ENABLED),
-                                            setId: isOpenSetRoom ? undefined : selectedSetId!,
-                                            isOpenHour: selectedSetting.isOpenHour,
-                                            discountId: selectedDiscountId,
-                                            userId: selectedClient?.id,
-                                            isDayPass: selectedSetting?.isDayPass,
-                                            numberOfPersons: numberOfPersons,
-                                            comment: comment,
-                                        });
+                                        let response: CreateGameSessionResponse | null;
+                                        if (OFFLINE_MODE_ENABLED) {
+                                            // Same request; queued on this device when the server is unreachable
+                                            // (see Offline Status). Off unless VITE_ENABLE_OFFLINE_MODE=true.
+                                            const r = await createGameSessionOfflineAware<CreateGameSessionResponse>({
+                                                gameId: Number(selectedSetting.gameId),
+                                                gameSettingId: Number(selectedSetting.id),
+                                                hours: startHours,
+                                                status: STATUS_ENABLED,
+                                                setId: isOpenSetRoom ? undefined : selectedSetId!,
+                                                discountId: selectedDiscountId ?? undefined,
+                                                userId: selectedClient?.id,
+                                                isDayPass: selectedSetting?.isDayPass,
+                                                numberOfPersons: numberOfPersons,
+                                                comment: comment,
+                                            });
+                                            if (r.queued) {
+                                                setStarting(false);
+                                                setStartModalOpen(false);
+                                                setSelectedSetId(null);
+                                                setToast({
+                                                    variant: 'info',
+                                                    title: 'Session queued (offline)',
+                                                    message: `Saved on this device; it will be sent when the connection is back. Estimated total $${r.placeholder.totalPrice.toFixed(2)}.`,
+                                                });
+                                                return;
+                                            }
+                                            response = r.response;
+                                        } else {
+                                            response = await createGameSession({
+                                                gameId: selectedSetting.gameId,
+                                                gameSettingId: selectedSetting.id,
+                                                hours: startHours,
+                                                status: String(STATUS_ENABLED),
+                                                setId: isOpenSetRoom ? undefined : selectedSetId!,
+                                                isOpenHour: selectedSetting.isOpenHour,
+                                                discountId: selectedDiscountId,
+                                                userId: selectedClient?.id,
+                                                isDayPass: selectedSetting?.isDayPass,
+                                                numberOfPersons: numberOfPersons,
+                                                comment: comment,
+                                            });
+                                        }
 
                                         // Check if the response indicates success
                                         if (response && response.success === false) {

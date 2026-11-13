@@ -103,11 +103,11 @@ const Orders: React.FC = () => {
     };
 
     return (
-        <div className="p-6">
-            <h1 className="text-2xl font-semibold mb-6">Food & Beverage Orders Management</h1>
+        <div className="p-6 text-gray-800 dark:text-white/90">
+            <h1 className="text-2xl font-semibold mb-6 dark:text-white/90">Food & Beverage Orders Management</h1>
 
             {message && (
-                <div className="mb-4 p-3 bg-blue-100 text-blue-800 rounded">
+                <div className="mb-4 p-3 bg-blue-100 dark:bg-blue-500/15 text-blue-800 dark:text-blue-300 rounded">
                     {message}
                 </div>
             )}
@@ -115,8 +115,8 @@ const Orders: React.FC = () => {
             {/* Item Transactions Section */}
             <div className="mb-10">
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold">Coffee Shop Orders</h2>
-                    <span className="text-sm text-gray-600">Total: {itemTotal}</span>
+                    <h2 className="text-xl font-semibold dark:text-white/90">Coffee Shop Orders</h2>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Total: {itemTotal}</span>
                 </div>
 
                 {loadingItems && (
@@ -126,7 +126,7 @@ const Orders: React.FC = () => {
                 )}
 
                 {!loadingItems && itemOrders.length === 0 && (
-                    <div className="text-sm text-gray-500 text-center py-10">No coffee shop orders found.</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-10">No coffee shop orders found.</div>
                 )}
 
                 {!loadingItems && itemOrders.length > 0 && (
@@ -140,18 +140,18 @@ const Orders: React.FC = () => {
                             <div className="col-span-2">Actions</div>
                         </div>
                         {itemOrders.map((o, idx) => (
-                            <div key={`${o.transactionId}-${idx}`} className="grid grid-cols-12 gap-2 items-center p-3 bg-white border rounded hover:shadow-md transition">
+                            <div key={`${o.transactionId}-${idx}`} className="grid grid-cols-12 gap-2 items-center p-3 bg-white dark:bg-gray-800 border rounded hover:shadow-md transition text-gray-800 dark:text-white/90">
                                 <div className="col-span-2">
                                     <div className="font-medium text-sm">
                                         {new Date(o.createdOn).toLocaleDateString()}
                                     </div>
-                                    <div className="text-xs text-gray-500">
+                                    <div className="text-xs text-gray-500 dark:text-gray-400">
                                         {new Date(o.createdOn).toLocaleTimeString()}
                                     </div>
                                 </div>
                                 <div className="col-span-2 text-sm">
                                     <div className="font-medium">{o.createdBy}</div>
-                                    {o.roomName && <div className="text-xs text-gray-500">{o.roomName}</div>}
+                                    {o.roomName && <div className="text-xs text-gray-500 dark:text-gray-400">{o.roomName}</div>}
                                 </div>
                                 <div className="col-span-3 text-sm">
                                     {o.items && o.items.length > 0 ? (
@@ -159,7 +159,7 @@ const Orders: React.FC = () => {
                                             {o.items.map((item, itemIdx) => (
                                                 <div key={itemIdx} className="flex items-center gap-2">
                                                     <span className="font-medium">{item.itemName}</span>
-                                                    <span className="text-xs text-gray-500">x{item.quantity}</span>
+                                                    <span className="text-xs text-gray-500 dark:text-gray-400">x{item.quantity}</span>
                                                     <span className="text-xs text-gray-400">({item.categoryName})</span>
                                                 </div>
                                             ))}
@@ -170,27 +170,27 @@ const Orders: React.FC = () => {
                                 </div>
                                 <div className="col-span-1 text-sm font-semibold">${o.totalPrice.toFixed(2)}</div>
                                 <div className="col-span-2 text-sm">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${o.statusId === 1 ? 'bg-green-100 text-green-800' :
-                                        o.statusId === STATUS_PROCESSED_PAID ? 'bg-green-100 text-green-800' :
-                                            'bg-gray-100 text-gray-800'
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${o.statusId === 1 ? 'bg-green-100 dark:bg-green-500/15 text-green-800 dark:text-green-300' :
+                                        o.statusId === STATUS_PROCESSED_PAID ? 'bg-green-100 dark:bg-green-500/15 text-green-800 dark:text-green-300' :
+                                            'bg-gray-100 dark:bg-white/10 text-gray-800 dark:text-white/90'
                                         }`}>
                                         {getStatusName(o.statusId) ?? o.statusId}
                                     </span>
                                 </div>
                                 <div className="col-span-2 text-sm">
                                     <div className="flex items-center gap-2">
-                                        <button className="text-blue-600 hover:text-blue-800 text-xs" onClick={() => handleEdit(o)}>Edit</button>
-                                        <button className="text-red-600 hover:text-red-800 text-xs" onClick={() => handleDeleteClick(o.transactionId)}>Delete</button>
+                                        <button className="text-blue-600 dark:text-blue-400 hover:text-blue-800 text-xs" onClick={() => handleEdit(o)}>Edit</button>
+                                        <button className="text-red-600 dark:text-red-400 hover:text-red-800 text-xs" onClick={() => handleDeleteClick(o.transactionId)}>Delete</button>
                                     </div>
                                 </div>
                             </div>
                         ))}
 
                         <div className="flex items-center justify-between">
-                            <div className="text-sm text-gray-600">Page {itemPage} — {itemTotal} orders</div>
+                            <div className="text-sm text-gray-600 dark:text-gray-400">Page {itemPage} — {itemTotal} orders</div>
                             <div className="space-x-2">
-                                <button className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50" disabled={itemPage <= 1} onClick={() => setItemPage(p => Math.max(1, p - 1))}>Prev</button>
-                                <button className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50" disabled={itemPage >= Math.max(1, Math.ceil(itemTotal / pageSize))} onClick={() => setItemPage(p => p + 1)}>Next</button>
+                                <button className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded disabled:opacity-50" disabled={itemPage <= 1} onClick={() => setItemPage(p => Math.max(1, p - 1))}>Prev</button>
+                                <button className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded disabled:opacity-50" disabled={itemPage >= Math.max(1, Math.ceil(itemTotal / pageSize))} onClick={() => setItemPage(p => p + 1)}>Next</button>
                             </div>
                         </div>
                     </div>
@@ -209,7 +209,7 @@ const Orders: React.FC = () => {
                 footer={(
                     <>
                         <button
-                            className="bg-gray-200 text-gray-800 px-3 py-1 rounded"
+                            className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white/90 px-3 py-1 rounded"
                             onClick={() => {
                                 setEditModalOpen(false);
                                 setEditingTransaction(null);
@@ -265,7 +265,7 @@ const Orders: React.FC = () => {
                 footer={(
                     <>
                         <button
-                            className="bg-gray-200 text-gray-800 px-3 py-1 rounded"
+                            className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white/90 px-3 py-1 rounded"
                             onClick={() => {
                                 setDeleteModalOpen(false);
                                 setDeletingTransaction(null);

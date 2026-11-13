@@ -104,8 +104,8 @@ export default function FnbProfit() {
     return (
         <>
             <PageMeta title="F&B Profit - AXIS" description="Food & Beverage profit analysis" />
-            <div className="p-6">
-                <h1 className="text-2xl font-semibold mb-6">Food & Beverage Profit</h1>
+            <div className="p-6 text-gray-800 dark:text-white/90">
+                <h1 className="text-2xl font-semibold mb-6 dark:text-white/90">Food & Beverage Profit</h1>
 
                 {/* Date Filter */}
                 <div className="mb-6 flex gap-2 flex-wrap">
@@ -165,16 +165,16 @@ export default function FnbProfit() {
                     </label>
                     <button
                         onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-                        className="w-full md:w-96 px-4 py-2 text-left bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:border-gray-400 dark:hover:border-gray-500 transition"
+                        className="w-full md:w-96 px-4 py-2 text-left bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:border-gray-400 dark:hover:border-gray-500 transition text-gray-800 dark:text-white/90"
                     >
                         {selectedCategories.length === 0 ? (
-                            <span className="text-gray-500">All Categories</span>
+                            <span className="text-gray-500 dark:text-gray-400">All Categories</span>
                         ) : (
                             <span>{selectedCategories.length} categor{selectedCategories.length === 1 ? 'y' : 'ies'} selected</span>
                         )}
                     </button>
                     {showCategoryDropdown && (
-                        <div className="absolute z-10 mt-1 w-full md:w-96 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        <div className="absolute z-10 mt-1 w-full md:w-96 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto text-gray-800 dark:text-white/90">
                             <div className="p-2">
                                 <button
                                     onClick={() => {
@@ -217,7 +217,7 @@ export default function FnbProfit() {
                 )}
 
                 {error && (
-                    <div className="text-red-600 bg-red-50 p-4 rounded-lg">
+                    <div className="text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 p-4 rounded-lg">
                         {error}
                     </div>
                 )}
@@ -225,7 +225,7 @@ export default function FnbProfit() {
                 {!loading && !error && profit && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {/* Total Revenue */}
-                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-gray-800 dark:text-white/90">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-sm text-gray-600 dark:text-gray-400">Total Revenue</p>
@@ -242,7 +242,7 @@ export default function FnbProfit() {
                         </div>
 
                         {/* Total Expenses */}
-                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-gray-800 dark:text-white/90">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-sm text-gray-600 dark:text-gray-400">Total Expenses</p>
@@ -259,11 +259,11 @@ export default function FnbProfit() {
                         </div>
 
                         {/* Net Profit */}
-                        <div className={`bg-white dark:bg-gray-800 rounded-lg shadow p-6 ${profit.netProfit < 0 ? 'border-2 border-red-500' : 'border-2 border-green-500'}`}>
+                        <div className={`bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-gray-800 dark:text-white/90 ${profit.netProfit < 0 ? 'border-2 border-red-500' : 'border-2 border-green-500'}`}>
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-sm text-gray-600 dark:text-gray-400">Net Profit</p>
-                                    <p className={`text-2xl font-bold mt-2 ${profit.netProfit < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                    <p className={`text-2xl font-bold mt-2 ${profit.netProfit < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                                         ${profit.netProfit.toFixed(2)}
                                     </p>
                                 </div>
@@ -276,11 +276,11 @@ export default function FnbProfit() {
                         </div>
 
                         {/* Profit Margin */}
-                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-gray-800 dark:text-white/90">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-sm text-gray-600 dark:text-gray-400">Profit Margin</p>
-                                    <p className={`text-2xl font-bold mt-2 ${profit.profitMargin < 0 ? 'text-red-600' : 'text-gray-900 dark:text-white'}`}>
+                                    <p className={`text-2xl font-bold mt-2 ${profit.profitMargin < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
                                         {profit.profitMargin.toFixed(2)}%
                                     </p>
                                 </div>
@@ -293,8 +293,8 @@ export default function FnbProfit() {
                         </div>
 
                         {/* Additional Info */}
-                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 md:col-span-2 lg:col-span-4">
-                            <h3 className="text-lg font-semibold mb-4">Summary</h3>
+                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 md:col-span-2 lg:col-span-4 text-gray-800 dark:text-white/90">
+                            <h3 className="text-lg font-semibold mb-4 dark:text-white/90">Summary</h3>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>
                                     <p className="text-sm text-gray-600 dark:text-gray-400">Transaction Count</p>

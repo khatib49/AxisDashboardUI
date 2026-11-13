@@ -14,6 +14,8 @@ export type PageDef = {
   legacyRoles: string[];
   /** Extra sidebar entries for the same page (e.g. a filtered view). */
   navItems?: { name: string; path: string }[];
+  /** A permission only (no page of its own): kept out of the sidebar. */
+  hidden?: boolean;
 };
 
 /** All spellings of the game-cashier role found in old tokens. */
@@ -29,6 +31,10 @@ export const PAGE_GROUPS: { name: string; flat?: boolean }[] = [
   { name: "Transactions" },
   { name: "Venue" },
   { name: "Events & Website" },
+  { name: "Gaming" },
+  { name: "Promotions" },
+  { name: "Marketing" },
+  { name: "Owner" },
   { name: "Tools" },
   { name: "AXIS PLUS Rewards" },
   { name: "Accounting" },
@@ -40,6 +46,7 @@ export const PAGE_GROUPS: { name: string; flat?: boolean }[] = [
 ];
 
 const STOCK = ["chef", "admin_fnb", "stock"];
+const TILL = ["cashier", "gamecashier", "admin_fnb"];
 
 export const PAGES: PageDef[] = [
   { key: "dashboard", label: "Dashboard", group: "Overview", path: "/dashboard", legacyRoles: [] },
@@ -126,6 +133,75 @@ export const PAGES: PageDef[] = [
   { key: "kitchen-display", label: "Kitchen Orders", group: "Kitchen & Bar", path: "/chef/kitchen-display", legacyRoles: ["chef"] },
   { key: "kitchen-stats", label: "Kitchen Stats", group: "Kitchen & Bar", path: "/chef/stats", legacyRoles: ["chef"] },
   { key: "bar-display", label: "Bar Orders", group: "Kitchen & Bar", path: "/bartender/bar-display", legacyRoles: ["bartender"] },
+
+  // Added with the operations, gaming and owner modules (keys mirror PageCatalog.cs).
+  { key: "stockops-locations", label: "Stock Locations", group: "Stock Management", path: "/stock/locations", legacyRoles: STOCK },
+  { key: "stockops-counts", label: "Stocktakes", group: "Stock Management", path: "/stock/counts", legacyRoles: STOCK },
+  { key: "stockops-transfers", label: "Stock Transfers", group: "Stock Management", path: "/stock/transfers", legacyRoles: STOCK },
+  { key: "stockops-reorder", label: "Reorder Suggestions", group: "Stock Management", path: "/stock/reorder", legacyRoles: STOCK },
+  { key: "stockops-batches", label: "Batches & Expiry", group: "Stock Management", path: "/stock/batches", legacyRoles: STOCK },
+  { key: "stockops-positions", label: "Branch Stock Positions", group: "Stock Management", path: "/stock/positions", legacyRoles: STOCK },
+  { key: "retail-barcodes", label: "Barcodes", group: "Inventory Management", path: "/admin/retail/barcodes", legacyRoles: [] },
+  { key: "retail-labels", label: "Barcode Labels", group: "Inventory Management", path: "/admin/retail/labels", legacyRoles: [] },
+  { key: "retail-serials", label: "Serial Numbers", group: "Inventory Management", path: "/admin/retail/serials", legacyRoles: [] },
+  { key: "floor-plan", label: "Floor Plan", group: "Venue", path: "/admin/floor-plan", legacyRoles: [] },
+  { key: "floor-view", label: "Floor", group: "Till", path: "/cashier/floor", legacyRoles: TILL },
+  { key: "floor-reservations", label: "Reservations", group: "Venue", path: "/floor/reservations", legacyRoles: TILL },
+  { key: "waiter", label: "Waiter", group: "Till", path: "/waiter", legacyRoles: TILL },
+  { key: "till-shift", label: "My Shift", group: "Till", path: "/till/shift", legacyRoles: TILL },
+  { key: "till-void-requests", label: "Void / Refund Requests", group: "Till", path: "/till/void-requests", legacyRoles: TILL },
+  { key: "till-tenders", label: "Tenders (multi-currency)", group: "Till", path: "/till/tenders", legacyRoles: TILL },
+  { key: "till-shifts-admin", label: "Cashier Shifts & Z Reports", group: "Transactions", path: "/admin/till/shifts", legacyRoles: [] },
+  { key: "till-void-reasons", label: "Void Reasons", group: "Transactions", path: "/admin/till/void-reasons", legacyRoles: [] },
+  { key: "currencies", label: "Currencies & Rates", group: "Accounting", path: "/admin/currencies", legacyRoles: [] },
+  { key: "offline-status", label: "Offline Status", group: "Till", path: "/offline", legacyRoles: TILL },
+  { key: "till-displays", label: "Customer Displays", group: "Till", path: "/admin/till/displays", legacyRoles: [] },
+  { key: "whish-payments", label: "Whish Payments", group: "Till", path: "/cashier/open-invoices", legacyRoles: TILL, hidden: true },
+  { key: "delivery-board", label: "Delivery & Takeaway", group: "Till", path: "/delivery/board", legacyRoles: TILL },
+  { key: "delivery-new", label: "New Delivery Order", group: "Till", path: "/delivery/new", legacyRoles: TILL },
+  { key: "delivery-zones", label: "Zones & Drivers", group: "F&B Admin", path: "/admin/delivery/zones-drivers", legacyRoles: [] },
+  { key: "selforder-tables", label: "Self-Order Tables (QR)", group: "F&B Admin", path: "/admin/selforder/tables", legacyRoles: [] },
+  { key: "kiosk-devices", label: "Kiosk Devices", group: "F&B Admin", path: "/admin/kiosk/devices", legacyRoles: [] },
+  { key: "acctplus-bank", label: "Bank Reconciliation", group: "Accounting", path: "/accounting-plus/bank-reconciliation", legacyRoles: [] },
+  { key: "acctplus-bills", label: "Supplier Bills", group: "Accounting", path: "/accounting-plus/supplier-bills", legacyRoles: [] },
+  { key: "acctplus-aging", label: "AP / AR Aging", group: "Accounting", path: "/accounting-plus/aging", legacyRoles: [] },
+  { key: "acctplus-vat", label: "VAT Report", group: "Accounting", path: "/accounting-plus/vat-report", legacyRoles: [] },
+  { key: "acctplus-assets", label: "Fixed Assets", group: "Accounting", path: "/accounting-plus/fixed-assets", legacyRoles: [] },
+  { key: "acctplus-periods", label: "Accounting Periods", group: "Accounting", path: "/accounting-plus/periods", legacyRoles: [] },
+  { key: "menu-engineering", label: "Menu Engineering", group: "Accounting", path: "/accounting/menu-engineering", legacyRoles: ["admin_fnb"] },
+  { key: "hr-employees", label: "Employees", group: "People", path: "/hr/employees", legacyRoles: [] },
+  { key: "hr-schedule", label: "Shift Schedule", group: "People", path: "/hr/schedule", legacyRoles: [] },
+  { key: "hr-attendance", label: "Attendance", group: "People", path: "/hr/attendance", legacyRoles: [] },
+  { key: "hr-leave", label: "Leave", group: "People", path: "/hr/leave", legacyRoles: [] },
+  { key: "hr-tips", label: "Tip Pools", group: "People", path: "/hr/tips", legacyRoles: TILL },
+  { key: "hr-payroll", label: "Payroll", group: "People", path: "/hr/payroll", legacyRoles: [] },
+  { key: "hr-pay-components", label: "Pay Components", group: "People", path: "/hr/pay-components", legacyRoles: [] },
+  { key: "hr-clock", label: "Clock In / Out", group: "Till", path: "/hr/clock", legacyRoles: ["cashier", "gamecashier", "admin_fnb", "chef", "bartender"] },
+  { key: "promo-giftcards", label: "Gift Cards", group: "Promotions", path: "/admin/promotions/gift-cards", legacyRoles: [] },
+  { key: "promo-coupons", label: "Coupons", group: "Promotions", path: "/admin/promotions/coupons", legacyRoles: [] },
+  { key: "promo-happyhours", label: "Happy Hours", group: "Promotions", path: "/admin/promotions/happy-hours", legacyRoles: [] },
+  { key: "promo-combos", label: "Combos", group: "Promotions", path: "/admin/promotions/combos", legacyRoles: [] },
+  { key: "menu-3d", label: "3D Menu", group: "Inventory Management", path: "/admin/menu-3d", legacyRoles: [] },
+  { key: "upsells", label: "Upsells", group: "Promotions", path: "/admin/upsells", legacyRoles: [] },
+  { key: "delivery-platforms", label: "Delivery Apps", group: "F&B Admin", path: "/admin/delivery/platforms", legacyRoles: [] },
+  { key: "card-terminals", label: "Card Terminals", group: "Till", path: "/admin/payments/terminals", legacyRoles: [] },
+  { key: "tournaments", label: "Tournaments", group: "Gaming", path: "/admin/tournaments", legacyRoles: TILL },
+  { key: "bookings", label: "Station Bookings", group: "Gaming", path: "/admin/bookings", legacyRoles: TILL },
+  { key: "station-codes", label: "Station QR Ordering", group: "Gaming", path: "/admin/station-codes", legacyRoles: [] },
+  { key: "parent-wallet", label: "Parent Wallet", group: "Gaming", path: "/admin/parent-wallet", legacyRoles: TILL },
+  { key: "owner-assistant", label: "Owner Assistant", group: "Owner", path: "/admin/owner-assistant", legacyRoles: [] },
+  { key: "owner-alerts", label: "Owner Alerts", group: "Owner", path: "/admin/alerts", legacyRoles: [] },
+  { key: "ai-tools", label: "AI Tools", group: "Owner", path: "/admin/ai/forecast", legacyRoles: [], navItems: [{ name: "AI Forecast", path: "/admin/ai/forecast" }, { name: "AI Menu Import", path: "/admin/ai/menu-import" }, { name: "AI Invoice Scan", path: "/admin/ai/invoice-scan" }] },
+  { key: "setup", label: "Setup", group: "Owner", path: "/admin/setup", legacyRoles: [] },
+  { key: "accounting-exports", label: "Accounting Exports", group: "Accounting", path: "/admin/accounting/exports", legacyRoles: [] },
+  { key: "promo-accounting", label: "Promotion Accounting", group: "Promotions", path: "/admin/promotions/accounting", legacyRoles: [] },
+  { key: "till-coupon-apply", label: "Apply Coupon", group: "Till", path: "/cashier/coupon", legacyRoles: TILL },
+  { key: "branches", label: "Branches", group: "Venue", path: "/admin/branches", legacyRoles: [] },
+  { key: "branches-consolidated", label: "Consolidated Dashboard", group: "Overview", path: "/admin/branches/consolidated", legacyRoles: [] },
+  { key: "bi-scheduled-reports", label: "Scheduled Reports", group: "Tools", path: "/admin/bi/reports", legacyRoles: [] },
+  { key: "bi-owner-view", label: "Owner View", group: "Overview", path: "/owner", legacyRoles: ["admin_fnb"] },
+  { key: "marketing-segments", label: "Segments", group: "Marketing", path: "/admin/marketing/segments", legacyRoles: [] },
+  { key: "marketing-campaigns", label: "Campaigns", group: "Marketing", path: "/admin/marketing/campaigns", legacyRoles: [] },
 ];
 
 export const PAGE_BY_KEY: Record<string, PageDef> = Object.fromEntries(PAGES.map((p) => [p.key, p]));

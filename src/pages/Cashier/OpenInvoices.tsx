@@ -24,6 +24,12 @@ import ItemVariantPicker, { variantPickTotal, variantDeltaTotal } from '../../co
 import OpenInvoiceCard from '../../components/till/invoices/OpenInvoiceCard';
 import InvoiceDetailPanel from '../../components/till/invoices/InvoiceDetailPanel';
 import { money, useIsDesktop, useNow } from '../../components/till/invoices/invoiceUtils';
+import { useSearchParams } from 'react-router';
+import CheckoutDialog from '../../components/till/CheckoutDialog';
+import HappyHourBanner from '../../components/promotions/HappyHourBanner';
+import AppliedPromotionChips from '../../components/promotions/AppliedPromotionChips';
+import { describeAutoApply } from '../../components/promotions/cartPromotions';
+import { autoApply, getApplied, type AppliedPromotionsDto } from '../../services/promotionsService';
 
 const OpenInvoices: React.FC = () => {
     const [editingSetInvoiceId, setEditingSetInvoiceId] = useState<number | null>(null);
@@ -42,6 +48,23 @@ const [, setLoadingSets] = useState(false);
 
     // Payment picker (cash / wallet / mix) shown when the cashier hits Pay.
     const [payingInvoice, setPayingInvoice] = useState<OpenInvoiceDto | null>(null);
+
+    // Checkout step (coupon / gift card / tenders / card terminal) shown before payment.
+    const [checkoutInvoiceId, setCheckoutInvoiceId] = useState<number | null>(null);
+    // Promotions booked per invoice; a 404/403 just means no chips.
+    const [appliedPromos, setAppliedPromos] = useState<Record<number, AppliedPromotionsDto>>({});
+    const loadAppliedPromotions = async (ids: number[]) => {
+        if (ids.length === 0) { setAppliedPromos({}); return; }
+        const results = await Promise.allSettled(ids.map(id => getApplied(id)));
+        const next: Record<number, AppliedPromotionsDto> = {};
+        results.forEach((r, idx) => {
+            if (r.status === 'fulfilled' && r.value?.success && r.value.data) next[ids[idx]] = r.value.data;
+        });
+        setAppliedPromos(next);
+    };
+    // Deep link from waiter mode: /cashier/open-invoices?invoice=ID opens that invoice's checkout.
+    const [searchParams] = useSearchParams();
+    const linkedInvoice = Number(searchParams.get('invoice')) || null;
 
     // Open invoices state
     const [openInvoices, setOpenInvoices] = useState<OpenInvoiceDto[]>([]);
@@ -113,7 +136,13 @@ const [, setLoadingSets] = useState(false);
         try {
             const response = await getOpenFnbInvoices();
             if (response.success) {
-                setOpenInvoices(response.data || []);
+                const list = response.data || [];
+                setOpenInvoices(list);
+                void loadAppliedPromotions(list.map(i => i.id));
+                if (linkedInvoice && list.some(i => i.id === linkedInvoice)) {
+                    setActiveInvoiceId(linkedInvoice);
+                    setCheckoutInvoiceId(linkedInvoice);
+                }
             } else {
                 setError(response.message || 'Failed to load open invoices');
             }
@@ -438,10 +467,18 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
             );
 
             if (response.success) {
+                // Re-evaluate happy hour / combos now that the lines changed (idempotent).
+                let promoNote: string | null = null;
+                try {
+                    const promo = await autoApply(selectedInvoice.id);
+                    if (promo?.success && promo.data) promoNote = describeAutoApply(promo.data);
+                } catch {
+                    // Promotions endpoint unavailable: the items are already added.
+                }
                 setNotification({
                     variant: 'success',
                     title: 'Items Added',
-                    message: `Items added to invoice #${selectedInvoice.id}`,
+                    message: promoNote ? `Items added to invoice #${selectedInvoice.id}. ${promoNote}` : `Items added to invoice #${selectedInvoice.id}`,
                 });
 
                 // Reset and close modal
@@ -528,6 +565,8 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
     const firstLoad = loading && openInvoices.length === 0;
 
     const renderDetail = (invoice: OpenInvoiceDto, onBack?: () => void) => (
+        <div className="space-y-2">
+        <AppliedPromotionChips applied={appliedPromos[invoice.id]} className="pt-1" />
         <InvoiceDetailPanel
             invoice={invoice}
             now={now}
@@ -560,8 +599,9 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                 setIsAddItemsModalOpen(true);
             }}
             onPrint={() => handlePrintInvoice(invoice)}
-            onPay={() => setPayingInvoice(invoice)}
+            onPay={() => setCheckoutInvoiceId(invoice.id)}
         />
+        </div>
     );
 
     const closeAddItemsModal = () => {
@@ -575,6 +615,7 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
 
     return (
         <div className="space-y-4 p-4 sm:p-6">
+            <HappyHourBanner />
             {/* Slim header — title, counts, search, refresh */}
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
@@ -707,7 +748,7 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                                                 onSelect={() =>
                                                     setActiveInvoiceId(!isDesktop && isSelected ? null : invoice.id)
                                                 }
-                                                onPay={() => setPayingInvoice(invoice)}
+                                                onPay={() => setCheckoutInvoiceId(invoice.id)}
                                             />
                                             {!isDesktop && isSelected && (
                                                 <div className="col-span-full">
@@ -998,6 +1039,25 @@ const handleCloseInvoice = async (invoiceId: number, walletAmount = 0) => {
                     {currentInvoice && <ItemInvoice transaction={currentInvoice} />}
                 </div>
             </Modal>
+
+            {/* Checkout step: coupons, gift cards, tenders, card terminal; then the payment picker */}
+            {checkoutInvoiceId !== null && (() => {
+                const inv = openInvoices.find(i => i.id === checkoutInvoiceId);
+                return (
+                    <CheckoutDialog
+                        isOpen
+                        onClose={() => setCheckoutInvoiceId(null)}
+                        invoiceId={checkoutInvoiceId}
+                        total={inv?.totalPrice ?? 0}
+                        onInvoiceChanged={loadOpenInvoices}
+                        onConfirmClose={() => {
+                            setCheckoutInvoiceId(null);
+                            if (inv) setPayingInvoice(inv);
+                        }}
+                        closing={closingInvoiceId === checkoutInvoiceId}
+                    />
+                );
+            })()}
 
             {/* Payment picker — cash / wallet / mixed */}
             {payingInvoice && (

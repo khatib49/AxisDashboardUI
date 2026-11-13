@@ -142,8 +142,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setToken(null);
     }, []);
 
-    // Logout immediately if the app detects no internet connection
+    // Logout immediately if the app detects no internet connection.
+    // Skipped when offline mode is enabled (VITE_ENABLE_OFFLINE_MODE=true):
+    // the till then keeps working and queues orders (see src/offline).
+    const offlineModeEnabled = import.meta.env.VITE_ENABLE_OFFLINE_MODE === 'true';
     useEffect(() => {
+        if (offlineModeEnabled) return;
         const handleOffline = () => {
             // Only act if we currently have a token/auth
             if (isAuthenticated()) {
@@ -161,7 +165,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return () => {
             window.removeEventListener('offline', handleOffline);
         };
-    }, [doLogout]);
+    }, [doLogout, offlineModeEnabled]);
 
     const hasRole = useCallback((role: string) => !!claims?.roles.includes(role), [claims]);
 

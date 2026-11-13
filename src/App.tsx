@@ -89,6 +89,7 @@ import EventRegistrationPage from "./pages/Events/EventRegistrationPage";
 import TicketPage from "./pages/Events/TicketPage";
 import EventRegistrations from "./pages/Admin/EventRegistrations";
 import EventsManager from "./pages/Admin/EventsManager";
+import IntegrationsAdmin from "./pages/Phase5/IntegrationsAdmin";
 import IntegrationsPage from "./pages/Admin/Integrations";
 import ItemRevenueReport from "./pages/Accounting/ItemRevenueReport";
 import BooksAudit from "./pages/Accounting/BooksAudit";
@@ -101,6 +102,84 @@ import Purchases from "./pages/Chef/Purchases";
 import InventoryValuation from "./pages/Chef/InventoryValuation";
 import Channels from "./pages/Admin/Channels";
 import Printers from "./pages/Admin/Printers";
+import StockLocations from "./pages/StockOps/Locations";
+import StockCounts from "./pages/StockOps/StockCounts";
+import StockTransfers from "./pages/StockOps/StockTransfers";
+import ReorderSuggestions from "./pages/StockOps/ReorderSuggestions";
+import StockBatches from "./pages/StockOps/Batches";
+import FloorPlanAdmin from "./pages/Floor/FloorPlanAdmin";
+import FloorView from "./pages/Floor/FloorView";
+import Reservations from "./pages/Floor/Reservations";
+import ReservationRequest from "./pages/Floor/ReservationRequest";
+import BankReconciliation from "./pages/AccountingPlus/BankReconciliation";
+import SupplierBills from "./pages/AccountingPlus/SupplierBills";
+import Aging from "./pages/AccountingPlus/Aging";
+import VatReport from "./pages/AccountingPlus/VatReport";
+import FixedAssets from "./pages/AccountingPlus/FixedAssets";
+import Periods from "./pages/AccountingPlus/Periods";
+import Branches from "./pages/Branches/Branches";
+import Consolidated from "./pages/Branches/Consolidated";
+import ScheduledReports from "./pages/Bi/ScheduledReports";
+import OwnerView from "./pages/Bi/OwnerView";
+import OfflineStatus from "./pages/Offline/OfflineStatus";
+import ShiftPanel from "./pages/Till/ShiftPanel";
+import ShiftsAdmin from "./pages/Till/ShiftsAdmin";
+import VoidRequests from "./pages/Till/VoidRequests";
+import VoidReasons from "./pages/Till/VoidReasons";
+import Currencies from "./pages/Till/Currencies";
+import Tenders from "./pages/Till/Tenders";
+import GiftCards from "./pages/Promotions/GiftCards";
+import Coupons from "./pages/Promotions/Coupons";
+import HappyHours from "./pages/Promotions/HappyHours";
+import Combos from "./pages/Promotions/Combos";
+import CouponApply from "./pages/Promotions/CouponApply";
+import HrEmployees from "./pages/Hr/Employees";
+import HrSchedule from "./pages/Hr/Schedule";
+import HrAttendance from "./pages/Hr/Attendance";
+import HrClockKiosk from "./pages/Hr/ClockKiosk";
+import HrLeave from "./pages/Hr/Leave";
+import HrTipPools from "./pages/Hr/TipPools";
+import DeliveryBoard from "./pages/Delivery/DeliveryBoard";
+import NewDeliveryOrder from "./pages/Delivery/NewDeliveryOrder";
+import ZonesDrivers from "./pages/Delivery/ZonesDrivers";
+import SelfOrderTablesAdmin from "./pages/SelfOrder/SelfOrderTablesAdmin";
+import SelfOrderPage from "./pages/SelfOrder/SelfOrderPage";
+import KioskPage from "./pages/Kiosk/KioskPage";
+import KioskDevicesAdmin from "./pages/Kiosk/KioskDevicesAdmin";
+import MenuEngineering from "./pages/MenuEngineering/MenuEngineering";
+import CustomerDisplayPage from "./pages/CustomerDisplay/CustomerDisplayPage";
+import DisplaysAdmin from "./pages/CustomerDisplay/DisplaysAdmin";
+import WaiterHome from "./pages/Waiter/WaiterHome";
+import WaiterTable from "./pages/Waiter/WaiterTable";
+import WaiterOrder from "./pages/Waiter/WaiterOrder";
+import MarketingSegments from "./pages/Marketing/Segments";
+import MarketingCampaigns from "./pages/Marketing/Campaigns";
+import HrPayroll from "./pages/Hr/Payroll";
+import HrPayComponents from "./pages/Hr/PayComponents";
+import RetailBarcodes from "./pages/Retail/Barcodes";
+import Menu3DAdmin from "./pages/Phase4/Menu3DAdmin";
+import TournamentsAdmin from "./pages/Phase5/TournamentsAdmin";
+import BookingsAdmin from "./pages/Phase5/BookingsAdmin";
+import StationCodesAdmin from "./pages/Phase5/StationCodesAdmin";
+import ParentWalletAdmin from "./pages/Phase5/ParentWalletAdmin";
+import OwnerAssistantAdmin from "./pages/Phase5/OwnerAssistantAdmin";
+import AlertsAdmin from "./pages/Phase5/AlertsAdmin";
+import AiForecast from "./pages/Phase5/AiForecast";
+import AiMenuImport from "./pages/Phase5/AiMenuImport";
+import AiInvoiceScan from "./pages/Phase5/AiInvoiceScan";
+import SetupWizard from "./pages/Phase5/SetupWizard";
+import AccountingExports from "./pages/Phase5/AccountingExports";
+import TournamentPublic, { TournamentListPublic } from "./pages/Phase5/public/TournamentPublic";
+import BookPublic, { BookingStatusPublic } from "./pages/Phase5/public/BookPublic";
+import StationPublic from "./pages/Phase5/public/StationPublic";
+import ParentPublic from "./pages/Phase5/public/ParentPublic";
+import UpsellsAdmin from "./pages/Phase4/UpsellsAdmin";
+import DeliveryPlatformsAdmin from "./pages/Phase4/DeliveryPlatformsAdmin";
+import CardTerminalsAdmin from "./pages/Phase4/CardTerminalsAdmin";
+import RetailLabels from "./pages/Retail/Labels";
+import RetailSerials from "./pages/Retail/Serials";
+import PromotionAccounting from "./pages/Promotions/PromotionAccounting";
+import BranchPositions from "./pages/StockOps/BranchPositions";
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { authenticated, loading } = useAuth();
@@ -204,6 +283,20 @@ export default function App() {
                 online. /result is where the gateway sends the customer back. */}
             <Route path="/pay/:code" element={<PayPage />} />
             <Route path="/pay/:code/result" element={<PayPage result />} />
+            <Route path="/reserve" element={<ReservationRequest />} />
+            <Route path="/order/:tableCode" element={<SelfOrderPage />} />
+            <Route path="/kiosk" element={<KioskPage />} />
+            <Route path="/display" element={<CustomerDisplayPage />} />
+            <Route path="/t" element={<TournamentListPublic />} />
+            <Route path="/t/:token" element={<TournamentPublic />} />
+            <Route path="/book" element={<BookPublic />} />
+            <Route path="/book/:token" element={<BookingStatusPublic />} />
+            <Route path="/station/:token" element={<StationPublic />} />
+            <Route path="/parent/:token" element={<ParentPublic />} />
+            <Route path="/admin/retail/labels" element={<PageRoute page="retail-labels"><RetailLabels /></PageRoute>} />
+            <Route path="/waiter" element={<PageRoute page="waiter"><WaiterHome /></PageRoute>} />
+            <Route path="/waiter/table/:tableId" element={<PageRoute page="waiter"><WaiterTable /></PageRoute>} />
+            <Route path="/waiter/order/:tableId" element={<PageRoute page="waiter"><WaiterOrder /></PageRoute>} />
 
             {/* Dashboard Layout */}
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
@@ -238,6 +331,7 @@ export default function App() {
               <Route path="/admin/audit-logs" element={<PageRoute page="audit-logs"><AuditLogsPage /></PageRoute>} />
               <Route path="/ai/chat" element={<PageRoute page="ai-assistant"><AiChatPage /></PageRoute>} />
               <Route path="/admin/integrations" element={<PageRoute page="integrations"><IntegrationsPage /></PageRoute>} />
+              <Route path="/admin/integrations/all" element={<PageRoute page="integrations"><IntegrationsAdmin /></PageRoute>} />
               <Route path="/admin/consumption-rebuild" element={<PageRoute page="cogs-rebuild"><ConsumptionRebuild /></PageRoute>} />
               <Route path="/admin/events" element={<PageRoute page="events"><EventsManager /></PageRoute>} />
               <Route path="/admin/event-registrations" element={<PageRoute page="event-registrations"><EventRegistrations /></PageRoute>} />
@@ -325,6 +419,72 @@ export default function App() {
               <Route path="/gamecashier/clients" element={<PageRoute page="clients"><ClientManagement /></PageRoute>} />
               {/* Today's + upcoming events, and cashier quick-create. */}
               <Route path="/cashier/events" element={<PageRoute page="cashier-events"><EventsBoard /></PageRoute>} />
+              <Route path="/stock/locations" element={<PageRoute page="stockops-locations"><StockLocations /></PageRoute>} />
+              <Route path="/stock/counts" element={<PageRoute page="stockops-counts"><StockCounts /></PageRoute>} />
+              <Route path="/stock/transfers" element={<PageRoute page="stockops-transfers"><StockTransfers /></PageRoute>} />
+              <Route path="/stock/reorder" element={<PageRoute page="stockops-reorder"><ReorderSuggestions /></PageRoute>} />
+              <Route path="/stock/batches" element={<PageRoute page="stockops-batches"><StockBatches /></PageRoute>} />
+              <Route path="/stock/positions" element={<PageRoute page="stockops-positions"><BranchPositions /></PageRoute>} />
+              <Route path="/admin/retail/barcodes" element={<PageRoute page="retail-barcodes"><RetailBarcodes /></PageRoute>} />
+              <Route path="/admin/menu-3d" element={<PageRoute page="menu-3d"><Menu3DAdmin /></PageRoute>} />
+              <Route path="/admin/tournaments" element={<PageRoute page="tournaments"><TournamentsAdmin /></PageRoute>} />
+              <Route path="/admin/bookings" element={<PageRoute page="bookings"><BookingsAdmin /></PageRoute>} />
+              <Route path="/admin/parent-wallet" element={<PageRoute page="parent-wallet"><ParentWalletAdmin /></PageRoute>} />
+              <Route path="/admin/station-codes" element={<PageRoute page="station-codes"><StationCodesAdmin /></PageRoute>} />
+              <Route path="/admin/owner-assistant" element={<PageRoute page="owner-assistant"><OwnerAssistantAdmin /></PageRoute>} />
+              <Route path="/admin/alerts" element={<PageRoute page="owner-alerts"><AlertsAdmin /></PageRoute>} />
+              <Route path="/admin/ai/forecast" element={<PageRoute page="ai-tools"><AiForecast /></PageRoute>} />
+              <Route path="/admin/ai/menu-import" element={<PageRoute page="ai-tools"><AiMenuImport /></PageRoute>} />
+              <Route path="/admin/ai/invoice-scan" element={<PageRoute page="ai-tools"><AiInvoiceScan /></PageRoute>} />
+              <Route path="/admin/setup" element={<PageRoute page="setup"><SetupWizard /></PageRoute>} />
+              <Route path="/admin/accounting/exports" element={<PageRoute page="accounting-exports"><AccountingExports /></PageRoute>} />
+              <Route path="/admin/upsells" element={<PageRoute page="upsells"><UpsellsAdmin /></PageRoute>} />
+              <Route path="/admin/delivery/platforms" element={<PageRoute page="delivery-platforms"><DeliveryPlatformsAdmin /></PageRoute>} />
+              <Route path="/admin/payments/terminals" element={<PageRoute page="card-terminals"><CardTerminalsAdmin /></PageRoute>} />
+              <Route path="/admin/retail/serials" element={<PageRoute page="retail-serials"><RetailSerials /></PageRoute>} />
+              <Route path="/admin/floor-plan" element={<PageRoute page="floor-plan"><FloorPlanAdmin /></PageRoute>} />
+              <Route path="/cashier/floor" element={<PageRoute page="floor-view"><FloorView /></PageRoute>} />
+              <Route path="/floor/reservations" element={<PageRoute page="floor-reservations"><Reservations /></PageRoute>} />
+              <Route path="/till/shift" element={<PageRoute page="till-shift"><ShiftPanel /></PageRoute>} />
+              <Route path="/till/void-requests" element={<PageRoute page="till-void-requests"><VoidRequests /></PageRoute>} />
+              <Route path="/till/tenders" element={<PageRoute page="till-tenders"><Tenders /></PageRoute>} />
+              <Route path="/admin/till/shifts" element={<PageRoute page="till-shifts-admin"><ShiftsAdmin /></PageRoute>} />
+              <Route path="/admin/till/void-reasons" element={<PageRoute page="till-void-reasons"><VoidReasons /></PageRoute>} />
+              <Route path="/admin/currencies" element={<PageRoute page="currencies"><Currencies /></PageRoute>} />
+              <Route path="/admin/till/displays" element={<PageRoute page="till-displays"><DisplaysAdmin /></PageRoute>} />
+              <Route path="/delivery/board" element={<PageRoute page="delivery-board"><DeliveryBoard /></PageRoute>} />
+              <Route path="/delivery/new" element={<PageRoute page="delivery-new"><NewDeliveryOrder /></PageRoute>} />
+              <Route path="/admin/delivery/zones-drivers" element={<PageRoute page="delivery-zones"><ZonesDrivers /></PageRoute>} />
+              <Route path="/admin/selforder/tables" element={<PageRoute page="selforder-tables"><SelfOrderTablesAdmin /></PageRoute>} />
+              <Route path="/admin/kiosk/devices" element={<PageRoute page="kiosk-devices"><KioskDevicesAdmin /></PageRoute>} />
+              <Route path="/accounting-plus/bank-reconciliation" element={<PageRoute page="acctplus-bank"><BankReconciliation /></PageRoute>} />
+              <Route path="/accounting-plus/supplier-bills" element={<PageRoute page="acctplus-bills"><SupplierBills /></PageRoute>} />
+              <Route path="/accounting-plus/aging" element={<PageRoute page="acctplus-aging"><Aging /></PageRoute>} />
+              <Route path="/accounting-plus/vat-report" element={<PageRoute page="acctplus-vat"><VatReport /></PageRoute>} />
+              <Route path="/accounting-plus/fixed-assets" element={<PageRoute page="acctplus-assets"><FixedAssets /></PageRoute>} />
+              <Route path="/accounting-plus/periods" element={<PageRoute page="acctplus-periods"><Periods /></PageRoute>} />
+              <Route path="/accounting/menu-engineering" element={<PageRoute page="menu-engineering"><MenuEngineering /></PageRoute>} />
+              <Route path="/hr/employees" element={<PageRoute page="hr-employees"><HrEmployees /></PageRoute>} />
+              <Route path="/hr/schedule" element={<PageRoute page="hr-schedule"><HrSchedule /></PageRoute>} />
+              <Route path="/hr/attendance" element={<PageRoute page="hr-attendance"><HrAttendance /></PageRoute>} />
+              <Route path="/hr/leave" element={<PageRoute page="hr-leave"><HrLeave /></PageRoute>} />
+              <Route path="/hr/tips" element={<PageRoute page="hr-tips"><HrTipPools /></PageRoute>} />
+              <Route path="/hr/clock" element={<PageRoute page="hr-clock"><HrClockKiosk /></PageRoute>} />
+              <Route path="/hr/payroll" element={<PageRoute page="hr-payroll"><HrPayroll /></PageRoute>} />
+              <Route path="/hr/pay-components" element={<PageRoute page="hr-pay-components"><HrPayComponents /></PageRoute>} />
+              <Route path="/admin/marketing/segments" element={<PageRoute page="marketing-segments"><MarketingSegments /></PageRoute>} />
+              <Route path="/admin/marketing/campaigns" element={<PageRoute page="marketing-campaigns"><MarketingCampaigns /></PageRoute>} />
+              <Route path="/admin/promotions/gift-cards" element={<PageRoute page="promo-giftcards"><GiftCards /></PageRoute>} />
+              <Route path="/admin/promotions/coupons" element={<PageRoute page="promo-coupons"><Coupons /></PageRoute>} />
+              <Route path="/admin/promotions/happy-hours" element={<PageRoute page="promo-happyhours"><HappyHours /></PageRoute>} />
+              <Route path="/admin/promotions/combos" element={<PageRoute page="promo-combos"><Combos /></PageRoute>} />
+              <Route path="/admin/promotions/accounting" element={<PageRoute page="promo-accounting"><PromotionAccounting /></PageRoute>} />
+              <Route path="/cashier/coupon" element={<PageRoute page="till-coupon-apply"><CouponApply /></PageRoute>} />
+              <Route path="/admin/branches" element={<PageRoute page="branches"><Branches /></PageRoute>} />
+              <Route path="/admin/branches/consolidated" element={<PageRoute page="branches-consolidated"><Consolidated /></PageRoute>} />
+              <Route path="/admin/bi/reports" element={<PageRoute page="bi-scheduled-reports"><ScheduledReports /></PageRoute>} />
+              <Route path="/owner" element={<PageRoute page="bi-owner-view"><OwnerView /></PageRoute>} />
+              <Route path="/offline" element={<PageRoute page="offline-status"><OfflineStatus /></PageRoute>} />
             </Route>
 
             {/* Auth Layout */}

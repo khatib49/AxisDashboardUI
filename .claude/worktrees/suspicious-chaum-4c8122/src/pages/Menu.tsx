@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { getItems, ItemDto } from "../services/itemService";
+import Model3DButton from "../components/menu3d/Model3DButton";
+import { useItemModels } from "../components/menu3d/useItemModels";
 import { getCategoriesByType, CategoryDto } from "../services/categoryService";
 
 export default function Menu() {
@@ -90,6 +92,7 @@ export default function Menu() {
         return matchesItemType && matchesCategory;
     });
 
+    const models = useItemModels();
     const renderItemCard = (item: ItemDto) => {
         const inStock = item.quantity > 0;
         return (
@@ -107,6 +110,10 @@ export default function Menu() {
                     >
                         {inStock ? "✓" : "✕"}
                     </span>
+                </div>
+
+                <div className="absolute top-2 left-2 z-20">
+                    <Model3DButton model={models.get(Number(item.id))} name={item.name} />
                 </div>
 
                 {/* Item Image */}
@@ -166,14 +173,15 @@ export default function Menu() {
                 <div className="absolute inset-0 bg-black opacity-40"></div>
                 <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
                     <div className="text-center">
-                        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white mb-4 tracking-tight font40">
-                            Axis Menu   <br />   
+                        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white mb-4 tracking-tight">
+                            Axis X Brew Verse <br />
+                            Menu
                         </h1>
                         <p className="text-xl text-gray-200 mb-6">
-                            <br />
                             Fuel up before the next round. <br />
                             No one wins on an empty tank! <br />
-                            <br />
+
+                            ▪🔺⭕
                         </p>
                         <div className="w-32 h-1.5 mx-auto rounded-full bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400"></div>
                     </div>

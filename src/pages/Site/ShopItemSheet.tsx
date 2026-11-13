@@ -6,6 +6,8 @@ import { useNavigate } from "react-router";
 import type { ItemVariantDto, ItemAddOnDto } from "../../services/itemService";
 import { addToCart } from "../../services/shopService";
 import { onImageError, resolveImageUrl } from "./siteHelpers";
+import Model3DButton from "../../components/menu3d/Model3DButton";
+import { useItemModels } from "../../components/menu3d/useItemModels";
 
 /** Minimal shape accepted by the sheet — both ItemDto and ShopCatalogItem fit. */
 export type SheetItem = {
@@ -31,6 +33,7 @@ type Props = {
 const CHIP_INFO = "flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-gray-200";
 
 export default function ShopItemSheet({ item, categoryName, onClose, mode }: Props) {
+  const models = useItemModels();
   const navigate = useNavigate();
   const [pickVariant, setPickVariant] = useState<number | null>(null);
   const [pickAddOns, setPickAddOns] = useState<Record<number, number>>({});
@@ -116,6 +119,7 @@ export default function ShopItemSheet({ item, categoryName, onClose, mode }: Pro
             <div className="min-w-0">
               {categoryName && <div className="text-[11px] uppercase tracking-[0.2em] text-[#b9d3ee] mb-1">{categoryName}</div>}
               <h3 className="text-2xl font-bold leading-tight">{item.name}</h3>
+              <Model3DButton model={models.get(Number(item.id))} name={item.name} className="mt-2 px-3 py-1.5 text-sm" />
             </div>
             <div className="shrink-0 text-2xl font-bold text-[#b9d3ee]">${item.price.toFixed(2)}</div>
           </div>

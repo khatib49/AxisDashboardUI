@@ -6,6 +6,7 @@
 // what's saved without exposing the full key.
 
 import { useEffect, useState } from "react";
+import { Link } from "react-router";
 import {
   IntegrationSetting, IntegrationTestResult,
   integrationSettingsService,
@@ -229,6 +230,11 @@ export default function IntegrationsPage() {
         <h1 className="text-2xl font-bold text-gray-900">Integrations</h1>
         <p className="text-sm text-gray-500 mt-1">
           API keys for Claude AI, WhatsApp, MontyPay, Aramex and Whish. Secrets are never returned in plaintext — only the last 4 chars are shown.
+        </p>
+        <p className="text-sm mt-2">
+          <Link to="/admin/integrations/all" className="font-medium text-brand-600 hover:underline dark:text-brand-400">
+            More settings: card terminal, booking hours, owner alerts and every stored key →
+          </Link>
         </p>
       </div>
 

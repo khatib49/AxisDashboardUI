@@ -36,6 +36,14 @@ import PosTotals from '../../components/till/pos/PosTotals';
 import QtyStepper from '../../components/till/pos/QtyStepper';
 import PosItemGridSkeleton from '../../components/till/pos/PosItemGridSkeleton';
 import { POS_GRID_CLASS } from '../../components/till/pos/posGrid';
+import HappyHourBanner from '../../components/promotions/HappyHourBanner';
+import CartPromoHint from '../../components/promotions/CartPromoHint';
+import { type CartPromoLine } from '../../components/promotions/cartPromotions';
+import { getDisplayRegister, pushDisplayState } from '../../services/displayService';
+import ScannerInput from '../../components/retail/ScannerInput';
+import SerialPromptDialog from '../../components/retail/SerialPromptDialog';
+import { lookupBarcode, sellSerial } from '../../services/retailService';
+import UpsellStrip from '../../components/upsell/UpsellStrip';
 
 // Line shape of the order-create response (data.items), as used below.
 type OrderResponseLine = {
@@ -77,6 +85,10 @@ export default function CashierItems() {
         setSelectedItems(s => { const c = { ...s }; if (total <= 0) delete c[itemId]; else c[itemId] = total; return c; });
         if (total <= 0) setSelectedAddOns(a => { const c = { ...a }; delete c[itemId]; return c; });
     };
+    // Barcode / serial scanning: serials chosen per cart item, recorded as Sold once the invoice exists.
+    const [scanSerials, setScanSerials] = useState<Record<string, string[]>>({});
+    const [serialPrompt, setSerialPrompt] = useState<{ itemId: number; itemName: string; variantId: number | null } | null>(null);
+    const [scanBusy, setScanBusy] = useState(false);
     const [categories, setCategories] = useState<CategoryDto[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -458,6 +470,84 @@ export default function CashierItems() {
         }
     }
 
+    // Customer-facing display: mirror the cart when this till has a display register attached.
+    useEffect(() => {
+        const register = getDisplayRegister();
+        if (!register) return;
+        const cart = Object.entries(selectedItems)
+            .filter(([, qty]) => (qty || 0) > 0)
+            .map(([id, qty]) => {
+                const it = itemLookup[String(id)];
+                return { name: it?.name ?? `Item ${id}`, qty: Number(qty), price: Number(it?.price ?? 0) };
+            });
+        pushDisplayState(register, cart, undefined, currentInvoice?.transactionId ?? null);
+    }, [selectedItems, itemLookup, currentInvoice?.transactionId]);
+
+    // Cart as the client-side promotion estimate sees it (happy hour / combo hint).
+    const promoLines: CartPromoLine[] = orderLines.map((l) => ({
+        itemId: Number(l.itemId),
+        categoryId: itemLookup[String(l.itemId)]?.categoryId ?? null,
+        qty: l.qty,
+        unit: l.unit,
+    }));
+
+    /** After the invoice exists: record every chosen serial as Sold on it (idempotent server-side). */
+    async function recordSerials(transactionId: number) {
+        const all = Object.values(scanSerials).flat();
+        if (all.length === 0) return;
+        const failed: string[] = [];
+        for (const serial of all) {
+            try {
+                const r = await sellSerial(serial, transactionId);
+                if (!r.success) failed.push(`${serial}: ${r.error || r.message}`);
+            } catch {
+                failed.push(serial);
+            }
+        }
+        if (failed.length > 0) {
+            setNotification({ variant: 'warning', title: 'Serials not recorded', message: failed.join('; ') });
+        }
+    }
+
+    /** Scanner / manual code entry: resolve the code and add the item (and option) to the cart. */
+    async function handleScan(code: string) {
+        if (scanBusy) return;
+        setScanBusy(true);
+        try {
+            const r = await lookupBarcode(code);
+            if (!r.success || !r.data) {
+                setNotification({ variant: 'error', title: 'Unknown code', message: r.error || r.message || `No item for ${code}` });
+                return;
+            }
+            const hit = r.data;
+            const key = String(hit.itemId);
+            setItemLookup(prev => prev[key] ? prev : {
+                ...prev,
+                [key]: { id: key, name: hit.itemName, quantity: hit.stock, price: hit.price, type: '', categoryId: hit.categoryId, gameId: null, statusId: STATUS_ENABLED, imagePath: hit.imagePath } as ItemDto,
+            });
+            if (hit.variantId != null) {
+                const cur = { ...(selectedVariants[key] ?? {}) };
+                cur[hit.variantId] = (cur[hit.variantId] || 0) + 1;
+                setVariantPicks(key, cur);
+            } else {
+                setSelectedItems(s => ({ ...s, [key]: (s[key] || 0) + 1 }));
+            }
+            const label = hit.variantName ? `${hit.itemName} — ${hit.variantName}` : hit.itemName;
+            if (hit.matchedSerial) {
+                const serial = hit.matchedSerial;
+                setScanSerials(prev => ({ ...prev, [key]: Array.from(new Set([...(prev[key] || []), serial])) }));
+                setNotification({ variant: 'success', title: 'Added to cart', message: `${label} · serial ${serial}` });
+            } else if (hit.requiresSerial) {
+                setNotification({ variant: 'info', title: 'Added to cart', message: `${label} — pick the serial number` });
+                setSerialPrompt({ itemId: hit.itemId, itemName: label, variantId: hit.variantId });
+            } else {
+                setNotification({ variant: 'success', title: 'Added to cart', message: `${label} · $${Number(hit.price).toFixed(2)}${hit.stock <= 0 ? ' (out of stock)' : ''}` });
+            }
+        } finally {
+            setScanBusy(false);
+        }
+    }
+
     // Pay-now submit, extracted so the payment picker can pass a wallet
     // amount. walletAmount = 0 is a plain cash sale.
     const submitPayNow = async (walletAmount = 0) => {
@@ -554,6 +644,7 @@ export default function CashierItems() {
 
                                                             setCurrentInvoice(invoiceData);
                                                             setInvoiceModalOpen(true);
+                                                            await recordSerials(response.data.id);
 
                                                             // Kitchen/bar tickets print server-side: the API
                                                             // dispatches ESC/POS jobs over SignalR to the
@@ -561,7 +652,7 @@ export default function CashierItems() {
                                                             // the on-site print agent.
                                                         }
 
-                                                        setSelectedItems({}); setSelectedAddOns({}); setSelectedVariants({});
+                                                        setSelectedItems({}); setSelectedAddOns({}); setSelectedVariants({}); setScanSerials({}); setSerialPrompt(null);
                                                         setSelectedDiscountId(null);
                                                         setSelectedClient(null);
                                                         setClientResults([]);
@@ -570,6 +661,7 @@ export default function CashierItems() {
                                                         setSelectedChannelId(null);
                                                         setIsDrawerOpen(false);
                                                         setItemsReloadToken(t => t + 1);
+            { const r = getDisplayRegister(); if (r) pushDisplayState(r, [], "Idle"); }
                                                         setNotification({
                                                             variant: 'success',
                                                             title: 'Order Created',
@@ -670,6 +762,7 @@ export default function CashierItems() {
 
                 setCurrentInvoice(invoiceData);
                 setInvoiceModalOpen(true);
+                await recordSerials(response.data.id);
 
                 // Kitchen/bar tickets print server-side: the API
                 // dispatches ESC/POS jobs over SignalR to the
@@ -677,7 +770,7 @@ export default function CashierItems() {
                 // the on-site print agent.
             }
 
-            setSelectedItems({}); setSelectedAddOns({}); setSelectedVariants({});
+            setSelectedItems({}); setSelectedAddOns({}); setSelectedVariants({}); setScanSerials({}); setSerialPrompt(null);
             setSelectedDiscountId(null);
             setSelectedClient(null);
             setClientResults([]);
@@ -687,6 +780,7 @@ export default function CashierItems() {
             setSelectedChannelId(null);
             setIsDrawerOpen(false);
             setItemsReloadToken(t => t + 1);
+            { const r = getDisplayRegister(); if (r) pushDisplayState(r, [], "Idle"); }
             setNotification({
                 variant: 'success',
                 title: 'Open Invoice Created',
@@ -729,12 +823,13 @@ export default function CashierItems() {
     const hasActiveVariants = (it?: ItemDto) => (it?.variants?.filter(v => v.isActive !== false).length ?? 0) > 0;
 
     const openOrderDrawer = () => { setOrderTimestamp(new Date()); setIsDrawerOpen(true); };
-    const clearOrder = () => { setSelectedItems({}); setSelectedAddOns({}); setSelectedVariants({}); };
+    const clearOrder = () => { setSelectedItems({}); setSelectedAddOns({}); setSelectedVariants({}); setScanSerials({}); setSerialPrompt(null); };
 
     const fieldLabel = "mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-200";
 
     return (
         <div className="pb-24 lg:pb-0">
+            <HappyHourBanner className="mb-4" />
             {/* Compact till header */}
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
@@ -769,6 +864,9 @@ export default function CashierItems() {
                                 the shared Input sets its own horizontal padding, and an
                                 absolutely-positioned icon could collide with it. */}
                             <Input placeholder="🔍  Search items…" value={search} onChange={(e) => { setPage(1); setSearch(e.target.value); }} />
+                        </div>
+                        <div className="w-full sm:max-w-sm">
+                            <ScannerInput onScan={handleScan} disabled={scanBusy} placeholder="Scan barcode…" />
                         </div>
                         <PosCategoryBar
                             categories={categories}
@@ -1113,6 +1211,19 @@ export default function CashierItems() {
 
                                     {/* Totals + payment — always visible at the bottom of the panel */}
                                     <div className="space-y-3 border-t border-gray-200 bg-gray-50/80 px-4 py-4 dark:border-white/10 dark:bg-white/[0.03]">
+                                        <CartPromoHint lines={promoLines} />
+                                        <UpsellStrip
+                                            channel="Till"
+                                            itemIds={Object.keys(selectedItems).map(Number).filter(n => n > 0)}
+                                            onAdd={(sug) => {
+                                                const key = String(sug.itemId);
+                                                setItemLookup(prev => prev[key] ? prev : {
+                                                    ...prev,
+                                                    [key]: { id: key, name: sug.name, quantity: 0, price: sug.price, type: '', categoryId: 0, gameId: null, statusId: STATUS_ENABLED, imagePath: sug.imagePath ?? null } as ItemDto,
+                                                });
+                                                setSelectedItems(s => ({ ...s, [key]: (s[key] || 0) + 1 }));
+                                            }}
+                                        />
                                         <PosTotals
                                             subtotal={orderSubtotal}
                                             discount={selectedDiscount}
@@ -1333,6 +1444,19 @@ export default function CashierItems() {
                         </div>
 
                         <div className="space-y-3 border-t border-gray-200 bg-gray-50/80 px-4 py-4 dark:border-white/10 dark:bg-white/[0.02]">
+                            <CartPromoHint lines={promoLines} />
+                            <UpsellStrip
+                                channel="Till"
+                                itemIds={Object.keys(selectedItems).map(Number).filter(n => n > 0)}
+                                onAdd={(sug) => {
+                                    const key = String(sug.itemId);
+                                    setItemLookup(prev => prev[key] ? prev : {
+                                        ...prev,
+                                        [key]: { id: key, name: sug.name, quantity: 0, price: sug.price, type: '', categoryId: 0, gameId: null, statusId: STATUS_ENABLED, imagePath: sug.imagePath ?? null } as ItemDto,
+                                    });
+                                    setSelectedItems(s => ({ ...s, [key]: (s[key] || 0) + 1 }));
+                                }}
+                            />
                             <PosTotals
                                 subtotal={orderSubtotal}
                                 discount={selectedDiscount}
@@ -1457,6 +1581,22 @@ export default function CashierItems() {
 
             {/* Payment picker — cash / wallet / mixed, shown for Pay Now when
                 a client is attached */}
+            {serialPrompt && (
+                <SerialPromptDialog
+                    isOpen={!!serialPrompt}
+                    itemId={serialPrompt.itemId}
+                    itemName={serialPrompt.itemName}
+                    variantId={serialPrompt.variantId}
+                    taken={scanSerials[String(serialPrompt.itemId)] || []}
+                    onPick={(serial) => {
+                        const key = String(serialPrompt.itemId);
+                        setScanSerials(prev => ({ ...prev, [key]: Array.from(new Set([...(prev[key] || []), serial])) }));
+                        setSerialPrompt(null);
+                        setNotification({ variant: 'success', title: 'Serial recorded', message: `${serialPrompt.itemName} · ${serial}` });
+                    }}
+                    onSkip={() => setSerialPrompt(null)}
+                />
+            )}
             <PaymentChoiceModal
                 open={payNowChoiceOpen}
                 total={orderTotal}

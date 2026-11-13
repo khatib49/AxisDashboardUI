@@ -112,7 +112,7 @@ export default function QRCodeGenerator() {
     };
 
     return (
-        <div className="p-6">
+        <div className="p-6 text-gray-800 dark:text-white/90">
             <div className="mb-6">
                 <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">QR Code Generator</h1>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -122,7 +122,7 @@ export default function QRCodeGenerator() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Left Panel - Configuration */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-gray-800 dark:text-white/90">
                     <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Configuration</h2>
 
                     <div className="space-y-4">
@@ -231,13 +231,13 @@ export default function QRCodeGenerator() {
                 </div>
 
                 {/* Right Panel - Preview */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-gray-800 dark:text-white/90">
                     <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Preview</h2>
 
                     <div className="flex flex-col items-center justify-center min-h-[400px]">
                         {generatedUrl ? (
                             <>
-                                <div className="p-6 bg-gray-50 dark:bg-gray-900 rounded-lg mb-4">
+                                <div className="p-6 bg-gray-50 dark:bg-gray-900 rounded-lg mb-4 text-gray-800 dark:text-white/90">
                                     <QRCodeSVG
                                         id="qr-code-svg"
                                         value={generatedUrl}
@@ -249,7 +249,7 @@ export default function QRCodeGenerator() {
                                     />
                                 </div>
 
-                                <div className="w-full max-w-md bg-gray-50 dark:bg-gray-900 rounded p-3 mb-4">
+                                <div className="w-full max-w-md bg-gray-50 dark:bg-gray-900 rounded p-3 mb-4 text-gray-800 dark:text-white/90">
                                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Encoded URL:</p>
                                     <p className="text-sm text-gray-900 dark:text-white break-all font-mono">
                                         {generatedUrl}
@@ -277,7 +277,7 @@ export default function QRCodeGenerator() {
                                 </button>
                             </>
                         ) : (
-                            <div className="text-center text-gray-400 dark:text-gray-500">
+                            <div className="text-center text-gray-400 dark:text-gray-400">
                                 <svg
                                     className="w-24 h-24 mx-auto mb-4 opacity-50"
                                     fill="none"

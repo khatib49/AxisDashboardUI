@@ -29,6 +29,7 @@ import { useAuth } from "../context/AuthContext";
 import SidebarWidget from "./SidebarWidget";
 import BrandLogo from "../components/common/BrandLogo";
 import { PAGES, PAGE_GROUPS } from "../config/pages";
+import { useI18n } from "../i18n/I18nProvider";
 
 type NavItem = {
   name: string;
@@ -81,6 +82,10 @@ const GROUP_ICONS: Record<string, React.ReactNode> = {
   Till: <NavItemsIcon />,
   "Game Till": <NavGameIcon />,
   "Kitchen & Bar": <NavKitchenIcon />,
+  Gaming: <NavGameIcon />,
+  Promotions: <NavRewardsIcon />,
+  Marketing: EventsIcon,
+  Owner: <NavDashboardIcon />,
 };
 
 /** Icons for pages that render as their own top-level link. */
@@ -121,6 +126,7 @@ const PAGE_ICONS: Record<string, React.ReactNode> = {
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const { canAccess } = useAuth();
+  const { t } = useI18n();
   const location = useLocation();
 
   const [openSubmenu, setOpenSubmenu] = useState<number | null>(null);
@@ -136,7 +142,7 @@ const AppSidebar: React.FC = () => {
 
   const navItems = useMemo<NavItem[]>(() => {
     const items: NavItem[] = [];
-    const accessible = PAGES.filter((p) => canAccess(p.key));
+    const accessible = PAGES.filter((p) => !p.hidden && canAccess(p.key));
     const groupsInUse = new Set(accessible.map((p) => p.group));
     // Till-style groups render as top-level links for till staff (whose whole
     // menu is one or two such groups). Users with a wider menu (admins) get
@@ -208,7 +214,7 @@ const AppSidebar: React.FC = () => {
                 <span className={`menu-item-icon-size transition-colors ${isOpen || hasActiveChild ? "menu-item-icon-active" : "menu-item-icon-inactive"}`}>
                   {nav.icon}
                 </span>
-                {showText && <span className="menu-item-text font-medium">{nav.name}</span>}
+                {showText && <span className="menu-item-text font-medium">{t(nav.name)}</span>}
                 {showText && (
                   <ChevronDownIcon
                     className={`ml-auto w-4 h-4 transition-transform duration-200 ${isOpen ? "rotate-180 text-brand-500" : "text-gray-400"}`}
@@ -226,7 +232,7 @@ const AppSidebar: React.FC = () => {
                   <span className={`menu-item-icon-size transition-colors ${isActive(nav.path) ? "menu-item-icon-active" : "menu-item-icon-inactive"}`}>
                     {nav.icon}
                   </span>
-                  {showText && <span className="menu-item-text font-medium">{nav.name}</span>}
+                  {showText && <span className="menu-item-text font-medium">{t(nav.name)}</span>}
                 </Link>
               )
             )}
@@ -245,7 +251,7 @@ const AppSidebar: React.FC = () => {
                         to={subItem.path}
                         className={`menu-dropdown-item ${isActive(subItem.path) ? "menu-dropdown-item-active" : "menu-dropdown-item-inactive"}`}
                       >
-                        {subItem.name}
+                        {t(subItem.name)}
                       </Link>
                     </li>
                   ))}
@@ -260,9 +266,9 @@ const AppSidebar: React.FC = () => {
 
   return (
     <aside
-      className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-4 left-0 glass-panel text-gray-900 dark:text-white h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200/60 dark:border-white/5
+      className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-4 left-0 rtl:left-auto rtl:right-0 rtl:border-r-0 rtl:border-l glass-panel text-gray-900 dark:text-white h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200/60 dark:border-white/5
         ${isExpanded || isMobileOpen ? "w-[290px]" : isHovered ? "w-[290px]" : "w-[90px]"}
-        ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
+        ${isMobileOpen ? "translate-x-0" : "-translate-x-full rtl:max-lg:translate-x-full"}
         lg:translate-x-0`}
       onMouseEnter={() => !isExpanded && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}

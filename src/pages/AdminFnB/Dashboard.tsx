@@ -12,8 +12,8 @@ const Dashboard: React.FC = () => {
                 title="Food & Beverage Dashboard - AXIS"
                 description="Food & Beverage Management Dashboard"
             />
-            <div className="p-6">
-                <h1 className="text-2xl font-semibold mb-6">Food & Beverage Dashboard</h1>
+            <div className="p-6 text-gray-800 dark:text-white/90">
+                <h1 className="text-2xl font-semibold mb-6 dark:text-white/90">Food & Beverage Dashboard</h1>
 
                 <div className="grid grid-cols-12 gap-4 md:gap-6">
                     {/* Total Sales Widget for Admin F&B - Item Categories Only */}
