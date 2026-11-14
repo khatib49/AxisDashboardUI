@@ -38,6 +38,11 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
+/** Roles held by members of the public (website customers), never by staff. */
+const CUSTOMER_ROLES = new Set(['client', 'user', 'customer']);
+/** True when every role on the account is a customer role: not a staff login. */
+const isCustomerOnly = (roles: string[]) => roles.length > 0 && roles.every(r => CUSTOMER_ROLES.has(r.toLowerCase()));
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     // Token is read from localStorage SYNCHRONOUSLY, in the very first render.
     //
@@ -127,6 +132,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
             const res = await loginUser(req);
             if (res.success && res.token) {
+                // Website customers can't use the staff dashboard.
+                if (isCustomerOnly(decodeJwt(res.token)?.roles ?? [])) {
+                    logout();
+                    return { success: false, error: 'This is a customer account. Please sign in from the website instead.' };
+                }
                 setToken(res.token);
                 return { success: true };
             }
@@ -135,7 +145,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const msg = (e as { message?: string }).message || 'Login error';
             return { success: false, error: msg };
         }
-    }, []);
+    }, [decodeJwt]);
 
     const doLogout = useCallback(() => {
         logout();
@@ -173,7 +183,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // before this resolves (legacy rules); custom roles wait for it.
     const [pages, setPages] = useState<string[] | null>(null);
     const [pagesReady, setPagesReady] = useState(false);
-    const authenticatedNow = !!token && !(claims?.isExpired);
+    const customerOnly = isCustomerOnly(claims?.roles ?? []);
+    const authenticatedNow = !!token && !(claims?.isExpired) && !customerOnly;
     useEffect(() => {
         let alive = true;
         if (!authenticatedNow) { setPages(null); setPagesReady(true); return; }
@@ -196,7 +207,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const value = useMemo<AuthState>(() => ({
         loading,
-        authenticated: !!token && !(claims?.isExpired),
+        authenticated: authenticatedNow,
         token,
         claims,
         roles: claims?.roles || [],
@@ -208,7 +219,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         pages,
         pagesReady,
         canAccess,
-    }), [loading, token, claims, hasRole, hasAnyRole, hasAllRoles, login, doLogout, pages, pagesReady, canAccess]);
+    }), [loading, authenticatedNow, token, claims, hasRole, hasAnyRole, hasAllRoles, login, doLogout, pages, pagesReady, canAccess]);
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
