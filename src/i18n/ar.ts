@@ -2,7 +2,7 @@
 export const AR: Record<string, string> = {
   // ── Sidebar ──
   "Menu": "القائمة", "Others": "أخرى", "Dashboard": "لوحة التحكم", "Overview": "نظرة عامة", "Owner View": "عرض المالك",
-  "3D Menu": "قائمة ثلاثية الأبعاد", "AP / AR Aging": "أعمار الذمم", "AXIS PLUS Check": "فحص AXIS PLUS", "AXIS PLUS Rewards": "مكافآت AXIS PLUS",
+  "4D Menu": "القائمة رباعية الأبعاد", "AP / AR Aging": "أعمار الذمم", "AXIS PLUS Check": "فحص AXIS PLUS", "AXIS PLUS Rewards": "مكافآت AXIS PLUS",
   "Accounting Periods": "الفترات المحاسبية", "Accounting": "المحاسبة", "Apply Coupon": "تطبيق قسيمة", "Attendance": "الحضور",
   "Bank Reconciliation": "تسوية البنك", "Bar Orders": "طلبات البار", "Barcodes": "الباركود", "Batches & Expiry": "الدفعات والصلاحية",
   "Board Games": "ألعاب الطاولة", "Branch Positions": "مخزون الفروع", "Branches & BI": "الفروع والتقارير", "Branches": "الفروع",

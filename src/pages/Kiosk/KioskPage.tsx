@@ -4,8 +4,8 @@ import { getKioskMenu, KioskOrderResultDto, placeKioskOrder } from "../../servic
 import type { MenuItemDto, PublicMenuDto } from "../../services/selfOrderService";
 import WhishPayPanel from "../SelfOrder/WhishPayPanel";
 import UpsellStrip from "../../components/upsell/UpsellStrip";
-import Model3DButton from "../../components/menu3d/Model3DButton";
-import { useItemModels } from "../../components/menu3d/useItemModels";
+import Menu4DButton from "../../components/menu4d/Menu4DButton";
+import type { Item4D } from "../../components/menu4d/Menu4DViewer";
 import type { UpsellSuggestionDto } from "../../services/phase4Service";
 
 const RESET_SECONDS = 20;
@@ -68,7 +68,6 @@ export default function KioskPage() {
     const item: MenuItemDto = found ?? { id: sug.itemId, name: sug.name, price: sug.price, available: true, type: "", imagePath: null };
     setQty(item, (cart[item.id]?.qty ?? 0) + 1);
   };
-  const models = useItemModels();
 
   const submit = async () => {
     if (lines.length === 0 || submitting) return;
@@ -113,6 +112,14 @@ export default function KioskPage() {
     );
   }
 
+  // Whole menu for the 4D view; "Add" puts the item in the order.
+  const all4d: Item4D[] = (menu?.categories ?? []).flatMap((c) => c.items.filter((i) => !!i.imagePath)
+    .map((i) => ({ id: i.id, name: i.name, price: i.price, imageUrl: i.imagePath ?? null, hint: c.name })));
+  const add4d = (x: Item4D) => {
+    const found = (menu?.categories ?? []).flatMap((c) => c.items).find((i) => i.id === x.id);
+    if (found) setQty(found, (cart[found.id]?.qty ?? 0) + 1);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-950 text-gray-900 dark:text-white/90 select-none flex flex-col">
       <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between text-gray-800 dark:text-white/90">
@@ -154,7 +161,7 @@ export default function KioskPage() {
                     <div className="text-gray-500 dark:text-gray-400 mt-auto">{money(it.price)}</div>
                     {qty > 0 && <span className="absolute top-3 right-3 w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-lg font-bold">{qty}</span>}
                   </button>
-                  <Model3DButton model={models.get(it.id)} name={it.name} className="absolute top-3 left-3 text-sm px-3 py-1.5" />
+                  <Menu4DButton items={all4d} index={all4d.findIndex((x) => x.id === it.id)} onAdd={add4d} label="4D" className="absolute top-3 left-3 text-sm px-3 py-1.5" />
                   </div>
                 );
               })}

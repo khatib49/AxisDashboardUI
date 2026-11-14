@@ -6,8 +6,8 @@ import {
 } from "../../services/selfOrderService";
 import WhishPayPanel from "./WhishPayPanel";
 import UpsellStrip from "../../components/upsell/UpsellStrip";
-import Model3DButton from "../../components/menu3d/Model3DButton";
-import { useItemModels } from "../../components/menu3d/useItemModels";
+import Menu4DButton from "../../components/menu4d/Menu4DButton";
+import type { Item4D } from "../../components/menu4d/Menu4DViewer";
 import type { UpsellSuggestionDto } from "../../services/phase4Service";
 
 const POLL_MS = 8000;
@@ -104,7 +104,6 @@ export default function SelfOrderPage() {
     const item: MenuItemDto = found ?? { id: sug.itemId, name: sug.name, price: sug.price, available: true, type: "", imagePath: null };
     setQty(item, (cart[item.id]?.qty ?? 0) + 1);
   };
-  const models = useItemModels();
 
   const submit = async () => {
     if (lines.length === 0 || submitting) return;
@@ -133,6 +132,14 @@ export default function SelfOrderPage() {
   };
 
   const closed = status?.status === "Closed" || status?.invoicePaid;
+
+  // Whole menu for the 4D view; "Add" puts the item in the order.
+  const all4d: Item4D[] = (menu?.categories ?? []).flatMap((c) => c.items.filter((i) => !!i.imagePath)
+    .map((i) => ({ id: i.id, name: i.name, price: i.price, imageUrl: i.imagePath ?? null, hint: c.name })));
+  const add4d = (x: Item4D) => {
+    const found = (menu?.categories ?? []).flatMap((c) => c.items).find((i) => i.id === x.id);
+    if (found) setQty(found, (cart[found.id]?.qty ?? 0) + 1);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white/90 pb-28">
@@ -211,7 +218,7 @@ export default function SelfOrderPage() {
                 <div key={it.id} className={`flex items-center gap-3 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-3 text-gray-800 dark:text-white/90 ${!it.available ? "opacity-60" : ""}`}>
                   {it.imagePath ? <img src={it.imagePath} alt="" className="w-16 h-16 rounded-lg object-cover bg-gray-100 dark:bg-white/10" /> : <div className="w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-800" />}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2"><span className="font-medium truncate">{it.name}</span><Model3DButton model={models.get(it.id)} name={it.name} /></div>
+                    <div className="flex items-center gap-2"><span className="font-medium truncate">{it.name}</span><Menu4DButton items={all4d} index={all4d.findIndex((x) => x.id === it.id)} onAdd={add4d} /></div>
                     <div className="text-sm text-gray-500 dark:text-gray-400">{money(it.price)}{!it.available ? " · may be unavailable" : ""}</div>
                   </div>
                   {qty === 0 ? (

@@ -9,6 +9,8 @@ import { IMAGES } from "./siteContent";
 import { EYEBROW, ScrollCue, SiteLoader } from "./SiteUi";
 import { hideImageOnError, onImageError, resolveImageUrl } from "./siteHelpers";
 import ShopItemSheet from "./ShopItemSheet";
+import Menu4DViewer, { type Item4D } from "../../components/menu4d/Menu4DViewer";
+import { requestMotionAccess } from "../../components/menu4d/effects";
 
 const ACTIVE = "bg-gradient-to-r from-[#6a99cb] to-[#87b2dd] text-[#071018] shadow-2xl shadow-[#87b2dd]/45";
 const INACTIVE = "bg-white/10 text-white backdrop-blur-sm hover:bg-white/20";
@@ -62,6 +64,12 @@ export default function SiteShop() {
     [categories, selectedCategory, q],
   );
   const visibleCount = sections.reduce((s, c) => s + c.items.length, 0);
+
+  // 4D view across everything shown, in page order.
+  const [view4d, setView4d] = useState<number | null>(null);
+  const items4d: Item4D[] = sections.flatMap((c) => c.items.filter((it) => !!it.imagePath).map((it) => ({
+    id: it.id, name: it.name, price: it.price, imageUrl: resolveImageUrl(it.imagePath), hint: c.name, description: it.description,
+  })));
 
   const shopOpen = !!catalog?.shopEnabled;
   const strip = catalog ? zoneStrip(catalog.zones ?? []) : null;
@@ -234,12 +242,17 @@ export default function SiteShop() {
           </>
         )}
 
+        {view4d !== null && <Menu4DViewer items={items4d} startIndex={view4d} onClose={() => setView4d(null)} />}
         {openItem && (
           <ShopItemSheet
             mode={shopOpen ? "order" : "view"}
             item={openItem.item}
             categoryName={openItem.category.name}
             onClose={() => setOpenItem(null)}
+            on4D={openItem.item.imagePath ? () => {
+              const id = openItem.item.id; setOpenItem(null); requestMotionAccess();
+              setView4d(Math.max(0, items4d.findIndex((x) => x.id === id)));
+            } : undefined}
           />
         )}
       </div>

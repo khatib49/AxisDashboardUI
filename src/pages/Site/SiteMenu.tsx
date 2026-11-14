@@ -11,6 +11,8 @@ import { useSiteContent } from "./SiteContentContext";
 import { ScrollCue } from "./SiteUi";
 import { hideImageOnError, resolveImageUrl, resolveSiteImage } from "./siteHelpers";
 import ShopItemSheet from "./ShopItemSheet";
+import Menu4DViewer, { type Item4D } from "../../components/menu4d/Menu4DViewer";
+import { requestMotionAccess } from "../../components/menu4d/effects";
 
 type ItemType = "Food" | "Drinks" | "Tobacco";
 
@@ -45,6 +47,8 @@ export default function SiteMenu() {
   // Tapped item → detail sheet (description, add-ons, price). Add-ons are
   // hidden on the cards so the grid stays clean on phones.
   const [openItem, setOpenItem] = useState<ItemDto | null>(null);
+  // 4D view: index into the menu as shown on the page; null = closed.
+  const [view4d, setView4d] = useState<number | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -126,6 +130,11 @@ export default function SiteMenu() {
               ✚ {addOnCount} extra{addOnCount > 1 ? "s" : ""}
             </span>
           )}
+          {item.imagePath && (
+            <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded-md text-[10px] font-extrabold tracking-widest bg-black/60 text-white backdrop-blur-sm">
+              4D
+            </span>
+          )}
           <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded-lg text-sm font-bold bg-white/95 text-[#071018] shadow">
             ${item.price.toFixed(2)}
           </span>
@@ -147,11 +156,41 @@ export default function SiteMenu() {
         item={{ ...openItem, description: openItem.type }}
         categoryName={cat?.name}
         onClose={() => setOpenItem(null)}
+        on4D={openItem.imagePath ? () => { const id = openItem.id; setOpenItem(null); open4d(id); } : undefined}
       />
     );
   };
 
   const nothingToShow = !loading && visibleItems.length === 0;
+
+  // The whole menu for the 4D view: the open tab first (in page order), then
+  // the other tabs, so a guest can swipe through everything.
+  const tabOrder = [selectedType, ...TYPE_TABS.map((t) => t.type).filter((t) => t !== selectedType)];
+  const shownInOrder = selectedCategory === null
+    ? [
+        ...[...sections.flatMap((sec) => sec.items), ...uncategorized],
+        ...tabOrder.slice(1).flatMap((type) => categories
+          .filter((c) => matchesType(c, type))
+          .flatMap((c) => items.filter((it) => it.categoryId === c.id))),
+      ]
+    : visibleItems;
+  const items4d: Item4D[] = shownInOrder
+    .filter((it) => !!it.imagePath)
+    .map((it) => ({
+      id: it.id,
+      name: it.name,
+      price: it.price,
+      imageUrl: resolveImageUrl(it.imagePath),
+      hint: categories.find((c) => c.id === it.categoryId)?.name ?? null,
+      // On this menu the item "type" holds its ingredients.
+      description: it.type || null,
+      tags: it.type || null,
+    }));
+  const open4d = (itemId?: string | number) => {
+    requestMotionAccess();
+    const i = itemId == null ? 0 : items4d.findIndex((x) => String(x.id) === String(itemId));
+    setView4d(i < 0 ? 0 : i);
+  };
 
   return (
     <div
@@ -248,6 +287,20 @@ export default function SiteMenu() {
         </div>
         <style>{`.no-scrollbar::-webkit-scrollbar{display:none}.no-scrollbar{scrollbar-width:none}`}</style>
 
+        {items4d.length > 0 && (
+          <div className="flex justify-center mb-8 -mt-2 sm:-mt-6">
+            <button
+              type="button"
+              onClick={() => open4d()}
+              className="group inline-flex items-center gap-3 rounded-2xl border border-amber-300/40 bg-gradient-to-r from-amber-400/20 via-fuchsia-500/15 to-sky-400/20 px-6 py-3 text-white font-bold shadow-lg shadow-black/30 hover:border-amber-300/80 transition-colors"
+            >
+              <span className="rounded-lg bg-white text-gray-900 px-2 py-0.5 text-xs font-extrabold tracking-widest">4D</span>
+              Explore the menu in 4D
+              <span className="text-amber-200 group-hover:translate-x-1 transition-transform">→</span>
+            </button>
+          </div>
+        )}
+
         <ScrollCue />
 
         {loading && (
@@ -278,6 +331,7 @@ export default function SiteMenu() {
           ))}
 
         {renderDetail()}
+        {view4d !== null && <Menu4DViewer items={items4d} startIndex={view4d} onClose={() => setView4d(null)} />}
 
         {nothingToShow && (
           <div className="text-center py-20">

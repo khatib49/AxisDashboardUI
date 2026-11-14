@@ -181,7 +181,7 @@ export const PAGES: PageDef[] = [
   { key: "promo-coupons", label: "Coupons", group: "Promotions", path: "/admin/promotions/coupons", legacyRoles: [] },
   { key: "promo-happyhours", label: "Happy Hours", group: "Promotions", path: "/admin/promotions/happy-hours", legacyRoles: [] },
   { key: "promo-combos", label: "Combos", group: "Promotions", path: "/admin/promotions/combos", legacyRoles: [] },
-  { key: "menu-3d", label: "3D Menu", group: "Inventory Management", path: "/admin/menu-3d", legacyRoles: [] },
+  { key: "menu-3d", label: "4D Menu", group: "Inventory Management", path: "/admin/menu-3d", legacyRoles: [] },
   { key: "upsells", label: "Upsells", group: "Promotions", path: "/admin/upsells", legacyRoles: [] },
   { key: "delivery-platforms", label: "Delivery Apps", group: "F&B Admin", path: "/admin/delivery/platforms", legacyRoles: [] },
   { key: "card-terminals", label: "Card Terminals", group: "Till", path: "/admin/payments/terminals", legacyRoles: [] },
