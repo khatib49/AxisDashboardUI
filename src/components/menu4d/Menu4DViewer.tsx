@@ -48,9 +48,12 @@ function Effects({ effect }: { effect: Effect4D }) {
  */
 export default function Menu4DViewer({ items, startIndex = 0, onClose, onAdd, addLabel = "Add to order" }: Props) {
   const [index, setIndex] = useState(Math.min(Math.max(startIndex, 0), Math.max(items.length - 1, 0)));
+  // The item on screen changes only once its photo is decoded, so moving
+  // between dishes never flashes an empty card.
+  const [shown, setShown] = useState(index);
   const rootRef = useRef<HTMLDivElement>(null);
   const models = useItemModels();
-  const item = items[index];
+  const item = items[shown] ?? items[index];
   const model = item ? models.get(Number(item.id)) : undefined;
   const effect = item ? effectFor(item.name, `${item.hint ?? ""} ${item.tags ?? ""}`) : "glow";
 
@@ -92,9 +95,25 @@ export default function Menu4DViewer({ items, startIndex = 0, onClose, onAdd, ad
   }, [go, onClose]);
   const touch = useRef<{ x: number; y: number } | null>(null);
 
-  // Preload neighbours so swiping feels instant
+  // Show the new item once its photo is ready (or after 1.5 s at most).
   useEffect(() => {
-    for (const d of [1, -1]) { const n = items[(index + d + items.length) % items.length]; if (n?.imageUrl) { const im = new Image(); im.src = n.imageUrl; } }
+    const url = items[index]?.imageUrl;
+    if (!url || models.get(Number(items[index].id))) { setShown(index); return; }
+    let done = false;
+    const show = () => { if (!done) { done = true; setShown(index); } };
+    const im = new Image();
+    im.src = url;
+    im.decode().then(show, show);
+    const t = window.setTimeout(show, 1500);
+    return () => { done = true; window.clearTimeout(t); };
+  }, [index, items, models]);
+
+  // Preload and decode the neighbours so swiping feels instant
+  useEffect(() => {
+    for (const d of [1, -1, 2]) {
+      const n = items[(index + d + items.length) % items.length];
+      if (n?.imageUrl) { const im = new Image(); im.src = n.imageUrl; im.decode().catch(() => undefined); }
+    }
   }, [index, items]);
 
   if (!item) return null;
