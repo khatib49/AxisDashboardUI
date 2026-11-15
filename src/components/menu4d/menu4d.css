@@ -5,8 +5,48 @@
 
 .m4d-stage { perspective: 1200px; }
 .m4d-card { position: relative; transform-style: preserve-3d; transform: rotateX(var(--rx)) rotateY(var(--ry)); transition: transform 120ms linear; will-change: transform; border-radius: 28px; overflow: hidden; box-shadow: 0 40px 90px -20px rgba(0, 0, 0, .75), 0 0 0 1px rgba(255, 255, 255, .08); background: #0b0f17; }
-.m4d-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: translate(var(--px), var(--py)) scale(1.12); animation: m4d-kenburns 14s ease-in-out infinite alternate; transform-origin: 50% 55%; }
+/* Photo stack: wrap (parallax + slow zoom) > zoom (flies to a part) > photo + part dots */
+.m4d-wrap { position: absolute; inset: 0; transform: translate(var(--px), var(--py)) scale(1.12); transform-origin: 50% 55%; }
+.m4d-wrap > .m4d-zoom { animation: m4d-kenburns 14s ease-in-out infinite alternate; }
+.m4d-wrap-still > .m4d-zoom { animation: none; }
+.m4d-zoom { position: absolute; inset: 0; transition: transform .9s cubic-bezier(.2, .7, .2, 1), transform-origin .9s cubic-bezier(.2, .7, .2, 1); }
+.m4d-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 @keyframes m4d-kenburns { from { scale: 1; translate: 0 0; } to { scale: 1.09; translate: -1.5% -2%; } }
+
+/* Part dots on the photo (they stay the same size while the photo zooms) */
+.m4d-dot { position: absolute; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; border: 0; padding: 0; cursor: pointer; z-index: 3;
+  background: radial-gradient(circle, #fff 0 5px, rgba(255, 255, 255, .35) 6px 100%); box-shadow: 0 0 0 2px rgba(255, 255, 255, .85), 0 4px 14px rgba(0, 0, 0, .45);
+  transform: scale(calc(1 / var(--z, 1))); transition: transform .9s cubic-bezier(.2, .7, .2, 1), background .2s; animation: m4d-pop .5s cubic-bezier(.2, .9, .3, 1.4) both; }
+.m4d-dot::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .7); animation: m4d-pulse 2s ease-out infinite; }
+.m4d-dot.on { background: radial-gradient(circle, #fcd34d 0 6px, rgba(252, 211, 77, .4) 7px 100%); box-shadow: 0 0 0 2px #fcd34d, 0 0 22px rgba(252, 211, 77, .8); }
+.m4d-dot-label { position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); white-space: nowrap; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; color: #fff; background: rgba(5, 7, 12, .72); backdrop-filter: blur(6px); box-shadow: 0 4px 14px rgba(0, 0, 0, .35); pointer-events: none; }
+.m4d-dot.below .m4d-dot-label { bottom: auto; top: calc(100% + 8px); }
+.m4d-dot.start .m4d-dot-label { left: -4px; transform: none; }
+.m4d-dot.end .m4d-dot-label { left: auto; right: -4px; transform: none; }
+.m4d-dot.on .m4d-dot-label { background: #fcd34d; color: #111827; }
+@keyframes m4d-pulse { from { opacity: .9; transform: scale(.7); } to { opacity: 0; transform: scale(1.7); } }
+@keyframes m4d-pop { from { opacity: 0; scale: .3; } to { opacity: 1; scale: 1; } }
+
+/* Hotspots on the 3D model */
+.m4d-hot { position: relative; width: 22px; height: 22px; border-radius: 50%; border: 0; padding: 0; cursor: pointer; background: radial-gradient(circle, #fff 0 4px, rgba(255, 255, 255, .35) 5px 100%); box-shadow: 0 0 0 2px rgba(255, 255, 255, .85), 0 3px 10px rgba(0, 0, 0, .45); transition: opacity .3s; }
+.m4d-hot:not([data-visible]) { opacity: .25; }
+.m4d-hot::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .7); animation: m4d-pulse 2s ease-out infinite; }
+.m4d-hot-on { background: radial-gradient(circle, #fcd34d 0 5px, rgba(252, 211, 77, .4) 6px 100%); box-shadow: 0 0 0 2px #fcd34d, 0 0 20px rgba(252, 211, 77, .8); }
+.m4d-hot-label { position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); white-space: nowrap; padding: 4px 10px; border-radius: 999px; font: 700 12px/1.2 system-ui, sans-serif; color: #fff; background: rgba(5, 7, 12, .72); backdrop-filter: blur(6px); pointer-events: none; }
+.m4d-hot-on .m4d-hot-label { background: #fcd34d; color: #111827; }
+
+/* Controls */
+.m4d-callout { padding: 12px 14px; border-radius: 18px; background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .12); backdrop-filter: blur(10px); animation: m4d-enter .35s cubic-bezier(.2, .7, .2, 1) both; }
+.m4d-chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.m4d-chips::-webkit-scrollbar { display: none; }
+.m4d-chip { flex: none; padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; color: rgba(255, 255, 255, .85); background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .14); }
+.m4d-chip.on { background: #fcd34d; color: #111827; border-color: #fcd34d; }
+.m4d-pill { padding: 12px 16px; border-radius: 16px; font-size: 14px; font-weight: 600; background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .14); backdrop-filter: blur(8px); }
+.m4d-pill.on { background: rgba(252, 211, 77, .18); border-color: #fcd34d; color: #fde68a; }
+.m4d-cta { white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 18px; border-radius: 16px; font-size: 15px; font-weight: 700; color: #111827; background: linear-gradient(135deg, #fde68a, #f59e0b); box-shadow: 0 10px 30px -8px rgba(245, 158, 11, .7); }
+.m4d-cta:active, .m4d-pill:active, .m4d-chip:active { transform: scale(.97); }
+.m4d-qr { position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center; border-radius: 28px; background: rgba(5, 7, 12, .86); backdrop-filter: blur(14px); animation: m4d-enter .35s cubic-bezier(.2, .7, .2, 1) both; }
+.m4d-card-3d { background: radial-gradient(ellipse at 50% 40%, #1f2937, #0b0f17 70%); }
 
 /* Moving light that follows the tilt, plus a slow sweep */
 .m4d-light { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at var(--mx) var(--my), rgba(255, 255, 255, .28), rgba(255, 255, 255, 0) 45%); mix-blend-mode: soft-light; }
@@ -43,6 +83,7 @@
 @keyframes m4d-enter { from { opacity: 0; transform: translateY(24px) scale(.96); } to { opacity: 1; transform: none; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .m4d-photo, .m4d-sweep, .m4d-wisp, .m4d-bubble, .m4d-glint, .m4d-enter { animation: none !important; }
+  .m4d-zoom, .m4d-sweep, .m4d-wisp, .m4d-bubble, .m4d-glint, .m4d-enter, .m4d-dot::after, .m4d-hot::after { animation: none !important; }
+  .m4d-zoom, .m4d-dot { transition: none; }
   .m4d-wisp, .m4d-bubble { display: none; }
 }

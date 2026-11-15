@@ -1,5 +1,5 @@
 // Public café menu — live items from the inventory API, grouped by category.
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import { getItems } from "../../services/itemService";
@@ -13,6 +13,7 @@ import { hideImageOnError, resolveImageUrl, resolveSiteImage } from "./siteHelpe
 import ShopItemSheet from "./ShopItemSheet";
 import Menu4DViewer, { type Item4D } from "../../components/menu4d/Menu4DViewer";
 import { requestMotionAccess } from "../../components/menu4d/effects";
+import { useItemModels } from "../../components/menu3d/useItemModels";
 
 type ItemType = "Food" | "Drinks" | "Tobacco";
 
@@ -49,6 +50,7 @@ export default function SiteMenu() {
   const [openItem, setOpenItem] = useState<ItemDto | null>(null);
   // 4D view: index into the menu as shown on the page; null = closed.
   const [view4d, setView4d] = useState<number | null>(null);
+  const models3d = useItemModels();
 
   useEffect(() => {
     let mounted = true;
@@ -156,7 +158,7 @@ export default function SiteMenu() {
         item={{ ...openItem, description: openItem.type }}
         categoryName={cat?.name}
         onClose={() => setOpenItem(null)}
-        on4D={openItem.imagePath ? () => { const id = openItem.id; setOpenItem(null); open4d(id); } : undefined}
+        on4D={openItem.imagePath || models3d.has(Number(openItem.id)) ? () => { const id = openItem.id; setOpenItem(null); open4d(id); } : undefined}
       />
     );
   };
@@ -175,7 +177,7 @@ export default function SiteMenu() {
       ]
     : visibleItems;
   const items4d: Item4D[] = shownInOrder
-    .filter((it) => !!it.imagePath)
+    .filter((it) => !!it.imagePath || models3d.has(Number(it.id)))
     .map((it) => ({
       id: it.id,
       name: it.name,
@@ -186,6 +188,15 @@ export default function SiteMenu() {
       description: it.type || null,
       tags: it.type || null,
     }));
+  // Deep link (/menu?dish=12), e.g. from the "Put it on your table" QR code: open that dish in 4D.
+  const dishLink = useRef(new URLSearchParams(window.location.search).get("dish"));
+  useEffect(() => {
+    const id = dishLink.current;
+    if (!id) return;
+    const i = items4d.findIndex((x) => String(x.id) === id);
+    if (i >= 0) { dishLink.current = null; setView4d(i); }
+  }, [items4d]);
+
   const open4d = (itemId?: string | number) => {
     requestMotionAccess();
     const i = itemId == null ? 0 : items4d.findIndex((x) => String(x.id) === String(itemId));

@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import Menu4DButton from "../../components/menu4d/Menu4DButton";
+import Menu4DStudio from "./Menu4DStudio";
 import { Card, ItemPicker, Notice, btnDanger, btnGhost, btnPrimary, td, th } from "../../components/phase4/ui";
 import { deleteItemModel, listItemModels, setItemModelActive, uploadItemModel, type ItemModel3DDto } from "../../services/phase4Service";
 
@@ -23,8 +24,8 @@ export default function Menu3DAdmin() {
   const [busy, setBusy] = useState(false);
   const [formKey, setFormKey] = useState(0);
 
-  const reload = () => listItemModels().then(setModels).catch((e) => setNotice({ kind: "error", text: (e as Error).message })).finally(() => setLoading(false));
-  useEffect(() => { void reload(); }, []);
+  const reload = useCallback(() => listItemModels().then(setModels).catch((e) => setNotice({ kind: "error", text: (e as Error).message })).finally(() => setLoading(false)), []);
+  useEffect(() => { void reload(); }, [reload]);
 
   const existing = item ? models.find((m) => m.itemId === item.id) : undefined;
 
@@ -53,10 +54,14 @@ export default function Menu3DAdmin() {
       <PageMeta title="4D Menu | Axis" description="4D menu: living photos and 3D scans of menu items" />
       <PageBreadcrumb pageTitle="4D Menu" />
       <div className="mb-4 rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-700 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-300">
-        <p className="font-semibold text-gray-900 dark:text-white">Every item with a photo is already in 4D.</p>
-        <p className="mt-1">Guests see the real photo come alive: it tilts with their phone, zooms slowly, catches the light, and shows steam on hot dishes, bubbles on cold drinks and a foil shine on trading cards. They can swipe through the whole menu.</p>
-        <p className="mt-1">Want a dish they can turn all the way round and place on their table? Scan it and upload the model here: it replaces the photo in the 4D view.</p>
+        <p className="font-semibold text-gray-900 dark:text-white">Every item with a photo is already in 4D. Make it real in three steps:</p>
+        <ol className="mt-1 list-decimal space-y-0.5 ps-5">
+          <li><b>AI label</b>: the AI looks at each photo and names its parts (bun, patty, foam…). Check them and publish: guests tap <b>Discover</b> or <b>Tour</b> to learn the dish.</li>
+          <li><b>Make 3D</b>: the AI turns the photo into a 3D model. Approve it and guests can tap <b>On my table</b> to place the dish, life-size, on their real table with their phone camera.</li>
+          <li>Better still, scan the real dish with a phone app and upload it below.</li>
+        </ol>
       </div>
+      <Menu4DStudio scans={models} onScansChanged={reload} />
       {notice && <Notice kind={notice.kind} text={notice.text} onClose={() => setNotice(null)} />}
 
       <div className="grid gap-4 lg:grid-cols-3">
