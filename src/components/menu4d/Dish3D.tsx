@@ -13,6 +13,7 @@ type MV = HTMLElement & {
   positionAndNormalFromPoint?: (x: number, y: number) => { position: { toString(): string }; normal: { toString(): string } } | null;
   cameraTarget?: string; fieldOfView?: string; cameraOrbit?: string; autoRotate?: boolean; scale?: string;
   updateFraming?: () => Promise<void>;
+  resetTurntableRotation?: (theta?: number) => void;
 };
 
 export type Dish3DHandle = {
@@ -82,8 +83,20 @@ const Dish3D = forwardRef<Dish3DHandle, Props>(function Dish3D(
     const mv = el.current;
     if (!mv) return;
     const p = active != null ? parts[active] : null;
-    if (p?.pos3D) { mv.cameraTarget = p.pos3D; mv.fieldOfView = "16deg"; mv.autoRotate = false; }
-    else { mv.cameraTarget = "auto auto auto"; mv.fieldOfView = "auto"; mv.autoRotate = spin; }
+    if (p?.pos3D) {
+      mv.autoRotate = false;
+      // Auto-spin turns the model itself: put it back square so the angles below are right.
+      mv.resetTurntableRotation?.(0);
+      mv.cameraTarget = p.pos3D;
+      // Face the part: look along its surface normal so it is never hidden behind the dish.
+      const n = (p.normal3D ?? "").split(/\s+/).map((v) => parseFloat(v));
+      if (n.length === 3 && n.every(Number.isFinite)) {
+        const theta = (Math.atan2(n[0], n[2]) * 180) / Math.PI;
+        const phi = Math.min(150, Math.max(20, (Math.acos(Math.max(-1, Math.min(1, n[1]))) * 180) / Math.PI));
+        mv.cameraOrbit = `${theta.toFixed(1)}deg ${phi.toFixed(1)}deg auto`;
+      }
+      mv.fieldOfView = "20deg";
+    } else { mv.cameraTarget = "auto auto auto"; mv.cameraOrbit = "auto auto auto"; mv.fieldOfView = "auto"; mv.autoRotate = spin; }
   }, [active, parts, spin]);
 
   if (failed) return <div className={`${className} flex items-center justify-center text-sm text-white/60`}>3D is not available on this device.</div>;
