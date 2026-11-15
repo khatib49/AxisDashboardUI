@@ -46,6 +46,10 @@
 .m4d-cta { white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 18px; border-radius: 16px; font-size: 15px; font-weight: 700; color: #111827; background: linear-gradient(135deg, #fde68a, #f59e0b); box-shadow: 0 10px 30px -8px rgba(245, 158, 11, .7); }
 .m4d-cta:active, .m4d-pill:active, .m4d-chip:active { transform: scale(.97); }
 .m4d-qr { position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center; border-radius: 28px; background: rgba(5, 7, 12, .86); backdrop-filter: blur(14px); animation: m4d-enter .35s cubic-bezier(.2, .7, .2, 1) both; }
+.m4d-loading { background: linear-gradient(110deg, rgba(255,255,255,.04) 30%, rgba(255,255,255,.10) 50%, rgba(255,255,255,.04) 70%); background-size: 250% 100%; animation: m4d-shimmer 1.3s linear infinite; display: flex; align-items: center; justify-content: center; }
+.m4d-loading span { width: 34px; height: 34px; border-radius: 50%; border: 3px solid rgba(255,255,255,.18); border-top-color: #fcd34d; animation: m4d-spin .8s linear infinite; }
+@keyframes m4d-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@keyframes m4d-spin { to { transform: rotate(360deg); } }
 .m4d-card-3d { background: radial-gradient(ellipse at 50% 40%, #1f2937, #0b0f17 70%); }
 
 /* Moving light that follows the tilt, plus a slow sweep */

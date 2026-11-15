@@ -107,7 +107,9 @@ export default function Menu4DViewer({ items, startIndex = 0, onClose, onAdd, ad
   const [index, setIndex] = useState(Math.min(Math.max(startIndex, 0), Math.max(items.length - 1, 0)));
   // The item on screen changes only once its photo is decoded, so moving
   // between dishes never flashes an empty card.
-  const [shown, setShown] = useState(index);
+  // -1 until the first photo is ready: the card shows a soft placeholder, never an empty frame.
+  const [shown, setShown] = useState(-1);
+  const loading = shown < 0;
   const rootRef = useRef<HTMLDivElement>(null);
   const dish = useRef<Dish3DHandle>(null);
   const models = useItemModels();
@@ -233,9 +235,11 @@ export default function Menu4DViewer({ items, startIndex = 0, onClose, onAdd, ad
 
       <div className="m4d-stage relative z-10 flex flex-1 items-center justify-center px-6 py-3">
         <button type="button" onClick={() => go(-1)} aria-label="Previous item" className="absolute left-2 top-1/2 hidden h-12 w-12 -translate-y-1/2 rounded-full bg-white/10 text-2xl backdrop-blur hover:bg-white/20 sm:block">‹</button>
-        <div key={item.id} className="m4d-enter relative w-full max-w-[440px]">
+        <div key={`${item.id}${loading ? "-l" : ""}`} className="m4d-enter relative w-full max-w-[440px]">
           <div className={`m4d-card aspect-[4/5] w-full ${model ? "m4d-card-3d" : ""}`} onClick={() => { if (active != null) setActive(null); }}>
-            {model ? (
+            {loading ? (
+              <div className="m4d-loading absolute inset-0" role="status" aria-label="Loading"><span /></div>
+            ) : model ? (
               <Dish3D ref={dish} model={model} alt={`3D model of ${item.name}`} parts={parts} active={active} onPart={pickPart}
                 realSizeCm={realSize} spin={!touring && active == null} showLabels={discover || touring} className="absolute inset-0 h-full w-full" onReady={onReady3D} />
             ) : item.imageUrl ? (
@@ -243,10 +247,10 @@ export default function Menu4DViewer({ items, startIndex = 0, onClose, onAdd, ad
             ) : (
               <div className="absolute inset-0 flex items-center justify-center text-white/50">No photo yet</div>
             )}
-            {!model && <div className="m4d-vignette" />}
-            {active == null && !model && <Effects effect={effect} />}
-            {!model && <div className="m4d-light" />}
-            {!model && active == null && <div className="m4d-sweep" />}
+            {!model && !loading && <div className="m4d-vignette" />}
+            {active == null && !model && !loading && <Effects effect={effect} />}
+            {!model && !loading && <div className="m4d-light" />}
+            {!model && !loading && active == null && <div className="m4d-sweep" />}
             {model && <span className="absolute left-3 top-3 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-bold tracking-wider backdrop-blur">3D · drag to turn</span>}
           </div>
           <div className="m4d-shadow" aria-hidden="true" />
