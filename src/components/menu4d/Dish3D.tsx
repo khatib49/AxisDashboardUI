@@ -109,7 +109,8 @@ const Dish3D = forwardRef<Dish3DHandle, Props>(function Dish3D(
     poster: assetUrl(model.posterPath) ?? undefined,
     "ios-src": assetUrl(model.usdzPath) ?? undefined,
     ar: true,
-    "ar-modes": "webxr scene-viewer quick-look",
+    // Native AR first on Android (room lighting, steadier tracking); in-browser AR as the fallback.
+    "ar-modes": "scene-viewer webxr quick-look",
     "ar-scale": "fixed",
     "ar-placement": "floor",
     "xr-environment": true,
