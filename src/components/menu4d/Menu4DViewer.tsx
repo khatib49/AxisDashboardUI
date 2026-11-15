@@ -244,7 +244,7 @@ export default function Menu4DViewer({ items, startIndex = 0, onClose, onAdd, ad
               <div className="absolute inset-0 flex items-center justify-center text-white/50">No photo yet</div>
             )}
             {!model && <div className="m4d-vignette" />}
-            {active == null && <Effects effect={effect} />}
+            {active == null && !model && <Effects effect={effect} />}
             {!model && <div className="m4d-light" />}
             {!model && active == null && <div className="m4d-sweep" />}
             {model && <span className="absolute left-3 top-3 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-bold tracking-wider backdrop-blur">3D · drag to turn</span>}
