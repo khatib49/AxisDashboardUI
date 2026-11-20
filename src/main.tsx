@@ -8,6 +8,10 @@ import App from "./App.tsx";
 import { AppWrapper } from "./components/common/PageMeta.tsx";
 import { ThemeProvider, useTheme } from "./context/ThemeContext.tsx";
 import { registerOfflineServiceWorker } from "./offline/registerSw.ts";
+import { installVenueTimeZone } from "./utils/venueTime.ts";
+
+// Show every date/time in Beirut time, whatever zone the device is set to.
+installVenueTimeZone();
 
 // Offline / PWA mode is opt-in (VITE_ENABLE_OFFLINE_MODE=true). With the flag
 // off nothing is registered and the app behaves exactly as before.

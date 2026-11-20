@@ -20,7 +20,7 @@ import { getGameTransactions, GameTransaction } from '../../services/transaction
 import { useAuth } from '../../context/AuthContext';
 import GameInvoice from '../../components/invoice/GameInvoice';
 import { getDiscounts, DiscountDto } from '../../services/discountService';
-import { searchClientsByPhone, ClientUserDto } from '../../services/clientService';
+import { searchClientsByPhone, createClient, ClientUserDto } from '../../services/clientService';
 import { Empty, Skeleton } from 'antd';
 import { Panel, StatTile } from '../../components/ui/PageKit';
 import { GameCard, GameCardSkeleton } from '../../components/till/sessions/GameCard';
@@ -104,11 +104,62 @@ const GameSession: React.FC = () => {
     const [searchingClient, setSearchingClient] = useState(false);
     const [clientResults, setClientResults] = useState<ClientUserDto[]>([]);
     const [selectedClient, setSelectedClient] = useState<ClientUserDto | null>(null);
+    // Quick-create when the phone search finds nobody, so the client is on the
+    // session from the start (no open → Edit → Add client round trip).
+    const [clientNotFound, setClientNotFound] = useState(false);
+    const [showCreateClient, setShowCreateClient] = useState(false);
+    const [newClientFirst, setNewClientFirst] = useState('');
+    const [newClientLast, setNewClientLast] = useState('');
+    const [creatingClient, setCreatingClient] = useState(false);
 
     // Comment state
     const [comment, setComment] = useState('');
 
+    const resetClientCreate = () => {
+        setClientNotFound(false);
+        setShowCreateClient(false);
+        setNewClientFirst('');
+        setNewClientLast('');
+    };
+
+    const quickCreateClient = async () => {
+        if (!newClientFirst.trim()) {
+            setToast({ variant: 'info', title: 'Missing name', message: 'First name is required.' });
+            return;
+        }
+        setCreatingClient(true);
+        try {
+            const res = await createClient({
+                phoneNumber: clientPhone.trim(),
+                firstName: newClientFirst.trim(),
+                lastName: newClientLast.trim(),
+                email: '',
+            });
+            const created = {
+                id: res.id,
+                phoneNumber: res.phoneNumber,
+                firstName: res.firstName ?? newClientFirst.trim(),
+                lastName: res.lastName ?? newClientLast.trim(),
+                email: null,
+            } as unknown as ClientUserDto;
+            setClientResults([created]);
+            setSelectedClient(created);
+            resetClientCreate();
+            setToast({
+                variant: 'success',
+                title: res.isNewlyCreated === false ? 'Client already existed' : 'Client created',
+                message: 'Selected for this session.',
+            });
+        } catch (err: unknown) {
+            const e = err as { response?: { data?: { message?: string } } };
+            setToast({ variant: 'error', title: 'Create failed', message: e?.response?.data?.message || 'Could not create the client.' });
+        } finally {
+            setCreatingClient(false);
+        }
+    };
+
     const handleClientSearch = async () => {
+        resetClientCreate();
         if (!clientPhone.trim()) {
             setClientResults([]);
             return;
@@ -118,6 +169,7 @@ const GameSession: React.FC = () => {
             const results = await searchClientsByPhone(clientPhone);
             setClientResults(results || []);
             if (results.length === 0) {
+                setClientNotFound(true);
                 setToast({
                     variant: "info",
                     title: "No Results",
@@ -556,7 +608,7 @@ const GameSession: React.FC = () => {
                                 <Input
                                     placeholder="Search by phone..."
                                     value={clientPhone}
-                                    onChange={(e) => setClientPhone(e.target.value)}
+                                    onChange={(e) => { setClientPhone(e.target.value); resetClientCreate(); }}
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
                                             handleClientSearch();
@@ -595,6 +647,49 @@ const GameSession: React.FC = () => {
                                     }}
                                     className="mt-2 w-full"
                                 />
+                            )}
+
+                            {/* Nobody found → create them here, phone prefilled */}
+                            {clientNotFound && !searchingClient && clientPhone.trim() !== '' && (
+                                <div className="mt-2 rounded-xl border border-dashed border-gray-300 p-3 dark:border-white/15">
+                                    {!showCreateClient ? (
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="min-w-0 truncate text-sm text-gray-500 dark:text-gray-400">No client with "{clientPhone.trim()}".</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowCreateClient(true)}
+                                                className="h-11 shrink-0 rounded-xl bg-indigo-600 px-3 text-sm font-semibold text-white hover:bg-indigo-700"
+                                            >
+                                                + Create client
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            <div className="text-sm text-gray-500 dark:text-gray-400">New client — phone <b className="text-gray-800 dark:text-gray-200">{clientPhone.trim()}</b></div>
+                                            <div className="flex gap-2">
+                                                <div className="min-w-0 flex-1"><Input placeholder="First name" value={newClientFirst} onChange={(e) => setNewClientFirst(e.target.value)} /></div>
+                                                <div className="min-w-0 flex-1"><Input placeholder="Last name" value={newClientLast} onChange={(e) => setNewClientLast(e.target.value)} /></div>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    type="button"
+                                                    disabled={creatingClient}
+                                                    onClick={quickCreateClient}
+                                                    className="h-11 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+                                                >
+                                                    {creatingClient ? 'Creating…' : 'Create & select'}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowCreateClient(false)}
+                                                    className="h-11 rounded-xl border border-gray-200 px-4 text-sm font-semibold text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:text-gray-300 dark:hover:bg-white/[0.06]"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             )}
                             {selectedClient && (
                                 <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-blue-200 bg-blue-50 py-1 pl-3 pr-1 text-sm font-medium text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300">
@@ -761,6 +856,7 @@ const GameSession: React.FC = () => {
                                         setSelectedClient(null);
                                         setClientResults([]);
                                         setClientPhone('');
+                                        resetClientCreate();
                                         setNumberOfPersons(1);
                                         setComment('');
 

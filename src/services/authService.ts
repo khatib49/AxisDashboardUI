@@ -48,3 +48,15 @@ export function logout(): void {
 export function isAuthenticated(): boolean {
   try { return !!localStorage.getItem('access_token'); } catch { return false; }
 }
+
+// Password reset by email. forgotPassword always resolves the same way whether
+// or not the email has an account; resetPassword rejects with { error }.
+export async function forgotPassword(email: string): Promise<string> {
+  const res = await api.post<{ message: string }>(`${AUTH_BASE}/forgot-password`, { email });
+  return res.data.message;
+}
+
+export async function resetPassword(email: string, token: string, newPassword: string): Promise<string> {
+  const res = await api.post<{ message: string }>(`${AUTH_BASE}/reset-password`, { email, token, newPassword });
+  return res.data.message;
+}
