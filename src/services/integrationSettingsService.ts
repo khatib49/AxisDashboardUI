@@ -32,4 +32,9 @@ export const integrationSettingsService = {
     const { data } = await api.post('/integration-settings/test/whatsapp');
     return data;
   },
+  // Sends a test email to the signed-in admin through the saved Smtp.* settings.
+  testEmail: async (): Promise<IntegrationTestResult> => {
+    const { data } = await api.post('/integration-settings/test/email');
+    return data;
+  },
 };

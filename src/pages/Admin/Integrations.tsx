@@ -16,6 +16,11 @@ import { testAramex, apiErrorMessage } from "../../services/shippingService";
 // Friendly grouping for the page
 const GROUPS: { title: string; subtitle: string; keys: string[] }[] = [
   {
+    title: "Email (SMTP)",
+    subtitle: "Sends password-reset links and reports. Free with Gmail: Smtp.Host smtp.gmail.com, Smtp.Port 587, Smtp.User and Smtp.From = the Gmail address, Smtp.Password = a Google App Password (not the normal password).",
+    keys: ["Smtp.Host", "Smtp.Port", "Smtp.User", "Smtp.Password", "Smtp.From"],
+  },
+  {
     title: "Anthropic (Claude AI)",
     subtitle: "API key for the chatbot. Get one at console.anthropic.com.",
     keys: ["Anthropic.ApiKey", "Anthropic.Model"],
@@ -62,6 +67,11 @@ const GROUPS: { title: string; subtitle: string; keys: string[] }[] = [
 // Keys the UI knows about even before the SQL seed ran — shown as "not set"
 // so the admin can fill them in (upsert creates the row).
 const KNOWN_DESCRIPTIONS: Record<string, string> = {
+  "Smtp.Host": "Mail server, e.g. smtp.gmail.com (Gmail) or smtp-relay.brevo.com (Brevo)",
+  "Smtp.Port": "587 (STARTTLS). Port 465 is not supported.",
+  "Smtp.User": "Login for the mail server — for Gmail, the full Gmail address",
+  "Smtp.Password": "For Gmail: a 16-letter App Password from myaccount.google.com/apppasswords",
+  "Smtp.From": "Sender address shown to recipients — for Gmail, the same Gmail address",
   "MontyPay.Environment": "sandbox or production — which credentials are live",
   "MontyPay.Sandbox.CheckoutUrl": "Sandbox CHECKOUT_URL from your MontyPay account manager",
   "MontyPay.Sandbox.MerchantKey": "Sandbox merchant key (Test key)",
@@ -183,12 +193,13 @@ export default function IntegrationsPage() {
   };
   useEffect(() => { reload(); }, []);
 
-  const runTest = async (which: "anthropic" | "whatsapp" | "aramex") => {
+  const runTest = async (which: "anthropic" | "whatsapp" | "aramex" | "email") => {
     setTests(t => ({ ...t, [which]: "running" }));
     try {
       let res: IntegrationTestResult;
       if (which === "anthropic") res = await integrationSettingsService.testAnthropic();
       else if (which === "whatsapp") res = await integrationSettingsService.testWhatsApp();
+      else if (which === "email") res = await integrationSettingsService.testEmail();
       else {
         const r = await testAramex();
         res = { ok: r.ok, message: r.ok && r.rateAmount != null ? `${r.message ?? "OK"} · sample rate ${r.rateAmount} ${r.rateCurrency ?? ""}`.trim() : r.message ?? null };
@@ -247,6 +258,12 @@ export default function IntegrationsPage() {
               <h2 className="font-semibold text-gray-800">{g.title}</h2>
               <p className="text-xs text-gray-500 mt-0.5">{g.subtitle}</p>
             </div>
+            {g.title.startsWith("Email") && (
+              <button
+                onClick={() => runTest("email")}
+                className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+              >Send test email to me</button>
+            )}
             {g.title.startsWith("Anthropic") && (
               <button
                 onClick={() => runTest("anthropic")}
@@ -267,6 +284,7 @@ export default function IntegrationsPage() {
             )}
           </header>
 
+          {(g.title.startsWith("Email")     && tests.email)     && <TestResult t={tests.email} />}
           {(g.title.startsWith("Anthropic") && tests.anthropic) && <TestResult t={tests.anthropic} />}
           {(g.title.startsWith("WhatsApp")  && tests.whatsapp)  && <TestResult t={tests.whatsapp} />}
           {(g.title.startsWith("Aramex")    && tests.aramex)    && <TestResult t={tests.aramex} />}
